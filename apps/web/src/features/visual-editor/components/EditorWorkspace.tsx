@@ -363,7 +363,8 @@ export function EditorWorkspace({
     const pv = simRef.current.portValues;
     const outKey = `${nodeId}.out`;
     const currentValue = pv?.get(outKey);
-    simRef.current.setNode(nodeId, !currentValue);
+    // Numeric toggle; same semantics as the old `!currentValue`, undefined → 1.
+    simRef.current.setNode(nodeId, currentValue ? 0 : 1);
     simRef.current.runCombinational();
   }, []);
   const onSetNodeValue = useCallback((nodeId: string, value: number) => {

@@ -22,7 +22,7 @@ function xnor(width: number, a: number, b: number): number {
       i.b.to(p.b),
       p.out.to(o.out),
     ],
-  } as any);
+  });
   const sim = simulate(w);
   sim.set({ a, b });
   const out = sim.get('out') >>> 0;

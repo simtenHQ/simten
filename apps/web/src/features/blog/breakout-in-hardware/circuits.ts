@@ -51,7 +51,7 @@ export const Breakout = circuit('Breakout', {
     brickRAM: DualPortRAM({ memory: FULL_WALL }),
     // Combinational raster render: scan_addr → scanX/scanY → pixel_out (no
     // framebuffer).
-    scanX: BitSlice({ low: 0, high: 4 }),
+    scanX: BitSlice({ low: 0, high: 4, width: 9 }),
     scanY: RightShifter({ width: 9 }),
     c0: Constant({ value: 0 }),
     c1: Constant({ value: 1 }),
@@ -79,6 +79,9 @@ export const Breakout = circuit('Breakout', {
     rightCode: Constant({ value: 77 }),
     isLeftCmp: Comparator(),
     isRightCmp: Comparator(),
+    // scanY is a 9-bit row; the render datapath is 8 bits wide, so the row is
+    // truncated explicitly rather than silently losing its top bit.
+    scanY8: BitSlice({ low: 0, high: 7, width: 9 }),
     scanYsh: LeftShifter({ width: 8 }),
     scanBrickAddr: Adder({ width: 8 }),
     scanInBrickArea: Comparator(),
@@ -249,6 +252,7 @@ export const Breakout = circuit('Breakout', {
       rightCode,
       isLeftCmp,
       isRightCmp,
+      scanY8,
       scanYsh,
       scanBrickAddr,
       scanInBrickArea,
@@ -386,7 +390,8 @@ export const Breakout = circuit('Breakout', {
     // scanX = scan_addr[4:0] (0..31), scanY = scan_addr >> 5 (0..15)
     inputs.scan_addr.to(scanX.in, scanY.value),
     scanX.out.to(scanBrickAddr.b, cmpBallX.a, cmpScanGteMin.a, cmpScanLteMax.b),
-    scanY.result.to(scanYsh.value, scanInBrickArea.a, cmpBallY.a, scanYsplit.in),
+    scanY.result.to(scanY8.in),
+    scanY8.out.to(scanYsh.value, scanInBrickArea.a, cmpBallY.a, scanYsplit.in),
     // --- Input (top-level ports) ---
     inputs.keyboard.to(isLeftCmp.a, isRightCmp.a),
     leftCode.out.to(isLeftCmp.b),

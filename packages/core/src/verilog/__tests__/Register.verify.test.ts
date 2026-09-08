@@ -32,10 +32,12 @@ const SEQUENCE: Step[] = [
 ];
 
 function buildRegister() {
+  // Register is a factory — it must be called (see ROM.verify.test.ts).
+  const Reg = Register();
   const RegWrapper = circuit('RegWrapper', {
     inputs: { data: bus(8), we: bit },
     outputs: { q: bus(8) },
-    nodes: { r: Register },
+    nodes: { r: Reg },
     connect: ({ inputs, outputs, nodes: { r } }) => [
       inputs.data.to(r.data),
       inputs.we.to(r.we),
@@ -45,11 +47,7 @@ function buildRegister() {
 
   const lib: CircuitLibrary = {
     resolveCircuit: (name) =>
-      name === 'RegWrapper'
-        ? RegWrapper.circuit
-        : name === 'Register'
-          ? (Register.circuit as Circuit)
-          : undefined,
+      name === 'RegWrapper' ? RegWrapper.circuit : name === 'Register' ? Reg.circuit : undefined,
     getAllPrimitiveNames: () => ['Register'],
   };
 

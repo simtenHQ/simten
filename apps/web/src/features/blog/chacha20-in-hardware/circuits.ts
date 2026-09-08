@@ -147,13 +147,13 @@ export const ChaCha20QuarterRound = circuit('ChaCha20QuarterRound', {
 
 export const ARXDemo = circuit('ARXDemo', {
   nodes: {
-    a: Input({ value: 100 }),
-    b: Input({ value: 42 }),
+    a: Input({ value: 100, width: 32 }),
+    b: Input({ value: 42, width: 32 }),
     gnd: Constant({ value: 0 }),
     add: Adder({ width: 32 }),
-    sum: HexDisplay,
+    sum: HexDisplay({ width: 32 }),
     xor: BusXor({ width: 32 }),
-    xor_out: HexDisplay,
+    xor_out: HexDisplay({ width: 32 }),
   },
   connect: ({ nodes: { a, b, gnd, add, sum, xor, xor_out } }) => [
     a.out.to(add.a, xor.a),
@@ -166,11 +166,11 @@ export const ARXDemo = circuit('ARXDemo', {
 
 export const RotateDemo = circuit('RotateDemo', {
   nodes: {
-    val: Input({ value: 1 }),
+    val: Input({ value: 1, width: 32 }),
     rot16: RotateLeft16,
-    disp16: HexDisplay,
+    disp16: HexDisplay({ width: 32 }),
     rot7: RotateLeft7,
-    disp7: HexDisplay,
+    disp7: HexDisplay({ width: 32 }),
   },
   connect: ({ nodes: { val, rot16, disp16, rot7, disp7 } }) => [
     val.out.to(rot16.x, rot7.x),
@@ -181,15 +181,15 @@ export const RotateDemo = circuit('RotateDemo', {
 
 export const ARXStep = circuit('ARXStep', {
   nodes: {
-    a: Input({ value: 100 }),
-    b: Input({ value: 42 }),
-    d: Input({ value: 255 }),
+    a: Input({ value: 100, width: 32 }),
+    b: Input({ value: 42, width: 32 }),
+    d: Input({ value: 255, width: 32 }),
     gnd: Constant({ value: 0 }),
     add: Adder({ width: 32 }),
     xor: BusXor({ width: 32 }),
     rot: RotateLeft16,
-    disp_a: HexDisplay,
-    disp_d: HexDisplay,
+    disp_a: HexDisplay({ width: 32 }),
+    disp_d: HexDisplay({ width: 32 }),
   },
   connect: ({ nodes: { a, b, d, gnd, add, xor, rot, disp_a, disp_d } }) => [
     a.out.to(add.a),
@@ -204,15 +204,15 @@ export const ARXStep = circuit('ARXStep', {
 
 export const ChaCha20Demo = circuit('ChaCha20Demo', {
   nodes: {
-    in_a: Input({ value: 0x11111111 }),
-    in_b: Input({ value: 0x01020304 }),
-    in_c: Input({ value: 0x9b8d6f43 }),
-    in_d: Input({ value: 0x01234567 }),
+    in_a: Input({ value: 0x11111111, width: 32 }),
+    in_b: Input({ value: 0x01020304, width: 32 }),
+    in_c: Input({ value: 0x9b8d6f43, width: 32 }),
+    in_d: Input({ value: 0x01234567, width: 32 }),
     qr: ChaCha20QuarterRound,
-    out_a: HexDisplay,
-    out_b: HexDisplay,
-    out_c: HexDisplay,
-    out_d: HexDisplay,
+    out_a: HexDisplay({ width: 32 }),
+    out_b: HexDisplay({ width: 32 }),
+    out_c: HexDisplay({ width: 32 }),
+    out_d: HexDisplay({ width: 32 }),
   },
   connect: ({ nodes: { in_a, in_b, in_c, in_d, qr, out_a, out_b, out_c, out_d } }) => [
     in_a.out.to(qr.a),

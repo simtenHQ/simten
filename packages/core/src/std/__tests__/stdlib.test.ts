@@ -115,7 +115,7 @@ describe('stdlib circuits load', () => {
     ['Constant', Constant()],
     // Display
     ['SevenSegment', SevenSegment],
-    ['HexDisplay', HexDisplay],
+    ['HexDisplay', HexDisplay()],
     ['Screen', Screen()],
     ['RasterDisplay', RasterDisplay()],
     ['Console', Console],

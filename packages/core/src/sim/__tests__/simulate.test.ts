@@ -7,13 +7,16 @@
 
 import { afterEach, describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import type { PortMap } from '../../circuit/types.js';
 import { And, DFlipFlop, Led, Not, Or, Register, Switch, Xor } from '../../std/index.js';
 import type { SimulationHandle } from '../simulate.js';
 import { simulate } from '../simulate.js';
 
 // Track handles for cleanup
 const handles: SimulationHandle[] = [];
-function tracked<I, O>(h: SimulationHandle<I, O>): SimulationHandle<I, O> {
+function tracked<I extends PortMap, O extends PortMap>(
+  h: SimulationHandle<I, O>,
+): SimulationHandle<I, O> {
   handles.push(h as any);
   return h;
 }

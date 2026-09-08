@@ -17,9 +17,8 @@ describe('Circuit Flattener (IR v0.1)', () => {
 
   it('should keep primitive-only circuits unchanged', () => {
     const circuit: Circuit = {
-      id: 'test:simple',
+      version: 1,
       name: 'SimpleCircuit',
-      parameters: [],
       inputs: [],
       outputs: [],
       clocks: [],
@@ -74,9 +73,8 @@ describe('Circuit Flattener (IR v0.1)', () => {
 
     // Define HalfAdder as composite
     const halfAdder: Circuit = {
-      id: 'user:halfadder',
+      version: 1,
       name: 'HalfAdder',
-      parameters: [],
       inputs: [
         { name: 'a', portType: bitType() },
         { name: 'b', portType: bitType() },
@@ -162,9 +160,8 @@ describe('Circuit Flattener (IR v0.1)', () => {
 
     // Create circuit using HalfAdder
     const circuit: Circuit = {
-      id: 'test:halfadder-usage',
+      version: 1,
       name: 'HalfAdderUsage',
-      parameters: [],
       inputs: [],
       outputs: [],
       clocks: [],
@@ -247,9 +244,8 @@ describe('Circuit Flattener (IR v0.1)', () => {
 
     // Define HalfAdder
     const halfAdder: Circuit = {
-      id: 'user:halfadder',
+      version: 1,
       name: 'HalfAdder',
-      parameters: [],
       inputs: [
         { name: 'a', portType: bitType() },
         { name: 'b', portType: bitType() },
@@ -329,9 +325,8 @@ describe('Circuit Flattener (IR v0.1)', () => {
 
     // Define FullAdder using HalfAdders
     const fullAdder: Circuit = {
-      id: 'user:fulladder',
+      version: 1,
       name: 'FullAdder',
-      parameters: [],
       inputs: [
         { name: 'a', portType: bitType() },
         { name: 'b', portType: bitType() },
@@ -449,9 +444,8 @@ describe('Circuit Flattener (IR v0.1)', () => {
 
     // Create circuit using FullAdder
     const circuit: Circuit = {
-      id: 'test:fulladder-usage',
+      version: 1,
       name: 'FullAdderUsage',
-      parameters: [],
       inputs: [],
       outputs: [],
       clocks: [],
@@ -501,9 +495,8 @@ describe('Circuit Flattener (IR v0.1)', () => {
 
     // Define Counter composite with Register
     const counter: Circuit = {
-      id: 'user:counter',
+      version: 1,
       name: 'Counter',
-      parameters: [],
       inputs: [],
       outputs: [{ name: 'count', portType: bitType() }],
       clocks: [{ name: 'clk' }],
@@ -536,9 +529,8 @@ describe('Circuit Flattener (IR v0.1)', () => {
 
     // Create circuit with TWO counter instances
     const circuit: Circuit = {
-      id: 'test:dual-counter',
+      version: 1,
       name: 'DualCounter',
-      parameters: [],
       inputs: [],
       outputs: [],
       clocks: [],
@@ -587,9 +579,8 @@ describe('Circuit Flattener (IR v0.1)', () => {
 
     // Circuit with only primitives
     const primitiveCircuit: Circuit = {
-      id: 'test:primitive-only',
+      version: 1,
       name: 'PrimitiveOnly',
-      parameters: [],
       inputs: [],
       outputs: [],
       clocks: [],
@@ -615,9 +606,8 @@ describe('Circuit Flattener (IR v0.1)', () => {
 
     // Register a composite component
     const halfAdder: Circuit = {
-      id: 'user:halfadder',
+      version: 1,
       name: 'HalfAdder',
-      parameters: [],
       inputs: [
         { name: 'a', portType: bitType() },
         { name: 'b', portType: bitType() },
@@ -637,9 +627,8 @@ describe('Circuit Flattener (IR v0.1)', () => {
 
     // Circuit with composite component
     const compositeCircuit: Circuit = {
-      id: 'test:with-composite',
+      version: 1,
       name: 'WithComposite',
-      parameters: [],
       inputs: [],
       outputs: [],
       clocks: [],

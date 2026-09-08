@@ -145,7 +145,7 @@ const AdderDemo = circuit('AdderDemo', {
     a: Input({ value: 10 }),
     b: Input({ value: 5 }),
     add: Adder({ width: 8 }),
-    disp: HexDisplay,
+    disp: HexDisplay(),
   },
   connect: ({ nodes: { a, b, add, disp } }) => [
     a.out.to(add.a),

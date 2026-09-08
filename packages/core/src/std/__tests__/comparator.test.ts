@@ -20,7 +20,7 @@ const uOf = (w: number) => fc.integer({ min: 0, max: mask(w) }).map((n) => n >>>
 
 function flags(prim: BuiltCircuit, w: number, a: number, b: number): Record<string, number> {
   const wrap = circuit(`C${uid++}`, {
-    inputs: { a: bus(32), b: bus(32) } as any,
+    inputs: { a: bus(w), b: bus(w) } as any,
     outputs: { eq: 1, ne: 1, lt: 1, le: 1, gt: 1, ge: 1 } as any,
     nodes: { p: prim } as any,
     connect: ({ inputs: i, outputs: o, nodes: { p } }: any) => [
@@ -33,7 +33,7 @@ function flags(prim: BuiltCircuit, w: number, a: number, b: number): Record<stri
       p.gt.to(o.gt),
       p.ge.to(o.ge),
     ],
-  } as any);
+  });
   const sim = simulate(wrap);
   sim.set({ a, b });
   const out = {

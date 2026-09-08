@@ -173,8 +173,21 @@ export type PortOutputValues<M> = {
 };
 
 /**
- * What a `state:` field may hold as authored — number (bus), boolean (bit),
- * Map (memory), string (text buffers), or a declarative `reg()` / `mem()`.
+ * What a `state:` field may hold as authored — number (bit or bus), Map
+ * (memory), string (text buffers), or a declarative `reg()` / `mem()`.
+ *
+ * `boolean` used to be permitted here, for bits. Unlike the boolean widening on
+ * `PortOutputValues` — which is a deliberate ergonomic fix, tested in
+ * circuit/__tests__/bit-output-booleans.test.ts — this one was incoherent
+ * rather than merely redundant: declaring `state: { flag: false }` infers
+ * `S = { flag: boolean }`, which forces every `onTick` to keep RETURNING
+ * booleans, so the only way to satisfy the type was to store boolean state.
+ * Nothing declared one, and `DFlipFlop` was the sole primitive that did it —
+ * via its option type, so a grep for literals missed it.
+ *
+ * The distinction that matters: a boolean *returned from eval* is coerced to
+ * 1/0 on the way into the typed array and never stored. A boolean *in state* is
+ * stored verbatim.
  *
  * Distinct from the `StateValue` in ../types/circuit.ts, which is the same
  * concept *after* elaboration into the serialized IR: there, memory is a
@@ -184,7 +197,6 @@ export type PortOutputValues<M> = {
  */
 export type StateFieldValue =
   | number
-  | boolean
   | Map<number, number>
   | string
   | import('./bit-bus.js').RegState
@@ -192,6 +204,52 @@ export type StateFieldValue =
 
 /** State shape — plain object where each field is a state value */
 export type StateShape = Record<string, StateFieldValue>;
+
+/**
+ * The RUNTIME value of a declared state field.
+ *
+ * `reg(width)` and `mem(depth, width)` are *declarations* — they exist so the
+ * Verilog exporter knows the widths. What `eval` reads and `onTick` returns is
+ * the value they hold: a number for a reg, a Map for a mem. Without this,
+ * `state: { value: reg(8) }` typed `eval`'s `value` as `RegState`, so the only
+ * way to use it was `value as number` — a cast that does not even compile,
+ * because `RegState` and `number` do not overlap. Every declarative-state test
+ * carried one, and none of them was ever type-checked.
+ */
+/**
+ * A `mem()` field's runtime value: a Map that ALSO supports numeric index get
+ * and set, which is how every memory primitive in std actually uses it
+ * (`memory[addr]`, `memory[addr] = data_in`). `propagate.ts`'s
+ * `wrapMapForOnTick` supplies that with a Proxy, copy-on-write so a read-only
+ * ROM costs nothing per tick. Indexed reads return 0 for unset addresses
+ * rather than `undefined`, matching the Proxy's `?? 0`.
+ */
+export type MemoryAccess = Map<number, number> & Record<number, number>;
+
+export type ResolvedStateValue<T> = T extends import('./bit-bus.js').RegState
+  ? number
+  : T extends import('./bit-bus.js').MemState
+    ? MemoryAccess
+    : T;
+
+/** State shape as seen by `eval` / `onTick`, with declarations resolved. */
+export type ResolvedState<S> = { [K in keyof S]: ResolvedStateValue<S[K]> };
+
+/**
+ * What `onTick` may RETURN — deliberately looser than what it receives.
+ *
+ * A `mem()` field arrives as the index-accessible Proxy, but returning a plain
+ * `new Map(...)` is equally valid and is what a copy-on-write update naturally
+ * produces. `MemoryAccess` is assignable to `Map`, so handing back the received
+ * value works too.
+ */
+export type ResolvedStateReturnValue<T> = T extends import('./bit-bus.js').RegState
+  ? number
+  : T extends import('./bit-bus.js').MemState
+    ? Map<number, number>
+    : T;
+
+export type ResolvedStateReturn<S> = { [K in keyof S]: ResolvedStateReturnValue<S[K]> };
 
 // ============================================================================
 // Component metadata
@@ -317,7 +375,7 @@ export interface CircuitConfig<
   /** Combinational behavior — given input values (and current state), return
    *  output values. Use for primitives (gates, ALUs, decoders) whose output
    *  is a pure function of inputs. Pair with `onTick` for sequential logic. */
-  eval?: (inputs: PortValues<Ins> & S) => PortOutputValues<Outs>;
+  eval?: (inputs: PortValues<Ins> & ResolvedState<S>) => PortOutputValues<Outs>;
   /** Sequential state. Map of named state fields, each a `reg(width)` or
    *  `mem(depth, width)` declaration (for synthesizable Verilog), or a raw
    *  number / boolean / Map for simulation-only state. Read inside `eval`,
@@ -326,7 +384,7 @@ export interface CircuitConfig<
   /** Clock-edge state update — given inputs and current state, return the
    *  next state. Runs once per clock tick. Sequential components (registers,
    *  memories, counters) use this in tandem with `state`. */
-  onTick?: (inputsAndState: PortValues<Ins> & S) => S;
+  onTick?: (inputsAndState: PortValues<Ins> & ResolvedState<S>) => ResolvedStateReturn<S>;
   /** Component metadata — category, description, icon, etc. Used by the
    *  canvas component picker and by tooling. See `CircuitMeta` for fields. */
   meta?: CircuitMeta;

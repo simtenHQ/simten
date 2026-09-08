@@ -88,7 +88,7 @@ export interface CircuitEmbedProps<C extends BuiltCircuit = BuiltCircuit> {
   /** Auto-run speed (ms between ticks) */
   autoRunSpeed?: number;
   /** Initial values for input ports (set on harness Switch/Input nodes) */
-  initialInputs?: Record<string, number | boolean>;
+  initialInputs?: Record<string, number>;
   /**
    * Called when the embed's internal simulator settles on a new set of
    * port values — once on first settle, then on every subsequent settled

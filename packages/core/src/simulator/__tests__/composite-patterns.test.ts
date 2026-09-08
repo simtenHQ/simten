@@ -8,17 +8,24 @@
  *   3. Runs `assertFlatCircuitInvariants` on the elaboration output so the
  *      structural net runs on every pattern too.
  *
- * Confirmed-Fail patterns ([#143](.../issues/143), [#144](.../issues/144),
- * [#145](.../issues/145)) get a behavioural `it.fails(...)` test pinned by
- * regex to the specific throw the future fix is expected to produce. The
- * structural side is included when it's meaningful (invariant 3 catches the
- * post-stitch multi-drive shape); for the width cases the structural net does
- * not apply (width validation is a missing feature, not a structural
- * property), so the structural test is intentionally omitted there.
+ * Confirmed-Fail patterns ([#143](.../issues/143), [#144](.../issues/144)) get
+ * a behavioural `it.fails(...)` test pinned by regex to the specific throw the
+ * future fix is expected to produce. The structural side is included when it's
+ * meaningful (invariant 3 catches the post-stitch multi-drive shape); for the
+ * width cases the structural net does not apply (width validation is a
+ * connection-level rule, not a structural property), so the structural test is
+ * intentionally omitted there.
+ *
+ * #145 is no longer a Confirmed-Fail: circuit() now rejects a truncating
+ * bus(M) -> bus(N) connection outright and warns on a widening one, so those
+ * tests assert real behaviour. #144 (bit -> bus) stays deferred — crossing
+ * bit<->bus is a kind change, not a width mismatch, and remains a documented
+ * affordance (see SourcePortRef).
  */
 
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import type { SinkPortRef } from '../../circuit/types.js';
 import { simulate } from '../../sim/simulate.js';
 import { Adder, And, Constant, DFlipFlop, Not, Or, Register, Xor } from '../../std/index.js';
 import { assertFlatCircuitInvariants, elaborateBuilt } from './_invariants.js';
@@ -376,7 +383,12 @@ describe('P-multi-drive-stitch — post-stitch multi-drive silently accepted (#1
     nodes: { p: Pass },
     connect: ({ inputs, outputs, nodes: { p } }) => [
       inputs.A.to(p.x),
-      inputs.B.to(p.y), // ← driver #1 of p.y at top
+      // Deliberately invalid: `y` is Pass's OUTPUT, so driving it from outside
+      // is meaningless — and that is the point. This fixture exists to produce
+      // a multi-driven top-level output after stitching (see #143). The
+      // direction types correctly reject it, so the cast is scoped to this one
+      // line rather than weakening the callback's typing.
+      inputs.B.to(p.y as unknown as SinkPortRef), // ← driver #1 of p.y at top
       p.y.to(outputs.out), // ← p.y's downstream is outputs.out
       // After stitching, A's feedthrough through Pass ALSO drives outputs.out
       // (via the resolved feedthrough chain). Multi-drive at outputs.out.
@@ -577,14 +589,48 @@ describe('P-width-bit-bus — bit source driving bus(N) target silently accepted
   });
 });
 
-describe('P-width-mismatch — bus(M) → bus(N), M ≠ N silently accepted (#145)', () => {
-  const Bad = circuit('BadWidthMismatch', {
-    outputs: { out: bus(16) },
-    nodes: { eight: Constant({ value: 0xaa, width: 8 }) },
-    connect: ({ outputs, nodes: { eight } }) => [eight.out.to(outputs.out)],
+describe('P-width-mismatch — bus(M) → bus(N) split by direction (#145)', () => {
+  // Circuits are constructed *inside* each test: width validation runs in
+  // circuit(), so building at describe scope would throw during collection and
+  // fail the suite rather than the assertion.
+
+  it('behavioral: truncation throws, naming both widths', () => {
+    expect(() =>
+      circuit('BadWidthTruncate', {
+        outputs: { out: bus(8) },
+        nodes: { wide: Constant({ value: 0xbeef, width: 16 }) },
+        connect: ({ outputs, nodes: { wide } }) => [wide.out.to(outputs.out)],
+      }),
+    ).toThrow(/truncates.*bus\(16\).*bus\(8\)/i);
   });
-  it.fails('behavioral: elaborate(Bad) throws naming bus(M)→bus(N) mismatch — currently silent, see #145', () => {
-    expect(() => elaborateBuilt(Bad)).toThrow(/width|mismatch|bus\(\d+\)/i);
+
+  // Widening is permitted, not deferred: a port is uninterpreted `Bits` (no
+  // signedness in PortType — it lives in SignedAdder/SignedComparator/...), so
+  // a widening has exactly one meaning and nothing for the author to choose.
+  // It warns rather than throws. If signedness moves into PortType this should
+  // become an error, or vanish because the type resolves it.
+  it('behavioral: widening is allowed', () => {
+    expect(() =>
+      circuit('OkWidthWiden', {
+        outputs: { out: bus(16) },
+        nodes: { eight: Constant({ value: 0xaa, width: 8 }) },
+        connect: ({ outputs, nodes: { eight } }) => [eight.out.to(outputs.out)],
+      }),
+    ).not.toThrow();
+  });
+
+  it('behavioral: widening warns, naming both widths', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      circuit(`WidenWarns${Math.random().toString(36).slice(2)}`, {
+        outputs: { out: bus(16) },
+        nodes: { eight: Constant({ value: 0xaa, width: 8 }) },
+        connect: ({ outputs, nodes: { eight } }) => [eight.out.to(outputs.out)],
+      });
+      expect(warn).toHaveBeenCalledWith(expect.stringMatching(/widens.*bus\(8\).*bus\(16\)/i));
+    } finally {
+      warn.mockRestore();
+    }
   });
 });
 

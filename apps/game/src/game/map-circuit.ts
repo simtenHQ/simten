@@ -117,7 +117,7 @@ export function simulateMap(solved: ReadonlySet<string> = new Set()): MapState {
   });
 
   const levelIds = MAP_ROWS.flat();
-  for (const levelId of levelIds) engine.setNode(switchId(levelId), solved.has(levelId));
+  for (const levelId of levelIds) engine.setNode(switchId(levelId), solved.has(levelId) ? 1 : 0);
   engine.runCombinational();
 
   const values = new Map<string, number | boolean>();

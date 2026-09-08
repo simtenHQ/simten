@@ -16,7 +16,7 @@ import { cn } from '../../lib/utils';
 export interface PortInfo {
   index: number;
   label: string;
-  value?: boolean; // true = ON, false = OFF, undefined = not connected
+  value?: number; // nonzero = ON, 0 = OFF, undefined = not connected
 }
 
 interface ComponentTooltipProps {
@@ -177,14 +177,14 @@ interface PortRowProps {
 }
 
 function PortRow({ port }: PortRowProps) {
-  const getStateColor = (value: boolean | undefined) => {
+  const getStateColor = (value: number | undefined) => {
     if (value === undefined) {
       return 'bg-gray-300 border-gray-400';
     }
     return value ? 'bg-green-500 border-green-600' : 'bg-gray-400 border-gray-500';
   };
 
-  const getStateText = (value: boolean | undefined) => {
+  const getStateText = (value: number | undefined) => {
     if (value === undefined) {
       return null; // Don't show status for unconnected/template ports
     }
@@ -212,8 +212,8 @@ function PortRow({ port }: PortRowProps) {
             <span
               className={cn(
                 'font-medium',
-                port.value === true && 'text-green-600',
-                port.value === false && 'text-gray-600',
+                port.value !== undefined && port.value !== 0 && 'text-green-600',
+                port.value === 0 && 'text-gray-600',
               )}
             >
               {stateText}

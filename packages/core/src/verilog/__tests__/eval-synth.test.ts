@@ -29,6 +29,7 @@ function makeCtx(
 ): PrimitiveContext {
   return {
     nodeId: 'test_node',
+    resetName: 'rst_n',
     primitiveType,
     args,
     wires: {

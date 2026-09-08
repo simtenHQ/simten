@@ -376,7 +376,7 @@ const DirDecoder = circuit('Snake_DirDecoder', {
     c2: Constant({ value: 2 }), c3: Constant({ value: 3 }),
     encLeft: Mux({ width: 2 }), encDown: Mux({ width: 2 }), encRight: Mux({ width: 2 }),
     dirNow: Mux({ width: 2 }),
-    held: Register({ value: 1 }),
+    held: Register({ width: 2, value: 1 }),
   },
   connect: ({ inputs, outputs, nodes: { upCode, rightCode, downCode, leftCode, isUp, isRight, isDown, isLeft, anyUpDown, anyLeftRight, anyArrow, c0, c1, c2, c3, encLeft, encDown, encRight, dirNow, held } }) => [
     inputs.key.to(isUp.a, isRight.a, isDown.a, isLeft.a),
@@ -416,15 +416,18 @@ const SnakePlayable = circuit('SnakePlayable', {
     core: SnakeCore,
     ram: DualPortRAM({ memory: { '33': 1, '34': 1, '35': 1, '36': 1, '64': 33, '65': 34, '66': 35, '67': 36 } }),
     screen: Screen(),
+    // Screen addresses a 16-bit space; this framebuffer RAM is 256 bytes.
+    screenAddr: BitSlice({ low: 0, high: 7, width: 16 }),
   },
-  connect: ({ nodes: { keyboard, decoder, core, ram, screen } }) => [
+  connect: ({ nodes: { keyboard, decoder, core, ram, screen, screenAddr } }) => [
     keyboard.out.to(decoder.key),
     decoder.dir.to(core.dir),
     ram.outA.to(core.ram_out),
     core.ram_addr.to(ram.addrA),
     core.ram_data.to(ram.dataA),
     core.ram_we.to(ram.weA),
-    screen.addrB.to(ram.addrB),
+    screen.addrB.to(screenAddr.in),
+    screenAddr.out.to(ram.addrB),
     ram.outB.to(screen.dataIn),
   ],
 });
@@ -534,7 +537,7 @@ const RV32I_Computer = circuit('RV32I_Computer', {
     cpu: CPU,
     memory: Memory,
     console: UART_TX,
-    pc_display: HexDisplay,
+    pc_display: HexDisplay({ width: 32 }),
   },
   connect: ({ nodes: { program, cpu, memory, console: con, pc_display } }) => [
     // instruction fetch
@@ -694,7 +697,11 @@ const HackALU = circuit('HackALU', {
 const PE_Systolic = circuit('PE_Systolic', {
   inputs: { dataIn: bus(8), weightIn: bus(8), partialSumIn: bus(16), weightValid: bit },
   outputs: { dataOut: bus(8), partialSumOut: bus(16) },
-  nodes: { weightReg: Register(), mult: Multiplier, adder: Adder({ width: 16 }), psumReg: Register(), dataPipe: Register(), one: Constant({ value: 1 }), zero: Constant({ value: 0 }) },
+  // psumReg carries the 16-bit partial sum. A bare Register() defaults to 8
+  // bits, so the 16-bit adder result was silently truncated on the way in and
+  // zero-extended again on the way out to a 16-bit port — the accumulator lost
+  // the high byte of every partial sum.
+  nodes: { weightReg: Register(), mult: Multiplier, adder: Adder({ width: 16 }), psumReg: Register({ width: 16 }), dataPipe: Register(), one: Constant({ value: 1 }), zero: Constant({ value: 0 }) },
   connect: ({ inputs, outputs, nodes: { weightReg, mult, adder, psumReg, dataPipe, one, zero } }) => [
     inputs.weightIn.to(weightReg.data),
     inputs.weightValid.to(weightReg.we),
@@ -713,7 +720,7 @@ const PE_Systolic = circuit('PE_Systolic', {
 const Systolic3x3 = circuit('Systolic3x3', {
   inputs: { a00: bus(8), a01: bus(8), a02: bus(8), a10: bus(8), a11: bus(8), a12: bus(8), a20: bus(8), a21: bus(8), a22: bus(8), b00: bus(8), b01: bus(8), b02: bus(8), b10: bus(8), b11: bus(8), b12: bus(8), b20: bus(8), b21: bus(8), b22: bus(8), start: bit },
   outputs: { c00: bus(16), c01: bus(16), c02: bus(16), c10: bus(16), c11: bus(16), c12: bus(16), c20: bus(16), c21: bus(16), c22: bus(16), done: bit },
-  nodes: { pe00: PE_Systolic, pe01: PE_Systolic, pe02: PE_Systolic, pe10: PE_Systolic, pe11: PE_Systolic, pe12: PE_Systolic, pe20: PE_Systolic, pe21: PE_Systolic, pe22: PE_Systolic, zero: Constant({ value: 0 }), one: Constant({ value: 1 }), two: Constant({ value: 2 }), three: Constant({ value: 3 }), four: Constant({ value: 4 }), five: Constant({ value: 5 }), six: Constant({ value: 6 }), seven: Constant({ value: 7 }), eight: Constant({ value: 8 }), nine: Constant({ value: 9 }), counter: Register({ value: 0 }), counterInc: Incrementer, counterMux: Mux(), notDone: Comparator(), shouldAdvance: And, isCycle0: Comparator(), isCycle1: Comparator(), isCycle2: Comparator(), isCycle3: Comparator(), isCycle4: Comparator(), isCycle5: Comparator(), isCycle6: Comparator(), isCycle7: Comparator(), isCycle8: Comparator(), loadWeights: And, muxR0a: Mux(), muxR0b: Mux(), muxR0c: Mux(), muxR1a: Mux(), muxR1b: Mux(), muxR1c: Mux(), muxR2a: Mux(), muxR2b: Mux(), muxR2c: Mux(), result_c00: Register(), result_c10: Register(), result_c20: Register(), result_c01: Register(), result_c11: Register(), result_c21: Register(), result_c02: Register(), result_c12: Register(), result_c22: Register(), isDone: Comparator() },
+  nodes: { pe00: PE_Systolic, pe01: PE_Systolic, pe02: PE_Systolic, pe10: PE_Systolic, pe11: PE_Systolic, pe12: PE_Systolic, pe20: PE_Systolic, pe21: PE_Systolic, pe22: PE_Systolic, zero: Constant({ value: 0 }), one: Constant({ value: 1 }), two: Constant({ value: 2 }), three: Constant({ value: 3 }), four: Constant({ value: 4 }), five: Constant({ value: 5 }), six: Constant({ value: 6 }), seven: Constant({ value: 7 }), eight: Constant({ value: 8 }), nine: Constant({ value: 9 }), counter: Register({ value: 0 }), counterInc: Incrementer, counterMux: Mux(), notDone: Comparator(), shouldAdvance: And, isCycle0: Comparator(), isCycle1: Comparator(), isCycle2: Comparator(), isCycle3: Comparator(), isCycle4: Comparator(), isCycle5: Comparator(), isCycle6: Comparator(), isCycle7: Comparator(), isCycle8: Comparator(), loadWeights: And, muxR0a: Mux(), muxR0b: Mux(), muxR0c: Mux(), muxR1a: Mux(), muxR1b: Mux(), muxR1c: Mux(), muxR2a: Mux(), muxR2b: Mux(), muxR2c: Mux(), result_c00: Register({ width: 16 }), result_c10: Register({ width: 16 }), result_c20: Register({ width: 16 }), result_c01: Register({ width: 16 }), result_c11: Register({ width: 16 }), result_c21: Register({ width: 16 }), result_c02: Register({ width: 16 }), result_c12: Register({ width: 16 }), result_c22: Register({ width: 16 }), isDone: Comparator() },
   connect: ({ inputs, outputs, nodes: { pe00, pe01, pe02, pe10, pe11, pe12, pe20, pe21, pe22, zero, one, two, three, four, five, six, seven, eight, nine, counter, counterInc, counterMux, notDone, shouldAdvance, isCycle0, isCycle1, isCycle2, isCycle3, isCycle4, isCycle5, isCycle6, isCycle7, isCycle8, loadWeights, muxR0a, muxR0b, muxR0c, muxR1a, muxR1b, muxR1c, muxR2a, muxR2b, muxR2c, result_c00, result_c10, result_c20, result_c01, result_c11, result_c21, result_c02, result_c12, result_c22, isDone } }) => [
     counter.q.to(counterInc.in, notDone.a, counterMux.in0, isCycle0.a, isCycle1.a, isCycle2.a, isCycle3.a, isCycle4.a, isCycle5.a, isCycle6.a, isCycle7.a, isCycle8.a, isDone.a),
     nine.out.to(notDone.b, isDone.b),
@@ -797,7 +804,7 @@ const Systolic3x3 = circuit('Systolic3x3', {
 })
 
 const TestSystolic3x3 = circuit('TestSystolic3x3', {
-  nodes: { sys: Systolic3x3, a00: Input({ value: 1 }), a01: Input({ value: 2 }), a02: Input({ value: 3 }), a10: Input({ value: 4 }), a11: Input({ value: 5 }), a12: Input({ value: 6 }), a20: Input({ value: 7 }), a21: Input({ value: 8 }), a22: Input({ value: 9 }), b00: Input({ value: 2 }), b01: Input({ value: 0 }), b02: Input({ value: 1 }), b10: Input({ value: 0 }), b11: Input({ value: 2 }), b12: Input({ value: 0 }), b20: Input({ value: 1 }), b21: Input({ value: 0 }), b22: Input({ value: 2 }), start: Switch, display_c00: HexDisplay, display_c01: HexDisplay, display_c02: HexDisplay, display_c10: HexDisplay, display_c11: HexDisplay, display_c12: HexDisplay, display_c20: HexDisplay, display_c21: HexDisplay, display_c22: HexDisplay, done_led: Led },
+  nodes: { sys: Systolic3x3, a00: Input({ value: 1 }), a01: Input({ value: 2 }), a02: Input({ value: 3 }), a10: Input({ value: 4 }), a11: Input({ value: 5 }), a12: Input({ value: 6 }), a20: Input({ value: 7 }), a21: Input({ value: 8 }), a22: Input({ value: 9 }), b00: Input({ value: 2 }), b01: Input({ value: 0 }), b02: Input({ value: 1 }), b10: Input({ value: 0 }), b11: Input({ value: 2 }), b12: Input({ value: 0 }), b20: Input({ value: 1 }), b21: Input({ value: 0 }), b22: Input({ value: 2 }), start: Switch, display_c00: HexDisplay({ width: 16 }), display_c01: HexDisplay({ width: 16 }), display_c02: HexDisplay({ width: 16 }), display_c10: HexDisplay({ width: 16 }), display_c11: HexDisplay({ width: 16 }), display_c12: HexDisplay({ width: 16 }), display_c20: HexDisplay({ width: 16 }), display_c21: HexDisplay({ width: 16 }), display_c22: HexDisplay({ width: 16 }), done_led: Led },
   connect: ({ inputs, outputs, nodes: { sys, a00, a01, a02, a10, a11, a12, a20, a21, a22, b00, b01, b02, b10, b11, b12, b20, b21, b22, start, display_c00, display_c01, display_c02, display_c10, display_c11, display_c12, display_c20, display_c21, display_c22, done_led } }) => [
     a00.out.to(sys.a00),
     a01.out.to(sys.a01),
@@ -853,7 +860,7 @@ const Fibonacci = circuit('Fibonacci', {
 })
 
 const FibonacciDemo = circuit('FibonacciDemo', {
-  nodes: { fib: Fibonacci, display: HexDisplay, leds: Splitter8to8, led0: Led, led1: Led, led2: Led, led3: Led, led4: Led, led5: Led, led6: Led, led7: Led },
+  nodes: { fib: Fibonacci, display: HexDisplay(), leds: Splitter8to8, led0: Led, led1: Led, led2: Led, led3: Led, led4: Led, led5: Led, led6: Led, led7: Led },
   connect: ({ inputs, outputs, nodes: { fib, display, leds, led0, led1, led2, led3, led4, led5, led6, led7 } }) => [
     fib.fib.to(display.in, leds.in),
     leds.bit0.to(led0.in),
@@ -890,7 +897,7 @@ const Rule30Cell = circuit('Rule30Cell', {
 })
 
 const Rule30 = circuit('Rule30', {
-  nodes: { c0: DFlipFlop(), c1: DFlipFlop(), c2: DFlipFlop(), c3: DFlipFlop(), c4: DFlipFlop(), c5: DFlipFlop(), c6: DFlipFlop(), c7: DFlipFlop(), r0: Rule30Cell, r1: Rule30Cell, r2: Rule30Cell, r3: Rule30Cell, r4: Rule30Cell, r5: Rule30Cell, r6: Rule30Cell, r7: Rule30Cell, one: Constant({ value: 1 }), init: DFlipFlop(), mux4: Mux(), led0: Led, led1: Led, led2: Led, led3: Led, led4: Led, led5: Led, led6: Led, led7: Led, combine: Combiner8to8, display: HexDisplay },
+  nodes: { c0: DFlipFlop(), c1: DFlipFlop(), c2: DFlipFlop(), c3: DFlipFlop(), c4: DFlipFlop(), c5: DFlipFlop(), c6: DFlipFlop(), c7: DFlipFlop(), r0: Rule30Cell, r1: Rule30Cell, r2: Rule30Cell, r3: Rule30Cell, r4: Rule30Cell, r5: Rule30Cell, r6: Rule30Cell, r7: Rule30Cell, one: Constant({ value: 1 }), init: DFlipFlop(), mux4: Mux(), led0: Led, led1: Led, led2: Led, led3: Led, led4: Led, led5: Led, led6: Led, led7: Led, combine: Combiner8to8, display: HexDisplay() },
   connect: ({ inputs, outputs, nodes: { c0, c1, c2, c3, c4, c5, c6, c7, r0, r1, r2, r3, r4, r5, r6, r7, one, init, mux4, led0, led1, led2, led3, led4, led5, led6, led7, combine, display } }) => [
     one.out.to(init.d, mux4.in0),
     r4.next.to(mux4.in1),
@@ -971,7 +978,7 @@ const ALU = circuit('ALU', {
 })
 
 const ALUDemo = circuit('ALUDemo', {
-  nodes: { a: Input({ value: 42 }), b: Input({ value: 13 }), op0: Switch, op1: Switch, op2: Switch, alu: ALU, disp_a: HexDisplay, disp_b: HexDisplay, disp_result: HexDisplay, led_zero: Led, led_carry: Led, led_neg: Led },
+  nodes: { a: Input({ value: 42 }), b: Input({ value: 13 }), op0: Switch, op1: Switch, op2: Switch, alu: ALU, disp_a: HexDisplay(), disp_b: HexDisplay(), disp_result: HexDisplay(), led_zero: Led, led_carry: Led, led_neg: Led },
   connect: ({ inputs, outputs, nodes: { a, b, op0, op1, op2, alu, disp_a, disp_b, disp_result, led_zero, led_carry, led_neg } }) => [
     a.out.to(alu.a, disp_a.in),
     b.out.to(alu.b, disp_b.in),

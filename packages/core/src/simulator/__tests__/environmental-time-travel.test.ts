@@ -90,7 +90,7 @@ describe('environmental state time-travel', () => {
   // stayed stuck at whatever it was before rewind. This pins the mismatch.
   it('captureEnvironmentalState on a FlatCircuit silently returns empty (regression)', () => {
     const { sim, flat, library } = buildSim();
-    sim.setNode('sw', true);
+    sim.setNode('sw', 1);
     sim.tick();
 
     // FlatNode has primitiveType, not componentRef — captureEnvironmentalState
@@ -103,7 +103,7 @@ describe('environmental state time-travel', () => {
     // The correct walk (primitiveType, the pattern in our captureFlatEnv
     // helper and now in the sandbox) captures the switch state.
     const rightWay = captureFlatEnv(flat, library);
-    expect(rightWay.get('sw')).toBe(true);
+    expect(rightWay.get('sw')).toBe(1);
   });
 
   it('engine-only restore leaves stale Switch value (the bug)', () => {
@@ -115,7 +115,7 @@ describe('environmental state time-travel', () => {
       expect(qOut(sim)).toBe(false);
 
       // Flip switch ON, tick — DFF latches 1.
-      sim.setNode('sw', true);
+      sim.setNode('sw', 1);
       sim.tick();
       expect(qOut(sim)).toBe(true);
 
@@ -145,7 +145,7 @@ describe('environmental state time-travel', () => {
       expect(qOut(sim)).toBe(false);
 
       // Flip switch, tick — circuit follows a different trajectory.
-      sim.setNode('sw', true);
+      sim.setNode('sw', 1);
       sim.tick();
       expect(qOut(sim)).toBe(true);
 
@@ -170,7 +170,7 @@ describe('environmental state time-travel', () => {
         if (!interactiveArg) continue;
         const saved = envSnap.get(node.id);
         const value = saved === undefined ? 0 : saved;
-        sim.setNode(node.id, value as number | boolean);
+        sim.setNode(node.id, value as number);
       }
       sim.runCombinational();
       expect(qOut(sim)).toBe(false);
@@ -180,7 +180,7 @@ describe('environmental state time-travel', () => {
       expect(qOut(sim)).toBe(false);
 
       // And a subsequent flip + tick moves forward as expected.
-      sim.setNode('sw', true);
+      sim.setNode('sw', 1);
       sim.tick();
       expect(qOut(sim)).toBe(true);
     } finally {

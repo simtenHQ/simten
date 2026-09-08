@@ -33,7 +33,10 @@ export function simulateCircuit(params: {
   sourceName?: string;
   circuitName?: string;
   ticks?: number;
-  inputs?: Record<string, number | boolean>;
+  // Numeric: `setNode` does not coerce, and this map feeds `topLevelInputs`,
+  // which propagate.ts reads raw when building onTick's inputs. A boolean here
+  // would land in sequential state verbatim.
+  inputs?: Record<string, number>;
   memoryData?: Map<string, Map<number, number>>;
 }): SimulateResult | SimulateError {
   const ticks = params.ticks ?? 10;
@@ -74,7 +77,7 @@ export function simulateCircuit(params: {
   // Set inputs
   if (params.inputs) {
     for (const [name, value] of Object.entries(params.inputs)) {
-      simulator.setNode(name, value as BitValue | BusValue);
+      simulator.setNode(name, value);
     }
   }
 
@@ -99,7 +102,9 @@ export function simulateCircuit(params: {
     for (const name of signalNames) {
       const key = `${TOP_LEVEL_NODE}.${name}`;
       const val = result.portValues.get(key);
-      signals[name].push(val ?? (typeof val === 'boolean' ? false : 0));
+      // (The old fallback tested `typeof val === 'boolean'` on the right of
+      // `??`, where val is always nullish — it could only ever yield 0.)
+      signals[name].push(val ?? 0);
     }
   }
 

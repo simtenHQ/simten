@@ -99,7 +99,7 @@ describe('memory contents survive the round trip through generated source', () =
         inputs.addr.to(nodes.m.rd_addr_0),
         nodes.m.rd_data_0.to(outputs.data),
       ],
-    } as any) as BuiltCircuit;
+    });
 
     const source = circuitToSource(rom);
     expect(source).toMatch(/Mem\(\{ rdPorts: 1, .*store: \{/);

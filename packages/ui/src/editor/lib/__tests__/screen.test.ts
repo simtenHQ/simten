@@ -33,9 +33,8 @@ describe('Screen Integration', () => {
 
   it('should work with empty circuit (no RAM)', () => {
     const circuit: Circuit = {
-      id: 'test',
+      version: 1,
       name: 'EmptyScreenTest',
-      parameters: [],
       inputs: [],
       outputs: [],
       clocks: [],
@@ -63,9 +62,8 @@ describe('Screen Integration', () => {
 
   it('should work with RAM in circuit', () => {
     const circuit: Circuit = {
-      id: 'test',
+      version: 1,
       name: 'ScreenWithRAM',
-      parameters: [],
       inputs: [],
       outputs: [],
       clocks: [],
@@ -107,9 +105,8 @@ describe('Screen Integration', () => {
   it('should verify Screen component exists in circuit', () => {
     // Create circuit with RAM and Screen
     const circuit: Circuit = {
-      id: 'test',
+      version: 1,
       name: 'ScreenTest',
-      parameters: [],
       inputs: [],
       outputs: [],
       clocks: [],

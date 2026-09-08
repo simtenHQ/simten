@@ -119,7 +119,7 @@ const Counter = circuit('Counter', {
 })
 
 const CounterDemo = circuit('CounterDemo', {
-  nodes: { counter: Counter, display: HexDisplay },
+  nodes: { counter: Counter, display: HexDisplay() },
   connect: ({ nodes: { counter, display } }) => [
     counter.count.to(display.in),
   ],
@@ -163,7 +163,7 @@ const Fibonacci = circuit('Fibonacci', {
 })
 
 const FibonacciDemo = circuit('FibonacciDemo', {
-  nodes: { fib: Fibonacci, display: HexDisplay },
+  nodes: { fib: Fibonacci, display: HexDisplay() },
   connect: ({ nodes: { fib, display } }) => [
     fib.fib.to(display.in),
   ],

@@ -32,9 +32,8 @@ describe('Nested Sequential Components', () => {
 
     // Register the circuits so they can be instantiated as components
     const registerCircuit: Circuit = {
-      id: 'simple_reg',
+      version: 1,
       name: 'SimpleReg',
-      parameters: [],
       inputs: [{ name: 'dataIn', portType: busType(8) }],
       outputs: [{ name: 'dataOut', portType: busType(8) }],
       clocks: [{ name: 'clk' }],
@@ -90,9 +89,8 @@ describe('Nested Sequential Components', () => {
     };
 
     const counterCircuit: Circuit = {
-      id: 'simple_counter',
+      version: 1,
       name: 'SimpleCounter',
-      parameters: [],
       inputs: [],
       outputs: [{ name: 'count', portType: busType(8) }],
       clocks: [{ name: 'clk' }],
@@ -192,9 +190,8 @@ describe('Nested Sequential Components', () => {
   it('should handle a simple register in a nested circuit', () => {
     // Create a wrapper circuit that instantiates the register circuit (registered in beforeAll)
     const wrapperCircuit: Circuit = {
-      id: 'wrapper',
+      version: 1,
       name: 'Wrapper',
-      parameters: [],
       inputs: [{ name: 'input', portType: busType(8) }],
       outputs: [{ name: 'output', portType: busType(8) }],
       clocks: [{ name: 'clk' }],
@@ -262,9 +259,8 @@ describe('Nested Sequential Components', () => {
   it('should handle a counter with feedback in a nested circuit', () => {
     // Wrapper circuit that instantiates the counter (registered in beforeAll)
     const wrapperCircuit: Circuit = {
-      id: 'wrapper',
+      version: 1,
       name: 'CounterWrapper',
-      parameters: [],
       inputs: [],
       outputs: [{ name: 'count', portType: busType(8) }],
       clocks: [{ name: 'clk' }],

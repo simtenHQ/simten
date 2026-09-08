@@ -16,7 +16,7 @@ const uOf = (w: number) => fc.integer({ min: 0, max: mask(w) }).map((n) => n >>>
 
 function sshr(width: number, value: number, shift: number): number {
   const w = circuit(`S${uid++}`, {
-    inputs: { value: bus(32), shift: bus(32) } as any,
+    inputs: { value: bus(width), shift: bus(width) } as any,
     outputs: { result: bus(width) } as any,
     nodes: { p: SignedRightShifter({ width }) } as any,
     connect: ({ inputs: i, outputs: o, nodes: { p } }: any) => [
@@ -24,7 +24,7 @@ function sshr(width: number, value: number, shift: number): number {
       i.shift.to(p.shift),
       p.result.to(o.result),
     ],
-  } as any);
+  });
   const sim = simulate(w);
   sim.set({ value, shift });
   const out = sim.get('result') >>> 0;

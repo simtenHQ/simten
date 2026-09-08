@@ -93,8 +93,8 @@ export const ForwardingMux = circuit('ForwardingMux', {
   inputs: { reg_val: bus(32), ex_val: bus(32), mem_val: bus(32), sel: bus(2) },
   outputs: { out: bus(32) },
   nodes: {
-    bit0: BitSlice({ low: 0, high: 0 }),
-    bit1: BitSlice({ low: 1, high: 1 }),
+    bit0: BitSlice({ low: 0, high: 0, width: 2 }),
+    bit1: BitSlice({ low: 1, high: 1, width: 2 }),
     mux1: Mux({ width: 32 }),
     mux2: Mux({ width: 32 }),
   },
@@ -120,8 +120,8 @@ export const SimpleALU = circuit('SimpleALU', {
     or_gate: BusOr({ width: 8 }),
     mux_lo: Mux({ width: 8 }),
     mux_hi: Mux({ width: 8 }),
-    op0: BitSlice({ low: 0, high: 0 }),
-    op1: BitSlice({ low: 1, high: 1 }),
+    op0: BitSlice({ low: 0, high: 0, width: 2 }),
+    op1: BitSlice({ low: 1, high: 1, width: 2 }),
     mux_final: Mux({ width: 8 }),
   },
   connect: ({

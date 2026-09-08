@@ -151,7 +151,7 @@ export const DemoRAM = circuit('DemoRAM', {
     data_in: Input(),
     we: Switch,
     mem: RAM(),
-    data_out: HexDisplay,
+    data_out: HexDisplay(),
   },
   connect: ({ nodes: { addr, data_in, we, mem, data_out } }) => [
     addr.out.to(mem.addr),

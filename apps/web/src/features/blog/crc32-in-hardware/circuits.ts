@@ -78,7 +78,7 @@ export const CRC32ByteDemo = circuit('CRC32ByteDemo', {
     data: Input({ value: 49 }), // ASCII '1', first byte of "123456789"
     crcReg: Register({ value: 0xff }), // CRC-32 initialises to 0xFFFFFFFF; we track low byte
     step: CRC32Step,
-    display: HexDisplay,
+    display: HexDisplay(),
     we: Constant({ value: 1 }),
   },
   connect: ({ nodes: { data, crcReg, step, display, we } }) => [

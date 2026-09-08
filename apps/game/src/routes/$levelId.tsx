@@ -31,6 +31,7 @@ import { createFileRoute, Link, notFound } from '@tanstack/react-router';
 import { Network, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DesktopOnly } from '../components/DesktopOnly';
+import { GitHubLink } from '../components/GitHubLink';
 import { HeaderBar } from '../components/HeaderBar';
 import { LevelComplete } from '../components/LevelComplete';
 import { LevelIntro } from '../components/LevelIntro';
@@ -446,6 +447,7 @@ function PlayLevel({ level }: { level: Level }) {
           >
             {submitting ? 'Checking…' : 'Submit'}
           </button>
+          <GitHubLink />
           <ThemeToggle />
         </div>
       </HeaderBar>

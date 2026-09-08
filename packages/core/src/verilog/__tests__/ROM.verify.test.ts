@@ -39,10 +39,15 @@ const ROM_CONTENTS: Array<[number, number]> = [
 const READ_SEQUENCE: number[] = [0x0000, 0x0001, 0x0002, 0x0003, 0x0010, 0x0011, 0x0020, 0x0005];
 
 function buildRom() {
+  // `ROM` is a factory — it must be called. Passing it uncalled left
+  // `Rom.circuit` undefined, so this file would have thrown on the first line
+  // that touched it. It never did, because the suite is `describe.skipIf`'d on
+  // the verifier container being up, so these tests have not run.
+  const Rom = ROM();
   const RomWrapper = circuit('RomWrapper', {
     inputs: { addr: bus(16) },
     outputs: { data_out: bus(8) },
-    nodes: { r: ROM },
+    nodes: { r: Rom },
     connect: ({ inputs, outputs, nodes: { r } }) => [
       inputs.addr.to(r.addr),
       r.data_out.to(outputs.data_out),
@@ -54,10 +59,10 @@ function buildRom() {
   // exporter's collectStateInits reads this at export time; the
   // simulator's initializer reads it at sim start.
   const romDefWithData: Circuit = {
-    ...ROM.circuit,
+    ...Rom.circuit,
     state: [
       {
-        ...ROM.circuit.state[0],
+        ...Rom.circuit.state[0],
         initialValue: {
           data: new Map<number, number>(ROM_CONTENTS),
           addressWidth: 16,

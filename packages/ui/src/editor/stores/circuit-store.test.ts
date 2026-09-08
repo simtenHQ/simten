@@ -23,9 +23,8 @@ describe('CircuitStore', () => {
 
     // Add a simple AND gate primitive for testing
     library.addCircuit({
-      id: 'primitive_and',
+      version: 1,
       name: 'And',
-      parameters: [],
       inputs: [
         { name: 'a', portType: bitType() },
         { name: 'b', portType: bitType() },
@@ -40,9 +39,8 @@ describe('CircuitStore', () => {
 
     // Add a simple LED output for testing
     library.addCircuit({
-      id: 'primitive_led',
+      version: 1,
       name: 'Led',
-      parameters: [],
       inputs: [{ name: 'in', portType: bitType() }],
       outputs: [],
       clocks: [],
@@ -58,9 +56,8 @@ describe('CircuitStore', () => {
       const store = useCircuitStore.getState();
 
       const testCircuit: Circuit = {
-        id: 'test1',
+        version: 1,
         name: 'TestCircuit',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -78,9 +75,8 @@ describe('CircuitStore', () => {
       const store = useCircuitStore.getState();
 
       const testCircuit: Circuit = {
-        id: 'test1',
+        version: 1,
         name: 'TestCircuit',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -104,9 +100,8 @@ describe('CircuitStore', () => {
 
       // Create an empty circuit for testing
       const testCircuit: Circuit = {
-        id: 'test1',
+        version: 1,
         name: 'TestCircuit',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -187,9 +182,8 @@ describe('CircuitStore', () => {
 
       // Create an empty circuit for testing
       const testCircuit: Circuit = {
-        id: 'test1',
+        version: 1,
         name: 'TestCircuit',
-        parameters: [],
         inputs: [],
         outputs: [],
         clocks: [],
@@ -328,9 +322,8 @@ describe('CircuitStore', () => {
 
       // Add a bus component
       library.addCircuit({
-        id: 'primitive_bus_source',
+        version: 1,
         name: 'BusSource',
-        parameters: [],
         inputs: [],
         outputs: [{ name: 'out', portType: busType(8) }],
         clocks: [],

@@ -39,31 +39,32 @@ export const SevenSegment = circuit('SevenSegment', {
 });
 
 /**
- * Hexadecimal display. Renders an 8-bit input as a two-digit hex byte on
- * the canvas. Simulation-only peripheral — not synthesizable to Verilog.
+ * Hexadecimal display. Renders its input as hex digits on the canvas.
+ * Simulation-only peripheral — not synthesizable to Verilog.
  *
- * **Input:** `in` — `bus(8)`
+ * **Input:** `in` — `bus(width)`, default `bus(8)`. Pass `width` for wider
+ * values; a 16-bit value in a default display loses its high byte.
  *
  * **Example:**
  * ```ts
  * circuit('ByteDisplay', {
  *   inputs:  { value: bus(8) },
- *   nodes:   { hex: HexDisplay },
+ *   nodes:   { hex: HexDisplay() },
  *   connect: ({ inputs, nodes: { hex } }) => [
  *     inputs.value.to(hex.in),
  *   ],
  * })
  * ```
  */
-export const HexDisplay = circuit('HexDisplay', {
-  inputs: { in: bus(8) },
+export const HexDisplay = circuit('HexDisplay', ({ width = 8 }: { width?: number } = {}) => ({
+  inputs: { in: bus(width) },
   meta: {
     category: 'display',
     icon: '0xFF',
     description: 'Hexadecimal display',
     synthesizable: false,
   },
-});
+}));
 
 /**
  * Pixel display. Memory-mapped framebuffer — wire its `addrB` port to the

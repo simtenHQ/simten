@@ -18,7 +18,7 @@ export const RV32I_Board = circuit('RV32I_Board', {
     uart: UART_TX,
     zero32: Constant({ value: 0, width: 32 }),
     zero1: Constant({ value: 0, width: 1 }),
-    pc_display: HexDisplay,
+    pc_display: HexDisplay({ width: 32 }),
   },
   connect: ({ nodes: { cpu, rom, mem_bus, dmem, uart, zero32, zero1, pc_display } }) => [
     cpu.instr_addr.to(rom.addrA),

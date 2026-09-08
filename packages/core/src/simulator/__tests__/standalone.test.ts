@@ -21,6 +21,7 @@ import {
 // Define test circuits using only core types (no store dependencies)
 function createTestPrimitives(): Circuit[] {
   const andGate: Circuit = {
+    version: 1,
     name: 'And',
 
     inputs: [
@@ -37,6 +38,7 @@ function createTestPrimitives(): Circuit[] {
   };
 
   const orGate: Circuit = {
+    version: 1,
     name: 'Or',
 
     inputs: [
@@ -53,6 +55,7 @@ function createTestPrimitives(): Circuit[] {
   };
 
   const notGate: Circuit = {
+    version: 1,
     name: 'Not',
 
     inputs: [{ name: 'in', portType: bitType() }],
@@ -66,6 +69,7 @@ function createTestPrimitives(): Circuit[] {
   };
 
   const switchPrim: Circuit = {
+    version: 1,
     name: 'Switch',
 
     inputs: [],
@@ -79,6 +83,7 @@ function createTestPrimitives(): Circuit[] {
   };
 
   const register: Circuit = {
+    version: 1,
     name: 'Register',
 
     inputs: [
@@ -114,7 +119,7 @@ describe('Core Simulator Standalone', () => {
 
     // Create a simple AND gate circuit
     const circuit: Circuit = {
-      id: 'test:simple-and',
+      version: 1,
       name: 'SimpleAnd',
 
       inputs: [
@@ -190,7 +195,7 @@ describe('Core Simulator Standalone', () => {
     const library = createCircuitLibrary(primitives);
 
     const circuit: Circuit = {
-      id: 'test:switch-and',
+      version: 1,
       name: 'SwitchAnd',
 
       inputs: [],
@@ -252,7 +257,7 @@ describe('Core Simulator Standalone', () => {
     const flatCircuit = elaborate(circuit, library);
     const sim = createSimulator(flatCircuit, { componentLibrary: library });
 
-    // Both switches are true, so AND should output true
+    // Both switches are on, so AND should output 1
     const result = sim.runCombinational();
 
     // Find the AND gate output in the port values
@@ -261,7 +266,7 @@ describe('Core Simulator Standalone', () => {
     );
 
     expect(andOutput).toBeDefined();
-    expect(andOutput![1]).toBe(true);
+    expect(andOutput![1]).toBe(1);
   });
 
   // Removed: "should support sequential simulation API without browser

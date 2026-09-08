@@ -157,7 +157,9 @@ function InspectorCanvas({
     (nodeId: string) => {
       const outKey = `${nodeId}.out`;
       const currentValue = portValues.get(outKey);
-      sandbox.setNode(nodeId, !currentValue as number | boolean, slotId).then((result) => {
+      // Port values are numeric; toggling is arithmetic. Preserves the old
+      // `!currentValue` semantics, including undefined → 1.
+      sandbox.setNode(nodeId, currentValue ? 0 : 1, slotId).then((result) => {
         if ('error' in result) return;
         const pvMap = new Map<string, BitValue | BusValue>();
         for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
@@ -281,7 +283,7 @@ function InspectorCanvas({
       <CircuitCanvas
         circuit={viewCircuit}
         componentLibrary={library}
-        portValues={portValues as Map<string, boolean | number>}
+        portValues={portValues}
         sequentialState={null}
         onToggleNode={handleToggle}
         onSetNodeValue={handleNumericChange}

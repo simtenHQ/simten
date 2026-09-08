@@ -257,8 +257,8 @@ export const Concat = circuit(
  * canvas inspector or by passing arguments to the node when used in a
  * larger circuit.
  *
- * **Input:** `in` — `bus(8)`
- * **Output:** `out` — `bus(8)`
+ * **Input:** `in` — `bus(width)`, defaulting to `bus(max(8, high + 1))`
+ * **Output:** `out` — `bus(high - low + 1)`
  *
  * **Example:**
  * ```ts
@@ -273,21 +273,40 @@ export const Concat = circuit(
  * })
  * ```
  */
-export const BitSlice = circuit('BitSlice', (_opts?: { low?: number; high?: number }) => ({
-  inputs: { in: bus(8) },
-  outputs: { out: bus(8) },
-  meta: { category: 'utilities', icon: '[]', description: 'Extract bits [low..high] from input' },
-  // `low` / `high` come from node.arguments via the bridge merge — must be
-  // read from inputs at eval time, not closed over (factory args bake one
-  // pair into the registered closure regardless of per-instance values).
-  eval: ({ in: val, low = 0, high = 7 }) => {
-    const lo = low as number;
-    const hi = high as number;
-    const numBits = hi - lo + 1;
-    const mask = numBits >= 32 ? 0xffffffff : (1 << numBits) - 1;
-    return { out: ((val as number) >> lo) & mask };
-  },
-}));
+export const BitSlice = circuit(
+  'BitSlice',
+  (opts?: { low?: number; high?: number; width?: number }) => ({
+    // The input must be wide enough to contain the bit being asked for. This was
+    // hardcoded `bus(8)`, so `BitSlice({ low: 15, high: 15 })` declared an 8-bit
+    // wire and read a bit that does not exist in it — simulation happened to work
+    // (values live in an Int32Array, so the high byte survives regardless), but
+    // the exported Verilog wire was genuinely 8 bits wide. The Hack ALU's `ng`
+    // flag reads bit 15 through exactly this.
+    //
+    // Port widths are structural, so they are baked at factory-call time from
+    // `opts` — unlike `low`/`high` in `eval` below, which must come from
+    // node.arguments so per-instance values are not closed over.
+    inputs: { in: bus(opts?.width ?? Math.max(8, (opts?.high ?? 7) + 1)) },
+    // `out` carries exactly the bits the slice extracts. This was hardcoded
+    // `bus(8)`, which made every narrow slice declare an 8-bit result: the eval
+    // already masks to `high - low + 1`, so the extra bits were always zero, but
+    // the declared width was a lie that width validation would flag (e.g. a
+    // 2-bit slice feeding a `bus(2)` register read as bus(8) -> bus(2)).
+    // A bare `BitSlice` is still 8 bits wide: high=7, low=0 -> 8.
+    outputs: { out: bus(Math.max(1, (opts?.high ?? 7) - (opts?.low ?? 0) + 1)) },
+    meta: { category: 'utilities', icon: '[]', description: 'Extract bits [low..high] from input' },
+    // `low` / `high` come from node.arguments via the bridge merge — must be
+    // read from inputs at eval time, not closed over (factory args bake one
+    // pair into the registered closure regardless of per-instance values).
+    eval: ({ in: val, low = 0, high = 7 }) => {
+      const lo = low as number;
+      const hi = high as number;
+      const numBits = hi - lo + 1;
+      const mask = numBits >= 32 ? 0xffffffff : (1 << numBits) - 1;
+      return { out: ((val as number) >> lo) & mask };
+    },
+  }),
+);
 
 /**
  * Combines two 8-bit buses into 16-bit. `hi` is the high byte, `lo` is

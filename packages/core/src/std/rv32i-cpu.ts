@@ -179,7 +179,9 @@ const RV32I_ID_Stage = circuit('RV32I_ID_Stage', ({ debug = false }: { debug?: b
       decode: RV32I_Decode,
       immgen: RV32I_ImmGen,
       control: RV32I_Control,
-      funct7_splitter: BitSlice({ low: 5, high: 5 }),
+      // funct7 is 7 bits wide; without an explicit width the slice would
+      // declare an 8-bit input and mismatch.
+      funct7_splitter: BitSlice({ low: 5, high: 5, width: 7 }),
       regfile: RV32I_RegisterFile,
       hazard_decode: RV32I_Decode,
       wb_bypass1: RV32I_WBBypass,
@@ -504,12 +506,12 @@ const RV32I_EX_Stage = circuit('RV32I_EX_Stage', () => ({
   },
   nodes: {
     zero32: Constant({ value: 0, width: 32 }),
-    fwd_a_bit0: BitSlice({ low: 0, high: 0 }),
-    fwd_a_bit1: BitSlice({ low: 1, high: 1 }),
+    fwd_a_bit0: BitSlice({ low: 0, high: 0, width: 2 }),
+    fwd_a_bit1: BitSlice({ low: 1, high: 1, width: 2 }),
     fwd_a_mux1: Mux({ width: 32 }),
     fwd_a_mux2: Mux({ width: 32 }),
-    fwd_b_bit0: BitSlice({ low: 0, high: 0 }),
-    fwd_b_bit1: BitSlice({ low: 1, high: 1 }),
+    fwd_b_bit0: BitSlice({ low: 0, high: 0, width: 2 }),
+    fwd_b_bit1: BitSlice({ low: 1, high: 1, width: 2 }),
     fwd_b_mux1: Mux({ width: 32 }),
     fwd_b_mux2: Mux({ width: 32 }),
     alu_src_mux: Mux({ width: 32 }),
@@ -706,7 +708,7 @@ const RV32I_MEMWB_Regs = circuit('RV32I_MEMWB_Regs', () => ({
   },
   nodes: {
     one1: Constant({ value: 1, width: 1 }),
-    lo2: BitSlice({ low: 0, high: 1 }),
+    lo2: BitSlice({ low: 0, high: 1, width: 32 }),
     alu_result: Register({ width: 32 }),
     load_data: Register({ width: 32 }),
     byte_offset: Register({ width: 2 }),

@@ -7,7 +7,8 @@ export interface PortConfig {
   index: number;
   type: 'input' | 'output';
   connected?: boolean;
-  value?: boolean;
+  /** Numeric port value: 0/1 for bits, full value for buses. Undefined = not driven. */
+  value?: number;
 }
 
 export interface BaseNodeProps {
@@ -135,8 +136,11 @@ export function BaseNode({
                 port.connected
                   ? 'bg-green-500 border-green-600'
                   : 'bg-[var(--embed-bg-tertiary)] border-[var(--embed-border-node)]',
-                port.value === true && 'bg-green-500 border-green-600',
-                port.value === false && 'bg-gray-300 border-gray-400',
+                // Values are numeric (0/1 for bits, full value for buses).
+                // These were `=== true` / `=== false` against a `boolean`-typed
+                // field that has always carried numbers at runtime.
+                port.value !== undefined && port.value !== 0 && 'bg-green-500 border-green-600',
+                port.value === 0 && 'bg-gray-300 border-gray-400',
                 unconnected && 'border-green-400',
                 onPortClick && 'cursor-pointer hover:scale-150',
                 'hover:bg-green-300 hover:border-green-500',

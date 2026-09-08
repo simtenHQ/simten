@@ -1,0 +1,18 @@
+// Typecheck-only config: the same sources as the build, PLUS the tests.
+//
+// tsconfig.json excludes tests because `tsc -b` would otherwise emit them into
+// dist. Vitest does not typecheck — it strips types with esbuild — so without
+// this config no test file in the package is ever type-checked at all.
+//
+// `composite`/`declaration` are off because they are incompatible with --noEmit.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules", "dist"]
+}

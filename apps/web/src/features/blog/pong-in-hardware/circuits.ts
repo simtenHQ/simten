@@ -40,8 +40,8 @@ const BallPosition = circuit('BallPosition', {
     wrapX: BitSlice({ low: 0, high: 3 }),
     wrapY: BitSlice({ low: 0, high: 3 }),
     enable: Switch,
-    displayX: HexDisplay,
-    displayY: HexDisplay,
+    displayX: HexDisplay(),
+    displayY: HexDisplay(),
   },
   connect: ({
     nodes: { ballX, ballY, dx, dy, nextX, nextY, wrapX, wrapY, enable, displayX, displayY },
@@ -70,7 +70,7 @@ const BounceDetection = circuit('BounceDetection', {
     one: Constant({ value: 1 }),
     minus1: Constant({ value: 255 }),
     newDY: Mux({ width: 8 }),
-    display: HexDisplay,
+    display: HexDisplay(),
   },
   connect: ({
     nodes: {
@@ -115,8 +115,8 @@ const PaddleMovement = circuit('PaddleMovement', {
     newY: Adder(),
     wrapY: BitSlice({ low: 0, high: 3 }),
     enable: Switch,
-    display: HexDisplay,
-    deltaDisplay: HexDisplay,
+    display: HexDisplay(),
+    deltaDisplay: HexDisplay(),
   },
   connect: ({
     nodes: {
@@ -165,7 +165,7 @@ const PhaseCounter14 = circuit('PhaseCounter14', {
     atFourteen: Comparator(),
     nextPhase: Mux({ width: 8 }),
     enable: Switch,
-    display: HexDisplay,
+    display: HexDisplay(),
     drawThreshold: Constant({ value: 6 }),
     isDrawPhase: Comparator(),
     drawLed: Led,
@@ -206,7 +206,7 @@ const PixelAddress = circuit('PixelAddress', {
     four: Input({ value: 4 }),
     y16: LeftShifter(),
     addr: Adder(),
-    result: HexDisplay,
+    result: HexDisplay(),
   },
   connect: ({ nodes: { x, y, four, y16, addr, result } }) => [
     y.out.to(y16.value),
@@ -446,15 +446,17 @@ export const PongSimple = circuit('PongSimple', {
     shouldUpdate: And,
     ballSpeedCounter: Register({ width: 2 }),
     ballSpeedInc: Adder({ width: 2 }),
-    ballSpeedOne: Input({ value: 1 }),
+    ballSpeedOne: Input({ value: 1, width: 2 }),
     ballSpeedLimit: Comparator({ width: 2 }),
-    ballSpeedMax: Input({ value: 2 }),
+    ballSpeedMax: Input({ value: 2, width: 2 }),
     ballSpeedNext: Mux({ width: 2 }),
-    ballSpeedZero: Input({ value: 0 }),
+    ballSpeedZero: Input({ value: 0, width: 2 }),
     isBallTick: Comparator({ width: 2 }),
     shouldUpdateBall: And,
     wrappedBallX: BitSlice({ low: 0, high: 3 }),
     wrappedBallY: BitSlice({ low: 0, high: 3 }),
+    // Screen scans a 16-bit address space; this framebuffer RAM holds 256 bytes.
+    screenAddr: BitSlice({ low: 0, high: 7, width: 16 }),
     leftYOver: Comparator(),
     leftYNeg: Comparator(),
     leftYClamped1: Mux({ width: 8 }),
@@ -629,6 +631,7 @@ export const PongSimple = circuit('PongSimple', {
       shouldUpdateBall,
       wrappedBallX,
       wrappedBallY,
+      screenAddr,
       leftYOver,
       leftYNeg,
       leftYClamped1,
@@ -674,7 +677,8 @@ export const PongSimple = circuit('PongSimple', {
       writeEnable,
     },
   }) => [
-    screen.addrB.to(ram.addrB),
+    screen.addrB.to(screenAddr.in),
+    screenAddr.out.to(ram.addrB),
     ram.outB.to(screen.dataIn),
     phaseCounter.q.to(
       phaseIncrement.a,

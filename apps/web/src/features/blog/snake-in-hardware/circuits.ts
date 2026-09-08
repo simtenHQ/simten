@@ -34,10 +34,13 @@ const SimpleFramebuffer = circuit('SimpleFramebuffer', {
     addr: Input(),
     data_in: Input(),
     we: Switch,
-    readback: HexDisplay,
+    readback: HexDisplay(),
+    // Screen scans a 16-bit address space; this RAM holds 256 bytes.
+    screenAddr: BitSlice({ low: 0, high: 7, width: 16 }),
   },
-  connect: ({ nodes: { ram, screen, addr, data_in, we, readback } }) => [
-    screen.addrB.to(ram.addrB),
+  connect: ({ nodes: { ram, screen, addr, data_in, we, readback, screenAddr } }) => [
+    screen.addrB.to(screenAddr.in),
+    screenAddr.out.to(ram.addrB),
     ram.outB.to(screen.dataIn),
     addr.out.to(ram.addrA),
     data_in.out.to(ram.dataA),
@@ -53,7 +56,7 @@ const CoordToPixel = circuit('CoordToPixel', {
     three: Input({ value: 3 }),
     y8: LeftShifter(),
     addr: Adder(),
-    result: HexDisplay,
+    result: HexDisplay(),
   },
   connect: ({ nodes: { x, y, three, y8, addr, result } }) => [
     y.out.to(y8.value),
@@ -82,8 +85,8 @@ const DirectionDecoder = circuit('DirectionDecoder', {
     deltaX: Mux(),
     deltaYTemp: Mux(),
     deltaY: Mux(),
-    displayDX: HexDisplay,
-    displayDY: HexDisplay,
+    displayDX: HexDisplay(),
+    displayDY: HexDisplay(),
   },
   connect: ({
     nodes: {
@@ -152,12 +155,14 @@ const PixelMover = circuit('PixelMover', {
     nextY: Adder(),
     wrapX: BitSlice({ low: 0, high: 2 }),
     wrapY: BitSlice({ low: 0, high: 2 }),
+    // Screen scans a 16-bit address space; this RAM holds 256 bytes.
+    screenAddr: BitSlice({ low: 0, high: 7, width: 16 }),
     enable: Switch,
     shiftAmt: Constant({ value: 3 }),
     y8: LeftShifter(),
     pixelAddr: Adder(),
-    displayX: HexDisplay,
-    displayY: HexDisplay,
+    displayX: HexDisplay(),
+    displayY: HexDisplay(),
   },
   connect: ({
     nodes: {
@@ -185,6 +190,7 @@ const PixelMover = circuit('PixelMover', {
       nextY,
       wrapX,
       wrapY,
+      screenAddr,
       enable,
       shiftAmt,
       y8,
@@ -193,7 +199,8 @@ const PixelMover = circuit('PixelMover', {
       displayY,
     },
   }) => [
-    screen.addrB.to(ram.addrB),
+    screen.addrB.to(screenAddr.in),
+    screenAddr.out.to(ram.addrB),
     ram.outB.to(screen.dataIn),
     keyboard.out.to(isUp.a, isDown.a, isLeft.a, isRight.a),
     upCode.out.to(isUp.b),
@@ -242,7 +249,7 @@ const PhaseDemo = circuit('PhaseDemo', {
     led1: Led,
     led2: Led,
     led3: Led,
-    display: HexDisplay,
+    display: HexDisplay(),
   },
   connect: ({
     nodes: {
@@ -293,7 +300,7 @@ const CollisionDetector = circuit('CollisionDetector', {
     zero: Constant({ value: 0 }),
     one: Constant({ value: 1 }),
     growMux: Mux(),
-    growDisplay: HexDisplay,
+    growDisplay: HexDisplay(),
   },
   connect: ({
     nodes: {

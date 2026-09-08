@@ -21,9 +21,12 @@ const sext = (v: number, w: number) => (v >>> 0 >= 2 ** (w - 1) ? (v >>> 0) - 2 
 
 /** Evaluate a combinational primitive with inputs {a,b?,s?}, return `out`. */
 function run(prim: BuiltCircuit, outW: number, ins: { a: number; b?: number; s?: number }): number {
-  const inputs: Record<string, ReturnType<typeof port>> = { a: port(32) };
-  if (ins.b !== undefined) inputs.b = port(32);
-  if (ins.s !== undefined) inputs.s = port(32);
+  // Mirror the primitive's own port widths; a fixed 32 would mismatch narrower parts.
+  const portOf = (name: string) =>
+    prim.circuit.inputs.find((p) => p.name === name)?.portType ?? port(32);
+  const inputs: Record<string, ReturnType<typeof port>> = { a: portOf('a') };
+  if (ins.b !== undefined) inputs.b = portOf('b');
+  if (ins.s !== undefined) inputs.s = portOf('s');
   const w = circuit(`W${uid++}`, {
     inputs: inputs as any,
     outputs: { out: port(outW) } as any,
@@ -34,7 +37,7 @@ function run(prim: BuiltCircuit, outW: number, ins: { a: number; b?: number; s?:
       if (ins.s !== undefined) c.push(i.s.to(p.s));
       return c;
     },
-  } as any);
+  });
   const sim = simulate(w);
   const set: Record<string, number> = { a: ins.a };
   if (ins.b !== undefined) set.b = ins.b;
@@ -177,7 +180,7 @@ describe('rtl dlatch (level-sensitive)', () => {
         i.d.to(p.d),
         p.q.to(o.q),
       ],
-    } as any);
+    });
     const sim = simulate(W);
     sim.set({ en: 1, d: 0xab });
     sim.tick();
@@ -201,7 +204,7 @@ describe('rtl dlatch (level-sensitive)', () => {
         i.d.to(p.d),
         p.q.to(o.q),
       ],
-    } as any);
+    });
     const sim = simulate(W);
     sim.set({ en: 0, d: 0x42 });
     sim.tick();
@@ -240,7 +243,7 @@ describe('rtl mem (multi-port, per-bit write enable)', () => {
       p.rd_data_0.to(o.rd0),
       p.rd_data_1.to(o.rd1),
     ],
-  } as any);
+  });
 
   it('writes then reads back; per-bit enable; independent ports', () => {
     const sim = simulate(W);
@@ -276,7 +279,7 @@ describe('rtl pmux (one-hot, per-lane candidates)', () => {
         i.b1.to(p.b_1),
         p.out.to(o.out),
       ],
-    } as any);
+    });
     const sim = simulate(W);
     const ev = (a: number, s: number, b0: number, b1: number) => {
       sim.set({ a, s, b0, b1 });

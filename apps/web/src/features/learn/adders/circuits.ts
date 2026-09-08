@@ -70,7 +70,7 @@ const RippleCarryDemo = circuit('RippleCarry8', {
     bBit: Array.from({ length: 8 }, (_, i) => Slice({ inWidth: 8, offset: i, width: 1 })),
     fa: Array.from({ length: 8 }, () => FullAdder),
     join: Array.from({ length: 7 }, (_, i) => Concat({ hiWidth: 1, loWidth: i + 1 })),
-    sum: HexDisplay,
+    sum: HexDisplay(),
     cout: Led,
   },
   connect: ({ nodes: { a, b, zero, aBit, bBit, fa, join, sum, cout } }) => [

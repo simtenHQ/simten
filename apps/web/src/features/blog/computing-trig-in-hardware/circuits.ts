@@ -31,7 +31,7 @@ export const RightShiftDemo = circuit('RightShiftDemo', {
     value: Input({ value: 80 }),
     shift: Input({ value: 1 }),
     shifter: RightShifter(),
-    result: HexDisplay,
+    result: HexDisplay(),
   },
   connect: ({ nodes: { value, shift, shifter, result } }) => [
     value.out.to(shifter.value),
@@ -51,8 +51,8 @@ export const RotationStep = circuit('RotationStep', {
     yNeg: BusNot(),
     xMinusY: SignedAdder,
     xPlusY: SignedAdder,
-    displaySub: HexDisplay,
-    displayAdd: HexDisplay,
+    displaySub: HexDisplay(),
+    displayAdd: HexDisplay(),
   },
   connect: ({
     nodes: { x, y, shift, one, zero, yShifted, yNeg, xMinusY, xPlusY, displaySub, displayAdd },
@@ -78,7 +78,7 @@ export const SignDetection = circuit('SignDetection', {
     addVal: Constant({ value: 10 }),
     subVal: Constant({ value: 246 }),
     result: Mux(),
-    display: HexDisplay,
+    display: HexDisplay(),
   },
   connect: ({ nodes: { angle, zero, cmp, positiveLed, addVal, subVal, result, display } }) => [
     angle.out.to(cmp.a),
@@ -96,7 +96,7 @@ export const IterationControl = circuit('IterationControl', {
     eight: Constant({ value: 8 }),
     inc: Incrementer,
     shouldContinue: Comparator(),
-    display: HexDisplay,
+    display: HexDisplay(),
     doneLed: Led,
   },
   connect: ({ nodes: { iter, eight, inc, shouldContinue, display, doneLed } }) => [
@@ -129,7 +129,7 @@ export const AngleLookup = circuit('AngleLookup', {
     mux0123: Mux(),
     mux4567: Mux(),
     angleSel: Mux(),
-    display: HexDisplay,
+    display: HexDisplay(),
   },
   connect: ({
     nodes: {
@@ -392,10 +392,10 @@ export const CORDICCircuit = circuit('CORDICIteration', {
     z: Register({ value: 32 }),
     iteration: Register({ value: 0 }),
     step: CORDICStep,
-    xDisplay: HexDisplay,
-    yDisplay: HexDisplay,
-    zDisplay: HexDisplay,
-    iterDisplay: HexDisplay,
+    xDisplay: HexDisplay(),
+    yDisplay: HexDisplay(),
+    zDisplay: HexDisplay(),
+    iterDisplay: HexDisplay(),
     doneLed: Led,
   },
   connect: ({

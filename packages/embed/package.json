@@ -63,7 +63,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "pnpm build && cp e2e/fixtures/*.html dist/ && playwright test",
-    "test:e2e:ui": "pnpm build && cp e2e/fixtures/*.html dist/ && playwright test --ui"
+    "test:e2e:ui": "pnpm build && cp e2e/fixtures/*.html dist/ && playwright test --ui",
+    "typecheck:tests": "tsc --noEmit -p tsconfig.check.json"
   },
   "dependencies": {
     "@r2wc/react-to-web-component": "^2.1.1",
@@ -82,6 +83,7 @@
     "@playwright/test": "^1.58.2",
     "@tailwindcss/cli": "^4",
     "@tailwindcss/vite": "^4.1.18",
+    "@types/node": "^22.10.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "@vitejs/plugin-react": "^5.0.4",

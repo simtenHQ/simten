@@ -68,20 +68,21 @@ export const Led = circuit('Led', {
  * inspector — useful for feeding test values into a bus without wiring up
  * eight individual switches.
  *
- * **Output:** `out` — `bus(8)`
+ * **Output:** `out` — `bus(width)`, default `bus(8)`. Pass `width` to drive a
+ * wider datapath; a 32-bit value in a default input keeps only its low byte.
  *
  * **Example:**
  * ```ts
  * circuit('Show', {
- *   nodes:  { input: Input, output: Output },
+ *   nodes:  { input: Input(), output: Output },
  *   connect: ({ nodes: { input, output } }) => [
  *     input.out.to(output.in),
  *   ],
  * })
  * ```
  */
-export const Input = circuit('Input', (_opts?: { value?: number }) => ({
-  outputs: { out: bus(8) },
+export const Input = circuit('Input', ({ width = 8 }: { value?: number; width?: number } = {}) => ({
+  outputs: { out: bus(width) },
   eval: ({ value }) => ({ out: typeof value === 'number' ? value : 0 }),
   meta: {
     category: 'input-output',
