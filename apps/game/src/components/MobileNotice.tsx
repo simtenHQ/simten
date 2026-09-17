@@ -10,9 +10,8 @@
  */
 
 import { Link } from '@tanstack/react-router';
-import type { Level } from '../game/types';
 
-export function MobileNotice({ level }: { level: Level }) {
+export function MobileNotice() {
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 px-6 py-12 text-center dark:bg-[#111113]">
       <main className="flex flex-1 flex-col items-center justify-center">
@@ -32,10 +31,10 @@ export function MobileNotice({ level }: { level: Level }) {
           </div>
 
           <h1 className="mb-2 text-xl font-semibold tracking-tight">
-            {level.title} needs a desktop
+            This game needs a desktop
           </h1>
           <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
-            You solve these by writing code, next to a circuit diagram wide enough to read. Neither
+            You play by writing code, next to a circuit diagram wide enough to read. Neither
             fits on a phone yet.
           </p>
 
