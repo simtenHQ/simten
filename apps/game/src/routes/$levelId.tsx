@@ -147,7 +147,7 @@ export function givenPreambleEnd(lines: string[]): number | null {
 function PlayLevelRoute() {
   const { level } = Route.useLoaderData();
   return (
-    <DesktopOnly fallback={<MobileNotice level={level} />}>
+    <DesktopOnly fallback={<MobileNotice />}>
       <PlayLevel key={level.id} level={level} />
     </DesktopOnly>
   );
