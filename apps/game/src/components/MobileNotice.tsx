@@ -30,12 +30,10 @@ export function MobileNotice() {
             </svg>
           </div>
 
-          <h1 className="mb-2 text-xl font-semibold tracking-tight">
-            This game needs a desktop
-          </h1>
+          <h1 className="mb-2 text-xl font-semibold tracking-tight">This game needs a desktop</h1>
           <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
-            You play by writing code, next to a circuit diagram wide enough to read. Neither
-            fits on a phone yet.
+            You play by writing code, next to a circuit diagram wide enough to read. Neither fits on
+            a phone yet.
           </p>
 
           <div className="flex flex-col gap-2">
