@@ -18,7 +18,7 @@ function BlogLayout() {
   // Individual blog posts get the shared narrow content wrapper. Site nav now
   // lives in __root.tsx via SiteHeader, so no banner is needed here.
   return (
-    <div className="bg-background text-foreground">
+    <div className="breadboard text-foreground">
       <main className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pb-24">
         <Outlet />
       </main>

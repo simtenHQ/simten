@@ -38,7 +38,7 @@ export const Route = createFileRoute('/')({
 
 function LandingPage() {
   return (
-    <div className="bg-background text-foreground">
+    <div className="breadboard text-foreground">
       <Container className="pt-10">
         <div className="md:hidden inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-[10px] text-muted-foreground mb-4">
           <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
@@ -56,9 +56,42 @@ function LandingPage() {
       </Container>
       <MobileHeroActions />
       <ClaudeDemoSection autoPlay />
+      <Claim />
       <BentoFeatures />
       <DemoGallery />
     </div>
+  );
+}
+
+// ============================================================================
+// Claim
+// ----------------------------------------------------------------------------
+// One sentence in display type, setting up the bento below rather than
+// competing with it: the cells carry the detail and the code, so anything
+// here that explains features arrives weaker and second.
+//
+// No buttons. ClaudeDemoSection already puts "Open the editor" and "Learn
+// more" directly above this, and repeating a CTA within one scroll makes both
+// look automated.
+//
+// Earlier attempts at this slot all tried to be a section in their own right
+// (per-tool bullets, a code diff, a setup table, a terminal-versus-button
+// contrast, four rhetorical questions) and all read thinner than the bento
+// that followed.
+// ============================================================================
+function Claim() {
+  return (
+    <Section className="pt-0 md:pt-0 pb-8 md:pb-10">
+      <Container>
+        <p className="text-2xl md:text-4xl font-semibold tracking-tight leading-[1.15] max-w-3xl text-foreground">
+          It is just TypeScript.{' '}
+          <span className="text-muted-foreground">
+            No toolchain, no testbench language, nothing to install. Open a tab and start wiring
+            gates.
+          </span>
+        </p>
+      </Container>
+    </Section>
   );
 }
 

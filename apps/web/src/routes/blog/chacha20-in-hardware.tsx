@@ -57,35 +57,30 @@ function ChaCha20InHardwarePage() {
       <HeroSection />
 
       <div className="space-y-4">
-        <hr className="border-gray-200 dark:border-gray-800" />
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <ARXSection />
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <RotateSection />
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <StepSection />
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <QuarterRoundSection />
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <BigPictureSection />

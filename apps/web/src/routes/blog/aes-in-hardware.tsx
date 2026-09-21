@@ -52,28 +52,24 @@ function AESInHardwarePage() {
       <HeroSection />
 
       <div className="space-y-4">
-        <hr className="border-gray-200 dark:border-gray-800" />
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <SubBytesSection />
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <XTimeSection />
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <MixColumnsSection />
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <WhyHardwareSection />

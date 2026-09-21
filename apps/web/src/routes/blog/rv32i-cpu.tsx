@@ -67,15 +67,11 @@ function RV32ICPUPage() {
       <HeroSection />
 
       <div className="space-y-4">
-        <hr className="border-gray-200 dark:border-gray-800" />
-
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <WhyRiscVSection />
           </Suspense>
         </ErrorBoundary>
-
-        <hr className="border-gray-200 dark:border-gray-800" />
 
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
@@ -83,15 +79,11 @@ function RV32ICPUPage() {
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
-
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <ALUSection />
           </Suspense>
         </ErrorBoundary>
-
-        <hr className="border-gray-200 dark:border-gray-800" />
 
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
@@ -99,15 +91,11 @@ function RV32ICPUPage() {
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
-
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <RunningCodeSection />
           </Suspense>
         </ErrorBoundary>
-
-        <hr className="border-gray-200 dark:border-gray-800" />
 
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
@@ -115,15 +103,11 @@ function RV32ICPUPage() {
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
-
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <TryItSection />
           </Suspense>
         </ErrorBoundary>
-
-        <hr className="border-gray-200 dark:border-gray-800" />
 
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>

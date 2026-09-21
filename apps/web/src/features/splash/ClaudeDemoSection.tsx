@@ -1189,10 +1189,13 @@ export function ClaudeDemoSection({ onComplete, autoPlay = false }: ClaudeDemoSe
               <button
                 key={d.key}
                 onClick={() => pickDemo(i)}
+                // Opaque fills, not tints: these sit on the breadboard
+                // background, and a translucent pill shows the grid through
+                // the label.
                 className={`text-[13px] px-3.5 py-1.5 rounded-full border transition-colors ${
                   i === demoIndex
-                    ? 'border-foreground/30 bg-foreground/10 text-foreground'
-                    : 'border-border text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted/50'
+                    ? 'border-foreground/30 bg-muted text-foreground'
+                    : 'border-border bg-card text-muted-foreground hover:text-foreground hover:border-foreground/30 hover:bg-muted'
                 }`}
               >
                 {d.label}

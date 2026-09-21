@@ -46,15 +46,11 @@ function AbstractionPage() {
         <HeroSection />
 
         <div className="space-y-4">
-          <hr className="border-gray-200 dark:border-gray-800" />
-
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <TwoWaysSection />
             </Suspense>
           </ErrorBoundary>
-
-          <hr className="border-gray-200 dark:border-gray-800" />
 
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
@@ -62,15 +58,11 @@ function AbstractionPage() {
             </Suspense>
           </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
-
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <ScalingSection />
             </Suspense>
           </ErrorBoundary>
-
-          <hr className="border-gray-200 dark:border-gray-800" />
 
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>

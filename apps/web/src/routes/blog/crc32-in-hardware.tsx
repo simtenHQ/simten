@@ -52,28 +52,24 @@ function CRC32InHardwarePage() {
       <HeroSection />
 
       <div className="space-y-4">
-        <hr className="border-gray-200 dark:border-gray-800" />
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <LFSRSection />
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <PolynomialSection />
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <CRC32Section />
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <VerifySection />

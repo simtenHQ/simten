@@ -68,15 +68,11 @@ function BuildingACPUPage() {
       <HeroSection />
 
       <div className="space-y-4">
-        <hr className="border-gray-200 dark:border-gray-800" />
-
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <GatesSection />
           </Suspense>
         </ErrorBoundary>
-
-        <hr className="border-gray-200 dark:border-gray-800" />
 
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
@@ -84,15 +80,11 @@ function BuildingACPUPage() {
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
-
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <MemorySection />
           </Suspense>
         </ErrorBoundary>
-
-        <hr className="border-gray-200 dark:border-gray-800" />
 
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
@@ -100,15 +92,11 @@ function BuildingACPUPage() {
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
-
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <AdderSection />
           </Suspense>
         </ErrorBoundary>
-
-        <hr className="border-gray-200 dark:border-gray-800" />
 
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
@@ -116,15 +104,11 @@ function BuildingACPUPage() {
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
-
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <RAMSection />
           </Suspense>
         </ErrorBoundary>
-
-        <hr className="border-gray-200 dark:border-gray-800" />
 
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
