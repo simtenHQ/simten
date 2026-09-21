@@ -51,15 +51,11 @@ function AddersPage() {
         <HeroSection />
 
         <div className="space-y-4">
-          <hr className="border-gray-200 dark:border-gray-800" />
-
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <HalfAdderSection />
             </Suspense>
           </ErrorBoundary>
-
-          <hr className="border-gray-200 dark:border-gray-800" />
 
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
@@ -67,23 +63,17 @@ function AddersPage() {
             </Suspense>
           </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
-
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <RippleCarrySection />
             </Suspense>
           </ErrorBoundary>
 
-          <hr className="border-gray-200 dark:border-gray-800" />
-
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>
               <DepthSection />
             </Suspense>
           </ErrorBoundary>
-
-          <hr className="border-gray-200 dark:border-gray-800" />
 
           <ErrorBoundary>
             <Suspense fallback={<SectionSkeleton />}>

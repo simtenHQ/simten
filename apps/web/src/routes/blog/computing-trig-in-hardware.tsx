@@ -57,15 +57,11 @@ function ComputingTrigPage() {
       <HeroSection />
 
       <div className="space-y-4">
-        <hr className="border-gray-200 dark:border-gray-800" />
-
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <ShiftSection />
           </Suspense>
         </ErrorBoundary>
-
-        <hr className="border-gray-200 dark:border-gray-800" />
 
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
@@ -73,15 +69,11 @@ function ComputingTrigPage() {
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
-
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <DirectionSection />
           </Suspense>
         </ErrorBoundary>
-
-        <hr className="border-gray-200 dark:border-gray-800" />
 
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
@@ -89,15 +81,11 @@ function ComputingTrigPage() {
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
-
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <LookupSection />
           </Suspense>
         </ErrorBoundary>
-
-        <hr className="border-gray-200 dark:border-gray-800" />
 
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>

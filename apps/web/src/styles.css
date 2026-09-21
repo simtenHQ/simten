@@ -158,3 +158,87 @@ pre {
   --embed-text-muted: #9ca3af;
   --embed-dot-color: #e5e7eb;
 }
+
+/* ── Breadboard background ──────────────────────────────────────────────
+   A perfboard the page sits on: a fine 4px grid, a 20px grid over it, and a
+   drilled hole at every 20px intersection.
+
+   The holes are a subtraction, not a drawing. Layer 5 is an opaque sheet of
+   the page colour with a 2px transparent circle per tile, painted *over* the
+   darkest grid lines (layers 6-7), so those lines only survive inside the
+   circles. That is cheaper and crisper than drawing a ring per hole, and it
+   stays aligned with the grid for free.
+
+   Both pseudo-elements are fixed, so the board stays put while the page
+   scrolls over it.
+
+   The host deliberately creates no stacking context and paints no background
+   of its own. Either would trap the pseudo-elements: an isolated host paints
+   as one unit, so its fixed layers cover whatever follows it in the document
+   (the site footer, which is a sibling), and an opaque host background paints
+   over a `z-index: -1` child. Left alone, the layers join the root stacking
+   context and sit behind every element on the page, above only the canvas.
+   The page colour comes from <body>, and anything with its own opaque
+   background (cards, the footer) covers the board, which is the intent. */
+.breadboard {
+  --bb-fine: oklch(0.2 0.02 260 / 0.04);
+  --bb-grid: oklch(0.2 0.02 260 / 0.07);
+  --bb-hole: oklch(0.2 0.02 260 / 0.14);
+}
+
+.dark .breadboard {
+  --bb-fine: oklch(1 0 0 / 0.028);
+  --bb-grid: oklch(1 0 0 / 0.055);
+  --bb-hole: oklch(1 0 0 / 0.12);
+}
+
+.breadboard::before,
+.breadboard::after {
+  content: "";
+  position: fixed;
+  /* Overscan so the fade and the grid never reveal an edge while scrolling. */
+  inset: -144px;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.breadboard::before {
+  background-image:
+    linear-gradient(var(--bb-fine) 0 1px, transparent 1px 4px),
+    linear-gradient(to right, var(--bb-fine) 0 1px, transparent 1px 4px),
+    linear-gradient(var(--bb-grid) 0 1px, transparent 1px 20px),
+    linear-gradient(to right, var(--bb-grid) 0 1px, transparent 1px 20px),
+    radial-gradient(circle, transparent 2px, var(--background) 2px),
+    linear-gradient(var(--bb-hole) 0 1px, transparent 1px 20px),
+    linear-gradient(to right, var(--bb-hole) 0 1px, transparent 1px 20px);
+  background-size:
+    4px 4px,
+    4px 4px,
+    20px 20px,
+    20px 20px,
+    20px 20px,
+    20px 20px,
+    20px 20px;
+  /* The circles sit half a tile off so each one lands on a line crossing. */
+  background-position:
+    0 0,
+    0 0,
+    0 0,
+    0 0,
+    -10px -10px,
+    0 0,
+    0 0;
+}
+
+/* Fades the board out down the page, so it reads as a surface the content
+   rests on rather than as wallpaper competing with it. */
+.breadboard::after {
+  background-image: linear-gradient(transparent, var(--background) 90%);
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .breadboard::before,
+  .breadboard::after {
+    display: none;
+  }
+}
