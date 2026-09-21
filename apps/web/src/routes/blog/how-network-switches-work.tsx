@@ -58,15 +58,11 @@ function HowNetworkSwitchesWorkPage() {
       <HeroSection />
 
       <div className="space-y-4">
-        <hr className="border-gray-200 dark:border-gray-800" />
-
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <FrameSection />
           </Suspense>
         </ErrorBoundary>
-
-        <hr className="border-gray-200 dark:border-gray-800" />
 
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
@@ -74,15 +70,11 @@ function HowNetworkSwitchesWorkPage() {
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
-
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <ArbiterSection />
           </Suspense>
         </ErrorBoundary>
-
-        <hr className="border-gray-200 dark:border-gray-800" />
 
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
@@ -90,15 +82,11 @@ function HowNetworkSwitchesWorkPage() {
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
-
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <EgressSection />
           </Suspense>
         </ErrorBoundary>
-
-        <hr className="border-gray-200 dark:border-gray-800" />
 
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>

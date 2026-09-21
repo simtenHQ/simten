@@ -47,15 +47,11 @@ function SortingNetworksPage() {
       <HeroSection />
 
       <div className="space-y-4">
-        <hr className="border-gray-200 dark:border-gray-800" />
-
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <CompareSwapSection />
           </Suspense>
         </ErrorBoundary>
-
-        <hr className="border-gray-200 dark:border-gray-800" />
 
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
@@ -63,15 +59,11 @@ function SortingNetworksPage() {
           </Suspense>
         </ErrorBoundary>
 
-        <hr className="border-gray-200 dark:border-gray-800" />
-
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>
             <PipelineSection />
           </Suspense>
         </ErrorBoundary>
-
-        <hr className="border-gray-200 dark:border-gray-800" />
 
         <ErrorBoundary>
           <Suspense fallback={<SectionSkeleton />}>

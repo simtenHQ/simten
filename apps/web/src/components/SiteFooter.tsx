@@ -49,7 +49,7 @@ function ExtLink({ href, children }: { href: string; children: React.ReactNode }
 export function SiteFooter() {
   const year = new Date().getFullYear();
   return (
-    <footer className="mt-32 border-t border-border bg-background">
+    <footer className="border-t border-border bg-background">
       <Container className="py-16">
         <div className="flex flex-col gap-12 lg:flex-row lg:gap-16">
           {/* Brand */}

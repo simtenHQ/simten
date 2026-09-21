@@ -40,7 +40,7 @@ const CATEGORY_LABELS: Record<PostCategory, string> = {
 
 function BlogIndex() {
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="breadboard min-h-screen text-foreground">
       <div className="max-w-3xl mx-auto px-6 py-16">
         <Link
           to="/"

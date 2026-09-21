@@ -1,6 +1,13 @@
 import { ShareCircuitProvider } from '@simten/embed';
 import { SandboxProvider } from '@simten/ui/sandbox';
-import { createRootRoute, HeadContent, Outlet, Scripts, useMatches } from '@tanstack/react-router';
+import {
+  createRootRoute,
+  HeadContent,
+  Outlet,
+  Scripts,
+  useMatches,
+  useRouterState,
+} from '@tanstack/react-router';
 import { RootProvider } from 'fumadocs-ui/provider/tanstack';
 import { shareCircuit } from '@/features/share/server';
 import { SiteFooter } from '../components/SiteFooter';
@@ -91,18 +98,27 @@ function RootComponent() {
     (m) =>
       (m.staticData as { skipDefaultChrome?: boolean } | undefined)?.skipDefaultChrome === true,
   );
+  // Only the landing page lines the header up with its content. Docs and blog
+  // pages lay out their own columns at different widths, so an inset header
+  // there aligns with nothing and just looks narrow.
+  const isLanding = useRouterState({ select: (s) => s.location.pathname === '/' });
 
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
         <HeadContent />
       </head>
-      <body className="antialiased">
+      {/* The page colour lives here rather than on each page wrapper: the
+          breadboard background paints behind everything at `z-index: -1`, so
+          an opaque wrapper above it would hide the board. */}
+      <body className="bg-background antialiased">
         <RootProvider search={{ preload: false }}>
           <ThemeProvider defaultTheme="dark">
             <SandboxProvider>
               <ShareCircuitProvider value={shareCircuitFn}>
-                {!skipDefaultChrome && <SiteHeader right={<SiteNavLinks />} />}
+                {!skipDefaultChrome && (
+                  <SiteHeader contained={isLanding} right={<SiteNavLinks />} />
+                )}
                 <Outlet />
                 {!skipDefaultChrome && <SiteFooter />}
               </ShareCircuitProvider>
