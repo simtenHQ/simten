@@ -1088,7 +1088,9 @@ export function ClaudeDemoSection({ onComplete, autoPlay = false }: ClaudeDemoSe
             <Link
               to="/docs/$"
               params={{ _splat: '' }}
-              className="inline-flex items-center rounded-full border border-border hover:bg-muted transition-colors px-5 py-3 text-sm font-medium text-foreground"
+              // Opaque fill, like the demo pills below: the breadboard grid
+              // shows through a transparent secondary button.
+              className="inline-flex items-center rounded-full border border-border bg-card hover:bg-muted transition-colors px-5 py-3 text-sm font-medium text-foreground"
             >
               Learn more →
             </Link>
