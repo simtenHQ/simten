@@ -5,11 +5,22 @@
  * with Switch nodes for bit inputs, Input nodes for bus inputs,
  * Led nodes for bit outputs, and HexDisplay nodes for bus outputs.
  *
+ * Only ports the circuit actually uses get one. A declared-but-unwired port
+ * used to get a switch anyway, which drew a wire into a port that goes nowhere
+ * inside: the diagram looked finished while the circuit did nothing, and
+ * drilling into the box showed none of the edges the outside implied. The
+ * `dut` still declares every port, so the interface is visible as bare
+ * handles, and each switch appears as its port is wired up.
+ *
  * If the circuit has no ports (already self-contained), returns it as-is.
  * No code execution — pure Circuit IR construction.
  */
 
 import type { ArgumentValue, Circuit, Connection, Node } from '../types/circuit.js';
+import { TOP_LEVEL_NODE } from '../types/circuit.js';
+
+/** A port reference belongs to the circuit's own edge, not to a child node. */
+const isCircuitPort = (nodeId: string) => nodeId === '' || nodeId === TOP_LEVEL_NODE;
 
 export function autoHarness(
   circuit: Circuit,
@@ -60,8 +71,18 @@ export function autoHarness(
     clocks: circuit.clocks.map((c) => ({ id: `dut.${c.name}`, name: c.name })),
   });
 
-  // Switch / Input node for each input port
+  // An input is live once something inside reads it; an output once something
+  // inside drives it.
+  const readInputs = new Set<string>();
+  const drivenOutputs = new Set<string>();
+  for (const conn of circuit.connections) {
+    if (isCircuitPort(conn.source.nodeId)) readInputs.add(conn.source.portName);
+    if (isCircuitPort(conn.target.nodeId)) drivenOutputs.add(conn.target.portName);
+  }
+
+  // Switch / Input node for each input port that is used
   for (const input of circuit.inputs) {
+    if (!readInputs.has(input.name)) continue;
     const isBit = input.portType.kind === 'bit';
     const args: Record<string, ArgumentValue> = {};
     if (!isBit && input.portType.kind === 'bus') args.width = input.portType.width;
@@ -84,8 +105,9 @@ export function autoHarness(
     });
   }
 
-  // Led / HexDisplay node for each output port
+  // Led / HexDisplay node for each output port that is driven
   for (const output of circuit.outputs) {
+    if (!drivenOutputs.has(output.name)) continue;
     const isBit = output.portType.kind === 'bit';
     const outArgs: Record<string, ArgumentValue> = {};
     if (!isBit && output.portType.kind === 'bus') outArgs.width = output.portType.width;

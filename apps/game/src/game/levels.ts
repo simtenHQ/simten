@@ -54,19 +54,18 @@ export const LEVELS: Level[] = [
   {
     id: 'first-wire',
     title: 'NAND',
-    tagline: 'Light the lamp unless both switches are on.',
-    brief:
-      'Every wire is written for you, but two of them are commented out. Uncomment those two lines and watch the circuit finish itself, then flip the switches.',
+    tagline: 'Light the led unless both switches are on.',
+    brief: 'Get started with the platform by wiring up a `NAND` gate',
     target: 'Nand1',
     inputs: ['a', 'b'],
     outputs: ['result'],
     allowed: ['Nand'],
-    stub: `// A circuit is a set of nodes and the wires between them.
-// \`x.to(y)\` sends the value at x into y.
+    stub: `// A circuit is built from two things: nodes, the parts you are
+// using, and connect, the wires between them. Switches and leds are
+// nodes too.
 //
-// Everything here is a node, the switches and the lamp too. The first
-// wire is already connected. The other two are written out for you, just
-// commented.
+// A wire reads left to right: \`a.out.to(n1.a)\` runs a wire from a's
+// 'out' port into n1's 'a' port.
 
 export default circuit('Nand1', {
   nodes: {
@@ -100,19 +99,13 @@ export default circuit('Nand1', {
     id: 'not',
     title: 'NOT',
     tagline: 'Turn a 1 into a 0.',
-    brief:
-      'You have seen what NAND does: it outputs 0 only when both its inputs are 1. It is the only gate you get, so every other gate gets built from it. Start with the simplest: turn a 1 into a 0.',
+    brief: 'Make a `NOT` gate i.e. invert the signal from a to the result',
     target: 'Not1',
     inputs: ['a'],
     outputs: ['result'],
     allowed: ['Nand'],
-    stub: `// The same gate as last level, and the only one there is.
-//
-// The NAND is placed, and its output already
-// runs to the lamp. What is missing is the input.
-//
-// Hint: it has two inputs. Nothing says they
-// have to come from different places.
+    stub: `// Let's use the NAND gate from the last level to make a NOT gate.
+// Hint: .to() can take multiple arguments to save you some typing ;)
 
 export default circuit('Not1', {
   nodes: {
@@ -121,7 +114,8 @@ export default circuit('Not1', {
     result: Led,
   },
   connect: ({ nodes: { a, n1, result } }) => [
-    n1.out.to(result.in),
+    a.out.to(n1.a),
+    //
   ],
 });
 `,
@@ -139,9 +133,8 @@ export default circuit('Not1', {
   {
     id: 'and',
     title: 'AND',
-    tagline: 'Light the lamp only when both switches are on.',
-    brief:
-      'A NAND is an AND gate with its answer flipped. You spent the last level learning to flip an answer. Light the lamp only when both switches are on.',
+    tagline: 'Light the led only when both switches are on.',
+    brief: 'Make an `AND` gate i.e. light the result only when a and b are both on',
     target: 'And2',
     inputs: ['a', 'b'],
     outputs: ['result'],
@@ -186,19 +179,13 @@ export default circuit('And2', {
   {
     id: 'or',
     title: 'OR',
-    tagline: 'Light the lamp when either switch is on.',
-    brief:
-      'Light the lamp when either switch is on. There is no way to get there by flipping a NAND, so come at it from the other end: work out when the lamp should stay off.',
+    tagline: 'Light the led when either switch is on.',
+    brief: 'Make an `OR` gate i.e. light the result when either a or b is on',
     target: 'Or1',
     inputs: ['a', 'b'],
     outputs: ['result'],
     allowed: ['Nand', 'Not', 'And'],
-    stub: `// The lamp is off in exactly one case: both switches down.
-//
-// You know how to make an opposite. You did it two
-// levels ago.
-
-export default circuit('Or1', {
+    stub: `export default circuit('Or1', {
   nodes: {
     a: Switch,
     b: Switch,
@@ -225,17 +212,13 @@ export default circuit('Or1', {
   {
     id: 'nor',
     title: 'NOR',
-    tagline: 'Light the lamp only when both switches are off.',
-    brief:
-      'NOR is OR with the answer flipped: the lamp is on only when both switches are off. You built OR a minute ago, so most of this is already done.',
+    tagline: 'Light the led only when both switches are off.',
+    brief: 'Make a `NOR` gate i.e. light the result only when a and b are both off',
     target: 'Nor1',
     inputs: ['a', 'b'],
     outputs: ['result'],
     allowed: ['Nand', 'Not', 'And', 'Or'],
-    stub: `// Two gates, or four NANDs if you would rather do it
-// the long way.
-
-export default circuit('Nor1', {
+    stub: `export default circuit('Nor1', {
   nodes: {
     a: Switch,
     b: Switch,
@@ -262,16 +245,14 @@ export default circuit('Nor1', {
   {
     id: 'xor',
     title: 'XOR',
-    tagline: 'Light the lamp when the switches disagree.',
-    brief: 'Light the lamp when the two switches disagree. This is the one that takes a minute.',
+    tagline: 'Light the led when the switches disagree.',
+    brief:
+      'Make an `XOR` gate i.e. light the result when a and b are different. This one takes a minute.',
     target: 'Xor1',
     inputs: ['a', 'b'],
     outputs: ['result'],
     allowed: ['Nand', 'Not', 'And', 'Or', 'Nor'],
-    stub: `// A signal can drive more than one port:
-//   a.out.to(n1.a, n2.a)
-
-export default circuit('Xor1', {
+    stub: `export default circuit('Xor1', {
   nodes: {
     a: Switch,
     b: Switch,
@@ -298,18 +279,13 @@ export default circuit('Xor1', {
   {
     id: 'xnor',
     title: 'XNOR',
-    tagline: 'Light the lamp when the switches agree.',
-    brief:
-      'The last gate in the set, and the opposite of the one you just built: light the lamp when the two switches agree. You already know the move.',
+    tagline: 'Light the led when the switches agree.',
+    brief: 'Make an `XNOR` gate i.e. light the result when a and b are the same',
     target: 'Xnor1',
     inputs: ['a', 'b'],
     outputs: ['result'],
     allowed: ['Nand', 'Not', 'And', 'Or', 'Nor', 'Xor'],
-    stub: `// Two gates, now that XOR is yours. The long way
-// round is five NANDs, if you want to prove you
-// still can.
-
-export default circuit('Xnor1', {
+    stub: `export default circuit('Xnor1', {
   nodes: {
     a: Switch,
     b: Switch,
@@ -338,7 +314,7 @@ export default circuit('Xnor1', {
     title: 'Making a Component',
     tagline: 'Give a circuit ports, so other circuits can use it.',
     brief:
-      'The XOR from two levels back, but this time give the circuit `inputs` and `outputs` instead of switches and a lamp. You have XOR now, so the inside is a single node: the lesson here is the edges, not the wiring. Watch what happens to the diagram. It becomes one box, and that is the trade: you can no longer see inside, and in exchange anything can now use it.',
+      'Rebuild your `XOR` with `inputs` and `outputs` instead of switches and leds, so other circuits can use it',
     target: 'Xor2',
     inputs: ['a', 'b'],
     outputs: ['out'],
@@ -376,14 +352,13 @@ export default circuit('Xor2', {
     id: 'half-adder',
     title: 'Half Adder',
     tagline: 'Add two bits, and keep what carries.',
-    brief:
-      'Add two bits. Two of them make 0, 1 or 2, which needs two lamps: sum is the bit you keep, carry is the one that spills over. You have built every gate this needs.',
+    brief: 'Add two bits i.e. sum is the bit you keep, carry is the one that spills over',
     target: 'HalfAdder',
     inputs: ['a', 'b'],
     outputs: ['sum', 'carry'],
     allowed: ARITHMETIC_GATES,
     stub: `// Adding two bits gives 0, 1 or 2, and 2 does not fit in
-// one bit, so the answer needs two lamps.
+// one bit, so the answer needs two leds.
 //
 // You proved you could build these gates, so you have them
 // now.
@@ -417,15 +392,12 @@ export default circuit('HalfAdder', {
     id: 'full-adder',
     title: 'Full Adder',
     tagline: 'Add two bits and a carry coming in.',
-    brief:
-      'The same sum, but with a carry arriving from the bit below. Do not build it out of gates; build it out of two of the half adders you just made.',
+    brief: 'Use the `HalfAdder` from the last level to add three bits now',
     target: 'FullAdder',
     inputs: ['a', 'b', 'cin'],
     outputs: ['sum', 'cout'],
     allowed: ARITHMETIC_GATES,
-    stub: `// Your half adder, wrapped in ports so it can be used as a
-// component. That is what the last level was for: a circuit
-// with ports is one other circuits can build with.
+    stub: `// Completed HalfAdder for reuse below
 
 const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
@@ -439,11 +411,8 @@ const HalfAdder = circuit('HalfAdder', {
   ],
 });
 
-// Two of them are placed. Add a and b with the first, then add
-// cin to that answer with the second.
-//
-// Either of those additions can carry, and the answer carries
-// out if either did, so you need one more gate for that.
+// Add a and b with h1, then add cin to that with h2.
+// Either can carry, so cout is one gate away.
 
 export default circuit('FullAdder', {
   nodes: {
@@ -482,13 +451,13 @@ export default circuit('FullAdder', {
     title: 'SR Latch',
     tagline: 'Remember a bit after the input goes away.',
     brief:
-      'Every circuit so far answered only to its switches. This one has to answer to what happened before: pull `s` low and the lamp comes on, pull `r` low and it goes off, and with both high it holds whatever it was last told. Read the steps left to right: the same inputs appear twice with different answers, and that is the whole point.',
+      'Make a latch i.e. `s` low turns the result on, `r` low turns it off, and both high holds whatever it was last told',
     target: 'Latch1',
     inputs: ['s', 'r'],
     outputs: ['q'],
     allowed: ['Nand'],
     sequential: true,
-    stub: `// The lamp has to remember.
+    stub: `// The led has to remember.
 //
 // Everything you have built answers only to its inputs. A
 // circuit that remembers has to answer to its own output too,
@@ -534,7 +503,7 @@ export default circuit('Latch1', {
     title: 'D Latch',
     tagline: 'Store one bit, only while you allow it.',
     brief:
-      'Your latch had a state you had to avoid, and it needed two switches to say one thing. Fix both: `d` is the bit to store, `en` says whether to listen. While `en` is high the lamp follows `d`; while it is low the lamp holds, whatever `d` does.',
+      'Make a d latch i.e. the result follows `d` while `en` is high, and holds when `en` is low',
     target: 'DLatch1',
     inputs: ['d', 'en'],
     outputs: ['q'],
@@ -588,9 +557,8 @@ export default circuit('DLatch1', {
   {
     id: 'toggle',
     title: 'Toggle',
-    tagline: 'Alternate the lamp between on and off, every tick.',
-    brief:
-      'This one has no switches. The lamp alternates on its own, once per clock tick, forever. Your latch held a value until you changed it; this has to change itself, by feeding back the opposite of whatever it currently holds.',
+    tagline: 'Alternate the led between on and off, every tick.',
+    brief: 'Flip the led between on and off once per clock tick, with no switches at all',
     target: 'Toggle1',
     inputs: [],
     outputs: ['q'],
@@ -656,8 +624,7 @@ export default circuit('Toggle1', {
     id: 'counter',
     title: 'Counter',
     tagline: 'Count 0, 1, 2, 3, and back to 0.',
-    brief:
-      'Two lamps, no switches. Read them as a binary number and they should count up once per tick, then wrap. `bit0` alternates every tick, exactly as your toggle did. `bit1` is the harder half: it flips only on the ticks where `bit0` is already on.',
+    brief: 'Count 0, 1, 2, 3 and wrap, reading `bit1` and `bit0` as a binary number',
     target: 'Counter2',
     inputs: [],
     outputs: ['bit0', 'bit1'],

@@ -87,12 +87,44 @@ describe('autoHarness library registration', () => {
     expect(libraryPorts(lib)).toEqual(['a', 'b']);
   });
 
-  it('gives every input a switch, matching the dut', () => {
+  it('gives every wired input a switch', () => {
+    const lib = makeLibrary();
+    const harness = autoHarness(build({ a: bit, b: bit }), lib);
+
+    const switches = harness.nodes.filter((n) => n.componentRef === 'Switch').map((n) => n.id);
+    expect(switches).toEqual(['a', 'b']);
+    expect(switches).toEqual(dutPorts(harness));
+  });
+
+  /**
+   * `build` declares `c` but never reads it, the shape a circuit takes while
+   * it is being written. A switch there would draw a wire into a port that
+   * goes nowhere, so the diagram claims a connection the insides do not have.
+   */
+  it('leaves a declared but unread input bare on the dut', () => {
     const lib = makeLibrary();
     const harness = autoHarness(build({ a: bit, b: bit, c: bit }), lib);
 
     const switches = harness.nodes.filter((n) => n.componentRef === 'Switch').map((n) => n.id);
-    expect(switches).toEqual(['a', 'b', 'c']);
-    expect(switches).toEqual(dutPorts(harness));
+    expect(switches).toEqual(['a', 'b']);
+    expect(dutPorts(harness), 'the interface stays visible').toEqual(['a', 'b', 'c']);
+    expect(harness.connections.some((c) => c.target.portName === 'c')).toBe(false);
+  });
+
+  it('leaves an undriven output without a led', () => {
+    const lib = makeLibrary();
+    const bare = circuit('Bare', {
+      inputs: { a: bit },
+      outputs: { out: bit },
+      nodes: { g1: And },
+      connect: ({ inputs, nodes }) => [inputs.a.to(nodes.g1.a)],
+    }).circuit;
+
+    const harness = autoHarness(bare, lib);
+
+    expect(harness.nodes.filter((n) => n.componentRef === 'Led')).toHaveLength(0);
+    expect(harness.nodes.filter((n) => n.componentRef === 'Switch').map((n) => n.id)).toEqual([
+      'a',
+    ]);
   });
 });
