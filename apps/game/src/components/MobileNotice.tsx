@@ -55,7 +55,7 @@ export function MobileNotice() {
               className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium no-underline transition-colors hover:bg-accent"
             >
               <GitHubMark />
-              Star on GitHub
+              View on GitHub
             </a>
             <div className="mt-2 text-xs text-muted-foreground">
               Read more at{' '}
