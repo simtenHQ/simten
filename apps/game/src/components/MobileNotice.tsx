@@ -10,6 +10,7 @@
  */
 
 import { Link } from '@tanstack/react-router';
+import { GitHubMark } from './GitHubLink';
 import { Logo } from './Logo';
 
 export function MobileNotice() {
@@ -36,6 +37,10 @@ export function MobileNotice() {
             a phone yet.
           </p>
 
+          {/* Somewhere to go, for the one visitor who cannot do the thing the
+              page is for. A phone arriving from a link has no way to play, so
+              the repo and the site are the actions available: read now, star
+              it, come back at a desk. Without these the page is a wall. */}
           <div className="flex flex-col gap-2">
             <Link
               to="/"
@@ -43,6 +48,15 @@ export function MobileNotice() {
             >
               See the map
             </Link>
+            <a
+              href="https://github.com/simtenHQ/simten"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 rounded-md border border-border bg-card px-4 py-2 text-sm font-medium no-underline transition-colors hover:bg-accent"
+            >
+              <GitHubMark />
+              View on GitHub
+            </a>
             <div className="mt-2 text-xs text-muted-foreground">
               Read more at{' '}
               <a
