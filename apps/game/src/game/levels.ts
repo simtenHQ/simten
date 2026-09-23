@@ -105,7 +105,7 @@ export default circuit('Nand1', {
     outputs: ['result'],
     allowed: ['Nand'],
     stub: `// Let's use the NAND gate from the last level to make a NOT gate.
-// Hint: .to() can take multiple arguments to save you some typing ;)
+// Hint: .to() can take multiple arguments to save you some typing
 
 export default circuit('Not1', {
   nodes: {
