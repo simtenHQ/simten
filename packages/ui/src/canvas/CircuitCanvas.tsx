@@ -237,7 +237,12 @@ function CircuitCanvasInner({
       const componentRef = nodeData?.componentRef;
       const data = { ...node.data } as NodeData;
 
-      if (showPortLabels) data.showPortLabels = true;
+      // Harness switches and leds keep their ports unlabelled. The harness
+      // names each after the port it drives, so a switch labelled `a` with a
+      // port labelled `out` reads as `a.out` — but `a` in the source is the
+      // port itself, and has no `out`. A switch the author wrote does, and
+      // keeps its label.
+      if (showPortLabels && !nodeData?.harness) data.showPortLabels = true;
       if (glowUnconnected) data.glowUnconnected = true;
       if (onPortClickProp) {
         const label = nodeData.label || nodeData.componentRef;

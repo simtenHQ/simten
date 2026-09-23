@@ -1,26 +1,24 @@
 /**
- * What a phone gets instead of a level.
+ * What an unknown URL gets.
  *
- * A level is three resizable panels around a code editor, which a small
- * touchscreen cannot usefully show and cannot comfortably type into. Without
- * this the page still rendered: a cramped, unusable editor and no explanation,
- * which reads as broken rather than as not-for-this-device.
+ * The router's default is the string "Not Found" on a blank page, which reads
+ * as a broken site rather than a wrong address. That matters more than usual
+ * here: a level's id is its URL, so renaming one (`first-wire` became `nand`)
+ * leaves the old address live in search results and in anything anyone has
+ * shared, and the first Simten page those visitors see is this one.
  *
- * The map still works on mobile, so this offers it rather than a dead end.
+ * So it says where they are and offers the map, which is the one page that can
+ * route them anywhere else.
  */
 
 import { Link } from '@tanstack/react-router';
 import { Logo } from './Logo';
 
-export function MobileNotice() {
+export function NotFound() {
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 px-6 py-12 text-center dark:bg-[#111113]">
       <main className="flex flex-1 flex-col items-center justify-center">
         <div className="max-w-sm">
-          {/* The brand rather than a monitor icon: this is the whole page for
-              anyone arriving on a phone, so it has to say whose site it is.
-              The heading already carries the "not on this device" part, and
-              two icons above it read as clutter. Same lockup as `NotFound`. */}
           <Link
             to="/"
             className="mb-6 inline-flex items-center gap-2 text-foreground no-underline transition-colors hover:text-foreground/80"
@@ -30,10 +28,10 @@ export function MobileNotice() {
             <span className="text-lg font-semibold tracking-tight">Simten</span>
           </Link>
 
-          <h1 className="mb-2 text-xl font-semibold tracking-tight">This game needs a desktop</h1>
+          <h1 className="mb-2 text-xl font-semibold tracking-tight">There is nothing here</h1>
           <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
-            You play by writing code, next to a circuit diagram wide enough to read. Neither fits on
-            a phone yet.
+            This address does not match a level. Some of them have been renamed, so an old link may
+            point at one that has moved.
           </p>
 
           <div className="flex flex-col gap-2">

@@ -52,7 +52,7 @@ const ARITHMETIC_GATES = ['Nand', 'Not', 'And', 'Or', 'Nor', 'Xor', 'Xnor'];
 
 export const LEVELS: Level[] = [
   {
-    id: 'first-wire',
+    id: 'nand',
     title: 'NAND',
     tagline: 'Light the led unless both switches are on.',
     brief: 'Get started with the platform by wiring up a `NAND` gate',
@@ -60,9 +60,9 @@ export const LEVELS: Level[] = [
     inputs: ['a', 'b'],
     outputs: ['result'],
     allowed: ['Nand'],
-    stub: `// A circuit is built from two things: nodes, the parts you are
-// using, and connect, the wires between them. Switches and leds are
-// nodes too.
+    stub: `// A circuit is built from two things:
+// - nodes: the parts you are using
+// - connect: the wires between them
 //
 // A wire reads left to right: \`a.out.to(n1.a)\` runs a wire from a's
 // 'out' port into n1's 'a' port.
@@ -76,6 +76,7 @@ export default circuit('Nand1', {
   },
   connect: ({ nodes: { a, b, n1, result } }) => [
     // Uncomment the lines below and see the circuit draw itself
+    // then hit Submit when you're done
     a.out.to(n1.a),
     // b.out.to(n1.b),
     // n1.out.to(result.in),
@@ -105,7 +106,7 @@ export default circuit('Nand1', {
     outputs: ['result'],
     allowed: ['Nand'],
     stub: `// Let's use the NAND gate from the last level to make a NOT gate.
-// Hint: .to() can take multiple arguments to save you some typing ;)
+// Hint: .to() can take multiple arguments to save you some typing
 
 export default circuit('Not1', {
   nodes: {
@@ -139,15 +140,12 @@ export default circuit('Not1', {
     inputs: ['a', 'b'],
     outputs: ['result'],
     allowed: ['Nand', 'Not'],
-    stub: `// The NAND already sees both switches. Its answer
-// is the one you want, upside down.
-//
-// You built NOT last level, so it is yours to use now.
+    stub: `// You built NOT last level, so it is yours to use now.
 // Add it to the list:
 //   n: Not,
 //
-// Anything you add to \`nodes\` has to be named in the
-// \`connect\` line below before you can wire it.
+// Then add n to the nodes in the connect function below:
+//   ({ nodes: { a, b, n1, n, result } })
 
 export default circuit('And2', {
   nodes: {
@@ -317,29 +315,34 @@ export default circuit('And2', {
       'Rebuild your `XOR` with `inputs` and `outputs` instead of switches and leds, so other circuits can use it',
     target: 'Xor2',
     inputs: ['a', 'b'],
-    outputs: ['out'],
+    outputs: ['result'],
     allowed: ['Nand', 'Not', 'And', 'Or', 'Nor', 'Xor', 'Xnor'],
-    stub: `// Ports, not switches. Every gate you have built is available.
+    stub: `// The same XOR, but with ports instead of switches and leds:
+// - inputs: a and b, coming in from outside
+// - outputs: result, going back out
 //
-// \`inputs\` and \`outputs\` are the circuit's edges: what it looks like from
-// the outside. Wire them with \`inputs.a.to(...)\` and \`....to(outputs.out)\`.
+// A port wires like anything else: \`a.to(xor.a)\` runs a wire from the
+// circuit's 'a' input into xor, and \`xor.out.to(result)\` runs one back out.
+//
+// The box on the right is your circuit seen from outside. Double-click it
+// to look in.
 
 export default circuit('Xor2', {
   inputs: { a: bit, b: bit },
-  outputs: { out: bit },
+  outputs: { result: bit },
   nodes: {
-    //
+    xor: Xor,
   },
-  connect: ({ inputs, outputs, nodes }) => [
+  connect: ({ inputs: { a, b }, outputs: { result }, nodes: { xor } }) => [
     //
   ],
 });
 `,
     vectors: [
-      { inputs: { a: 0, b: 0 }, expect: { out: 0 } },
-      { inputs: { a: 0, b: 1 }, expect: { out: 1 } },
-      { inputs: { a: 1, b: 0 }, expect: { out: 1 } },
-      { inputs: { a: 1, b: 1 }, expect: { out: 0 } },
+      { inputs: { a: 0, b: 0 }, expect: { result: 0 } },
+      { inputs: { a: 0, b: 1 }, expect: { result: 1 } },
+      { inputs: { a: 1, b: 0 }, expect: { result: 1 } },
+      { inputs: { a: 1, b: 1 }, expect: { result: 0 } },
     ],
     par: 1,
     outro: {

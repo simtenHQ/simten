@@ -21,7 +21,7 @@ import { LEVELS_BY_ID, levelIndex } from './levels';
 
 /** Bottom to top. Each inner array is one row of siblings. */
 export const MAP_ROWS: string[][] = [
-  ['first-wire'],
+  ['nand'],
   ['not'],
   ['and'],
   ['or'],
@@ -52,7 +52,7 @@ export const MAP_ROWS: string[][] = [
  * from the start.
  */
 export const MAP_REQUIRES: Record<string, string[]> = {
-  not: ['first-wire'],
+  not: ['nand'],
   and: ['not'],
   or: ['and'],
   nor: ['or'],

@@ -96,6 +96,7 @@ export function autoHarness(
       inputs: [],
       outputs: [{ id: `${input.name}.out`, name: 'out', portType: input.portType }],
       clocks: [],
+      harness: true,
     });
     connections.push({
       id: `c${connId++}`,
@@ -120,6 +121,7 @@ export function autoHarness(
       inputs: [{ id: `${output.name}.in`, name: 'in', portType: output.portType }],
       outputs: [],
       clocks: [],
+      harness: true,
     });
     connections.push({
       id: `c${connId++}`,
