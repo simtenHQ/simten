@@ -30,7 +30,7 @@ import { useSandboxContext } from '@simten/ui/sandbox';
 import { createFileRoute, Link, notFound } from '@tanstack/react-router';
 import { Network, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { DesktopOnly } from '../components/DesktopOnly';
+import { DesktopOnly, useIsDesktop } from '../components/DesktopOnly';
 import { GitHubLink } from '../components/GitHubLink';
 import { HeaderBar } from '../components/HeaderBar';
 import { LevelComplete } from '../components/LevelComplete';
@@ -90,6 +90,13 @@ export const Route = createFileRoute('/$levelId')({
    * sending someone a level produced a card naming the site and linking to its
    * front page rather than the level. The tagline is already a one-line
    * description written for a human, which is exactly what this needs.
+   *
+   * `noindex` because the campaign is an order, not a menu. A search result for
+   * "XNOR" dropped someone into level 7 with six gates they had never built and
+   * no way to know that was the problem. The map is the front door, so it is
+   * the page that should rank. `follow` keeps the crawler walking these links,
+   * and the tags above still make a shared link render properly: they are read
+   * by the site unfurling it, not by the index.
    */
   head: ({ loaderData }) => {
     const level = loaderData?.level;
@@ -99,6 +106,7 @@ export const Route = createFileRoute('/$levelId')({
     return {
       meta: [
         { title },
+        { name: 'robots', content: 'noindex, follow' },
         { name: 'description', content: level.tagline },
         { property: 'og:title', content: title },
         { property: 'og:description', content: level.tagline },
@@ -106,12 +114,13 @@ export const Route = createFileRoute('/$levelId')({
         { name: 'twitter:title', content: title },
         { name: 'twitter:description', content: level.tagline },
       ],
-      // Levels are reachable whether or not you have unlocked them, so each one
-      // is a real page and should say which page it is.
-      links: [{ rel: 'canonical', href: url }],
+      // No canonical: it picks which of several addresses for one page should
+      // be indexed, which contradicts the `noindex` above. Google's guidance
+      // is not to send both.
     };
   },
   component: PlayLevelRoute,
+  errorComponent: LevelError,
 });
 
 /**
@@ -146,10 +155,48 @@ export function givenPreambleEnd(lines: string[]): number | null {
 
 function PlayLevelRoute() {
   const { level } = Route.useLoaderData();
+  // Mounted only once the client says this is a desktop, so a phone never
+  // boots Monaco or the sandbox for an editor it cannot show. The CSS gate
+  // still decides visibility, so desktop does not flash the notice first.
+  const isDesktop = useIsDesktop();
   return (
     <DesktopOnly fallback={<MobileNotice />}>
-      <PlayLevel key={level.id} level={level} />
+      {isDesktop ? <PlayLevel key={level.id} level={level} /> : null}
     </DesktopOnly>
+  );
+}
+
+/**
+ * What a crash looks like, instead of the router's default.
+ *
+ * TanStack's `CatchBoundary` renders "Something went wrong! Show Error", which
+ * is what Google ended up indexing as the description of `/first-wire`. This
+ * at least names the page and offers a way out; drafts live in localStorage,
+ * so a reload costs the player nothing.
+ */
+function LevelError() {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
+      <h1 className="text-xl font-semibold tracking-tight">This level did not load</h1>
+      <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
+        Reloading usually fixes it. Your work is saved in this browser, so nothing is lost.
+      </p>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => window.location.reload()}
+          className="rounded-md border border-border bg-card px-4 py-2 text-sm font-medium transition-colors hover:bg-accent"
+        >
+          Reload
+        </button>
+        <Link
+          to="/"
+          className="rounded-md px-4 py-2 text-sm font-medium text-muted-foreground no-underline transition-colors hover:text-foreground"
+        >
+          See the map
+        </Link>
+      </div>
+    </div>
   );
 }
 

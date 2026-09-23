@@ -1,4 +1,4 @@
-/** Reference solution for `first-wire`. Proven by `__tests__/levels.test.ts`. */
+/** Reference solution for `nand`. Proven by `__tests__/levels.test.ts`. */
 
 import { circuit } from '@simten/core/circuit';
 import { Led, Nand, Switch } from '@simten/core/std';

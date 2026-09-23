@@ -1,4 +1,35 @@
-import type { ReactNode } from 'react';
+import { type ReactNode, useSyncExternalStore } from 'react';
+
+/** Tailwind's `md`, the breakpoint `DesktopOnly` switches on. */
+const DESKTOP_QUERY = '(min-width: 768px)';
+
+function subscribe(onChange: () => void): () => void {
+  const list = window.matchMedia(DESKTOP_QUERY);
+  list.addEventListener('change', onChange);
+  return () => list.removeEventListener('change', onChange);
+}
+
+/**
+ * Whether this viewport is desktop, false until the client has measured.
+ *
+ * `DesktopOnly` hides the desktop branch but still mounts it, so a phone boots
+ * Monaco and the sandbox iframe for an editor it will never show. Wasteful on
+ * its own, and worse than wasteful when something in there throws: the whole
+ * route is replaced by the router's error boundary, which is what Google
+ * indexed for `/first-wire` instead of the level.
+ *
+ * Gate the expensive child on this and a phone never mounts it. It pairs with
+ * `DesktopOnly` rather than replacing it: the CSS keeps deciding what is
+ * *visible*, so desktop never flashes the mobile notice during hydration,
+ * while this decides what is mounted at all.
+ */
+export function useIsDesktop(): boolean {
+  return useSyncExternalStore(
+    subscribe,
+    () => window.matchMedia(DESKTOP_QUERY).matches,
+    () => false,
+  );
+}
 
 /**
  * Renders `children` on desktop (md and up) and `fallback` on smaller viewports.

@@ -52,7 +52,7 @@ const ARITHMETIC_GATES = ['Nand', 'Not', 'And', 'Or', 'Nor', 'Xor', 'Xnor'];
 
 export const LEVELS: Level[] = [
   {
-    id: 'first-wire',
+    id: 'nand',
     title: 'NAND',
     tagline: 'Light the led unless both switches are on.',
     brief: 'Get started with the platform by wiring up a `NAND` gate',
