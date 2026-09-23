@@ -76,6 +76,7 @@ export default circuit('Nand1', {
   },
   connect: ({ nodes: { a, b, n1, result } }) => [
     // Uncomment the lines below and see the circuit draw itself
+    // then hit Submit when you're done
     a.out.to(n1.a),
     // b.out.to(n1.b),
     // n1.out.to(result.in),
