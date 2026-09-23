@@ -321,9 +321,8 @@ export default circuit('And2', {
 // - inputs: a and b, coming in from outside
 // - outputs: result, going back out
 //
-// A port wires like anything else: \`inputs.a.to(xor.a)\` runs a wire from
-// the circuit's 'a' input into xor, and \`xor.out.to(outputs.result)\` runs
-// one back out.
+// A port wires like anything else: \`a.to(xor.a)\` runs a wire from the
+// circuit's 'a' input into xor, and \`xor.out.to(result)\` runs one back out.
 //
 // The box on the right is your circuit seen from outside. Double-click it
 // to look in.
@@ -334,7 +333,7 @@ export default circuit('Xor2', {
   nodes: {
     xor: Xor,
   },
-  connect: ({ inputs, outputs, nodes: { xor } }) => [
+  connect: ({ inputs: { a, b }, outputs: { result }, nodes: { xor } }) => [
     //
   ],
 });
