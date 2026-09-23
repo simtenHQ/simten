@@ -60,9 +60,9 @@ export const LEVELS: Level[] = [
     inputs: ['a', 'b'],
     outputs: ['result'],
     allowed: ['Nand'],
-    stub: `// A circuit is built from two things: nodes, the parts you are
-// using, and connect, the wires between them. Switches and leds are
-// nodes too.
+    stub: `// A circuit is built from two things:
+// - nodes: the parts you are using
+// - connect: the wires between them
 //
 // A wire reads left to right: \`a.out.to(n1.a)\` runs a wire from a's
 // 'out' port into n1's 'a' port.
