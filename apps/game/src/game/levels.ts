@@ -139,10 +139,7 @@ export default circuit('Not1', {
     inputs: ['a', 'b'],
     outputs: ['result'],
     allowed: ['Nand', 'Not'],
-    stub: `// The NAND already sees both switches. Its answer
-// is the one you want, upside down.
-//
-// You built NOT last level, so it is yours to use now.
+    stub: `// You built NOT last level, so it is yours to use now.
 // Add it to the list:
 //   n: Not,
 //
