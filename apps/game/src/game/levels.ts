@@ -317,10 +317,13 @@ export default circuit('And2', {
     inputs: ['a', 'b'],
     outputs: ['result'],
     allowed: ['Nand', 'Not', 'And', 'Or', 'Nor', 'Xor', 'Xnor'],
-    stub: `// Ports, not switches. Every gate you have built is available.
+    stub: `// The same XOR, but with ports instead of switches and leds:
+// - inputs: a and b, coming in from outside
+// - outputs: result, going back out
 //
-// \`inputs\` and \`outputs\` are the circuit's edges: what it looks like from
-// the outside. Wire them with \`inputs.a.to(...)\` and \`....to(outputs.result)\`.
+// A port wires like anything else: \`inputs.a.to(x1.a)\` runs a wire from
+// the circuit's 'a' input into x1, and \`x1.out.to(outputs.result)\` runs
+// one back out.
 
 export default circuit('Xor2', {
   inputs: { a: bit, b: bit },
