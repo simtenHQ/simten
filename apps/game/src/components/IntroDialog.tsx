@@ -43,19 +43,16 @@ export function IntroDialog({
 
         <div className="space-y-3 text-sm text-muted-foreground">
           <p>Build a computer from logic gates, one layer of abstraction at a time.</p>
-          <p>
-            You do this by writing TypeScript rather than dragging wires. The circuit draws itself
-            as you type.
-          </p>
+          <p>You do this by writing TypeScript. The circuit draws itself as you type.</p>
           <p>
             Take it as far as you like:{' '}
             <a
-              href="https://simten.dev/blog/rv32i-cpu"
+              href="https://simten.dev/blog/snake-in-hardware"
               target="_blank"
               rel="noreferrer"
               className="underline underline-offset-4 hover:text-foreground"
             >
-              CPUs that run C
+              games
             </a>
             ,{' '}
             <a
@@ -68,12 +65,12 @@ export function IntroDialog({
             </a>
             ,{' '}
             <a
-              href="https://simten.dev/blog/snake-in-hardware"
+              href="https://simten.dev/blog/rv32i-cpu"
               target="_blank"
               rel="noreferrer"
               className="underline underline-offset-4 hover:text-foreground"
             >
-              games
+              CPUs that run C
             </a>
             . Then export to Verilog and flash your designs to real silicon on FPGAs.
           </p>
