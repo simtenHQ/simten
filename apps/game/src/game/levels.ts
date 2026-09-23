@@ -143,8 +143,8 @@ export default circuit('Not1', {
 // Add it to the list:
 //   n: Not,
 //
-// Anything you add to \`nodes\` has to be named in the
-// \`connect\` line below before you can wire it.
+// Then add n to the nodes in the connect function below:
+//   ({ nodes: { a, b, n1, n, result } })
 
 export default circuit('And2', {
   nodes: {
