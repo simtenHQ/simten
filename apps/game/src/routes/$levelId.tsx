@@ -33,6 +33,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DesktopOnly, useIsDesktop } from '../components/DesktopOnly';
 import { GitHubLink } from '../components/GitHubLink';
 import { HeaderBar } from '../components/HeaderBar';
+import { IntroDialog } from '../components/IntroDialog';
 import { LevelComplete } from '../components/LevelComplete';
 import { LevelIntro } from '../components/LevelIntro';
 import { MobileNotice } from '../components/MobileNotice';
@@ -44,9 +45,11 @@ import { LEVELS_BY_ID, nextLevel } from '../game/levels';
 import { sandboxRuntime } from '../game/runtime';
 import {
   clearDraft,
+  INTRO_SEEN_KEY,
   markIntroSeen,
   readDrafts,
   readSeenIntros,
+  readStored,
   writeDraft,
   writeProgress,
 } from '../game/storage';
@@ -233,9 +236,27 @@ function PlayLevel({ level }: { level: Level }) {
    * dismissed it.
    */
   const [introOpen, setIntroOpen] = useState(false);
+
+  /**
+   * The game's front door, when a level is the first page someone sees.
+   *
+   * It used to open on the map alone, on the assumption that everyone arrives
+   * there. They do not: a level is a shareable URL and the one worth posting,
+   * so a visitor can land on a code editor and a truth table with nothing
+   * saying what Simten is. Same `INTRO_SEEN_KEY` the map writes, so it is
+   * still shown once per person rather than once per entry point.
+   */
+  const [gameIntroOpen, setGameIntroOpen] = useState(false);
   useEffect(() => {
+    if (!readStored(INTRO_SEEN_KEY, false)) setGameIntroOpen(true);
+  }, []);
+
+  // The level's own explainer waits for the front door to close, so a first
+  // visit to a level that has one does not stack two dialogs.
+  useEffect(() => {
+    if (gameIntroOpen) return;
     if (level.intro && !readSeenIntros().includes(level.id)) setIntroOpen(true);
-  }, [level.id, level.intro]);
+  }, [level.id, level.intro, gameIntroOpen]);
 
   const dismissIntro = useCallback(() => {
     markIntroSeen(level.id);
@@ -631,6 +652,7 @@ function PlayLevel({ level }: { level: Level }) {
           whatever the modal setting says. Outside interaction does not dismiss
           it either: clicking a switch is not a request to close the spec.
           Focus stays where it was, so opening this never interrupts typing. */}
+      <IntroDialog open={gameIntroOpen} onOpenChange={setGameIntroOpen} />
       <LevelIntro level={level} open={introOpen} onDismiss={dismissIntro} />
 
       {result?.status === 'pass' && (
