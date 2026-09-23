@@ -33,6 +33,34 @@ function Heading({ children }: { children: React.ReactNode }) {
   );
 }
 
+/** The chip a gate name wears, shared by the allowed list and inline prose. */
+const CHIP = 'rounded border border-border px-1.5 py-0.5 font-mono text-xs text-foreground';
+
+/**
+ * Prose with `backticked` names rendered as chips.
+ *
+ * Briefs and failure messages both name gates, ports and circuits in
+ * backticks. Rendered as plain text the backticks showed up literally; drawn
+ * as the same chip the allowed-gates list uses, "make an `OR` gate" points at
+ * the thing sitting in that list, so the two read as one instruction.
+ */
+function Prose({ text, className }: { text: string; className: string }) {
+  return (
+    <p className={className}>
+      {text.split(/`([^`]+)`/).map((part, i) =>
+        i % 2 === 1 ? (
+          // biome-ignore lint/suspicious/noArrayIndexKey: split parts have no id
+          <code key={i} className={`${CHIP} mx-0.5`}>
+            {part}
+          </code>
+        ) : (
+          part
+        ),
+      )}
+    </p>
+  );
+}
+
 /**
  * What went wrong, in a sentence, for the failures a truth table cannot say.
  *
@@ -97,7 +125,7 @@ export function SpecPanel({ level, result, activeRow, provenRows }: SpecPanelPro
 
       <div className="min-w-[220px] max-w-md shrink-0">
         <Heading>The problem</Heading>
-        <p className="text-sm leading-relaxed text-muted-foreground">{level.brief}</p>
+        <Prose text={level.brief} className="text-sm leading-relaxed text-muted-foreground" />
       </div>
 
       {/* What you may build with, stated up front. It used to appear only in
@@ -106,26 +134,26 @@ export function SpecPanel({ level, result, activeRow, provenRows }: SpecPanelPro
           previous level's completion card promises a gate; this is where that
           promise is visible on arrival. */}
       <div className="min-w-[160px] shrink-0">
-        <Heading>Gates</Heading>
+        <Heading>Allowed gates</Heading>
         <ul className="flex max-w-[240px] flex-wrap gap-1.5">
           {level.allowed.map((name) => (
-            <li
-              key={name}
-              className="rounded border border-border px-1.5 py-0.5 font-mono text-xs text-foreground"
-            >
+            <li key={name} className={CHIP}>
               {name}
             </li>
           ))}
         </ul>
         <p className="mt-1.5 text-[11px] text-muted-foreground">
-          Switches and lamps are always free.
+          Switches and leds are always free.
         </p>
       </div>
 
       {reason && (
         <div className="min-w-[220px] max-w-md shrink-0">
           <Heading>Not yet</Heading>
-          <p className="text-sm leading-relaxed text-amber-600 dark:text-amber-400">{reason}</p>
+          <Prose
+            text={reason}
+            className="text-sm leading-relaxed text-amber-600 dark:text-amber-400"
+          />
         </div>
       )}
     </div>
