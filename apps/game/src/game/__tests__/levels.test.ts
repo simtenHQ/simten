@@ -137,9 +137,9 @@ describe('the score counts only permitted primitives', () => {
    * from `allowed` is what prevents that.
    */
   it('does not charge for Switch and Led', async () => {
-    const level = LEVELS_BY_ID.get('first-wire');
+    const level = LEVELS_BY_ID.get('nand');
     if (!level) throw new Error('level missing');
-    const result = await grade(localRuntime(), level, SOLUTIONS['first-wire']);
+    const result = await grade(localRuntime(), level, SOLUTIONS.nand);
     if (result.status !== 'pass') throw new Error(JSON.stringify(result));
     // Two switches, one lamp, one gate, so the score is 1.
     expect(result.gates).toBe(1);

@@ -263,6 +263,7 @@ function projectCircuitToNodes(
         outputNames,
         isComposite,
         hasReference,
+        harness: node.harness,
         arguments: node.arguments,
         __pixels: pixels,
         __consoleText: consoleText,

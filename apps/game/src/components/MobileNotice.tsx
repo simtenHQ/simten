@@ -10,25 +10,25 @@
  */
 
 import { Link } from '@tanstack/react-router';
+import { Logo } from './Logo';
 
 export function MobileNotice() {
   return (
     <div className="flex min-h-screen flex-col bg-gray-50 px-6 py-12 text-center dark:bg-[#111113]">
       <main className="flex flex-1 flex-col items-center justify-center">
         <div className="max-w-sm">
-          <div className="mb-5 inline-flex h-12 w-12 items-center justify-center rounded-full border border-border bg-card">
-            <svg
-              className="h-6 w-6 text-muted-foreground"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.5}
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <rect x="3" y="4" width="18" height="12" rx="2" />
-              <path strokeLinecap="round" d="M8 20h8M12 16v4" />
-            </svg>
-          </div>
+          {/* The brand rather than a monitor icon: this is the whole page for
+              anyone arriving on a phone, so it has to say whose site it is.
+              The heading already carries the "not on this device" part, and
+              two icons above it read as clutter. Same lockup as `NotFound`. */}
+          <Link
+            to="/"
+            className="mb-6 inline-flex items-center gap-2 text-foreground no-underline transition-colors hover:text-foreground/80"
+            aria-label="Simten home"
+          >
+            <Logo size={24} />
+            <span className="text-lg font-semibold tracking-tight">Simten</span>
+          </Link>
 
           <h1 className="mb-2 text-xl font-semibold tracking-tight">This game needs a desktop</h1>
           <p className="mb-6 text-sm leading-relaxed text-muted-foreground">

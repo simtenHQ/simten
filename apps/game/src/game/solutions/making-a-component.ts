@@ -5,11 +5,11 @@ import { Xor } from '@simten/core/std';
 
 export const Xor2 = circuit('Xor2', {
   inputs: { a: bit, b: bit },
-  outputs: { out: bit },
+  outputs: { result: bit },
   nodes: { xor1: Xor },
   connect: ({ inputs, outputs, nodes: { xor1 } }) => [
     inputs.a.to(xor1.a),
     inputs.b.to(xor1.b),
-    xor1.out.to(outputs.out),
+    xor1.out.to(outputs.result),
   ],
 });
