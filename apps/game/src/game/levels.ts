@@ -315,16 +315,16 @@ export default circuit('And2', {
       'Rebuild your `XOR` with `inputs` and `outputs` instead of switches and leds, so other circuits can use it',
     target: 'Xor2',
     inputs: ['a', 'b'],
-    outputs: ['out'],
+    outputs: ['result'],
     allowed: ['Nand', 'Not', 'And', 'Or', 'Nor', 'Xor', 'Xnor'],
     stub: `// Ports, not switches. Every gate you have built is available.
 //
 // \`inputs\` and \`outputs\` are the circuit's edges: what it looks like from
-// the outside. Wire them with \`inputs.a.to(...)\` and \`....to(outputs.out)\`.
+// the outside. Wire them with \`inputs.a.to(...)\` and \`....to(outputs.result)\`.
 
 export default circuit('Xor2', {
   inputs: { a: bit, b: bit },
-  outputs: { out: bit },
+  outputs: { result: bit },
   nodes: {
     //
   },
@@ -334,10 +334,10 @@ export default circuit('Xor2', {
 });
 `,
     vectors: [
-      { inputs: { a: 0, b: 0 }, expect: { out: 0 } },
-      { inputs: { a: 0, b: 1 }, expect: { out: 1 } },
-      { inputs: { a: 1, b: 0 }, expect: { out: 1 } },
-      { inputs: { a: 1, b: 1 }, expect: { out: 0 } },
+      { inputs: { a: 0, b: 0 }, expect: { result: 0 } },
+      { inputs: { a: 0, b: 1 }, expect: { result: 1 } },
+      { inputs: { a: 1, b: 0 }, expect: { result: 1 } },
+      { inputs: { a: 1, b: 1 }, expect: { result: 0 } },
     ],
     par: 1,
     outro: {
