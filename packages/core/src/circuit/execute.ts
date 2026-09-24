@@ -39,6 +39,15 @@ export interface ExecuteResult {
   circuit: Circuit | null;
   /** All circuits found (if code defines multiple) */
   circuits: Circuit[];
+  /**
+   * Circuits the code exported without defining, e.g. `export default FullAdder`.
+   *
+   * Kept apart from `circuits`, which means "constructed here" and is reported
+   * as such by the MCP tools. Re-exporting a stdlib component defines nothing,
+   * but it is a reasonable thing to want to look at, so a renderer can fall
+   * back to this rather than reporting an empty source.
+   */
+  exportedCircuits: Circuit[];
   /** All BuiltCircuits found */
   builtCircuits: BuiltCircuit[];
   /** The circuit library (stdlib + user-defined circuits) */
@@ -148,6 +157,56 @@ export function stripExports(code: string): string {
     .replace(/^([ \t]*)export\s+(?=(?:const|let|var|function|class|async)\b)/gm, '$1');
 }
 
+/**
+ * Read an exported value as a component, or null if it is not one.
+ *
+ * Handles both shapes the stdlib exports: a built component (`FullAdder`) and
+ * the factory a parameterised one is exported as (`Adder`, `Register`). The
+ * factory is called with no arguments for its default instance, which is what
+ * `nodes: { r: Register }` does too, so the diagram matches what wiring it up
+ * would give you.
+ */
+function asBuiltCircuit(value: unknown): BuiltCircuit | null {
+  const built = value as BuiltCircuit | undefined;
+  if (built?.circuit?.name) return built;
+
+  if (typeof value === 'function') {
+    try {
+      const made = (value as () => BuiltCircuit)();
+      if (made?.circuit?.name) return made;
+    } catch {
+      // Not a component factory, or one that needs arguments. Nothing to show.
+    }
+  }
+  return null;
+}
+
+/**
+ * Names bound by top-level `export const|let|var|function|class` declarations.
+ *
+ * Read off the source before stripping, so the executed code can hand those
+ * values back. Only used to recognise a re-exported component: `export default
+ * FullAdder` defines no circuit, so without this the source looks empty.
+ *
+ * Deliberately a regex over the same lines `stripExports` rewrites, rather than
+ * a parse. It runs on every keystroke in the editor, the shapes it has to catch
+ * are the ones that survive stripping, and anything it misses simply falls back
+ * to today's behaviour.
+ */
+function exportedNames(code: string): string[] {
+  const names = new Set<string>();
+  const decl =
+    /^[ \t]*export\s+(?:const|let|var|function|class|async\s+function)\s+([A-Za-z_$][\w$]*)/gm;
+  for (const m of code.matchAll(decl)) names.add(m[1]);
+
+  // `export default <identifier>;` — an expression default (an inline
+  // `circuit(...)` call) is already collected, so only a bare name matters.
+  const def = /^[ \t]*export\s+default\s+([A-Za-z_$][\w$]*)[ \t]*;?[ \t]*$/m.exec(code);
+  if (def) names.add(def[1]);
+
+  return [...names];
+}
+
 // ============================================================================
 // Execute
 // ============================================================================
@@ -185,15 +244,22 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
     };
   const builtCircuits: BuiltCircuit[] = [];
   const circuits: Circuit[] = [];
+  const exportedCircuits: Circuit[] = [];
 
   try {
     // new Function bodies can't contain import/export — strip both defensively
     // (callers may pass code that carries real imports/exports for tsx/editor use).
-    const cleaned = stripExports(stripImports(jsCode));
+    const withoutImports = stripImports(jsCode);
+    const cleaned = stripExports(withoutImports);
+    // The names the source exported, read before stripping. Collected from
+    // inside the block so a re-exported component comes back with the rest.
+    const exported = exportedNames(withoutImports);
+    const exportedList = exported.map((n) => `(typeof ${n} !== 'undefined' ? ${n} : undefined)`);
     // Wrap: intercept circuit()/component() calls to collect all created circuits
     const wrappedCode = `
       "use strict";
       const __collector = [];
+      const __exported = [];
       const __origCircuit = circuit;
       const __trackingCircuit = function(name, config) {
         const result = __origCircuit(name, config);
@@ -204,12 +270,16 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
         const circuit = __trackingCircuit;
         const component = __trackingCircuit;
         ${cleaned}
+        __exported.push(${exportedList.join(', ')});
       }
-      return __collector;
+      return { collected: __collector, exported: __exported };
     `;
 
     const fn = new Function(...allNames, wrappedCode);
-    const collected = fn(...allValues) as BuiltCircuit[];
+    const { collected, exported: exportedValues } = fn(...allValues) as {
+      collected: BuiltCircuit[];
+      exported: unknown[];
+    };
 
     for (const built of collected) {
       if (built && built.circuit) {
@@ -225,9 +295,30 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
       }
     }
 
+    // Exported components the source did not build: `export default FullAdder`
+    // and friends. A parameterised component is exported as its factory, so a
+    // bare function is called with no arguments to get its default instance.
+    const defined = new Set(circuits.map((c) => c.name));
+    for (const value of exportedValues) {
+      const built = asBuiltCircuit(value);
+      if (!built || defined.has(built.circuit.name)) continue;
+      defined.add(built.circuit.name);
+      exportedCircuits.push(built.circuit);
+      library.addCircuit(built.circuit);
+      if (built._dependencies) {
+        for (const [, dep] of built._dependencies) library.addCircuit(dep.circuit);
+      }
+    }
+
     return {
-      circuit: circuits.length > 0 ? circuits[circuits.length - 1] : null,
+      // What to simulate when the source defined nothing: the exported
+      // component. Without it a re-export reads as an empty file.
+      circuit:
+        circuits.length > 0
+          ? circuits[circuits.length - 1]
+          : (exportedCircuits[exportedCircuits.length - 1] ?? null),
       circuits,
+      exportedCircuits,
       builtCircuits,
       library,
       error: null,
@@ -236,6 +327,7 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
     return {
       circuit: null,
       circuits: [],
+      exportedCircuits: [],
       builtCircuits: [],
       library,
       error: e instanceof Error ? e.message : String(e),

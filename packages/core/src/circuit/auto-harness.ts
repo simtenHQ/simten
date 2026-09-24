@@ -73,16 +73,24 @@ export function autoHarness(
 
   // An input is live once something inside reads it; an output once something
   // inside drives it.
+  //
+  // A primitive has no insides to read the connection list of: an `Or` is an
+  // `eval`, not a netlist, so scanning connections finds nothing and every port
+  // would look unused. Its ports are live by definition, which is also what
+  // makes `export default Or` show a gate you can click rather than a bare box.
+  const isPrimitive = circuit.implementation.kind === 'primitive';
   const readInputs = new Set<string>();
   const drivenOutputs = new Set<string>();
   for (const conn of circuit.connections) {
     if (isCircuitPort(conn.source.nodeId)) readInputs.add(conn.source.portName);
     if (isCircuitPort(conn.target.nodeId)) drivenOutputs.add(conn.target.portName);
   }
+  const inputLive = (name: string) => isPrimitive || readInputs.has(name);
+  const outputLive = (name: string) => isPrimitive || drivenOutputs.has(name);
 
   // Switch / Input node for each input port that is used
   for (const input of circuit.inputs) {
-    if (!readInputs.has(input.name)) continue;
+    if (!inputLive(input.name)) continue;
     const isBit = input.portType.kind === 'bit';
     const args: Record<string, ArgumentValue> = {};
     if (!isBit && input.portType.kind === 'bus') args.width = input.portType.width;
@@ -108,7 +116,7 @@ export function autoHarness(
 
   // Led / HexDisplay node for each output port that is driven
   for (const output of circuit.outputs) {
-    if (!drivenOutputs.has(output.name)) continue;
+    if (!outputLive(output.name)) continue;
     const isBit = output.portType.kind === 'bit';
     const outArgs: Record<string, ArgumentValue> = {};
     if (!isBit && output.portType.kind === 'bus') outArgs.width = output.portType.width;

@@ -64,7 +64,8 @@ export interface CircuitCompilerState {
 
 const DEFAULT_DEBOUNCE_MS = 300;
 const DEFAULT_SLOT: SimSlot = 'editor';
-const NO_CIRCUITS_MESSAGE = "No circuits found. Use circuit('Name', { ... }) to define a circuit.";
+const NO_CIRCUITS_MESSAGE =
+  "Nothing to show. Define a circuit with circuit('Name', { ... }), or export a component to look at.";
 
 export function useCircuitCompiler(
   source: string,

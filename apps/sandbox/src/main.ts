@@ -439,7 +439,10 @@ async function handleCompile(id: string, source: string, slotId: string = DEFAUL
   const evalSources = workerResult.evalSources ?? {};
 
   if (circuits.length === 0) {
-    respondError(id, 'No circuits found in source.');
+    respondError(
+      id,
+      "Nothing to show. Define a circuit with circuit('Name', { ... }), or export a component to look at.",
+    );
     return;
   }
 

@@ -130,8 +130,18 @@ async function handleRequest(req: WorkerRequest): Promise<void> {
         self.postMessage({ id: req.id, type: 'error', error: result.error });
         return;
       }
-      if (result.circuits.length === 0) {
-        self.postMessage({ id: req.id, type: 'error', error: 'No circuits found in source.' });
+      // A source that defines nothing but exports a component (`export default
+      // FullAdder`) still has something to show. `circuits` stays honest about
+      // what was defined here; the renderer falls back to the export.
+      const renderable =
+        result.circuits.length > 0 ? result.circuits : (result.exportedCircuits ?? []);
+      if (renderable.length === 0) {
+        self.postMessage({
+          id: req.id,
+          type: 'error',
+          error:
+            "Nothing to show. Define a circuit with circuit('Name', { ... }), or export a component to look at.",
+        });
         return;
       }
 
@@ -149,7 +159,7 @@ async function handleRequest(req: WorkerRequest): Promise<void> {
       self.postMessage({
         id: req.id,
         type: 'compiled-ir',
-        circuits: result.circuits.map(circuitToSerializable),
+        circuits: renderable.map(circuitToSerializable),
         libraryCircuits: libraryCircuits.map(circuitToSerializable),
         evalSources,
       });
