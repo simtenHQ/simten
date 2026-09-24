@@ -1,5 +1,12 @@
 # @simten/mcp
 
+## 0.9.3
+
+### Patch Changes
+
+- Updated dependencies [83b6105]
+  - @simten/core@0.20.0
+
 ## 0.9.2
 
 ### Patch Changes

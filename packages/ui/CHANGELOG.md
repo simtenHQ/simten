@@ -1,5 +1,12 @@
 # @simten/ui
 
+## 0.15.2
+
+### Patch Changes
+
+- Updated dependencies [83b6105]
+  - @simten/core@0.20.0
+
 ## 0.15.1
 
 ### Patch Changes
