@@ -16,7 +16,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { And } from '../../std/index.js';
+import { And, Or } from '../../std/index.js';
 import type { Circuit } from '../../types/circuit.js';
 import { autoHarness } from '../auto-harness.js';
 import { bit } from '../bit-bus.js';
@@ -126,5 +126,26 @@ describe('autoHarness library registration', () => {
     expect(harness.nodes.filter((n) => n.componentRef === 'Switch').map((n) => n.id)).toEqual([
       'a',
     ]);
+  });
+});
+
+/**
+ * A primitive has no netlist to inspect.
+ *
+ * `Or` is an `eval`, not a set of connections, so the "is this port wired
+ * inside?" scan finds nothing and every port looks dead. Skipping them left
+ * `export default Or` drawing a bare box with no switches to click, which is
+ * the one case where looking at a component is the entire point.
+ */
+describe('primitives', () => {
+  it('harnesses every port of an eval-only primitive', () => {
+    const lib = makeLibrary();
+    const harness = autoHarness(Or.circuit, lib);
+
+    expect(harness.nodes.filter((n) => n.componentRef === 'Switch').map((n) => n.id)).toEqual([
+      'a',
+      'b',
+    ]);
+    expect(harness.nodes.filter((n) => n.componentRef === 'Led').map((n) => n.id)).toEqual(['out']);
   });
 });
