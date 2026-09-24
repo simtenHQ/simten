@@ -30,7 +30,6 @@ import {
   SimtenCodeEditor,
   type SimtenCodeEditorHandle,
 } from '@simten/ui/monaco';
-import { encodeSourceForUrl, shouldUseShortLink } from '@simten/ui/share';
 import { Download, Loader2, Share2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SiteHeader } from '@/components/SiteHeader';
@@ -292,24 +291,29 @@ export function EditorWorkspace({
       setTimeout(() => setShareStatus({ kind: 'idle' }), 2000);
       return;
     }
-    const encoded = encodeSourceForUrl(source);
+    // Always a short link, the way Fork does it. This used to inline the whole
+    // compressed source in the URL for anything under 4000 characters, which
+    // is most circuits, so the common case produced a link too long to paste
+    // anywhere civilised. The editor only runs on simten.dev, where the server
+    // function always exists, so the inline form bought nothing here. It stays
+    // in `CircuitEmbed` for embeds on third-party pages, which have no server
+    // to call, and `/circuit/<encoded>` keeps resolving so old links live.
+    //
+    // It also means every share is now counted: `share_create` only fires on
+    // this path, so inline shares were invisible to analytics.
     let url: string;
-    if (!shouldUseShortLink(encoded)) {
-      url = `${window.location.origin}/circuit/${encoded}`;
-    } else {
-      setShareStatus({ kind: 'sharing' });
-      try {
-        // Dynamic import keeps the `cloudflare:workers`-backed server fn out of
-        // the standalone client-only viewer build's module graph.
-        const { shareCircuit } = await import('@/features/share/server');
-        const { hash } = await shareCircuit({ data: { source } });
-        url = `${window.location.origin}/circuit/s/${hash}`;
-      } catch (err) {
-        const message = err instanceof Error ? err.message : 'Sharing failed';
-        setShareStatus({ kind: 'error', message });
-        setTimeout(() => setShareStatus({ kind: 'idle' }), 2500);
-        return;
-      }
+    setShareStatus({ kind: 'sharing' });
+    try {
+      // Dynamic import keeps the `cloudflare:workers`-backed server fn out of
+      // the standalone client-only viewer build's module graph.
+      const { shareCircuit } = await import('@/features/share/server');
+      const { hash } = await shareCircuit({ data: { source } });
+      url = `${window.location.origin}/circuit/s/${hash}`;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Sharing failed';
+      setShareStatus({ kind: 'error', message });
+      setTimeout(() => setShareStatus({ kind: 'idle' }), 2500);
+      return;
     }
     try {
       await navigator.clipboard.writeText(url);
