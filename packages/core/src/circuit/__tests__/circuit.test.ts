@@ -326,6 +326,62 @@ describe('validation', () => {
       }),
     ).toThrow("does not exist on node 'x'");
   });
+
+  it('names the input when .out is used on a circuit input', () => {
+    expect(() =>
+      circuit('Bad', {
+        inputs: { b: bit },
+        outputs: { y: bit },
+        nodes: { x: And },
+        connect: ({ inputs: { b }, outputs: { y }, nodes: { x } }) => [
+          (b as any).out.to(x.a),
+          x.out.to(y),
+        ],
+      }),
+    ).toThrow('`b` is a port, not a node, so it has no `.out`. Use it directly: `b.to(...)`');
+  });
+
+  it('names the output when .in is used on a circuit output', () => {
+    expect(() =>
+      circuit('Bad', {
+        inputs: { a: bit },
+        outputs: { sum: bit },
+        nodes: { x: And },
+        connect: ({ inputs: { a }, outputs: { sum }, nodes: { x } }) => [
+          a.to(x.a, x.b),
+          x.out.to((sum as any).in),
+        ],
+      }),
+    ).toThrow('`sum` is a port, not a node, so it has no `.in`. Use it directly: `x.out.to(sum)`');
+  });
+
+  it('names the node port when a property is used on one', () => {
+    expect(() =>
+      circuit('Bad', {
+        inputs: { a: bit },
+        outputs: { y: bit },
+        nodes: { x: And },
+        connect: ({ inputs: { a }, outputs: { y }, nodes: { x } }) => [
+          a.to(x.a, x.b),
+          (x.out as any).out.to(y),
+        ],
+      }),
+    ).toThrow('`x.out` is a port, not a node, so it has no `.out`.');
+  });
+
+  it('leaves port refs safe to await and serialise', async () => {
+    let seen: unknown;
+    circuit('Probe', {
+      inputs: { a: bit },
+      outputs: { y: bit },
+      connect: ({ inputs: { a }, outputs: { y } }) => {
+        seen = a;
+        return [a.to(y)];
+      },
+    });
+    await expect(Promise.resolve(seen)).resolves.toBe(seen);
+    expect(() => JSON.stringify(seen)).not.toThrow();
+  });
 });
 
 // ============================================================================
