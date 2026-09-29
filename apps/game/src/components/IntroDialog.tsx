@@ -8,6 +8,11 @@
  *
  * The seen flag is written on dismissal rather than on open, so closing the tab
  * mid-read brings it back.
+ *
+ * `startLevelId` turns "Start building" into a link to that level. The map
+ * passes one because closing the dialog there left a first-time player on a
+ * map with no obvious first move. A level page passes none: the player is
+ * already where they need to be, so the button only closes.
  */
 
 import {
@@ -18,14 +23,17 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@simten/ui/primitives/dialog';
+import { Link } from '@tanstack/react-router';
 import { INTRO_SEEN_KEY, writeStored } from '../game/storage';
 
 export function IntroDialog({
   open,
   onOpenChange,
+  startLevelId,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  startLevelId?: string;
 }) {
   const dismiss = () => {
     writeStored(INTRO_SEEN_KEY, true);
@@ -86,13 +94,24 @@ export function IntroDialog({
           >
             Built on Simten, a TypeScript HDL ↗
           </a>
-          <button
-            type="button"
-            onClick={dismiss}
-            className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
-          >
-            Start building
-          </button>
+          {startLevelId ? (
+            <Link
+              to="/$levelId"
+              params={{ levelId: startLevelId }}
+              onClick={dismiss}
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground no-underline hover:opacity-90"
+            >
+              Start building
+            </Link>
+          ) : (
+            <button
+              type="button"
+              onClick={dismiss}
+              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:opacity-90"
+            >
+              Start building
+            </button>
+          )}
         </DialogFooter>
       </DialogContent>
     </Dialog>
