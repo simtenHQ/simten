@@ -1,5 +1,11 @@
 # @simten/core
 
+## 0.20.1
+
+### Patch Changes
+
+- bc1b755: Using `.out` or `.in` on something that is already a port (such as a circuit input `a.out.to(...)`) now fails with an error naming the port and how to wire it, instead of "Cannot read properties of undefined".
+
 ## 0.20.0
 
 ### Minor Changes
