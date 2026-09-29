@@ -56,8 +56,19 @@ import type {
 // produce an inverted connection. Don't add such casts; runtime direction
 // validation is deliberately deferred — the type system catches it at edit
 // time, which is the whole point of #110.
-function createPortRef(nodeId: string, portName: string, portType: PortType): SourcePortRef {
-  return {
+/** Which side of the circuit boundary a top-level port sits on, for advice. */
+type CircuitPortRole = 'input' | 'output';
+
+/** Probed by promise resolution and JSON.stringify; must not throw. */
+const PASSTHROUGH_PROPS = new Set(['then', 'toJSON']);
+
+function createPortRef(
+  nodeId: string,
+  portName: string,
+  portType: PortType,
+  role?: CircuitPortRole,
+): SourcePortRef {
+  const ref = {
     _path: { nodeId, portName },
     _type: portType,
     to(...targets: SinkPortRef[]): ConnectionDef {
@@ -67,17 +78,35 @@ function createPortRef(nodeId: string, portName: string, portType: PortType): So
         portType,
       };
     },
-  } as SourcePortRef;
+  };
+  // A port is already the end of a wire, so `.out` or `.in` on one is the
+  // habit carried over from Switch and Led. Without this, `a.out` is undefined
+  // and `.to` on it throws a bare TypeError that names neither port.
+  return new Proxy(ref, {
+    get(target, prop) {
+      if (typeof prop === 'symbol' || prop in target) return Reflect.get(target, prop);
+      if (prop.startsWith('_') || PASSTHROUGH_PROPS.has(prop)) return undefined;
+      const label = nodeId === '' ? portName : `${nodeId}.${portName}`;
+      const advice =
+        role === 'input'
+          ? ` Use it directly: \`${portName}.to(...)\``
+          : role === 'output'
+            ? ` Use it directly: \`x.out.to(${portName})\``
+            : '';
+      throw new Error(`\`${label}\` is a port, not a node, so it has no \`.${prop}\`.${advice}`);
+    },
+  }) as unknown as SourcePortRef;
 }
 
 function createNodeProxy(
   nodeId: string,
   ports: Map<string, PortType>,
   componentName?: string,
+  role?: CircuitPortRole,
 ): Record<string, SourcePortRef> {
   const refs: Record<string, SourcePortRef> = {};
   for (const [name, type] of ports) {
-    refs[name] = createPortRef(nodeId, name, type);
+    refs[name] = createPortRef(nodeId, name, type, role);
   }
   return new Proxy(refs, {
     get(target, prop: string) {
@@ -332,8 +361,8 @@ export function circuit(name: string, configOrFactory: any = {} as any): any {
     }
 
     const arg = {
-      inputs: createNodeProxy('', inputs),
-      outputs: createNodeProxy('', outputs),
+      inputs: createNodeProxy('', inputs, undefined, 'input'),
+      outputs: createNodeProxy('', outputs, undefined, 'output'),
       nodes: nodeRefs,
     };
 
