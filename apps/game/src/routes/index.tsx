@@ -19,7 +19,7 @@ import { IntroDialog } from '../components/IntroDialog';
 import { LevelDrilldown } from '../components/LevelDrilldown';
 import { LevelMap } from '../components/LevelMap';
 import ThemeToggle from '../components/ThemeToggle';
-import { LEVELS_BY_ID } from '../game/levels';
+import { LEVELS, LEVELS_BY_ID } from '../game/levels';
 import { type Drafts, INTRO_SEEN_KEY, readDrafts, readProgress, readStored } from '../game/storage';
 
 export const Route = createFileRoute('/')({
@@ -82,6 +82,11 @@ function MapPage() {
   const candidate = activeId ? LEVELS_BY_ID.get(activeId) : undefined;
   const level = candidate && solved.has(candidate.id) ? candidate : undefined;
 
+  // Where "Start building" goes: the first level not yet solved, which is NAND
+  // for a first visit. Undefined once everything is solved, and the button
+  // just closes.
+  const startLevelId = LEVELS.find((l) => !solved.has(l.id))?.id;
+
   return (
     <div className="flex h-screen flex-col">
       <HeaderBar>
@@ -115,7 +120,7 @@ function MapPage() {
         />
       )}
 
-      <IntroDialog open={introOpen} onOpenChange={setIntroOpen} />
+      <IntroDialog open={introOpen} onOpenChange={setIntroOpen} startLevelId={startLevelId} />
     </div>
   );
 }
