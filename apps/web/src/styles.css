@@ -128,37 +128,6 @@ pre {
   font-feature-settings: "liga" 0, "calt" 0;
 }
 
-/* ── Embed theme tokens ─────────────────────────────────────────────── */
-[data-embed-theme="dark"], .dark {
-  --embed-bg-primary: #141418;
-  --embed-bg-secondary: #1a1a1e;
-  --embed-bg-tertiary: #2a2a2e;
-  --embed-bg-surface: rgba(17, 17, 20, 0.9);
-  --embed-bg-surface-80: rgba(17, 17, 20, 0.8);
-  --embed-bg-code: #0d1117;
-  --embed-border: rgba(55, 55, 65, 0.5);
-  --embed-border-node: #3a3a3e;
-  --embed-text-primary: #e5e5e5;
-  --embed-text-secondary: #a1a1aa;
-  --embed-text-muted: #71717a;
-  --embed-dot-color: #2a2a2e;
-}
-
-[data-embed-theme="light"], html.light {
-  --embed-bg-primary: #f8f9fb;
-  --embed-bg-secondary: #f3f4f6;
-  --embed-bg-tertiary: #eef0f3;
-  --embed-bg-surface: rgba(248, 249, 251, 0.95);
-  --embed-bg-surface-80: rgba(248, 249, 251, 0.9);
-  --embed-bg-code: #f3f4f6;
-  --embed-border: rgba(0, 0, 0, 0.08);
-  --embed-border-node: rgba(0, 0, 0, 0.10);
-  --embed-text-primary: #1a1a2e;
-  --embed-text-secondary: #4b5563;
-  --embed-text-muted: #9ca3af;
-  --embed-dot-color: #e5e7eb;
-}
-
 /* ── Breadboard background ──────────────────────────────────────────────
    A perfboard the page sits on: a fine 4px grid, a 20px grid over it, and a
    drilled hole at every 20px intersection.

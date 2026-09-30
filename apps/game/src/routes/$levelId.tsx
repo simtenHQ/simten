@@ -571,7 +571,6 @@ function PlayLevel({ level }: { level: Level }) {
               circuit={canvasCircuit}
               componentLibrary={canvasLibrary ?? undefined}
               portValues={preview.portValues}
-              theme="dark"
               showControls
               // The diagram has to answer "what is this port called", because
               // the code demands the exact name and nothing else on screen

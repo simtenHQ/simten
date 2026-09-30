@@ -21,7 +21,7 @@
  */
 
 import { useCompiledCircuit } from '@simten/embed';
-import { CompositeInspectorDialog, type InspectorFrame } from '@simten/ui/canvas';
+import { CompositeInspectorDialog, type InspectorFrame, useDetectTheme } from '@simten/ui/canvas';
 import { useCallback, useEffect, useState } from 'react';
 import { SOLUTIONS } from '../game/solutions';
 import type { Level } from '../game/types';
@@ -37,6 +37,7 @@ export interface LevelDrilldownProps {
 
 export function LevelDrilldown({ level, draft, expanded, onCloseExpanded }: LevelDrilldownProps) {
   const source = draft ?? SOLUTIONS[level.id];
+  const theme = useDetectTheme();
 
   // `select` is a picker over the compiled circuits, not a name; the default
   // takes the last circuit defined. Same shape the level page uses.
@@ -103,7 +104,7 @@ export function LevelDrilldown({ level, draft, expanded, onCloseExpanded }: Leve
     <CompositeInspectorDialog
       stack={stack}
       componentLibrary={preview.componentLibrary}
-      theme="dark"
+      theme={theme}
       onClose={onClose}
       onPopLevel={onPopLevel}
       onPushLevel={onPushLevel}

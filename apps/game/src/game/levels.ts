@@ -202,8 +202,8 @@ export default circuit('And2', {
     ],
     par: 3,
     outro: {
-      headline: 'You just used De Morgan',
-      body: 'Not-a and not-b are both true only when everything is off. Deny that and you have OR.',
+      headline: "You just used De Morgan's law",
+      body: 'NOT a and NOT b are both on only when both switches are off. Your NAND flips that, so the light is on whenever either switch is on. That is OR: invert the inputs and flip the gate.',
     },
   },
 
