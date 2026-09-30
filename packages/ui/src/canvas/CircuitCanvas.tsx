@@ -128,7 +128,7 @@ export interface CircuitCanvasProps {
   showPortLabels?: boolean;
   onPortClick?: (nodeLabel: string, portName: string, portType: 'input' | 'output') => void;
   glowUnconnected?: boolean;
-  /** Theme for the canvas. Defaults to "dark". */
+  /** Theme for the canvas. Defaults to the page theme (`html.dark`). */
   theme?: 'light' | 'dark';
   /**
    * Allow single-finger pan on mobile. Default false — inline embeds need
