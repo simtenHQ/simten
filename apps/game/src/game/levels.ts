@@ -141,10 +141,10 @@ export default circuit('Not1', {
     outputs: ['result'],
     allowed: ['Nand', 'Not'],
     stub: `// You built NOT last level, so it is yours to use now.
-// Add it to the list:
+// Add it to nodes:
 //   n: Not,
 //
-// Then add n to the nodes in the connect function below:
+// Then add n to the destructuring in connect:
 //   ({ nodes: { a, b, n1, n, result } })
 
 export default circuit('And2', {
