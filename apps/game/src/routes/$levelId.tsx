@@ -24,8 +24,8 @@ import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
+  usePanelRef,
 } from '@simten/ui/primitives/resizable';
-import { Sheet, SheetContent, SheetTitle } from '@simten/ui/primitives/sheet';
 import { useSandboxContext } from '@simten/ui/sandbox';
 import { createFileRoute, Link, notFound } from '@tanstack/react-router';
 import { Network, RotateCcw } from 'lucide-react';
@@ -33,10 +33,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DesktopOnly, useIsDesktop } from '../components/DesktopOnly';
 import { GitHubLink } from '../components/GitHubLink';
 import { HeaderBar } from '../components/HeaderBar';
-import { IntroDialog } from '../components/IntroDialog';
 import { LevelComplete } from '../components/LevelComplete';
 import { LevelIntro } from '../components/LevelIntro';
 import { MobileNotice } from '../components/MobileNotice';
+import { useOnboardingTour } from '../components/OnboardingTour';
 import { SpecPanel } from '../components/SpecPanel';
 import ThemeToggle from '../components/ThemeToggle';
 import { forbiddenPrimitives, grade, permittedFor } from '../game/grade';
@@ -45,11 +45,10 @@ import { LEVELS_BY_ID, nextLevel } from '../game/levels';
 import { sandboxRuntime } from '../game/runtime';
 import {
   clearDraft,
-  INTRO_SEEN_KEY,
+  isOnboarded,
   markIntroSeen,
   readDrafts,
   readSeenIntros,
-  readStored,
   writeDraft,
   writeProgress,
 } from '../game/storage';
@@ -77,6 +76,9 @@ const DRAFT_DEBOUNCE_MS = 400;
  * try to click something.
  */
 const CLOCK_BAR_PX = 40;
+
+/** Why the panels clip with an inline style: see the panel layout below. */
+const CLIP = { overflow: 'hidden' } as const;
 
 export const Route = createFileRoute('/$levelId')({
   staticData: { skipDefaultChrome: true },
@@ -223,6 +225,19 @@ function PlayLevel({ level }: { level: Level }) {
   const [result, setResult] = useState<GradeResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [specOpen, setSpecOpen] = useState(true);
+  /**
+   * The spec is a panel under the editor and canvas, not a sheet over them, so
+   * it never hides the bottom of either. `specOpen` drives it from the header
+   * button and from Submit; dragging the panel shut reports back through
+   * `onResize`, so the button's label stays true.
+   */
+  const specPanel = usePanelRef();
+  useEffect(() => {
+    const panel = specPanel.current;
+    if (!panel) return;
+    if (specOpen && panel.isCollapsed()) panel.expand();
+    if (!specOpen && !panel.isCollapsed()) panel.collapse();
+  }, [specOpen, specPanel]);
   // Closing the completion dialog must not immediately reopen it, but a fresh
   // submit should bring it back.
   const [completeDismissed, setCompleteDismissed] = useState(false);
@@ -238,25 +253,25 @@ function PlayLevel({ level }: { level: Level }) {
   const [introOpen, setIntroOpen] = useState(false);
 
   /**
-   * The game's front door, when a level is the first page someone sees.
-   *
-   * It used to open on the map alone, on the assumption that everyone arrives
-   * there. They do not: a level is a shareable URL and the one worth posting,
-   * so a visitor can land on a code editor and a truth table with nothing
-   * saying what Simten is. Same `INTRO_SEEN_KEY` the map writes, so it is
-   * still shown once per person rather than once per entry point.
+   * The tour, which is also the game's front door: a level is a shareable URL,
+   * so a newcomer can land on any of them, and every level page has the same
+   * layout to walk round. "What is this?" bumps `tourReplays` to run it again,
+   * and arriving on `#tour` (the map's "What is this?") does the same.
    */
-  const [gameIntroOpen, setGameIntroOpen] = useState(false);
+  const [tourReplays, setTourReplays] = useState(0);
   useEffect(() => {
-    if (!readStored(INTRO_SEEN_KEY, false)) setGameIntroOpen(true);
+    if (window.location.hash !== '#tour') return;
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
+    setTourReplays((n) => n + 1);
   }, []);
+  const touring = useOnboardingTour(!introOpen, tourReplays);
 
-  // The level's own explainer waits for the front door to close, so a first
-  // visit to a level that has one does not stack two dialogs.
+  // The level's own explainer waits for the tour, so a newcomer reads what
+  // Simten is before what this level is about, and nothing stacks.
   useEffect(() => {
-    if (gameIntroOpen) return;
+    if (touring || !isOnboarded()) return;
     if (level.intro && !readSeenIntros().includes(level.id)) setIntroOpen(true);
-  }, [level.id, level.intro, gameIntroOpen]);
+  }, [level.id, level.intro, touring]);
 
   const dismissIntro = useCallback(() => {
     markIntroSeen(level.id);
@@ -395,7 +410,7 @@ function PlayLevel({ level }: { level: Level }) {
       const verdict = await grade(sandboxRuntime(sandbox), level, source);
       setResult(verdict);
       setCompleteDismissed(false);
-      // Submit is a request for a verdict, so show it; hidden, the spec sheet
+      // Submit is a request for a verdict, so show it; hidden, the spec panel
       // swallowed both the failure message and the whole victory run.
       setSpecOpen(true);
       if (verdict.status === 'pass') {
@@ -473,6 +488,13 @@ function PlayLevel({ level }: { level: Level }) {
               Solved · {result?.status === 'pass' ? result.gates : 0}
             </button>
           )}
+          <button
+            type="button"
+            onClick={() => setTourReplays((n) => n + 1)}
+            className="whitespace-nowrap px-2 text-xs text-muted-foreground hover:text-foreground"
+          >
+            What is this?
+          </button>
           {/* The wordmark also goes back, but that is a convention rather than
               a signpost, and this one says where it leads. */}
           <Link
@@ -509,6 +531,7 @@ function PlayLevel({ level }: { level: Level }) {
           </button>
           <button
             type="button"
+            data-tour="submit"
             onClick={onSubmit}
             disabled={submitting}
             className="whitespace-nowrap rounded-md bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
@@ -521,80 +544,119 @@ function PlayLevel({ level }: { level: Level }) {
       </HeaderBar>
 
       <div className="min-h-0 flex-1">
-        <ResizablePanelGroup>
-          <ResizablePanel defaultSize={45} minSize={20} className="flex flex-col overflow-hidden">
-            <div className="min-h-0 flex-1">
-              <SimtenCodeEditor
-                value={source}
-                onChange={(v) => {
-                  const next = v ?? '';
-                  setSource(next);
-                  saveDraft(next);
-                  // A verdict describes the source that produced it, so an
-                  // edit retires both the verdict and any victory run still
-                  // sweeping.
-                  if (result) {
-                    setResult(null);
-                    victory.reset();
-                  }
-                }}
-                diagnostics={diagnostics}
-                intellisense={intellisense}
-                onMount={(ed) => {
-                  const at = givenPreambleEnd(ed.getModel()?.getLinesContent() ?? []);
-                  if (at !== null) ed.revealLineNearTop(at, 0);
-                }}
-                beforeMount={registerSimtenThemes}
-                theme={SIMTEN_DARK}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 13,
-                  scrollBeyondLastLine: false,
-                  wordWrap: 'on',
-                  tabSize: 2,
-                  fixedOverflowWidgets: true,
-                }}
-              />
-            </div>
-            {/* Diagnostics live under the editor, never over the canvas; a
+        {/*
+          Every panel here clips with `style`, not a class. react-resizable-
+          panels wraps each panel's content in a div whose inline style says
+          `overflow: auto`, which a class cannot beat. Left scrollable, that div
+          flashed scrollbars whenever a pane shrank: Monaco and the canvas
+          relayout a frame after their box changes size, and for that frame
+          they overflow it.
+        */}
+        <ResizablePanelGroup orientation="vertical">
+          <ResizablePanel minSize="120px" style={CLIP}>
+            <ResizablePanelGroup>
+              <ResizablePanel defaultSize={45} minSize={20} className="flex flex-col" style={CLIP}>
+                <div data-tour="editor" className="min-h-0 flex-1">
+                  <SimtenCodeEditor
+                    value={source}
+                    onChange={(v) => {
+                      const next = v ?? '';
+                      setSource(next);
+                      saveDraft(next);
+                      // A verdict describes the source that produced it, so an
+                      // edit retires both the verdict and any victory run still
+                      // sweeping.
+                      if (result) {
+                        setResult(null);
+                        victory.reset();
+                      }
+                    }}
+                    diagnostics={diagnostics}
+                    intellisense={intellisense}
+                    onMount={(ed) => {
+                      const at = givenPreambleEnd(ed.getModel()?.getLinesContent() ?? []);
+                      if (at !== null) ed.revealLineNearTop(at, 0);
+                    }}
+                    beforeMount={registerSimtenThemes}
+                    theme={SIMTEN_DARK}
+                    options={{
+                      minimap: { enabled: false },
+                      fontSize: 13,
+                      scrollBeyondLastLine: false,
+                      wordWrap: 'on',
+                      tabSize: 2,
+                      fixedOverflowWidgets: true,
+                    }}
+                  />
+                </div>
+                {/* Diagnostics live under the editor, never over the canvas; a
               parse error mid-keystroke must not blank the diagram. A forbidden
               gate is the same class of message, so it lands here too: the
               canvas keeps showing the last circuit that compiled, which is
               what you want while you are still typing. */}
-            {preview.compileError && <ErrorDisplay error={preview.compileError} />}
+                {preview.compileError && <ErrorDisplay error={preview.compileError} />}
+              </ResizablePanel>
+
+              <ResizableHandle withHandle />
+
+              <ResizablePanel defaultSize={55} minSize={20} style={CLIP}>
+                <div data-tour="canvas" className="h-full">
+                  <CircuitCanvas
+                    circuit={canvasCircuit}
+                    componentLibrary={canvasLibrary ?? undefined}
+                    portValues={preview.portValues}
+                    showControls
+                    // The diagram has to answer "what is this port called", because
+                    // the code demands the exact name and nothing else on screen
+                    // supplies it. Unlabelled circles leave a beginner guessing at
+                    // `.out` and `.in` with the answer sitting right in front of
+                    // them. Always on here rather than a toggle: levels are three to
+                    // six nodes, so there is no clutter to trade against, and someone
+                    // stuck on a port name will not go hunting for a display option.
+                    showPortLabels
+                    // Re-lay out on every change. The default only re-runs the
+                    // layout when nodes appear or disappear, so adding the last
+                    // wire, which changes no nodes, left the lamp where it had
+                    // been while unconnected.
+                    autoLayout
+                    // The harness switches are clickable, so the player can drive
+                    // their own circuit and see it light up before submitting.
+                    onToggleNode={preview.toggleNode}
+                    onSetNodeValue={preview.setNodeValue}
+                    renderEmptyState={() => (
+                      <div className="grid h-full place-items-center text-sm text-muted-foreground">
+                        Your circuit appears here as you write it.
+                      </div>
+                    )}
+                  />
+                </div>
+              </ResizablePanel>
+            </ResizablePanelGroup>
           </ResizablePanel>
 
           <ResizableHandle withHandle />
 
-          <ResizablePanel defaultSize={55} minSize={20} className="overflow-hidden">
-            <CircuitCanvas
-              circuit={canvasCircuit}
-              componentLibrary={canvasLibrary ?? undefined}
-              portValues={preview.portValues}
-              showControls
-              // The diagram has to answer "what is this port called", because
-              // the code demands the exact name and nothing else on screen
-              // supplies it. Unlabelled circles leave a beginner guessing at
-              // `.out` and `.in` with the answer sitting right in front of
-              // them. Always on here rather than a toggle: levels are three to
-              // six nodes, so there is no clutter to trade against, and someone
-              // stuck on a port name will not go hunting for a display option.
-              showPortLabels
-              // Re-lay out on every change. The default only re-runs the
-              // layout when nodes appear or disappear, so adding the last
-              // wire, which changes no nodes, left the lamp where it had
-              // been while unconnected.
-              autoLayout
-              // The harness switches are clickable, so the player can drive
-              // their own circuit and see it light up before submitting.
-              onToggleNode={preview.toggleNode}
-              onSetNodeValue={preview.setNodeValue}
-              renderEmptyState={() => (
-                <div className="grid h-full place-items-center text-sm text-muted-foreground">
-                  Your circuit appears here as you write it.
-                </div>
-              )}
-            />
+          <ResizablePanel
+            panelRef={specPanel}
+            defaultSize="170px"
+            minSize="96px"
+            maxSize="50%"
+            collapsible
+            // Keeps its height when the window resizes; the editor and canvas
+            // take the difference.
+            groupResizeBehavior="preserve-pixel-size"
+            onResize={(size) => setSpecOpen(size.inPixels > 0)}
+            // The spec scrolls itself; this would add a second scrollbar.
+            style={CLIP}
+          >
+            <section aria-label="Level spec" className="h-full bg-background">
+              <SpecPanel
+                level={level}
+                result={result}
+                activeRow={victory.active}
+                provenRows={victory.proven}
+              />
+            </section>
           </ResizablePanel>
         </ResizablePanelGroup>
       </div>
@@ -608,10 +670,7 @@ function PlayLevel({ level }: { level: Level }) {
         flip-flop early gets the controls, and a sequential level opened on a
         blank stub does not get an inert row of buttons.
 
-        It sits at the foot of the page and the spec sheet rises above it,
-        see the sheet's `bottom` offset below. Without that the sheet covered
-        it: the controls rendered, on screen, and unclickable, with the spec
-        open by default.
+        It sits at the foot of the page, under the spec panel.
 
         Without any of this the Toggle level has nothing to interact with at
         all. It declares no inputs, so there is not one switch to click, and the
@@ -619,10 +678,7 @@ function PlayLevel({ level }: { level: Level }) {
       */}
       {preview.isSequential && (
         <div
-          // Above the sheet's own z-50, so the spec slides up and down *behind*
-          // the bar rather than across it. The bar is a fixture; the sheet is
-          // the thing that moves.
-          className="relative z-[60] flex shrink-0 items-center border-t border-border bg-card/95 px-3"
+          className="flex shrink-0 items-center border-t border-border bg-card/95 px-3"
           style={{ height: CLOCK_BAR_PX }}
         >
           <ClockControls
@@ -646,12 +702,6 @@ function PlayLevel({ level }: { level: Level }) {
         </div>
       )}
 
-      {/* Non-modal so the editor and canvas keep working behind it, and the
-          overlay is off; it is `fixed inset-0` and would swallow every click
-          whatever the modal setting says. Outside interaction does not dismiss
-          it either: clicking a switch is not a request to close the spec.
-          Focus stays where it was, so opening this never interrupts typing. */}
-      <IntroDialog open={gameIntroOpen} onOpenChange={setGameIntroOpen} />
       <LevelIntro level={level} open={introOpen} onDismiss={dismissIntro} />
 
       {result?.status === 'pass' && (
@@ -664,31 +714,6 @@ function PlayLevel({ level }: { level: Level }) {
           next={next}
         />
       )}
-
-      <Sheet modal={false} open={specOpen} onOpenChange={setSpecOpen}>
-        <SheetContent
-          side="bottom"
-          // Inline, so it beats the primitive's `bottom-0` class. The spec
-          // slides up from the bottom as before, just stopping short of the
-          // clock bar instead of sitting on top of it.
-          style={{ bottom: preview.isSequential ? CLOCK_BAR_PX : 0 }}
-          showOverlay={false}
-          onInteractOutside={(e) => e.preventDefault()}
-          onOpenAutoFocus={(e) => e.preventDefault()}
-          // Portalled to document.body, so <DesktopOnly>'s `hidden md:contents`
-          // wrapper never applies. Without this the spec sheet opens over the
-          // mobile notice on every level, since `specOpen` starts true.
-          className="hidden md:flex max-h-[45vh] gap-0 overflow-y-auto"
-        >
-          <SheetTitle className="sr-only">Level spec</SheetTitle>
-          <SpecPanel
-            level={level}
-            result={result}
-            activeRow={victory.active}
-            provenRows={victory.proven}
-          />
-        </SheetContent>
-      </Sheet>
     </div>
   );
 }

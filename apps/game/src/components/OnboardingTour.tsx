@@ -1,0 +1,187 @@
+/**
+ * The tour: the welcome, then a walk round the level page, before the player
+ * has to work out what goes where.
+ *
+ * Shown watching someone meet the game cold: they did not see Submit until
+ * told, and did not realise the instructions were the comments in the editor.
+ *
+ * It runs on the first level page a newcomer opens (every level page has the
+ * same layout, so a shared link to any level gets it), and "What is this?"
+ * replays it. One flag records that it has been seen; see `isOnboarded`.
+ *
+ * driver.js is loaded only when the tour is about to run, so a returning
+ * player never downloads it. Targets are `data-tour` attributes rather than
+ * class names, so restyling the page cannot silently break a step. A step
+ * whose target is not on screen (the spec sheet closed, say) is dropped rather
+ * than pointing at nothing.
+ */
+
+import { useEffect, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { createRoot, type Root } from 'react-dom/client';
+import { isOnboarded, markOnboarded } from '../game/storage';
+import { INTRO_TITLE, IntroCopy, IntroLogo } from './Welcome';
+
+interface TourStep {
+  target: string;
+  title: string;
+  description: string;
+  side: 'top' | 'right' | 'bottom' | 'left';
+  align: 'start' | 'center' | 'end';
+}
+
+type Button = 'next' | 'previous' | 'close';
+
+const STEPS: TourStep[] = [
+  {
+    target: 'editor',
+    title: 'Write your code here',
+    description:
+      'Your circuit is TypeScript. The comments tell you what to do on each level, and the circuit on the right redraws as you type.',
+    side: 'right',
+    align: 'start',
+  },
+  {
+    target: 'canvas',
+    title: 'Your circuit draws itself',
+    description:
+      'Every wire you write shows up here. Click a switch to try your circuit before you submit it.',
+    side: 'left',
+    align: 'start',
+  },
+  {
+    target: 'spec',
+    title: 'The spec',
+    description:
+      'The truth table says what your circuit must output for every input. Allowed gates lists what you can use on this level.',
+    side: 'top',
+    align: 'start',
+  },
+  {
+    target: 'submit',
+    title: 'Submit when you are done',
+    description: 'Press Submit to check your circuit against every row of the truth table.',
+    side: 'bottom',
+    align: 'end',
+  },
+];
+
+/**
+ * Runs the tour when `ready` (no dialog open that it would land on) and the
+ * player has not been onboarded. Each increment of `replays` runs it again
+ * regardless, which is what "What is this?" does.
+ *
+ * Returns whether the tour is scheduled or showing, so the page can hold its
+ * own explainers back until it is over.
+ */
+export function useOnboardingTour(ready: boolean, replays: number): boolean {
+  const [active, setActive] = useState(false);
+
+  useEffect(() => {
+    if (!ready || (replays === 0 && isOnboarded())) return;
+    setActive(true);
+
+    let cancelled = false;
+    let destroy: (() => void) | undefined;
+    // The React root holding the welcome inside the opening card.
+    let welcomeRoot: Root | null = null;
+    const unmountWelcome = () => {
+      welcomeRoot?.unmount();
+      welcomeRoot = null;
+    };
+
+    // A beat after readiness, so a dialog that just closed has finished
+    // animating out and Monaco has laid itself out to its final size.
+    const timer = window.setTimeout(async () => {
+      const [{ driver }] = await Promise.all([
+        import('driver.js'),
+        import('driver.js/dist/driver.css'),
+      ]);
+      if (cancelled) return;
+
+      const welcome = {
+        popover: {
+          // The title lives in the body, under the logo.
+          title: '',
+          description: ' ',
+          popoverClass: 'simten-tour simten-tour-wide',
+          // Nothing to go back to on the opening card.
+          showButtons: ['next', 'close'] as Button[],
+          // driver.js only takes text or HTML, so mount the welcome components
+          // into the card rather than keeping a second copy of the words.
+          onPopoverRender: (popover: { description: HTMLElement }) => {
+            unmountWelcome();
+            popover.description.style.display = 'block';
+            welcomeRoot = createRoot(popover.description);
+            // Rendered synchronously, then re-measured: driver.js placed the
+            // card at its placeholder size, and it would otherwise grow down and
+            // to the right from there instead of staying centred.
+            flushSync(() =>
+              welcomeRoot?.render(
+                <>
+                  <IntroLogo />
+                  <h2 className="mb-2 text-lg font-semibold text-popover-foreground">
+                    {INTRO_TITLE}
+                  </h2>
+                  <IntroCopy className="space-y-2" ending="Here is a quick look round the page." />
+                </>,
+              ),
+            );
+            requestAnimationFrame(() => tour.refresh());
+          },
+        },
+        onDeselected: unmountWelcome,
+      };
+
+      const page = STEPS.filter((s) => document.querySelector(`[data-tour="${s.target}"]`)).map(
+        (s) => ({
+          element: `[data-tour="${s.target}"]`,
+          popover: {
+            title: s.title,
+            description: s.description,
+            side: s.side,
+            align: s.align,
+            showButtons: ['next', 'previous', 'close'] as Button[],
+          },
+        }),
+      );
+
+      const tour = driver({
+        steps: [welcome, ...page],
+        showProgress: true,
+        progressText: '{{current}} of {{total}}',
+        nextBtnText: 'Next',
+        prevBtnText: 'Back',
+        doneBtnText: 'Start building',
+        popoverClass: 'simten-tour',
+        overlayOpacity: 0.6,
+        stagePadding: 6,
+        stageRadius: 8,
+        // Only a player ending it counts: finishing, the close button, Escape,
+        // or a click on the overlay. The unmount cleanup below calls destroy()
+        // directly, which skips this hook, so a hot reload or navigating away
+        // mid-tour leaves it to show again.
+        onDestroyStarted: () => {
+          markOnboarded();
+          tour.destroy();
+        },
+        onDestroyed: () => {
+          unmountWelcome();
+          setActive(false);
+        },
+      });
+      destroy = () => tour.destroy();
+      tour.drive();
+    }, 350);
+
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+      destroy?.();
+      unmountWelcome();
+      setActive(false);
+    };
+  }, [ready, replays]);
+
+  return active;
+}
