@@ -109,53 +109,58 @@ export function SpecPanel({ level, result, activeRow, provenRows }: SpecPanelPro
   const reason = explain(result);
 
   return (
-    <div className="flex h-full items-start gap-8 overflow-x-auto overflow-y-auto px-4 py-3">
-      <div className="shrink-0">
-        {/* A sequential level's rows are ordered steps, not independent cases.
+    <div className="h-full overflow-x-auto overflow-y-auto px-4 py-3">
+      {/* Sized to its content, so the first-level tour can spotlight the
+          columns themselves. The sheet behind them is full width and runs to
+          the screen's edges, which left the spotlight with no visible frame. */}
+      <div data-tour="spec" className="flex w-fit items-start gap-8">
+        <div className="shrink-0">
+          {/* A sequential level's rows are ordered steps, not independent cases.
             Calling that a truth table would tell the player order does not
             matter, when order is the entire lesson. */}
-        <Heading>{level.sequential ? 'Sequence' : 'Truth table'}</Heading>
-        <TruthTable
-          level={level}
-          active={activeRow}
-          proven={failedIndex ?? provenRows}
-          failed={failedIndex}
-        />
-      </div>
+          <Heading>{level.sequential ? 'Sequence' : 'Truth table'}</Heading>
+          <TruthTable
+            level={level}
+            active={activeRow}
+            proven={failedIndex ?? provenRows}
+            failed={failedIndex}
+          />
+        </div>
 
-      <div className="min-w-[220px] max-w-md shrink-0">
-        <Heading>The problem</Heading>
-        <Prose text={level.brief} className="text-sm leading-relaxed text-muted-foreground" />
-      </div>
+        <div className="min-w-[220px] max-w-md shrink-0">
+          <Heading>The problem</Heading>
+          <Prose text={level.brief} className="text-sm leading-relaxed text-muted-foreground" />
+        </div>
 
-      {/* What you may build with, stated up front. It used to appear only in
+        {/* What you may build with, stated up front. It used to appear only in
           the `forbidden` failure message, so the way to find out what a level
           permits was to use something it did not. The unlock line on the
           previous level's completion card promises a gate; this is where that
           promise is visible on arrival. */}
-      <div className="min-w-[160px] shrink-0">
-        <Heading>Allowed gates</Heading>
-        <ul className="flex max-w-[240px] flex-wrap gap-1.5">
-          {level.allowed.map((name) => (
-            <li key={name} className={CHIP}>
-              {name}
-            </li>
-          ))}
-        </ul>
-        <p className="mt-1.5 text-[11px] text-muted-foreground">
-          Switches and leds are always free.
-        </p>
-      </div>
-
-      {reason && (
-        <div className="min-w-[220px] max-w-md shrink-0">
-          <Heading>Not yet</Heading>
-          <Prose
-            text={reason}
-            className="text-sm leading-relaxed text-amber-600 dark:text-amber-400"
-          />
+        <div className="min-w-[160px] shrink-0">
+          <Heading>Allowed gates</Heading>
+          <ul className="flex max-w-[240px] flex-wrap gap-1.5">
+            {level.allowed.map((name) => (
+              <li key={name} className={CHIP}>
+                {name}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-1.5 text-[11px] text-muted-foreground">
+            Switches and leds are always free.
+          </p>
         </div>
-      )}
+
+        {reason && (
+          <div className="min-w-[220px] max-w-md shrink-0">
+            <Heading>Not yet</Heading>
+            <Prose
+              text={reason}
+              className="text-sm leading-relaxed text-amber-600 dark:text-amber-400"
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 }

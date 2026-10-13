@@ -36,6 +36,12 @@ const config = defineConfig({
     }),
     viteReact(),
   ],
+  optimizeDeps: {
+    // driver.js is only ever imported lazily (the first-level tour), so the
+    // dev server would otherwise discover it mid-session, re-bundle, and leave
+    // the page asking for a pre-bundled chunk that no longer exists.
+    include: ['driver.js'],
+  },
 });
 
 export default config;
