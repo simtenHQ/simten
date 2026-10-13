@@ -11,16 +11,16 @@
  * to be affordable renders the circuit too small to be worth opening.
  */
 
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, Link, useNavigate } from '@tanstack/react-router';
 import { useCallback, useEffect, useState } from 'react';
+import { useIsDesktop } from '../components/DesktopOnly';
 import { GitHubLink } from '../components/GitHubLink';
 import { HeaderBar } from '../components/HeaderBar';
-import { IntroDialog } from '../components/IntroDialog';
 import { LevelDrilldown } from '../components/LevelDrilldown';
 import { LevelMap } from '../components/LevelMap';
 import ThemeToggle from '../components/ThemeToggle';
 import { LEVELS, LEVELS_BY_ID } from '../game/levels';
-import { type Drafts, INTRO_SEEN_KEY, readDrafts, readProgress, readStored } from '../game/storage';
+import { type Drafts, isOnboarded, readDrafts, readProgress } from '../game/storage';
 
 export const Route = createFileRoute('/')({
   component: MapPage,
@@ -52,19 +52,26 @@ function MapPage() {
   const [solved, setSolved] = useState(NOTHING_SOLVED);
   const [drafts, setDrafts] = useState(NO_DRAFTS);
 
-  /**
-   * Owned here rather than inside the dialog, so the header can reopen it.
-   * Starts closed and opens after mount for the same reason as the rest of this
-   * state: reading storage during render would either mismatch hydration or
-   * flash the dialog at someone who has already dismissed it.
-   */
-  const [introOpen, setIntroOpen] = useState(false);
-
   useEffect(() => {
     setSolved(new Set(Object.keys(readProgress())));
     setDrafts(readDrafts());
-    if (!readStored(INTRO_SEEN_KEY, false)) setIntroOpen(true);
   }, []);
+
+  /**
+   * A newcomer goes straight to their first level, where the tour welcomes
+   * them and walks round the page. The map has no obvious first move for
+   * someone who does not yet know what any of it is, and the tour explains it
+   * in place. Desktop only: on a phone the level page is a notice, and the map
+   * is the better thing to see.
+   */
+  const isDesktop = useIsDesktop();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (!isDesktop || isOnboarded()) return;
+    const progress = readProgress();
+    const first = LEVELS.find((l) => !(l.id in progress)) ?? LEVELS[0];
+    void navigate({ to: '/$levelId', params: { levelId: first.id }, replace: true });
+  }, [isDesktop, navigate]);
 
   const onHoverLevel = useCallback((levelId: string) => setHovered(levelId), []);
   const onExpandLevel = useCallback((levelId: string) => setExpanded(levelId), []);
@@ -82,23 +89,24 @@ function MapPage() {
   const candidate = activeId ? LEVELS_BY_ID.get(activeId) : undefined;
   const level = candidate && solved.has(candidate.id) ? candidate : undefined;
 
-  // Where "Start building" goes: the first level not yet solved, which is NAND
-  // for a first visit. Undefined once everything is solved, and the button
-  // just closes.
-  const startLevelId = LEVELS.find((l) => !solved.has(l.id))?.id;
+  // Where "What is this?" replays the tour: the first level not yet solved,
+  // or the first level once everything is.
+  const tourLevelId = (LEVELS.find((l) => !solved.has(l.id)) ?? LEVELS[0]).id;
 
   return (
     <div className="flex h-screen flex-col">
       <HeaderBar>
         <span className="text-sm text-muted-foreground">Build a computer</span>
         <div className="ml-auto flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => setIntroOpen(true)}
-            className="text-sm text-muted-foreground hover:text-foreground"
+          {/* The tour needs a level page to walk round, so this opens one. */}
+          <Link
+            to="/$levelId"
+            params={{ levelId: tourLevelId }}
+            hash="tour"
+            className="text-sm text-muted-foreground no-underline hover:text-foreground"
           >
             What is this?
-          </button>
+          </Link>
           <GitHubLink />
           <ThemeToggle />
         </div>
@@ -119,8 +127,6 @@ function MapPage() {
           onCloseExpanded={onCloseExpanded}
         />
       )}
-
-      <IntroDialog open={introOpen} onOpenChange={setIntroOpen} startLevelId={startLevelId} />
     </div>
   );
 }

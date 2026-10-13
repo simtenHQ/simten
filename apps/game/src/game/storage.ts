@@ -59,13 +59,31 @@ export function writeStored<T>(key: string, data: T): void {
   }
 }
 
-/** Whether the player has already been shown what this is. */
-export const INTRO_SEEN_KEY = 'simten:game:intro-seen';
+/**
+ * The welcome dialog's flag, from before the page tour replaced it. Read only,
+ * so players who dismissed that dialog are not toured; see `isOnboarded`.
+ */
+const LEGACY_INTRO_SEEN_KEY = 'simten:game:intro-seen';
+
+/**
+ * Whether the player has finished or closed the page tour, whose opening card
+ * is the welcome. Until then, the first level page they open runs it.
+ */
+export const ONBOARDED_KEY = 'simten:game:onboarded';
+
+export function isOnboarded(): boolean {
+  // Players from before the tour dismissed the old welcome dialog instead.
+  return readStored(ONBOARDED_KEY, false) || readStored(LEGACY_INTRO_SEEN_KEY, false);
+}
+
+export function markOnboarded(): void {
+  writeStored(ONBOARDED_KEY, true);
+}
 
 /**
  * Levels whose one-time explainer has been shown.
  *
- * Separate from `INTRO_SEEN_KEY`, which is the whole game's front door. This is
+ * Separate from `ONBOARDED_KEY`, which covers the whole game's front door. This is
  * per level and per concept: a band that introduces something the player has
  * never met (a clock, say) says so once and then stops.
  */
