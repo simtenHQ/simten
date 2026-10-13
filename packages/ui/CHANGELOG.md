@@ -1,5 +1,11 @@
 # @simten/ui
 
+## 0.15.4
+
+### Patch Changes
+
+- 62e2a07: `@simten/ui/primitives/resizable` re-exports `usePanelRef` (and its handle type), so a panel can be collapsed or expanded from code.
+
 ## 0.15.3
 
 ### Patch Changes
