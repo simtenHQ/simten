@@ -50,4 +50,6 @@ function ResizableHandle({
   );
 }
 
+// For collapsing or expanding a panel from code, e.g. a show/hide toggle.
+export { type PanelImperativeHandle, usePanelRef } from 'react-resizable-panels';
 export { ResizableHandle, ResizablePanel, ResizablePanelGroup };
