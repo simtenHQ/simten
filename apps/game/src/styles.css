@@ -58,11 +58,14 @@
 .simten-tour .driver-popover-close-btn {
   @apply text-muted-foreground hover:text-popover-foreground focus:text-popover-foreground;
 }
+/* The buttons copy @simten/ui's Button: Back is its `outline` variant, Next its
+   `default`. Hover and focus are restated (focus as well, since driver.js
+   paints both near-white, which hid the label in dark mode). */
 .simten-tour .driver-popover-footer-btn {
-  @apply rounded-md border border-border bg-transparent px-3 py-1 text-xs font-medium text-popover-foreground [text-shadow:none];
+  @apply rounded-md border border-input bg-background px-3 py-1 text-xs font-medium text-popover-foreground shadow-sm transition-colors [text-shadow:none] hover:bg-accent hover:text-accent-foreground focus:not-hover:bg-background focus-visible:ring-1 focus-visible:ring-ring focus-visible:outline-none;
 }
 .simten-tour .driver-popover-footer-btn.driver-popover-next-btn {
-  @apply border-primary bg-primary text-primary-foreground;
+  @apply border-primary bg-primary text-primary-foreground shadow hover:bg-primary/90 hover:text-primary-foreground focus:not-hover:bg-primary;
 }
 /* The arrow is a CSS triangle: one visible border side per direction. */
 .simten-tour .driver-popover-arrow-side-left {
