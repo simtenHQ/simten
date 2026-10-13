@@ -67,6 +67,13 @@
 .simten-tour .driver-popover-footer-btn.driver-popover-next-btn {
   @apply border-primary bg-primary text-primary-foreground shadow hover:bg-primary/90 hover:text-primary-foreground focus:not-hover:bg-primary;
 }
+/* driver.js forces `pointer-events: auto` on everything inside the highlighted
+   element, so the canvas step turned React Flow's full-size viewport portal
+   from click-through into a sheet over the nodes, and the switches stopped
+   responding. Give it back its click-through; its children stay clickable. */
+.driver-active .driver-active-element .react-flow__viewport-portal {
+  pointer-events: none;
+}
 /* The arrow is a CSS triangle: one visible border side per direction. */
 .simten-tour .driver-popover-arrow-side-left {
   @apply border-l-popover;
