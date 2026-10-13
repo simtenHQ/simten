@@ -53,6 +53,9 @@ import { useMCPConnection } from '@/hooks/useMCPConnection';
 import { CATEGORY_COLORS, CATEGORY_LABELS, EXAMPLES, type Example } from '../examples';
 import { VerilogImportSheet } from './VerilogImportSheet';
 
+/** Why the panels clip with an inline style: see the panel layout below. */
+const CLIP = { overflow: 'hidden' } as const;
+
 const SCAN_CODES: Record<string, number> = {
   ArrowUp: 0x48,
   ArrowDown: 0x50,
@@ -619,9 +622,17 @@ export function EditorWorkspace({
                 <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
               </div>
             )}
+            {/*
+              Every panel here clips with `style`, not a class. react-resizable-
+              panels wraps each panel's content in a div whose inline style says
+              `overflow: auto`, which a class cannot beat. Left scrollable, that
+              div flashed scrollbars whenever a pane shrank: Monaco and the canvas
+              relayout a frame after their box changes size, and for that frame
+              they overflow it.
+            */}
             <ResizablePanelGroup orientation="horizontal">
               {/* Left: Code Editor */}
-              <ResizablePanel defaultSize={40} minSize={20} className="overflow-hidden">
+              <ResizablePanel defaultSize={40} minSize={20} style={CLIP}>
                 <div className="flex h-full flex-col">
                   <div className="min-h-0 flex-1">
                     <SimtenCodeEditor
@@ -651,10 +662,10 @@ export function EditorWorkspace({
               </ResizablePanel>
               <ResizableHandle withHandle />
               {/* Right: Circuit Canvas, optionally split with Waveform below */}
-              <ResizablePanel defaultSize={60} minSize={30} className="overflow-hidden">
+              <ResizablePanel defaultSize={60} minSize={30} style={CLIP}>
                 {waveformData ? (
                   <ResizablePanelGroup orientation="vertical">
-                    <ResizablePanel defaultSize={65} minSize={20} className="overflow-hidden">
+                    <ResizablePanel defaultSize={65} minSize={20} style={CLIP}>
                       <CircuitCanvas
                         circuit={circuit}
                         componentLibrary={componentLibrary}
@@ -672,7 +683,8 @@ export function EditorWorkspace({
                     <ResizablePanel
                       defaultSize={35}
                       minSize={10}
-                      className="flex flex-col overflow-hidden"
+                      className="flex flex-col"
+                      style={CLIP}
                     >
                       <WaveformViewer
                         vcd={waveformData.vcd}
