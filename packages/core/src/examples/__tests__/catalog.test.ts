@@ -8,6 +8,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { checkCircuit } from '../../api/check.js';
+import { executeCircuitCode } from '../../circuit/execute.js';
+import { simulate } from '../../sim/simulate.js';
 import { EXAMPLES } from '../catalog.js';
 
 // Examples that import a non-@simten package (e.g. figlet) resolve via esm.sh
@@ -44,4 +46,16 @@ describe('example catalog', () => {
       expect(result.analysis.circuitsDefined.length).toBeGreaterThan(0);
     });
   }
+
+  it('"6502-computer" prints its message to the console', () => {
+    const ex = EXAMPLES.find((e) => e.id === '6502-computer')!;
+    const top = executeCircuitCode(ex.code).builtCircuits.find(
+      (c) => c.circuit.name === 'Computer6502',
+    )!;
+    const sim = simulate(top);
+    sim.tickN(400);
+    const state = sim.session.getState().sequentialState?.currentState;
+    const text = [...(state?.entries() ?? [])].find(([id]) => id === 'console')?.[1];
+    expect(text).toBe('Hello from the 6502!\n');
+  });
 });
