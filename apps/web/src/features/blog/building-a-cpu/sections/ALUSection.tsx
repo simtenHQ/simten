@@ -21,10 +21,11 @@ export function ALUSection() {
           00&nbsp;=&nbsp;ADD, 01&nbsp;=&nbsp;AND, 10&nbsp;=&nbsp;OR, 11&nbsp;=&nbsp;XOR.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Chain 8 of these slices (with carry linking the adders) and you have the complete ALU of
-          the 6502. The CPU&rsquo;s control unit just sets the <strong>op</strong> bits based on
-          which instruction it decoded. Same circuit, different operation. That&rsquo;s what makes
-          it programmable.
+          Chain 8 of these slices (with carry linking the adders) and you have the heart of the
+          6502&rsquo;s ALU. The real one adds shifts and a decimal mode, but the idea is the same.
+          The CPU&rsquo;s control unit just sets the <strong>op</strong> bits based on which
+          instruction it decoded. Same circuit, different operation. That&rsquo;s what makes it
+          programmable.
         </p>
       </div>
 

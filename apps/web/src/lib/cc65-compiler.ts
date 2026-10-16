@@ -4,7 +4,9 @@
  * Pipeline: cc65 (C → asm) → ca65 (asm → .o) → ld65 (.o → .bin)
  *
  * Each tool runs in a fresh WASM module instance (globals aren't reset).
- * Support files (crt0-simple.o, sim6502.cfg) are fetched once and cached.
+ * Support files (crt0-simple.o, sim6502.cfg, and none.lib, cc65's runtime
+ * library for the stack, multiply/divide and the C library) are fetched once
+ * and cached.
  */
 
 export type StageStatus = 'pending' | 'running' | 'done' | 'error';
@@ -41,17 +43,25 @@ const WASM_BASE = '/blog-assets/wasm';
 let crt0Promise: Promise<Uint8Array> | null = null;
 let cfgPromise: Promise<string> | null = null;
 let longbranchPromise: Promise<string> | null = null;
+let libPromise: Promise<Uint8Array> | null = null;
+
+function fetchBinary(file: string): Promise<Uint8Array> {
+  return fetch(`${WASM_BASE}/${file}`)
+    .then((r) => {
+      if (!r.ok) throw new Error(`Failed to fetch ${file}: ${r.status}`);
+      return r.arrayBuffer();
+    })
+    .then((buf) => new Uint8Array(buf));
+}
 
 function fetchCrt0(): Promise<Uint8Array> {
-  if (!crt0Promise) {
-    crt0Promise = fetch(`${WASM_BASE}/crt0-simple.o`)
-      .then((r) => {
-        if (!r.ok) throw new Error(`Failed to fetch crt0-simple.o: ${r.status}`);
-        return r.arrayBuffer();
-      })
-      .then((buf) => new Uint8Array(buf));
-  }
+  if (!crt0Promise) crt0Promise = fetchBinary('crt0-simple.o');
   return crt0Promise;
+}
+
+function fetchLib(): Promise<Uint8Array> {
+  if (!libPromise) libPromise = fetchBinary('none.lib');
+  return libPromise;
 }
 
 function fetchCfg(): Promise<string> {
@@ -106,6 +116,7 @@ export async function preloadWasm(): Promise<void> {
     fetchCrt0(),
     fetchCfg(),
     fetchLongbranch(),
+    fetchLib(),
   ]);
 }
 
@@ -138,10 +149,11 @@ export async function compileC(
   };
 
   // Prefetch support files in parallel
-  const [crt0Bytes, cfgText, longbranchText] = await Promise.all([
+  const [crt0Bytes, cfgText, longbranchText, libBytes] = await Promise.all([
     fetchCrt0(),
     fetchCfg(),
     fetchLongbranch(),
+    fetchLib(),
   ]);
 
   // --- Step 1: cc65 (C → assembly) ---
@@ -223,10 +235,11 @@ export async function compileC(
   ld65Mod.FS.writeFile('/output.o', objBytes);
   ld65Mod.FS.writeFile('/crt0-simple.o', crt0Bytes);
   ld65Mod.FS.writeFile('/sim6502.cfg', cfgText);
+  ld65Mod.FS.writeFile('/none.lib', libBytes);
 
   const ld65Code = callMain(
     ld65Mod,
-    ['-C', '/sim6502.cfg', '-o', '/output.bin', '/crt0-simple.o', '/output.o'],
+    ['-C', '/sim6502.cfg', '-o', '/output.bin', '/crt0-simple.o', '/output.o', '/none.lib'],
     ld65Stderr,
   );
 

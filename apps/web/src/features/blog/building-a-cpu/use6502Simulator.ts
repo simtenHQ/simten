@@ -1,6 +1,6 @@
 import { useCircuitSimulator } from '@simten/embed';
-import { useCallback, useEffect, useRef, useState } from 'react';
-import { System6502 } from './cpu6502-system.circuit';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Blog6502Computer, romImage } from './computer6502.circuit';
 
 export interface Program {
   id: string;
@@ -34,25 +34,12 @@ export const PROGRAMS: Program[] = [
   },
 ];
 
-/**
- * Convert a binary ROM file (Uint8Array) into the initialMemory format.
- * The ROM binary maps to addresses starting at 0, and the simulator's ROM nodes
- * (matched by "rom" substring) receive this data.
- */
-function romToMemoryMap(data: Uint8Array): Map<string, Map<number, number>> {
-  const addressMap = new Map<number, number>();
-  for (let i = 0; i < data.length; i++) {
-    if (data[i] !== 0) {
-      addressMap.set(i, data[i]);
-    }
-  }
-  const memoryMap = new Map<string, Map<number, number>>();
-  memoryMap.set('rom', addressMap);
-  return memoryMap;
-}
+/** Cycles per batch at each end of the speed slider. */
+const SLOWEST = 1;
+const FASTEST = 5000;
 
-interface Use6502SimulatorState {
-  romData: Map<string, Map<number, number>> | null;
+interface ProgramState {
+  rom: Uint8Array | null;
   sourceCode: string;
   loading: boolean;
   loadError: string | null;
@@ -60,51 +47,35 @@ interface Use6502SimulatorState {
 }
 
 export function use6502Simulator() {
-  const [state, setState] = useState<Use6502SimulatorState>({
-    romData: null,
+  const [state, setState] = useState<ProgramState>({
+    rom: null,
     sourceCode: '',
     loading: true,
     loadError: null,
     currentProgram: PROGRAMS[0],
   });
-
   const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(50); // ms between ticks
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const [halted, setHalted] = useState(false);
+  // 1-100, mapped onto cycles per batch on a log scale.
+  const [speed, setSpeed] = useState(70);
+  // Bumped by Reset so the circuit (and the simulation) restarts from power-on.
+  const [generation, setGeneration] = useState(0);
 
-  // Load ROM + source when program changes
   const loadProgram = useCallback(async (program: Program) => {
-    setState((s) => ({
-      ...s,
-      loading: true,
-      loadError: null,
-      currentProgram: program,
-      romData: null,
-    }));
     setIsRunning(false);
-
+    setState((s) => ({ ...s, loading: true, loadError: null, currentProgram: program, rom: null }));
     try {
       const [romResponse, sourceResponse] = await Promise.all([
         fetch(program.romPath),
         fetch(program.sourcePath),
       ]);
-
       if (!romResponse.ok) throw new Error(`Failed to fetch ROM: ${romResponse.status}`);
       if (!sourceResponse.ok) throw new Error(`Failed to fetch source: ${sourceResponse.status}`);
-
-      const [romBuffer, sourceText] = await Promise.all([
+      const [romBuffer, sourceCode] = await Promise.all([
         romResponse.arrayBuffer(),
         sourceResponse.text(),
       ]);
-
-      const romData = romToMemoryMap(new Uint8Array(romBuffer));
-
-      setState((s) => ({
-        ...s,
-        romData,
-        sourceCode: sourceText,
-        loading: false,
-      }));
+      setState((s) => ({ ...s, rom: new Uint8Array(romBuffer), sourceCode, loading: false }));
     } catch (err) {
       setState((s) => ({
         ...s,
@@ -114,112 +85,130 @@ export function use6502Simulator() {
     }
   }, []);
 
-  // Load initial program on mount
   const loadedInitialRef = useRef(false);
   useEffect(() => {
     if (loadedInitialRef.current) return;
     loadedInitialRef.current = true;
-    loadProgram(state.currentProgram);
-  }, [loadProgram, state.currentProgram]);
+    loadProgram(PROGRAMS[0]);
+  }, [loadProgram]);
 
-  const sim = useCircuitSimulator(System6502);
+  // The ROM is part of the circuit, so a new program, or a reset, is a new circuit.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: generation forces a rebuild on reset
+  const circuit = useMemo(
+    () => (state.rom ? Blog6502Computer({ rom: romImage(state.rom) }) : null),
+    [state.rom, generation],
+  );
+  const sim = useCircuitSimulator(circuit);
 
-  // Load ROM data when ready
+  // biome-ignore lint/correctness/useExhaustiveDependencies: clears on every new circuit
   useEffect(() => {
-    if (!sim.ready || !state.romData) return;
-    for (const [nodeId, data] of state.romData) {
-      sim.setNodeValue(nodeId, data);
-    }
-    sim.runCombinational();
-  }, [sim.ready, state.romData]);
+    setHalted(false);
+  }, [circuit]);
 
-  // Extract console text from sequential state
   const consoleText = (() => {
     if (!sim.sequentialState?.currentState) return '';
     for (const [key, value] of sim.sequentialState.currentState) {
-      if (key.toLowerCase().includes('console') && typeof value === 'string') {
-        return value;
-      }
+      if (key.toLowerCase().includes('console') && typeof value === 'string') return value;
     }
     return '';
   })();
 
-  // Auto-run interval
+  const pc = sim.outputs.pc ?? 0;
+  const recentPcs = useRef<number[]>([]);
   useEffect(() => {
-    if (isRunning && sim.ready) {
-      intervalRef.current = setInterval(
-        () => {
-          // Run multiple ticks per interval for speed
-          const ticksPerInterval = Math.max(1, Math.floor(10 / Math.max(speed, 1)));
-          for (let i = 0; i < ticksPerInterval; i++) {
-            sim.tick();
-          }
-        },
-        Math.max(speed, 10),
-      );
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+    recentPcs.current = [...recentPcs.current.slice(-3), pc];
+  }, [pc]);
+
+  const batch = Math.round(SLOWEST * (FASTEST / SLOWEST) ** ((speed - 1) / 99));
+  const batchRef = useRef(batch);
+  batchRef.current = batch;
+
+  // Run loop: one sandbox round trip per batch, then a frame for the page to
+  // repaint. Pauses itself once the program parks in its final `while(1)`.
+  const { tickN, ready } = sim;
+  useEffect(() => {
+    if (!isRunning || !ready) return;
+    let cancelled = false;
+    (async () => {
+      while (!cancelled) {
+        await tickN(batchRef.current);
+        await new Promise((r) => requestAnimationFrame(r));
+        // A finished program jumps to itself, so after several large batches
+        // in a row the PC is still within a few bytes.
+        const recent = recentPcs.current;
+        if (
+          batchRef.current >= 100 &&
+          recent.length === 4 &&
+          Math.max(...recent) - Math.min(...recent) <= 2
+        ) {
+          setHalted(true);
+          setIsRunning(false);
+          return;
+        }
       }
+    })();
+    return () => {
+      cancelled = true;
     };
-  }, [isRunning, sim.ready, speed, sim.tick]);
+  }, [isRunning, ready, tickN]);
+
+  const restart = useCallback(() => {
+    setIsRunning(false);
+    recentPcs.current = [];
+  }, []);
 
   const handleReset = useCallback(() => {
-    setIsRunning(false);
-    // Re-load the current program to fully reset
-    loadProgram(state.currentProgram);
-  }, [loadProgram, state.currentProgram]);
+    restart();
+    setGeneration((g) => g + 1);
+  }, [restart]);
 
-  // Load a custom binary (from the in-browser compiler).
-  // useCircuitSimulator now depends on initialMemory, so setting new romData
-  // directly triggers a simulator rebuild.
-  const loadCustomBinary = useCallback((binary: Uint8Array, source: string) => {
-    setIsRunning(false);
-    const romData = romToMemoryMap(binary);
-    setState((s) => ({
-      ...s,
-      romData,
-      sourceCode: source,
-      loading: false,
-      loadError: null,
-    }));
-  }, []);
+  // Load a binary from the in-browser compiler.
+  const loadCustomBinary = useCallback(
+    (binary: Uint8Array, source: string) => {
+      restart();
+      setState((s) => ({ ...s, rom: binary, sourceCode: source, loading: false, loadError: null }));
+    },
+    [restart],
+  );
 
   const selectProgram = useCallback(
     (programId: string) => {
       const program = PROGRAMS.find((p) => p.id === programId);
-      if (program) {
-        loadProgram(program);
-      }
+      if (!program) return;
+      restart();
+      loadProgram(program);
     },
-    [loadProgram],
+    [loadProgram, restart],
   );
 
   return {
-    // Loading state
     loading: state.loading,
     loadError: state.loadError,
 
-    // Simulator
     sim,
     consoleText,
+    registers: {
+      pc,
+      a: sim.outputs.a ?? 0,
+      x: sim.outputs.x ?? 0,
+      y: sim.outputs.y ?? 0,
+      s: sim.outputs.s ?? 0,
+      p: sim.outputs.p ?? 0,
+    },
+    halted,
 
-    // Program
     currentProgram: state.currentProgram,
     sourceCode: state.sourceCode,
     programs: PROGRAMS,
     selectProgram,
 
-    // Controls
     isRunning,
     setIsRunning,
     speed,
     setSpeed,
+    cyclesPerStep: batch,
     handleReset,
 
-    // Custom binary loading (for in-browser compiler)
     loadCustomBinary,
   };
 }

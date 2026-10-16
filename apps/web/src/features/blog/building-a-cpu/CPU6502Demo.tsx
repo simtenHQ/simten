@@ -21,6 +21,16 @@ void main(void) {
 }
 `;
 
+const hex = (v: number, digits: number) => `$${v.toString(16).toUpperCase().padStart(digits, '0')}`;
+
+/** P as NV-BDIZC letters, lower case when clear. */
+function flags(p: number) {
+  return 'NV-BDIZC'
+    .split('')
+    .map((f, i) => ((p >> (7 - i)) & 1 ? f : f.toLowerCase()))
+    .join('');
+}
+
 function StageIndicator({ label, status }: { label: string; status: StageStatus }) {
   return (
     <span
@@ -51,6 +61,8 @@ export function CPU6502Demo() {
     loadError,
     sim,
     consoleText,
+    registers,
+    halted,
     currentProgram,
     sourceCode,
     programs,
@@ -59,6 +71,7 @@ export function CPU6502Demo() {
     setIsRunning,
     speed,
     setSpeed,
+    cyclesPerStep,
     handleReset,
     loadCustomBinary,
   } = use6502Simulator();
@@ -119,15 +132,8 @@ export function CPU6502Demo() {
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-600 border-t-blue-400" />
           <div>
             <span className="text-sm">
-              {loading
-                ? 'Loading 6502 system (5,574 lines of TypeScript)...'
-                : 'Compiling 6502 CPU...'}
+              {loading ? 'Loading program...' : 'Starting the 6502...'}
             </span>
-            {!loading && (
-              <span className="block text-xs text-gray-500 dark:text-gray-500 mt-1">
-                This may take a few seconds
-              </span>
-            )}
           </div>
         </div>
       </div>
@@ -249,6 +255,29 @@ export function CPU6502Demo() {
         </div>
       </div>
 
+      {/* Registers */}
+      <div className="px-4 py-2 border-t border-gray-700/50 flex flex-wrap items-center gap-x-5 gap-y-1 font-mono text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+        <span>
+          PC <span className="text-gray-900 dark:text-gray-100">{hex(registers.pc, 4)}</span>
+        </span>
+        <span>
+          A <span className="text-gray-900 dark:text-gray-100">{hex(registers.a, 2)}</span>
+        </span>
+        <span>
+          X <span className="text-gray-900 dark:text-gray-100">{hex(registers.x, 2)}</span>
+        </span>
+        <span>
+          Y <span className="text-gray-900 dark:text-gray-100">{hex(registers.y, 2)}</span>
+        </span>
+        <span>
+          S <span className="text-gray-900 dark:text-gray-100">{hex(registers.s, 2)}</span>
+        </span>
+        <span>
+          P <span className="text-gray-900 dark:text-gray-100">{flags(registers.p)}</span>
+        </span>
+        {halted && <span className="text-green-500">Program finished</span>}
+      </div>
+
       {/* Controls bar */}
       <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-100 dark:bg-gray-900/90">
         {/* Run/Pause */}
@@ -280,17 +309,23 @@ export function CPU6502Demo() {
           Reset
         </button>
 
-        {/* Speed slider */}
+        {/* Speed slider: cycles run per screen update */}
         <div className="flex items-center gap-2 ml-auto">
-          <label className="text-xs text-gray-500 dark:text-gray-400">Speed</label>
+          <label htmlFor="cpu6502-speed" className="text-xs text-gray-500 dark:text-gray-400">
+            Speed
+          </label>
           <input
+            id="cpu6502-speed"
             type="range"
             min={1}
             max={100}
-            value={101 - speed}
-            onChange={(e) => setSpeed(101 - Number(e.target.value))}
+            value={speed}
+            onChange={(e) => setSpeed(Number(e.target.value))}
             className="w-20 accent-blue-500"
           />
+          <span className="w-24 text-xs text-gray-500 dark:text-gray-400 font-mono tabular-nums">
+            {cyclesPerStep.toLocaleString()} cyc/step
+          </span>
         </div>
 
         {/* Cycle counter */}

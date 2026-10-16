@@ -27,12 +27,33 @@ export function CPU6502Section() {
           <strong className="text-gray-900 dark:text-white">MOS 6502</strong> (1975) powered the
           Apple II, Commodore 64, and NES. It has just 3,510 transistors and an elegant instruction
           set. Its ALU is wider (8 bits), its program counter longer (16 bits), and it has a control
-          unit that decodes 56&nbsp;instructions, but the pieces are the same.
+          unit that decodes 56&nbsp;instructions in 151 opcode forms, but the pieces are the same.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Below is a complete 6502 system simulated at the gate level: over 5,500 lines of
-          TypeScript, compiled and running in your browser. It has a CPU, RAM, ROM, and a
-          memory-mapped console output at address <code className="text-blue-300">$F000</code>.
+          Below is a complete 6502 computer running in your browser: the CPU, 2&nbsp;KB of RAM, a
+          ROM, and a console you print to by writing a byte to address{' '}
+          <code className="text-blue-300">$F000</code>. The CPU is built from the blocks of the real
+          chip&rsquo;s block diagram (the program counter, ALU, registers and the four internal
+          buses), and it is exact at the pins: every clock cycle puts the same address and data on
+          the bus as a real 6502, down to its dummy reads and its decimal-mode quirks. It passes{' '}
+          <a
+            href="https://github.com/SingleStepTests/65x02"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+          >
+            Tom Harte&rsquo;s per-instruction tests
+          </a>{' '}
+          (1.5 million of them) and{' '}
+          <a
+            href="https://github.com/Klaus2m5/6502_65C02_functional_tests"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+          >
+            Klaus Dormann&rsquo;s
+          </a>{' '}
+          functional and decimal test programs.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The ROM is pre-loaded with C programs compiled with{' '}
@@ -45,7 +66,8 @@ export function CPU6502Section() {
             cc65
           </a>
           , a C compiler targeting the 6502. Click <strong>Run</strong> to watch the CPU execute
-          real compiled C code, one cycle at a time.
+          real compiled C code, or <strong>Edit Code</strong> to write your own and compile it right
+          here.
         </p>
       </div>
 
@@ -58,6 +80,17 @@ export function CPU6502Section() {
       </div>
 
       <div className="mt-8 prose-invert space-y-6">
+        <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
+          To see inside it,{' '}
+          <a
+            href="/circuit?example=6502-computer"
+            className="text-blue-400 hover:text-blue-300 underline underline-offset-2"
+          >
+            open the same computer in the circuit editor
+          </a>
+          . Step it one clock cycle at a time, then double-click the CPU to watch the decode PLA,
+          the ALU and the buses change as each instruction runs.
+        </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           What you just saw is the same process that happens billions of times per second in the
           device you&rsquo;re reading this on. A clock ticks. The program counter increments. An

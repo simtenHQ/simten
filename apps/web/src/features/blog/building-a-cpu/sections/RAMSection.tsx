@@ -26,8 +26,8 @@ export function RAMSection() {
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Try it: write the value 42 to address 1, then write 7 to address 2. Switch between
-          addresses to see both values are remembered. The 6502 has 2&nbsp;KB of RAM wired to its
-          address bus: same idea, just 2,048 locations instead of 256.
+          addresses to see both values are remembered. The 6502 computer at the end of this post has
+          2&nbsp;KB of RAM wired to its address bus: same idea, just 2,048 locations instead of 256.
         </p>
       </div>
 
