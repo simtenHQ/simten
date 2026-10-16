@@ -566,6 +566,78 @@ const RV32I_Computer = circuit('RV32I_Computer', {
 `,
   },
   {
+    id: '6502-computer',
+    title: '6502 Computer',
+    description:
+      "A cycle-accurate 6502 built from its real block diagram, with RAM, ROM and a console. Passes Tom Harte's and Klaus Dormann's test suites.",
+    category: 'cpu',
+    nodes: '6 blocks, ~40 nodes inside',
+    code: `
+// The program, in ROM at $C000. It prints a message to the console at $F000:
+//   C000  A2 00     reset: LDX #0
+//   C002  BD 10 C0  loop:  LDA msg,X
+//   C005  F0 06            BEQ done
+//   C007  8D 00 F0         STA $F000
+//   C00A  E8               INX
+//   C00B  D0 F5            BNE loop
+//   C00D  4C 0D C0  done:  JMP done
+//   C010            msg:   "Hello from the 6502!", 10, 0
+const PROGRAM = [
+  0xa2, 0x00, 0xbd, 0x10, 0xc0, 0xf0, 0x06, 0x8d, 0x00, 0xf0, 0xe8, 0xd0, 0xf5, 0x4c, 0x0d, 0xc0,
+  0x48, 0x65, 0x6c, 0x6c, 0x6f, 0x20, 0x66, 0x72, 0x6f, 0x6d, 0x20, 0x74, 0x68, 0x65, 0x20, 0x36,
+  0x35, 0x30, 0x32, 0x21, 0x0a, 0x00,
+];
+
+// ROM contents by address: the program, and the reset vector at $FFFC
+// pointing at it. The CPU reads the vector when it powers up.
+const ROM_IMAGE = Object.fromEntries([
+  ...PROGRAM.map((byte, i) => [0xc000 + i, byte]),
+  [0xfffc, 0x00],
+  [0xfffd, 0xc0],
+]);
+
+// The memory map:
+//   $0000-$07FF  2 KB RAM (zero page, stack, variables)
+//   $C000-$FFFF  ROM
+//   $F000        console: write a byte to print it
+const AddressDecode = circuit('AddressDecode', {
+  inputs: { addr: bus(16), rw: bit, ram_data: bus(8), rom_data: bus(8) },
+  outputs: { ram_addr: bus(11), ram_we: bit, console_we: bit, data: bus(8) },
+  eval: ({ addr, rw, ram_data, rom_data }) => ({
+    ram_addr: addr & 0x7ff,
+    ram_we: !rw && addr < 0x0800 ? 1 : 0,
+    console_we: !rw && addr === 0xf000 ? 1 : 0,
+    data: addr < 0x0800 ? ram_data : rom_data,
+  }),
+});
+
+// The computer. Every clock cycle the CPU puts an address on the bus and
+// either reads a byte (rw = 1) or writes one (rw = 0). Drill into the CPU to
+// see the 6502's own blocks: the decode PLA, ALU, registers and buses.
+const Computer6502 = circuit('Computer6502', {
+  nodes: {
+    cpu: MOS6502_Core(),
+    decode: AddressDecode,
+    ram: DualPortRAM({ addressWidth: 11, dataWidth: 8 }),
+    rom: ROM({ memory: ROM_IMAGE }),
+    console: Console,
+    address: HexDisplay({ width: 16 }),
+  },
+  connect: ({ nodes: { cpu, decode, ram, rom, console: con, address } }) => [
+    cpu.addr.to(decode.addr, rom.addr, address.in),
+    cpu.rw.to(decode.rw),
+    decode.ram_addr.to(ram.addrA, ram.addrB),
+    decode.ram_we.to(ram.weA),
+    cpu.data_out.to(ram.dataA, con.data),
+    ram.outA.to(decode.ram_data),
+    rom.data_out.to(decode.rom_data),
+    decode.data.to(cpu.data_in),
+    decode.console_we.to(con.we),
+  ],
+});
+`,
+  },
+  {
     id: 'figlet',
     title: 'npm → ROM',
     description:
