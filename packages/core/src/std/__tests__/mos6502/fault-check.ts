@@ -38,13 +38,18 @@ const FAULTS: Fault[] = [
     name: 'indexed reads skip the page-cross cycle',
     component: 'MOS6502_DecodePLA',
     opcodes: ['bd', 'b1'],
-    wrap: (orig) => (i) => orig({ ...i, acr: 0 }),
+    // acr is bit 3 of the timing state.
+    wrap: (orig) => (i) => orig({ ...i, state: (i.state as number) & ~0x08 }),
   },
   {
     name: 'BRK pushes P without the B flag',
     component: 'MOS6502_DecodePLA',
     opcodes: ['00'],
-    wrap: (orig) => (i) => ({ ...orig(i), push_b: 0 }),
+    // B is bit 5 of the data latch's control bus.
+    wrap: (orig) => (i) => {
+      const out = orig(i);
+      return { ...out, latch_ctrl: (out.latch_ctrl as number) & ~0x20 };
+    },
   },
   {
     name: 'read-modify-write skips the dummy write',
@@ -52,8 +57,10 @@ const FAULTS: Fault[] = [
     opcodes: ['e6'],
     wrap: (orig) => (i) => {
       const out = orig(i);
-      // The dummy write stores the unmodified operand (DOR source DATA = 7).
-      return out.dor === 7 ? { ...out, write: 0 } : out;
+      const ctrl = out.latch_ctrl as number;
+      // The dummy write stores the unmodified operand (DOR source DATA = 7);
+      // write is bit 1.
+      return ((ctrl >> 2) & 7) === 7 ? { ...out, latch_ctrl: ctrl & ~0x02 } : out;
     },
   },
 ];

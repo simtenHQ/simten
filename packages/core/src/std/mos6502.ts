@@ -24,6 +24,18 @@
  *   Destination: none 0, A 1, X 2, Y 3, S 4, MEM 5, P 6
  *   Flags: none 0, NZ 1, NZC 2, NZCV 3, BIT 4
  *   Flag op: none 0, CLC 1, SEC 2, CLI 3, SEI 4, CLV 5, CLD 6, SED 7
+ *
+ * Bundles (bit offsets, low bit first):
+ *   seq (opcode table): mode 0-4, access 5-6, branch condition 7-9
+ *   exec (opcode table): ALU op 0-2, SB 3-6, DB 7, carry in 8-9, decimal 10,
+ *     destination 11-13, flags 14-16, flag op 17-19, store source 20-22
+ *   state (timing): T 0-2, acr 3, adir 4, interrupt pending 5, kind 6-7
+ *   timing_ctrl: fetch 0, end 1, acr load 2, acr from branch 3, take interrupt 4
+ *   pc_ctrl: increment 0, load 1
+ *   bus_ctrl: ADL 0-2, ADH 3-5, SB 6-9, DB 10-11
+ *   reg_ctrl: load A 0, X 1, Y 2, S 3
+ *   p_ctrl: NZ 0, C 1, V 2, BIT 3, load from data 4, flag op 5-7
+ *   latch_ctrl: DL load 0, write 1, DOR source 2-4, pushed B 5
  */
 
 import { bit, bus } from '../circuit/bit-bus.js';
@@ -39,20 +51,7 @@ import { circuit } from '../circuit/circuit.js';
  */
 export const MOS6502_OpcodeTable = circuit('MOS6502_OpcodeTable', {
   inputs: { ir: bus(8) },
-  outputs: {
-    mode: bus(5),
-    access: bus(2),
-    op: bus(3),
-    sb: bus(4),
-    db: bit,
-    cin: bus(2),
-    dec: bit,
-    dst: bus(3),
-    flags: bus(3),
-    fop: bus(3),
-    store: bus(3),
-    cond: bus(3),
-  },
+  outputs: { seq: bus(10), exec: bus(23) },
   meta: {
     category: 'mos6502',
     icon: 'OPC',
@@ -391,18 +390,17 @@ export const MOS6502_OpcodeTable = circuit('MOS6502_OpcodeTable', {
     if (dst === TO_MEM) access = RMW;
 
     return {
-      mode,
-      access,
-      op,
-      sb,
-      db,
-      cin,
-      dec,
-      dst,
-      flags,
-      fop,
-      store,
-      cond: op8 >> 5,
+      seq: mode | (access << 5) | ((op8 >> 5) << 7),
+      exec:
+        op |
+        (sb << 3) |
+        (db << 7) |
+        (cin << 8) |
+        (dec << 10) |
+        (dst << 11) |
+        (flags << 14) |
+        (fop << 17) |
+        (store << 20),
     };
   },
 });
@@ -418,55 +416,17 @@ export const MOS6502_OpcodeTable = circuit('MOS6502_OpcodeTable', {
  * never depend combinationally on `data_in`.
  */
 export const MOS6502_DecodePLA = circuit('MOS6502_DecodePLA', {
-  inputs: {
-    mode: bus(5),
-    access: bus(2),
-    op: bus(3),
-    sb: bus(4),
-    db: bit,
-    cin: bus(2),
-    dec: bit,
-    dst: bus(3),
-    flags: bus(3),
-    fop: bus(3),
-    store: bus(3),
-    cond: bus(3),
-    t: bus(3),
-    acr: bit,
-    adir: bit,
-    pending: bit,
-    kind: bus(2),
-    p: bus(8),
-  },
+  inputs: { seq: bus(10), exec: bus(23), state: bus(8), p: bus(8) },
   outputs: {
-    fetch: bit,
-    end: bit,
-    pc_inc: bit,
-    pc_load: bit,
-    adl: bus(3),
-    adh: bus(3),
-    sb_sel: bus(4),
-    db_sel: bus(2),
+    timing_ctrl: bus(5),
+    pc_ctrl: bus(2),
+    bus_ctrl: bus(12),
     alu_op: bus(3),
     alu_cin: bit,
     decimal: bit,
-    load_a: bit,
-    load_x: bit,
-    load_y: bit,
-    load_s: bit,
-    dl_load: bit,
-    write: bit,
-    dor: bus(3),
-    push_b: bit,
-    p_nz: bit,
-    p_c: bit,
-    p_v: bit,
-    p_bit: bit,
-    p_load: bit,
-    p_fop: bus(3),
-    acr_load: bit,
-    acr_branch: bit,
-    int_take: bit,
+    reg_ctrl: bus(4),
+    p_ctrl: bus(8),
+    latch_ctrl: bus(6),
   },
   meta: {
     category: 'mos6502',
@@ -474,26 +434,29 @@ export const MOS6502_DecodePLA = circuit('MOS6502_DecodePLA', {
     description:
       '6502 decode PLA: the control lines for one clock cycle of the current instruction',
   },
-  eval: ({
-    mode,
-    access,
-    op: dOp,
-    sb: dSb,
-    db: dDb,
-    cin: dCin,
-    dec: dDec,
-    dst,
-    flags,
-    fop: dFop,
-    store,
-    cond,
-    t,
-    acr,
-    adir,
-    pending,
-    kind,
-    p,
-  }) => {
+  eval: ({ seq, exec: execBus, state, p }) => {
+    // Unpack the opcode table's fields and the timing state.
+    const sq = seq as number;
+    const ex = execBus as number;
+    const st = state as number;
+    const mode = sq & 31;
+    const access = (sq >> 5) & 3;
+    const cond = (sq >> 7) & 7;
+    const dOp = ex & 7;
+    const dSb = (ex >> 3) & 15;
+    const dDb = (ex >> 7) & 1;
+    const dCin = (ex >> 8) & 3;
+    const dDec = (ex >> 10) & 1;
+    const dst = (ex >> 11) & 7;
+    const flags = (ex >> 14) & 7;
+    const dFop = (ex >> 17) & 7;
+    const store = (ex >> 20) & 7;
+    const t = st & 7;
+    const acr = (st >> 3) & 1;
+    const adir = (st >> 4) & 1;
+    const pending = (st >> 5) & 1;
+    const kind = (st >> 6) & 3;
+
     const IMP = 0;
     const IMM = 1;
     const ZP = 2;
@@ -993,35 +956,18 @@ export const MOS6502_DecodePLA = circuit('MOS6502_DecodePLA', {
       pFop = dFop as number;
     }
 
+    // One control bundle per block; each block picks out its own lines.
     return {
-      fetch: fetch ? 1 : 0,
-      end,
-      pc_inc: pcInc,
-      pc_load: pcLoad,
-      adl,
-      adh,
-      sb_sel: sbSel,
-      db_sel: dbSel,
+      timing_ctrl:
+        (fetch ? 1 : 0) | (end << 1) | (acrLoad << 2) | (acrBranch << 3) | (intTake << 4),
+      pc_ctrl: pcInc | (pcLoad << 1),
+      bus_ctrl: adl | (adh << 3) | (sbSel << 6) | (dbSel << 10),
       alu_op: aluOp,
       alu_cin: aluCin,
       decimal,
-      load_a: loadA,
-      load_x: loadX,
-      load_y: loadY,
-      load_s: loadS,
-      dl_load: dlLoad,
-      write,
-      dor,
-      push_b: pushB,
-      p_nz: pNz,
-      p_c: pC,
-      p_v: pV,
-      p_bit: pBit,
-      p_load: pLoad,
-      p_fop: pFop,
-      acr_load: acrLoad,
-      acr_branch: acrBranch,
-      int_take: intTake,
+      reg_ctrl: loadA | (loadX << 1) | (loadY << 2) | (loadS << 3),
+      p_ctrl: pNz | (pC << 1) | (pV << 2) | (pBit << 3) | (pLoad << 4) | (pFop << 5),
+      latch_ctrl: dlLoad | (write << 1) | (dor << 2) | (pushB << 5),
     };
   },
 });
@@ -1101,7 +1047,7 @@ export const MOS6502_ALU = circuit('MOS6502_ALU', {
 /** 6502 ADL bus: selects the low byte of the next address */
 export const MOS6502_ADLBus = circuit('MOS6502_ADLBus', {
   inputs: {
-    sel: bus(3),
+    ctrl: bus(12),
     pcl: bus(8),
     dl: bus(8),
     data: bus(8),
@@ -1116,8 +1062,8 @@ export const MOS6502_ADLBus = circuit('MOS6502_ADLBus', {
     icon: 'ADL',
     description: '6502 ADL bus: selects the low byte of the next address',
   },
-  eval: ({ sel, pcl, dl, data, alu, s, vec, abl }) => {
-    const k = sel as number;
+  eval: ({ ctrl, pcl, dl, data, alu, s, vec, abl }) => {
+    const k = (ctrl as number) & 7;
     const out =
       k === 0
         ? pcl
@@ -1138,15 +1084,15 @@ export const MOS6502_ADLBus = circuit('MOS6502_ADLBus', {
 
 /** 6502 ADH bus: selects the high byte of the next address */
 export const MOS6502_ADHBus = circuit('MOS6502_ADHBus', {
-  inputs: { sel: bus(3), pch: bus(8), data: bus(8), alu: bus(8), abh: bus(8) },
+  inputs: { ctrl: bus(12), pch: bus(8), data: bus(8), alu: bus(8), abh: bus(8) },
   outputs: { out: bus(8) },
   meta: {
     category: 'mos6502',
     icon: 'ADH',
     description: '6502 ADH bus: selects the high byte of the next address',
   },
-  eval: ({ sel, pch, data, alu, abh }) => {
-    const k = sel as number;
+  eval: ({ ctrl, pch, data, alu, abh }) => {
+    const k = ((ctrl as number) >> 3) & 7;
     const out =
       k === 0
         ? pch
@@ -1168,7 +1114,7 @@ export const MOS6502_ADHBus = circuit('MOS6502_ADHBus', {
 /** 6502 SB bus: selects the ALU's A input */
 export const MOS6502_SBBus = circuit('MOS6502_SBBus', {
   inputs: {
-    sel: bus(4),
+    ctrl: bus(12),
     a: bus(8),
     x: bus(8),
     y: bus(8),
@@ -1181,8 +1127,8 @@ export const MOS6502_SBBus = circuit('MOS6502_SBBus', {
   },
   outputs: { out: bus(8) },
   meta: { category: 'mos6502', icon: 'SB', description: "6502 SB bus: selects the ALU's A input" },
-  eval: ({ sel, a, x, y, s, dl, pcl, pch, abl, abh }) => {
-    const k = sel as number;
+  eval: ({ ctrl, a, x, y, s, dl, pcl, pch, abl, abh }) => {
+    const k = ((ctrl as number) >> 6) & 15;
     const out =
       k === 1
         ? a
@@ -1209,11 +1155,11 @@ export const MOS6502_SBBus = circuit('MOS6502_SBBus', {
 
 /** 6502 DB bus: selects the ALU's B input */
 export const MOS6502_DBBus = circuit('MOS6502_DBBus', {
-  inputs: { sel: bus(2), data: bus(8), dl: bus(8) },
+  inputs: { ctrl: bus(12), data: bus(8), dl: bus(8) },
   outputs: { out: bus(8) },
   meta: { category: 'mos6502', icon: 'DB', description: "6502 DB bus: selects the ALU's B input" },
-  eval: ({ sel, data, dl }) => {
-    const k = sel as number;
+  eval: ({ ctrl, data, dl }) => {
+    const k = ((ctrl as number) >> 10) & 3;
     const out = k === 1 ? data : k === 2 ? dl : 0;
     return { out: (out as number) & 0xff };
   },
@@ -1237,12 +1183,11 @@ export const MOS6502_PCIncrementer = circuit('MOS6502_PCIncrementer', {
 /** 6502 data output select: the byte driven onto the data pins on a write */
 export const MOS6502_DORSelect = circuit('MOS6502_DORSelect', {
   inputs: {
-    sel: bus(3),
+    ctrl: bus(6),
     a: bus(8),
     x: bus(8),
     y: bus(8),
     p: bus(8),
-    push_b: bit,
     pchs: bus(8),
     pcls: bus(8),
     alu: bus(8),
@@ -1254,10 +1199,12 @@ export const MOS6502_DORSelect = circuit('MOS6502_DORSelect', {
     icon: 'DOR',
     description: '6502 data output select: the byte driven onto the data pins on a write',
   },
-  eval: ({ sel, a, x, y, p, push_b, pchs, pcls, alu, data }) => {
-    const k = sel as number;
+  eval: ({ ctrl, a, x, y, p, pchs, pcls, alu, data }) => {
+    // The data latch's control lines: bits 2-4 pick the byte, bit 5 is B.
+    const k = ((ctrl as number) >> 2) & 7;
+    const pushB = ((ctrl as number) >> 5) & 1;
     // P has no B bit; it exists only in the pushed copy (1 for BRK and PHP).
-    const pushed = ((p as number) & 0xef) | 0x20 | (push_b ? 0x10 : 0);
+    const pushed = ((p as number) & 0xef) | 0x20 | (pushB ? 0x10 : 0);
     const out =
       k === 0
         ? a
@@ -1287,12 +1234,7 @@ export const MOS6502_StatusLogic = circuit('MOS6502_StatusLogic', {
     c: bit,
     v: bit,
     data: bus(8),
-    p_nz: bit,
-    p_c: bit,
-    p_v: bit,
-    p_bit: bit,
-    p_load: bit,
-    p_fop: bus(3),
+    ctrl: bus(8),
   },
   outputs: { next: bus(8) },
   meta: {
@@ -1300,7 +1242,14 @@ export const MOS6502_StatusLogic = circuit('MOS6502_StatusLogic', {
     icon: 'P',
     description: '6502 status logic: computes the next processor status register',
   },
-  eval: ({ p, n, z, c, v, data, p_nz, p_c, p_v, p_bit, p_load, p_fop }) => {
+  eval: ({ p, n, z, c, v, data, ctrl }) => {
+    const k = ctrl as number;
+    const p_nz = k & 1;
+    const p_c = (k >> 1) & 1;
+    const p_v = (k >> 2) & 1;
+    const p_bit = (k >> 3) & 1;
+    const p_load = (k >> 4) & 1;
+    const p_fop = (k >> 5) & 7;
     // Flags: N V 1 - D I Z C. The 6502 has no storage for bits 5 and 4; bit 5
     // always reads as 1 and B only exists in a pushed copy of P.
     const d = (data as number) & 0xff;
@@ -1310,7 +1259,7 @@ export const MOS6502_StatusLogic = circuit('MOS6502_StatusLogic', {
     if (p_bit) next = (next & 0x3d) | (d & 0xc0) | (z ? 0x02 : 0);
     if (p_c) next = (next & 0xfe) | (c ? 0x01 : 0);
     if (p_v) next = (next & 0xbf) | (v ? 0x40 : 0);
-    const f = p_fop as number;
+    const f = p_fop;
     if (f === 1) next = next & 0xfe;
     else if (f === 2) next = next | 0x01;
     else if (f === 3) next = next & 0xfb;
@@ -1341,13 +1290,9 @@ export const MOS6502_TimingLogic = circuit('MOS6502_TimingLogic', {
     kind: bus(2),
     nmi_prev: bit,
     nmi_latch: bit,
-    fetch: bit,
-    end: bit,
-    acr_load: bit,
-    acr_branch: bit,
+    ctrl: bus(5),
     alu_c: bit,
     db: bus(8),
-    int_take: bit,
     p: bus(8),
     irq: bit,
     nmi: bit,
@@ -1363,6 +1308,8 @@ export const MOS6502_TimingLogic = circuit('MOS6502_TimingLogic', {
     ir_load: bit,
     ir_clear: bit,
     vec: bus(8),
+    state: bus(8),
+    sync: bit,
   },
   meta: {
     category: 'mos6502',
@@ -1377,18 +1324,21 @@ export const MOS6502_TimingLogic = circuit('MOS6502_TimingLogic', {
     kind,
     nmi_prev,
     nmi_latch,
-    fetch,
-    end,
-    acr_load,
-    acr_branch,
+    ctrl,
     alu_c,
     db,
-    int_take,
     p,
     irq,
     nmi,
     reset,
   }) => {
+    // The PLA's timing lines.
+    const k = ctrl as number;
+    const fetch = k & 1;
+    const end = (k >> 1) & 1;
+    const acr_load = (k >> 2) & 1;
+    const acr_branch = (k >> 3) & 1;
+    const int_take = (k >> 4) & 1;
     const neg = ((db as number) >> 7) & 1;
     const c = alu_c ? 1 : 0;
     const nmiEdge = nmi && !nmi_prev ? 1 : 0;
@@ -1425,6 +1375,14 @@ export const MOS6502_TimingLogic = circuit('MOS6502_TimingLogic', {
       ir_load: reset || fetch ? 1 : 0,
       ir_clear: reset || (fetch && pending) ? 1 : 0,
       vec,
+      // T and the latched conditions, packed for the PLA.
+      state:
+        ((t as number) & 7) |
+        (acr ? 8 : 0) |
+        (adir ? 16 : 0) |
+        (pending ? 32 : 0) |
+        (((kind as number) & 3) << 6),
+      sync: fetch,
     };
   },
 });
