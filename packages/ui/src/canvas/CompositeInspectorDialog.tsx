@@ -15,7 +15,6 @@ import type { BitValue, BusValue, Circuit } from '@simten/core';
 import { isSequentialCircuit } from '@simten/core/circuit';
 import type { CircuitLibrary, SimulatorEngine } from '@simten/core/simulator';
 import { createSimulatorFromCircuit } from '@simten/core/simulator';
-import { AnimatePresence, motion } from 'framer-motion';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NodeData } from '../nodes';
 import { useSandboxContext } from '../sandbox/SandboxProvider';
@@ -320,6 +319,7 @@ function InspectorBreadcrumb({ stack, onNavigate, theme = 'dark' }: BreadcrumbPr
           )}
           {index < stack.length - 1 ? (
             <button
+              type="button"
               onClick={() => onNavigate(index)}
               className={`${
                 dark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'
@@ -346,18 +346,6 @@ function InspectorBreadcrumb({ stack, onNavigate, theme = 'dark' }: BreadcrumbPr
   );
 }
 
-// ── Level transition direction ──
-
-type Direction = 'in' | 'out';
-
-const levelVariants = {
-  enterIn: { opacity: 0 },
-  enterOut: { opacity: 0 },
-  center: { opacity: 1 },
-  exitIn: { opacity: 0 },
-  exitOut: { opacity: 0 },
-};
-
 // ── Main dialog component (props-driven) ──
 
 export interface CompositeInspectorDialogProps {
@@ -381,20 +369,8 @@ export function CompositeInspectorDialog({
 }: CompositeInspectorDialogProps) {
   const isOpen = stack.length > 0;
 
-  const prevDepthRef = useRef(0);
-  const [direction, setDirection] = useState<Direction>('in');
-
-  useEffect(() => {
-    if (stack.length > prevDepthRef.current) {
-      setDirection('in');
-    } else if (stack.length < prevDepthRef.current) {
-      setDirection('out');
-    }
-    prevDepthRef.current = stack.length;
-  }, [stack.length]);
-
   // Lock body scroll while the inspector is open. This is a hand-rolled modal
-  // (motion.div + fixed positioning), so the browser doesn't lock scroll for
+  // (a fixed-position overlay), so the browser doesn't lock scroll for
   // us the way native <dialog> would. Without this, swiping the modal scrolls
   // the page underneath. Tracked for proper Radix Dialog refactor in #84.
   useEffect(() => {
@@ -406,115 +382,97 @@ export function CompositeInspectorDialog({
     };
   }, [isOpen]);
 
-  const handleBackdropClick = useCallback(
-    (e: React.MouseEvent) => {
-      if (e.target === e.currentTarget) onClose();
-    },
-    [onClose],
-  );
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        e.stopPropagation();
-        if (stack.length > 1) {
-          onPopLevel();
-        } else {
-          onClose();
-        }
+  // Escape steps back a level, or closes from the top level. It listens on the
+  // window because nothing in the dialog is guaranteed to have focus.
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== 'Escape') return;
+      e.stopPropagation();
+      if (stack.length > 1) {
+        onPopLevel();
+      } else {
+        onClose();
       }
-    },
-    [stack.length, onPopLevel, onClose],
-  );
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, stack.length, onPopLevel, onClose]);
 
   const topFrame = isOpen ? stack[stack.length - 1] : null;
 
+  if (!isOpen || !topFrame) return null;
+
+  // The backdrop, the panel and each level fade in with CSS, which runs once when
+  // the element is added to the page. They used to be framer-motion animations,
+  // which jumped back at the end of each fade and made the dialog flicker. The
+  // canvas unmounts this dialog as soon as it closes, so there is no exit fade.
   return (
-    <AnimatePresence>
-      {isOpen && topFrame && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            key="inspector-backdrop"
-            className="fixed inset-0 z-50 bg-black/50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            onClick={handleBackdropClick}
-            onKeyDown={handleKeyDown}
-            tabIndex={-1}
-          />
+    <>
+      {/* Backdrop: clicking outside the panel closes it. It's out of the tab
+          order because the close button and Escape already cover the keyboard. */}
+      <button
+        type="button"
+        aria-label="Close inspector"
+        tabIndex={-1}
+        className="fixed inset-0 z-50 cursor-default bg-black/50 animate-in fade-in-0 duration-250"
+        onClick={onClose}
+      />
 
-          {/* Dialog panel */}
-          <motion.div
-            key="inspector-dialog"
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 pointer-events-none"
+      {/* Dialog panel */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6 pointer-events-none">
+        <div
+          // A reference build is the widest thing this dialog ever shows —
+          // Comparator(8) is an equality tree plus a full subtraction, ~60
+          // nodes laid out left-to-right. max-w-5xl shrank that to specks.
+          className={`flex h-[88vh] w-full max-w-[1600px] flex-col rounded-lg shadow-xl pointer-events-auto overflow-hidden animate-in fade-in-0 duration-150 ${
+            theme === 'dark' ? 'bg-gray-900' : 'bg-white'
+          }`}
+        >
+          {/* Header */}
+          <div
+            className={`flex items-center justify-between border-b px-4 py-3 ${
+              theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
+            }`}
           >
-            <motion.div
-              // A reference build is the widest thing this dialog ever shows —
-              // Comparator(8) is an equality tree plus a full subtraction, ~60
-              // nodes laid out left-to-right. max-w-5xl shrank that to specks.
-              className={`flex h-[88vh] w-full max-w-[1600px] flex-col rounded-lg shadow-xl pointer-events-auto overflow-hidden ${
-                theme === 'dark' ? 'bg-gray-900' : 'bg-white'
+            <InspectorBreadcrumb stack={stack} onNavigate={onNavigate} theme={theme} />
+            <button
+              type="button"
+              onClick={onClose}
+              className={`rounded p-1 ${
+                theme === 'dark'
+                  ? 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
+                  : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
               }`}
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.15 }}
+              aria-label="Close inspector"
             >
-              {/* Header */}
-              <div
-                className={`flex items-center justify-between border-b px-4 py-3 ${
-                  theme === 'dark' ? 'border-gray-700' : 'border-gray-200'
-                }`}
-              >
-                <InspectorBreadcrumb stack={stack} onNavigate={onNavigate} theme={theme} />
-                <button
-                  onClick={onClose}
-                  className={`rounded p-1 ${
-                    theme === 'dark'
-                      ? 'text-gray-400 hover:bg-gray-800 hover:text-gray-300'
-                      : 'text-gray-400 hover:bg-gray-100 hover:text-gray-600'
-                  }`}
-                  aria-label="Close inspector"
-                >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M6 18L18 6M6 6l12 12"
-                    />
-                  </svg>
-                </button>
-              </div>
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          </div>
 
-              {/* Canvas body — animated level transitions */}
-              <div className="relative flex-1 overflow-hidden">
-                <AnimatePresence mode="wait" initial={false}>
-                  <motion.div
-                    key={`${stack.length}-${topFrame.componentName}`}
-                    className="absolute inset-0"
-                    initial={direction === 'in' ? 'enterIn' : 'enterOut'}
-                    animate="center"
-                    exit={direction === 'in' ? 'exitIn' : 'exitOut'}
-                    variants={levelVariants}
-                    transition={{ duration: 0.2, ease: 'easeInOut' }}
-                  >
-                    <InspectorCanvas
-                      frame={topFrame}
-                      componentLibrary={componentLibrary}
-                      onPushLevel={onPushLevel}
-                      theme={theme}
-                    />
-                  </motion.div>
-                </AnimatePresence>
-              </div>
-            </motion.div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
+          {/* Canvas body. A new key per level mounts it fresh, so it fades in. */}
+          <div className="relative flex-1 overflow-hidden">
+            <div
+              key={`${stack.length}-${topFrame.componentName}`}
+              className="absolute inset-0 animate-in fade-in-0 duration-200"
+            >
+              <InspectorCanvas
+                frame={topFrame}
+                componentLibrary={componentLibrary}
+                onPushLevel={onPushLevel}
+                theme={theme}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
