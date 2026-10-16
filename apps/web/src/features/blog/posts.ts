@@ -49,10 +49,10 @@ export const posts: BlogPost[] = [
     nodes: '~100 nodes',
   },
   {
-    slug: 'building-a-cpu',
-    title: 'Building a CPU from Scratch',
+    slug: 'from-nand-to-6502',
+    title: 'From NAND to a 6502',
     description:
-      'From NAND gates to a working processor: fetch, decode, execute, all built from logic gates you can click.',
+      'Gates, adders, memory and an ALU you can click, then a working 6502 running C in the browser.',
     category: 'cpu',
     nodes: '~300 nodes',
   },

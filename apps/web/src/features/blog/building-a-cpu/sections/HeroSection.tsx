@@ -3,12 +3,11 @@ export function HeroSection() {
     <section className="py-16 md:py-24">
       <div className="max-w-3xl">
         <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white leading-tight">
-          Building a CPU from Scratch
+          From NAND to a 6502
         </h1>
         <p className="mt-6 text-xl text-gray-500 dark:text-gray-300 leading-relaxed">
-          From a single NAND gate to a working 6502 processor running C code. Every circuit is live
-          and interactive. Click the switches. Watch the signals propagate. Build intuition for how
-          computers actually work.
+          From a single NAND gate to a 6502 running C code. Every circuit on this page is live: flip
+          the switches and the outputs update.
         </p>
         <div className="mt-8 flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
           <span>Interactive tutorial</span>
