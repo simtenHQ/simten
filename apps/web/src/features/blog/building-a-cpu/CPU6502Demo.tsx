@@ -105,9 +105,8 @@ export function CPU6502Demo() {
   }, [dirty, loadWasm]);
 
   // Auto-scroll the console as text arrives.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: runs on each new line of output
   useEffect(() => {
-    if (consoleRef.current) {
+    if (consoleRef.current && consoleText) {
       consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
     }
   }, [consoleText]);

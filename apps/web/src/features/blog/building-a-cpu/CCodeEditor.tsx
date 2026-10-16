@@ -119,7 +119,15 @@ export interface CCodeEditorProps {
 }
 
 export function CCodeEditor({ value, onChange, className }: CCodeEditorProps) {
-  const tokens = useMemo(() => highlightC(value), [value]);
+  // Each token keyed by where it starts in the source.
+  const tokens = useMemo(() => {
+    let offset = 0;
+    return highlightC(value).map(([type, text]) => {
+      const start = offset;
+      offset += text.length;
+      return { type, text, start };
+    });
+  }, [value]);
 
   // Tab indents instead of moving focus out of the editor.
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -137,9 +145,8 @@ export function CCodeEditor({ value, onChange, className }: CCodeEditorProps) {
     >
       <div className="relative min-w-full w-max">
         <pre aria-hidden="true" className={TEXT_CLASSES}>
-          {tokens.map(([type, text], i) => (
-            // biome-ignore lint/suspicious/noArrayIndexKey: tokens have no identity beyond position
-            <span key={i} style={{ color: `var(--sh-${COLORS[type]})` }}>
+          {tokens.map(({ type, text, start }) => (
+            <span key={start} style={{ color: `var(--sh-${COLORS[type]})` }}>
               {text}
             </span>
           ))}

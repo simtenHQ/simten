@@ -58,8 +58,6 @@ export function useSimulator6502() {
   const [halted, setHalted] = useState(false);
   // 1-100, mapped onto cycles per batch on a log scale.
   const [speed, setSpeed] = useState(70);
-  // Bumped by Reset so the circuit (and the simulation) restarts from power-on.
-  const [generation, setGeneration] = useState(0);
 
   const loadProgram = useCallback(async (program: Program) => {
     setIsRunning(false);
@@ -92,18 +90,13 @@ export function useSimulator6502() {
     void loadProgram(PROGRAMS[0]);
   }, [loadProgram]);
 
-  // The ROM is part of the circuit, so a new program, or a reset, is a new circuit.
-  // biome-ignore lint/correctness/useExhaustiveDependencies: generation forces a rebuild on reset
+  // The ROM is part of the circuit, so a new program is a new circuit. Reset
+  // swaps in a copy of the same ROM, which rebuilds it from power-on.
   const circuit = useMemo(
     () => (state.rom ? Blog6502Computer({ rom: romImage(state.rom) }) : null),
-    [state.rom, generation],
+    [state.rom],
   );
   const sim = useCircuitSimulator(circuit);
-
-  // biome-ignore lint/correctness/useExhaustiveDependencies: clears on every new circuit
-  useEffect(() => {
-    setHalted(false);
-  }, [circuit]);
 
   const consoleText = (() => {
     if (!sim.sequentialState?.currentState) return '';
@@ -155,11 +148,12 @@ export function useSimulator6502() {
   const restart = useCallback(() => {
     setIsRunning(false);
     recentPcs.current = [];
+    setHalted(false);
   }, []);
 
   const handleReset = useCallback(() => {
     restart();
-    setGeneration((g) => g + 1);
+    setState((s) => (s.rom ? { ...s, rom: s.rom.slice() } : s));
   }, [restart]);
 
   // Load a binary from the in-browser compiler.
