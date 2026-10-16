@@ -13,8 +13,8 @@ export interface Program {
 export const PROGRAMS: Program[] = [
   {
     id: 'simple',
-    name: 'Hello Chaz!',
-    description: 'Writes "Hello Chaz!" to the console',
+    name: 'Hello, world',
+    description: 'Prints "Hello, world!" to the console',
     romPath: '/blog-assets/roms/simple.bin',
     sourcePath: '/blog-assets/sources/simple.c',
   },
@@ -46,7 +46,7 @@ interface ProgramState {
   currentProgram: Program;
 }
 
-export function use6502Simulator() {
+export function useSimulator6502() {
   const [state, setState] = useState<ProgramState>({
     rom: null,
     sourceCode: '',
@@ -89,7 +89,7 @@ export function use6502Simulator() {
   useEffect(() => {
     if (loadedInitialRef.current) return;
     loadedInitialRef.current = true;
-    loadProgram(PROGRAMS[0]);
+    void loadProgram(PROGRAMS[0]);
   }, [loadProgram]);
 
   // The ROM is part of the circuit, so a new program, or a reset, is a new circuit.
@@ -129,7 +129,7 @@ export function use6502Simulator() {
   useEffect(() => {
     if (!isRunning || !ready) return;
     let cancelled = false;
-    (async () => {
+    void (async () => {
       while (!cancelled) {
         await tickN(batchRef.current);
         await new Promise((r) => requestAnimationFrame(r));
@@ -176,7 +176,7 @@ export function use6502Simulator() {
       const program = PROGRAMS.find((p) => p.id === programId);
       if (!program) return;
       restart();
-      loadProgram(program);
+      void loadProgram(program);
     },
     [loadProgram, restart],
   );

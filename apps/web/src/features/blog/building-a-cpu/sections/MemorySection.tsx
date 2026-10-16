@@ -4,20 +4,19 @@ import { BLOG_CIRCUITS } from '../circuits';
 export function MemorySection() {
   return (
     <section className="py-12">
-      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-        Memory: Teaching Circuits to Remember
-      </h2>
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Remembering a bit</h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Everything so far has been{' '}
-          <strong className="text-gray-900 dark:text-white">combinational</strong>: the outputs
-          depend only on the current inputs. But a computer needs to <em>remember</em> things. To
-          store a bit, we need feedback: a circuit whose output connects back to its own input.
+          <strong className="text-gray-900 dark:text-white">combinational</strong>, meaning the
+          outputs depend only on what the inputs are right now. A computer also has to{' '}
+          <em>remember</em> things, and for that a circuit needs feedback, with its output wired
+          back into its own input.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          This is where the <strong className="text-gray-900 dark:text-white">clock</strong> enters
-          the picture. Sequential circuits use a clock signal to synchronize state changes. Click
-          the <strong>Tick</strong> button to advance the clock by one cycle.
+          Circuits that remember usually change only when a{' '}
+          <strong className="text-gray-900 dark:text-white">clock</strong> ticks, so everything
+          updates in step. The <strong>Tick</strong> button below advances the clock by one cycle.
         </p>
       </div>
 
@@ -26,9 +25,9 @@ export function MemorySection() {
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">SR Latch</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            The simplest memory cell: two NOR gates cross-coupled. Toggle <strong>S</strong> (Set)
-            to store a 1, toggle <strong>R</strong> (Reset) to clear it. Notice how the output{' '}
-            <em>stays</em> after you release the input. That&rsquo;s memory!
+            Two NOR gates, each feeding the other. Turn <strong>S</strong> (set) on and off again
+            and the output <em>stays</em> at 1. Turn <strong>R</strong> (reset) on and off and it
+            goes back to 0.
           </p>
           <CircuitEmbed
             circuit={BLOG_CIRCUITS.srLatch.circuit}
@@ -41,9 +40,9 @@ export function MemorySection() {
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">D Flip-Flop</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            The workhorse of digital memory. The D flip-flop captures whatever value is on the{' '}
-            <strong>D</strong> input when the clock ticks, and holds it until the next tick. Set the
-            switch, then click <strong>Tick</strong> to capture the value.
+            Takes whatever is on the <strong>D</strong> input when the clock ticks and holds it
+            until the next tick, whatever D does in between. Set the switch, then click{' '}
+            <strong>Tick</strong>.
           </p>
           <CircuitEmbed
             circuit={BLOG_CIRCUITS.dFlipFlop.circuit}
@@ -60,8 +59,8 @@ export function MemorySection() {
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
             Four D flip-flops in parallel, sharing a clock. Set some switches, click{' '}
-            <strong>Tick</strong>, and the register captures all four bits at once. This is exactly
-            how CPU registers work, just wider (8, 16, 32, or 64 bits).
+            <strong>Tick</strong>, and all four bits are stored at once. A CPU&rsquo;s registers are
+            the same thing, only wider: the 6502&rsquo;s are 8&nbsp;bits.
           </p>
           <CircuitEmbed
             circuit={BLOG_CIRCUITS.register4bit.circuit}

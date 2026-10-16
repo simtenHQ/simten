@@ -1,35 +1,45 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { StageStatus } from '@/lib/cc65-compiler';
-import { use6502Simulator } from './use6502Simulator';
+import { CCodeEditor } from './CCodeEditor';
 import { useCC65Compiler } from './useCC65Compiler';
-
-const STARTER_TEMPLATE = `\
-/*
- * Write C code for the 6502 simulator.
- * Console output: write bytes to address $F000
- * No stdlib available, so use the CONSOLE macro.
- */
-#define CONSOLE (*(volatile unsigned char*)0xF000)
-
-void main(void) {
-    CONSOLE = 'H';
-    CONSOLE = 'i';
-    CONSOLE = '!';
-    CONSOLE = '\\n';
-
-    while(1);  /* halt */
-}
-`;
+import { useSimulator6502 } from './useSimulator6502';
 
 const hex = (v: number, digits: number) => `$${v.toString(16).toUpperCase().padStart(digits, '0')}`;
 
-/** P as NV-BDIZC letters, lower case when clear. */
-function flags(p: number) {
-  return 'NV-BDIZC'
-    .split('')
-    .map((f, i) => ((p >> (7 - i)) & 1 ? f : f.toLowerCase()))
-    .join('');
-}
+/** The status flags worth showing, with their bit in P. B and bit 5 aren't stored. */
+const FLAGS = [
+  {
+    name: 'N',
+    bit: 7,
+    help: 'Negative: the last result had its top bit set, so read as a signed number it is negative.',
+  },
+  {
+    name: 'V',
+    bit: 6,
+    help: 'Overflow: the last signed add or subtract went outside -128 to 127.',
+  },
+  {
+    name: 'D',
+    bit: 3,
+    help: 'Decimal: ADC and SBC count in decimal (BCD) instead of binary.',
+  },
+  {
+    name: 'I',
+    bit: 2,
+    help: 'Interrupt disable: the CPU ignores interrupt requests. It is on after reset.',
+  },
+  {
+    name: 'Z',
+    bit: 1,
+    help: 'Zero: the last result was 0. A comparison sets it when the two values are equal.',
+  },
+  {
+    name: 'C',
+    bit: 0,
+    help: 'Carry: the last add carried out of the top bit, or a shift pushed a 1 out.',
+  },
+];
 
 function StageIndicator({ label, status }: { label: string; status: StageStatus }) {
   return (
@@ -74,15 +84,28 @@ export function CPU6502Demo() {
     cyclesPerStep,
     handleReset,
     loadCustomBinary,
-  } = use6502Simulator();
+  } = useSimulator6502();
 
   const compiler = useCC65Compiler();
   const consoleRef = useRef<HTMLPreElement>(null);
-  const [editMode, setEditMode] = useState(false);
-  const [editorSource, setEditorSource] = useState(STARTER_TEMPLATE);
+  // The editor shows the loaded program's source until you change it.
+  const [editorSource, setEditorSource] = useState(sourceCode);
+  const [customRun, setCustomRun] = useState(false);
+  const dirty = editorSource !== sourceCode;
   const autoRunRef = useRef(false);
 
-  // Auto-scroll console
+  useEffect(() => {
+    setEditorSource(sourceCode);
+  }, [sourceCode]);
+
+  // Start fetching the compiler on the first edit, so Compile is quick.
+  const { loadWasm } = compiler;
+  useEffect(() => {
+    if (dirty) void loadWasm();
+  }, [dirty, loadWasm]);
+
+  // Auto-scroll the console as text arrives.
+  // biome-ignore lint/correctness/useExhaustiveDependencies: runs on each new line of output
   useEffect(() => {
     if (consoleRef.current) {
       consoleRef.current.scrollTop = consoleRef.current.scrollHeight;
@@ -97,22 +120,20 @@ export function CPU6502Demo() {
     }
   }, [sim.ready, setIsRunning]);
 
-  const handleEnterEditMode = useCallback(async () => {
-    setEditMode(true);
-    // Start loading WASM modules eagerly
-    compiler.loadWasm();
-  }, [compiler]);
-
-  const handleExitEditMode = useCallback(() => {
-    setEditMode(false);
-    compiler.errors.length > 0; // clear by going back
-  }, [compiler.errors.length]);
+  const handleSelectProgram = useCallback(
+    (id: string) => {
+      setCustomRun(false);
+      selectProgram(id);
+    },
+    [selectProgram],
+  );
 
   const handleCompileAndRun = useCallback(async () => {
     setIsRunning(false);
     const result = await compiler.compile(editorSource);
     if (result.success && result.binary) {
       autoRunRef.current = true; // auto-start when simulator rebuilds
+      setCustomRun(true);
       loadCustomBinary(result.binary, editorSource);
     }
   }, [compiler, editorSource, loadCustomBinary, setIsRunning]);
@@ -142,61 +163,27 @@ export function CPU6502Demo() {
 
   return (
     <div className="rounded-xl border border-gray-700/50 bg-gray-100 dark:bg-gray-900/80 overflow-hidden">
-      {/* Header bar: program selector OR compile controls */}
+      {/* Program picker */}
       <div className="px-4 py-3 border-b border-gray-700/50 flex flex-wrap items-center gap-3">
-        {editMode ? (
-          <>
+        <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+          Program
+        </span>
+        <div className="flex flex-wrap gap-2">
+          {programs.map((prog) => (
             <button
-              onClick={handleCompileAndRun}
-              disabled={compiler.compiling}
-              className="px-4 py-1.5 text-xs font-medium rounded-md bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-50"
+              type="button"
+              key={prog.id}
+              onClick={() => handleSelectProgram(prog.id)}
+              className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
+                !customRun && currentProgram.id === prog.id
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-300 hover:bg-gray-700'
+              }`}
             >
-              {compiler.compiling ? 'Compiling...' : 'Compile & Run'}
+              {prog.name}
             </button>
-            {compiler.compiling && (
-              <div className="flex items-center gap-2">
-                <StageIndicator label="cc65" status={compiler.stages.cc65} />
-                <span className="text-gray-600">→</span>
-                <StageIndicator label="ca65" status={compiler.stages.ca65} />
-                <span className="text-gray-600">→</span>
-                <StageIndicator label="ld65" status={compiler.stages.ld65} />
-              </div>
-            )}
-            <button
-              onClick={handleExitEditMode}
-              className="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-300 hover:bg-gray-700 transition-colors ml-auto"
-            >
-              Back to Examples
-            </button>
-          </>
-        ) : (
-          <>
-            <label className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-              Program
-            </label>
-            <div className="flex gap-2">
-              {programs.map((prog) => (
-                <button
-                  key={prog.id}
-                  onClick={() => selectProgram(prog.id)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${
-                    currentProgram.id === prog.id
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-300 hover:bg-gray-700'
-                  }`}
-                >
-                  {prog.name}
-                </button>
-              ))}
-            </div>
-            <button
-              onClick={handleEnterEditMode}
-              className="px-3 py-1.5 text-xs font-medium rounded-md bg-gray-200 dark:bg-gray-800 text-gray-500 dark:text-gray-300 hover:bg-gray-700 transition-colors ml-auto"
-            >
-              Edit Code
-            </button>
-          </>
-        )}
+          ))}
+        </div>
       </div>
 
       {/* Main content: console + source/editor side by side */}
@@ -211,77 +198,155 @@ export function CPU6502Demo() {
             className="h-48 overflow-auto rounded-lg border border-gray-700 bg-black text-green-400 font-mono text-sm p-3 whitespace-pre-wrap"
           >
             {consoleText || (
-              <span className="text-gray-600">
-                {editMode
-                  ? '// Click Compile & Run to execute your code'
-                  : '// Click Run to start the program'}
-              </span>
+              <span className="text-gray-600">{'// Click Run to start the program'}</span>
             )}
           </pre>
         </div>
 
-        {/* C source / editor */}
+        {/* C source: edit it and compile your own */}
         <div className="p-4">
           <div className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
-            {editMode ? 'C Editor' : `C Source (${currentProgram.name})`}
+            C source ({customRun ? 'your code' : currentProgram.name}
+            {dirty ? ', edited' : ''})
           </div>
-
-          {editMode ? (
-            <div className="space-y-2">
-              <textarea
-                value={editorSource}
-                onChange={(e) => setEditorSource(e.target.value)}
-                spellCheck={false}
-                className="h-48 w-full resize-none rounded-lg border border-gray-700 bg-gray-50 dark:bg-gray-950 text-gray-500 dark:text-gray-300 font-mono text-xs p-3 leading-relaxed focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
-              />
-              {compiler.errors.length > 0 && (
-                <pre className="max-h-24 overflow-auto rounded-lg border border-red-800/50 bg-red-950/30 text-red-400 font-mono text-xs p-3">
-                  {compiler.errors.join('\n')}
-                </pre>
+          <CCodeEditor value={editorSource} onChange={setEditorSource} className="h-48" />
+          {dirty && (
+            <div className="mt-2 flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                onClick={handleCompileAndRun}
+                disabled={compiler.compiling}
+                className="px-4 py-1.5 text-xs font-medium rounded-md bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-50"
+              >
+                {compiler.compiling ? 'Compiling...' : 'Compile & Run'}
+              </button>
+              {compiler.compiling ? (
+                <div className="flex items-center gap-2">
+                  <StageIndicator label="cc65" status={compiler.stages.cc65} />
+                  <span className="text-gray-600">→</span>
+                  <StageIndicator label="ca65" status={compiler.stages.ca65} />
+                  <span className="text-gray-600">→</span>
+                  <StageIndicator label="ld65" status={compiler.stages.ld65} />
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setEditorSource(sourceCode)}
+                  className="text-xs text-gray-500 dark:text-gray-400 underline underline-offset-2 hover:text-gray-700 dark:hover:text-gray-200"
+                >
+                  Revert
+                </button>
               )}
-              <div className="text-[10px] text-gray-500 dark:text-gray-500 leading-snug">
-                No standard library (printf, etc.). Use{' '}
-                <code className="text-gray-500 dark:text-gray-400">CONSOLE = &apos;c&apos;;</code>{' '}
-                for output. Program must end with{' '}
-                <code className="text-gray-500 dark:text-gray-400">while(1);</code> to halt. ROM
-                size: 16KB max.
-              </div>
             </div>
-          ) : (
-            <pre className="h-48 overflow-auto rounded-lg border border-gray-700 bg-gray-50 dark:bg-gray-950 text-gray-500 dark:text-gray-300 font-mono text-xs p-3 leading-relaxed">
-              {sourceCode}
+          )}
+          {dirty && compiler.errors.length > 0 && (
+            <pre className="mt-2 max-h-24 overflow-auto rounded-lg border border-red-800/50 bg-red-950/30 text-red-400 font-mono text-xs p-3">
+              {compiler.errors.join('\n')}
             </pre>
           )}
+          <p className="mt-2 text-[11px] text-gray-500 leading-snug">
+            Change the code to compile and run your own. It compiles and runs on the simulated 6502
+            in your browser, and nothing is sent to a server. <code>printf</code> works.
+            There&apos;s no floating point, and an <code>int</code> is 16&nbsp;bits, so it tops out
+            at 32,767.
+          </p>
         </div>
       </div>
 
-      {/* Registers */}
-      <div className="px-4 py-2 border-t border-gray-700/50 flex flex-wrap items-center gap-x-5 gap-y-1 font-mono text-xs text-gray-500 dark:text-gray-400 tabular-nums">
-        <span>
-          PC <span className="text-gray-900 dark:text-gray-100">{hex(registers.pc, 4)}</span>
-        </span>
-        <span>
-          A <span className="text-gray-900 dark:text-gray-100">{hex(registers.a, 2)}</span>
-        </span>
-        <span>
-          X <span className="text-gray-900 dark:text-gray-100">{hex(registers.x, 2)}</span>
-        </span>
-        <span>
-          Y <span className="text-gray-900 dark:text-gray-100">{hex(registers.y, 2)}</span>
-        </span>
-        <span>
-          S <span className="text-gray-900 dark:text-gray-100">{hex(registers.s, 2)}</span>
-        </span>
-        <span>
-          P <span className="text-gray-900 dark:text-gray-100">{flags(registers.p)}</span>
-        </span>
-        {halted && <span className="text-green-500">Program finished</span>}
-      </div>
+      {/* Registers: hover a name for what it holds */}
+      <TooltipProvider delayDuration={300}>
+        <div className="px-4 py-2 border-t border-gray-700/50 flex flex-wrap items-center gap-x-5 gap-y-1 font-mono text-xs text-gray-500 dark:text-gray-400 tabular-nums">
+          {[
+            {
+              name: 'PC',
+              value: hex(registers.pc, 4),
+              help: 'Program counter: the address of the next instruction',
+            },
+            {
+              name: 'A',
+              value: hex(registers.a, 2),
+              help: 'Accumulator: where arithmetic and logic results go',
+            },
+            {
+              name: 'X',
+              value: hex(registers.x, 2),
+              help: 'X index register: a counter or an offset into memory',
+            },
+            {
+              name: 'Y',
+              value: hex(registers.y, 2),
+              help: 'Y index register: a counter or an offset into memory',
+            },
+            {
+              name: 'S',
+              value: hex(registers.s, 2),
+              help: 'Stack pointer: the next free byte of the stack at $0100-$01FF',
+            },
+          ].map((r) => (
+            <Tooltip key={r.name}>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="cursor-help rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  <span className="underline decoration-dotted underline-offset-2">{r.name}</span>{' '}
+                  <span className="text-gray-900 dark:text-gray-100">{r.value}</span>
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-64 font-sans">
+                {r.help}
+              </TooltipContent>
+            </Tooltip>
+          ))}
+          {/* P: one box per flag, lit when it is set */}
+          <span className="flex items-center gap-1">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <button
+                  type="button"
+                  className="cursor-help rounded-sm outline-none focus-visible:ring-2 focus-visible:ring-blue-500 underline decoration-dotted underline-offset-2"
+                >
+                  P
+                </button>
+              </TooltipTrigger>
+              <TooltipContent side="top" className="max-w-64 font-sans">
+                Status flags. Each one lights up while it is set, and branch instructions check them
+                to decide whether to jump.
+              </TooltipContent>
+            </Tooltip>
+            {FLAGS.map((f) => {
+              const on = (registers.p >> f.bit) & 1;
+              return (
+                <Tooltip key={f.name}>
+                  <TooltipTrigger asChild>
+                    <button
+                      type="button"
+                      aria-label={`${f.name} flag ${on ? 'set' : 'clear'}`}
+                      className={`w-5 h-5 rounded text-[11px] font-semibold cursor-help outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-colors ${
+                        on
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-200 text-gray-400 dark:bg-gray-800 dark:text-gray-600'
+                      }`}
+                    >
+                      {f.name}
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="top" className="max-w-64 font-sans">
+                    {f.help}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </span>
+          {halted && <span className="text-green-500">Program finished</span>}
+        </div>
+      </TooltipProvider>
 
       {/* Controls bar */}
       <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-100 dark:bg-gray-900/90">
         {/* Run/Pause */}
         <button
+          type="button"
           onClick={() => setIsRunning(!isRunning)}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
             isRunning
@@ -294,6 +359,7 @@ export function CPU6502Demo() {
 
         {/* Step */}
         <button
+          type="button"
           onClick={sim.tick}
           disabled={isRunning}
           className="px-3 py-2 text-sm font-medium rounded-md bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors disabled:opacity-40"
@@ -303,6 +369,7 @@ export function CPU6502Demo() {
 
         {/* Reset */}
         <button
+          type="button"
           onClick={handleReset}
           className="px-3 py-2 text-sm font-medium rounded-md bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors"
         >

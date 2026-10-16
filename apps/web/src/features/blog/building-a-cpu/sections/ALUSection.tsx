@@ -4,28 +4,25 @@ import { BLOG_CIRCUITS } from '../circuits';
 export function ALUSection() {
   return (
     <section className="py-12">
-      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-        The ALU: A Calculator Chip
-      </h2>
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">The ALU</h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          An adder can only add. A real CPU needs to do logic too: AND, OR, XOR. The{' '}
-          <strong className="text-gray-900 dark:text-white">Arithmetic Logic Unit</strong> (ALU)
-          computes <em>all</em> of these in parallel and uses a{' '}
-          <strong className="text-gray-900 dark:text-white">multiplexer</strong> to pick the result
-          based on a control signal.
+          A CPU needs more than addition. It also needs AND, OR and XOR. The{' '}
+          <strong className="text-gray-900 dark:text-white">arithmetic logic unit</strong> (ALU)
+          works out <em>all</em> of them at once and uses a{' '}
+          <strong className="text-gray-900 dark:text-white">multiplexer</strong> to pass on the one
+          the current instruction asked for.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Below is a 1-bit ALU slice. It has an adder, AND, OR, and XOR gate all wired to the same
-          inputs. The two <strong>op</strong> switches select which result passes through:
-          00&nbsp;=&nbsp;ADD, 01&nbsp;=&nbsp;AND, 10&nbsp;=&nbsp;OR, 11&nbsp;=&nbsp;XOR.
+          Here is one bit of an ALU: a full adder and an AND, an OR and an XOR gate, all fed the
+          same inputs. The two <strong>op</strong> switches choose the output: 00&nbsp;is ADD,
+          01&nbsp;AND, 10&nbsp;OR and 11&nbsp;XOR.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Chain 8 of these slices (with carry linking the adders) and you have the heart of the
-          6502&rsquo;s ALU. The real one adds shifts and a decimal mode, but the idea is the same.
-          The CPU&rsquo;s control unit just sets the <strong>op</strong> bits based on which
-          instruction it decoded. Same circuit, different operation. That&rsquo;s what makes it
-          programmable.
+          Put eight of these side by side, with the carry running between the adders, and you have
+          most of the 6502&rsquo;s ALU. The real one can also shift and do decimal arithmetic. When
+          the CPU decodes an instruction, part of what it decides is which <strong>op</strong> to
+          send the ALU.
         </p>
       </div>
 

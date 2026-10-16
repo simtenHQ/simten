@@ -30,10 +30,10 @@ import { Route as BlogRv32iCpuRouteImport } from './routes/blog/rv32i-cpu'
 import { Route as BlogPongInHardwareRouteImport } from './routes/blog/pong-in-hardware'
 import { Route as BlogHowTpusWorkRouteImport } from './routes/blog/how-tpus-work'
 import { Route as BlogHowNetworkSwitchesWorkRouteImport } from './routes/blog/how-network-switches-work'
+import { Route as BlogFromNandTo6502RouteImport } from './routes/blog/from-nand-to-6502'
 import { Route as BlogCrc32InHardwareRouteImport } from './routes/blog/crc32-in-hardware'
 import { Route as BlogComputingTrigInHardwareRouteImport } from './routes/blog/computing-trig-in-hardware'
 import { Route as BlogChacha20InHardwareRouteImport } from './routes/blog/chacha20-in-hardware'
-import { Route as BlogBuildingACpuRouteImport } from './routes/blog/building-a-cpu'
 import { Route as BlogBreakoutInHardwareRouteImport } from './routes/blog/breakout-in-hardware'
 import { Route as BlogAesInHardwareRouteImport } from './routes/blog/aes-in-hardware'
 import { Route as BlogSplatRouteImport } from './routes/blog/$'
@@ -146,6 +146,11 @@ const BlogHowNetworkSwitchesWorkRoute =
     path: '/how-network-switches-work',
     getParentRoute: () => BlogRoute,
   } as any)
+const BlogFromNandTo6502Route = BlogFromNandTo6502RouteImport.update({
+  id: '/from-nand-to-6502',
+  path: '/from-nand-to-6502',
+  getParentRoute: () => BlogRoute,
+} as any)
 const BlogCrc32InHardwareRoute = BlogCrc32InHardwareRouteImport.update({
   id: '/crc32-in-hardware',
   path: '/crc32-in-hardware',
@@ -160,11 +165,6 @@ const BlogComputingTrigInHardwareRoute =
 const BlogChacha20InHardwareRoute = BlogChacha20InHardwareRouteImport.update({
   id: '/chacha20-in-hardware',
   path: '/chacha20-in-hardware',
-  getParentRoute: () => BlogRoute,
-} as any)
-const BlogBuildingACpuRoute = BlogBuildingACpuRouteImport.update({
-  id: '/building-a-cpu',
-  path: '/building-a-cpu',
   getParentRoute: () => BlogRoute,
 } as any)
 const BlogBreakoutInHardwareRoute = BlogBreakoutInHardwareRouteImport.update({
@@ -203,10 +203,10 @@ export interface FileRoutesByFullPath {
   '/blog/$': typeof BlogSplatRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
-  '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
   '/blog/chacha20-in-hardware': typeof BlogChacha20InHardwareRoute
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
   '/blog/crc32-in-hardware': typeof BlogCrc32InHardwareRoute
+  '/blog/from-nand-to-6502': typeof BlogFromNandTo6502Route
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
@@ -234,10 +234,10 @@ export interface FileRoutesByTo {
   '/blog/$': typeof BlogSplatRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
-  '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
   '/blog/chacha20-in-hardware': typeof BlogChacha20InHardwareRoute
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
   '/blog/crc32-in-hardware': typeof BlogCrc32InHardwareRoute
+  '/blog/from-nand-to-6502': typeof BlogFromNandTo6502Route
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
@@ -267,10 +267,10 @@ export interface FileRoutesById {
   '/blog/$': typeof BlogSplatRoute
   '/blog/aes-in-hardware': typeof BlogAesInHardwareRoute
   '/blog/breakout-in-hardware': typeof BlogBreakoutInHardwareRoute
-  '/blog/building-a-cpu': typeof BlogBuildingACpuRoute
   '/blog/chacha20-in-hardware': typeof BlogChacha20InHardwareRoute
   '/blog/computing-trig-in-hardware': typeof BlogComputingTrigInHardwareRoute
   '/blog/crc32-in-hardware': typeof BlogCrc32InHardwareRoute
+  '/blog/from-nand-to-6502': typeof BlogFromNandTo6502Route
   '/blog/how-network-switches-work': typeof BlogHowNetworkSwitchesWorkRoute
   '/blog/how-tpus-work': typeof BlogHowTpusWorkRoute
   '/blog/pong-in-hardware': typeof BlogPongInHardwareRoute
@@ -301,10 +301,10 @@ export interface FileRouteTypes {
     | '/blog/$'
     | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
-    | '/blog/building-a-cpu'
     | '/blog/chacha20-in-hardware'
     | '/blog/computing-trig-in-hardware'
     | '/blog/crc32-in-hardware'
+    | '/blog/from-nand-to-6502'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
     | '/blog/pong-in-hardware'
@@ -332,10 +332,10 @@ export interface FileRouteTypes {
     | '/blog/$'
     | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
-    | '/blog/building-a-cpu'
     | '/blog/chacha20-in-hardware'
     | '/blog/computing-trig-in-hardware'
     | '/blog/crc32-in-hardware'
+    | '/blog/from-nand-to-6502'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
     | '/blog/pong-in-hardware'
@@ -364,10 +364,10 @@ export interface FileRouteTypes {
     | '/blog/$'
     | '/blog/aes-in-hardware'
     | '/blog/breakout-in-hardware'
-    | '/blog/building-a-cpu'
     | '/blog/chacha20-in-hardware'
     | '/blog/computing-trig-in-hardware'
     | '/blog/crc32-in-hardware'
+    | '/blog/from-nand-to-6502'
     | '/blog/how-network-switches-work'
     | '/blog/how-tpus-work'
     | '/blog/pong-in-hardware'
@@ -554,6 +554,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogHowNetworkSwitchesWorkRouteImport
       parentRoute: typeof BlogRoute
     }
+    '/blog/from-nand-to-6502': {
+      id: '/blog/from-nand-to-6502'
+      path: '/from-nand-to-6502'
+      fullPath: '/blog/from-nand-to-6502'
+      preLoaderRoute: typeof BlogFromNandTo6502RouteImport
+      parentRoute: typeof BlogRoute
+    }
     '/blog/crc32-in-hardware': {
       id: '/blog/crc32-in-hardware'
       path: '/crc32-in-hardware'
@@ -573,13 +580,6 @@ declare module '@tanstack/react-router' {
       path: '/chacha20-in-hardware'
       fullPath: '/blog/chacha20-in-hardware'
       preLoaderRoute: typeof BlogChacha20InHardwareRouteImport
-      parentRoute: typeof BlogRoute
-    }
-    '/blog/building-a-cpu': {
-      id: '/blog/building-a-cpu'
-      path: '/building-a-cpu'
-      fullPath: '/blog/building-a-cpu'
-      preLoaderRoute: typeof BlogBuildingACpuRouteImport
       parentRoute: typeof BlogRoute
     }
     '/blog/breakout-in-hardware': {
@@ -624,10 +624,10 @@ interface BlogRouteChildren {
   BlogSplatRoute: typeof BlogSplatRoute
   BlogAesInHardwareRoute: typeof BlogAesInHardwareRoute
   BlogBreakoutInHardwareRoute: typeof BlogBreakoutInHardwareRoute
-  BlogBuildingACpuRoute: typeof BlogBuildingACpuRoute
   BlogChacha20InHardwareRoute: typeof BlogChacha20InHardwareRoute
   BlogComputingTrigInHardwareRoute: typeof BlogComputingTrigInHardwareRoute
   BlogCrc32InHardwareRoute: typeof BlogCrc32InHardwareRoute
+  BlogFromNandTo6502Route: typeof BlogFromNandTo6502Route
   BlogHowNetworkSwitchesWorkRoute: typeof BlogHowNetworkSwitchesWorkRoute
   BlogHowTpusWorkRoute: typeof BlogHowTpusWorkRoute
   BlogPongInHardwareRoute: typeof BlogPongInHardwareRoute
@@ -642,10 +642,10 @@ const BlogRouteChildren: BlogRouteChildren = {
   BlogSplatRoute: BlogSplatRoute,
   BlogAesInHardwareRoute: BlogAesInHardwareRoute,
   BlogBreakoutInHardwareRoute: BlogBreakoutInHardwareRoute,
-  BlogBuildingACpuRoute: BlogBuildingACpuRoute,
   BlogChacha20InHardwareRoute: BlogChacha20InHardwareRoute,
   BlogComputingTrigInHardwareRoute: BlogComputingTrigInHardwareRoute,
   BlogCrc32InHardwareRoute: BlogCrc32InHardwareRoute,
+  BlogFromNandTo6502Route: BlogFromNandTo6502Route,
   BlogHowNetworkSwitchesWorkRoute: BlogHowNetworkSwitchesWorkRoute,
   BlogHowTpusWorkRoute: BlogHowTpusWorkRoute,
   BlogPongInHardwareRoute: BlogPongInHardwareRoute,

@@ -4,9 +4,9 @@
  * Pipeline: cc65 (C → asm) → ca65 (asm → .o) → ld65 (.o → .bin)
  *
  * Each tool runs in a fresh WASM module instance (globals aren't reset).
- * Support files (crt0-simple.o, sim6502.cfg, and none.lib, cc65's runtime
- * library for the stack, multiply/divide and the C library) are fetched once
- * and cached.
+ * Support files (crt0-simple.o, sim6502.cfg, the standard C headers, and
+ * none.lib, cc65's runtime and C library) are fetched once and cached.
+ * scripts/build-cc65-wasm.sh builds all of them from one cc65 commit.
  */
 
 export type StageStatus = 'pending' | 'running' | 'done' | 'error';
@@ -44,6 +44,7 @@ let crt0Promise: Promise<Uint8Array> | null = null;
 let cfgPromise: Promise<string> | null = null;
 let longbranchPromise: Promise<string> | null = null;
 let libPromise: Promise<Uint8Array> | null = null;
+let headersPromise: Promise<Record<string, string>> | null = null;
 
 function fetchBinary(file: string): Promise<Uint8Array> {
   return fetch(`${WASM_BASE}/${file}`)
@@ -62,6 +63,17 @@ function fetchCrt0(): Promise<Uint8Array> {
 function fetchLib(): Promise<Uint8Array> {
   if (!libPromise) libPromise = fetchBinary('none.lib');
   return libPromise;
+}
+
+/** stdio.h, string.h and the rest, keyed by file name. */
+function fetchHeaders(): Promise<Record<string, string>> {
+  if (!headersPromise) {
+    headersPromise = fetch(`${WASM_BASE}/include.json`).then((r) => {
+      if (!r.ok) throw new Error(`Failed to fetch include.json: ${r.status}`);
+      return r.json();
+    });
+  }
+  return headersPromise;
 }
 
 function fetchCfg(): Promise<string> {
@@ -117,8 +129,13 @@ export async function preloadWasm(): Promise<void> {
     fetchCfg(),
     fetchLongbranch(),
     fetchLib(),
+    fetchHeaders(),
   ]);
 }
+
+// cc65 colours its messages for a terminal; drop the escape codes for the page.
+const ANSI_COLOR = new RegExp(`${String.fromCharCode(27)}\\[[0-9;]*m`, 'g');
+const stripColors = (text: string) => text.replace(ANSI_COLOR, '');
 
 function callMain(mod: EmscriptenModule, args: string[], stderr: string[]): number {
   try {
@@ -149,11 +166,12 @@ export async function compileC(
   };
 
   // Prefetch support files in parallel
-  const [crt0Bytes, cfgText, longbranchText, libBytes] = await Promise.all([
+  const [crt0Bytes, cfgText, longbranchText, libBytes, headers] = await Promise.all([
     fetchCrt0(),
     fetchCfg(),
     fetchLongbranch(),
     fetchLib(),
+    fetchHeaders(),
   ]);
 
   // --- Step 1: cc65 (C → assembly) ---
@@ -163,14 +181,18 @@ export async function compileC(
   const cc65Stderr: string[] = [];
   const cc65Mod = await cc65Factory({
     print: () => {},
-    printErr: (t: string) => cc65Stderr.push(t),
+    printErr: (t: string) => cc65Stderr.push(stripColors(t)),
     locateFile: (path: string) => `${WASM_BASE}/${path}`,
   });
 
   cc65Mod.FS.writeFile('/input.c', sourceCode);
+  cc65Mod.FS.mkdir('/include');
+  for (const [name, text] of Object.entries(headers)) {
+    cc65Mod.FS.writeFile(`/include/${name}`, text);
+  }
   const cc65Code = callMain(
     cc65Mod,
-    ['-t', 'none', '-O', '/input.c', '-o', '/output.s'],
+    ['-t', 'none', '-O', '-I', '/include', '/input.c', '-o', '/output.s'],
     cc65Stderr,
   );
 
@@ -194,7 +216,7 @@ export async function compileC(
   const ca65Stderr: string[] = [];
   const ca65Mod = await ca65Factory({
     print: () => {},
-    printErr: (t: string) => ca65Stderr.push(t),
+    printErr: (t: string) => ca65Stderr.push(stripColors(t)),
     locateFile: (path: string) => `${WASM_BASE}/${path}`,
   });
 
@@ -228,7 +250,7 @@ export async function compileC(
   const ld65Stderr: string[] = [];
   const ld65Mod = await ld65Factory({
     print: () => {},
-    printErr: (t: string) => ld65Stderr.push(t),
+    printErr: (t: string) => ld65Stderr.push(stripColors(t)),
     locateFile: (path: string) => `${WASM_BASE}/${path}`,
   });
 

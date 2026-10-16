@@ -1,5 +1,5 @@
 /**
- * The 6502 computer for the "Building a CPU" post: the stdlib's MOS6502_Core
+ * The 6502 computer for the "From NAND to a 6502" post: the stdlib's MOS6502_Core
  * with 2 KB of RAM, a ROM, and a console, wired to the memory map that the
  * cc65 linker config (public/blog-assets/wasm/sim6502.cfg) expects:
  *
