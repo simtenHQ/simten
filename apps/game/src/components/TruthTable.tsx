@@ -36,6 +36,11 @@ interface TruthTableProps {
    * only this one column goes red.
    */
   failed?: number | null;
+  /**
+   * Called with the column under the pointer, and `null` when it leaves the
+   * table. The spec panel uses it to read that column back as numbers.
+   */
+  onHover?: (index: number | null) => void;
 }
 
 /**
@@ -55,7 +60,13 @@ export function columnsFor(level: Level): { inputNames: string[]; outputNames: s
 /** A step-number cell, ruled off like the value cells below it. */
 const STEP_CELL = 'w-7 border-l border-border py-0.5 text-center text-xs text-muted-foreground';
 
-export function TruthTable({ level, active = null, proven = 0, failed = null }: TruthTableProps) {
+export function TruthTable({
+  level,
+  active = null,
+  proven = 0,
+  failed = null,
+  onHover,
+}: TruthTableProps) {
   const { inputNames, outputNames } = columnsFor(level);
 
   const cell = (i: number) => {
@@ -70,8 +81,10 @@ export function TruthTable({ level, active = null, proven = 0, failed = null }: 
     ].join(' ');
   };
 
+  const outputCell = (i: number) => `${cell(i)} text-emerald-600 dark:text-emerald-400`;
+
   return (
-    <table className="font-mono text-[13px] tabular-nums">
+    <table className="font-mono text-[13px] tabular-nums" onMouseLeave={() => onHover?.(null)}>
       <tbody>
         {/* Step numbers, on a sequential level only.
             Without them the columns read as an unordered set of cases, which is
@@ -97,7 +110,7 @@ export function TruthTable({ level, active = null, proven = 0, failed = null }: 
             <th className="pr-3 text-right font-medium text-muted-foreground">{name}</th>
             {level.vectors.map((v, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: see the step row
-              <td key={i} className={cell(i)}>
+              <td key={i} className={cell(i)} onMouseEnter={() => onHover?.(i)}>
                 {v.inputs[name]}
               </td>
             ))}
@@ -111,7 +124,7 @@ export function TruthTable({ level, active = null, proven = 0, failed = null }: 
             </th>
             {level.vectors.map((v, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: see the step row
-              <td key={i} className={`${cell(i)} text-emerald-600 dark:text-emerald-400`}>
+              <td key={i} className={outputCell(i)} onMouseEnter={() => onHover?.(i)}>
                 {v.expect[name]}
               </td>
             ))}

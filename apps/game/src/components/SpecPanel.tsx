@@ -12,7 +12,9 @@
  * waveform viewer, so the two read as one product.
  */
 
+import { useState } from 'react';
 import { explain } from '../game/explain';
+import { readNumbers } from '../game/numbers';
 import type { GradeResult, Level } from '../game/types';
 import { TruthTable } from './TruthTable';
 
@@ -70,6 +72,11 @@ export function SpecPanel({ level, result, activeRow, provenRows, checking }: Sp
   const failure = result?.status === 'fail' ? result.failure : null;
   const failedIndex = failure?.kind === 'vector' ? failure.index : null;
   const reason = explain(result, level);
+  // Which column the decimal footnote reads: the one under the pointer, or
+  // failing that the one the grader stopped on.
+  const [hovered, setHovered] = useState<number | null>(null);
+  const focus = hovered ?? failedIndex;
+  const asNumbers = focus === null ? null : readNumbers(level, level.vectors[focus]);
   return (
     <div className="h-full overflow-x-auto overflow-y-auto px-6 py-4">
       {/* Four equal columns across the sheet. They sit inside its padding, so
@@ -97,6 +104,7 @@ export function SpecPanel({ level, result, activeRow, provenRows, checking }: Sp
             active={activeRow}
             proven={failedIndex ?? provenRows}
             failed={failedIndex}
+            onHover={setHovered}
           />
           {/* Footnote: how to read the table. */}
           <p className="mt-1.5 max-w-[240px] text-[11px] text-muted-foreground">
@@ -104,6 +112,13 @@ export function SpecPanel({ level, result, activeRow, provenRows, checking }: Sp
               ? 'Each column is one tick of the clock, read left to right.'
               : 'Expected outputs for each input combination.'}
           </p>
+          {/* Rows of bits are hard to check by eye, so arithmetic levels read
+              one column back in decimal. */}
+          {level.numbers && (
+            <p className="mt-0.5 max-w-[240px] font-mono text-[11px] text-muted-foreground">
+              {asNumbers ?? 'Hover a column to read it as numbers.'}
+            </p>
+          )}
         </div>
 
         {/* What you may build with, stated up front. It used to appear only in

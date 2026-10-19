@@ -940,6 +940,7 @@ export default circuit('Gates4', {
     inputs: ['a1', 'a0'],
     outputs: ['y0', 'y1', 'y2', 'y3'],
     allowed: ARITHMETIC_GATES,
+    numbers: { a: 'unsigned' },
     stub: `// a1 is worth 2 and a0 is worth 1, so a1 on and a0 off is
 // the number 2, and only y2 should light.
 
@@ -979,6 +980,7 @@ export default circuit('Decoder2', {
     inputs: ['d0', 'd1', 'd2', 'd3', 's1', 's0'],
     outputs: ['out'],
     allowed: ARITHMETIC_GATES,
+    numbers: { s: 'unsigned' },
     stub: `// Your multiplexer from earlier, finished, with ports so it
 // works as a part.
 
@@ -1090,6 +1092,7 @@ export default circuit('Parity4', {
     inputs: ['a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
     outputs: ['s3', 's2', 's1', 's0', 'cout'],
     allowed: ARITHMETIC_GATES,
+    numbers: { a: 'unsigned', b: 'unsigned', s: 'unsigned' },
     stub: `// Your half adder and full adder, finished, with ports.
 
 ${HALF_ADDER}
@@ -1189,6 +1192,7 @@ export default circuit('Adder4', {
     inputs: ['a3', 'a2', 'a1', 'a0'],
     outputs: ['n3', 'n2', 'n1', 'n0'],
     allowed: ARITHMETIC_GATES,
+    numbers: { a: 'unsigned', n: 'signed' },
     stub: `// Four bits count up to 15 and then wrap round to 0. So the
 // negative of 3 is whatever you add to 3 to get 16: that's 13.
 // This way of writing negatives is called two's complement.
@@ -1249,6 +1253,7 @@ export default circuit('Negate4', {
     inputs: ['a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
     outputs: ['d3', 'd2', 'd1', 'd0', 'borrow'],
     allowed: ARITHMETIC_GATES,
+    numbers: { a: 'unsigned', b: 'unsigned', d: 'signed' },
     stub: `// Your 4-bit adder, finished, with the parts it is made of.
 
 ${HALF_ADDER}
@@ -1353,6 +1358,7 @@ export default circuit('Subtract4', {
     inputs: ['a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
     outputs: ['eq'],
     allowed: ARITHMETIC_GATES,
+    numbers: { a: 'unsigned', b: 'unsigned' },
     stub: `// Two numbers are the same when every bit matches the bit
 // in the same place in the other one.
 
@@ -1405,6 +1411,7 @@ export default circuit('Equal4', {
     inputs: ['a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
     outputs: ['lt'],
     allowed: ARITHMETIC_GATES,
+    numbers: { a: 'unsigned', b: 'unsigned' },
     stub: `// Your subtractor, finished, with the parts it is made of.
 
 ${HALF_ADDER}
@@ -1467,6 +1474,7 @@ export default circuit('LessThan4', {
     inputs: ['op1', 'op0', 'a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
     outputs: ['r3', 'r2', 'r1', 'r0'],
     allowed: ARITHMETIC_GATES,
+    numbers: { a: 'unsigned', b: 'unsigned', r: 'unsigned' },
     stub: `// Everything you need is below, finished: your multiplexers,
 // your adder and your subtractor.
 

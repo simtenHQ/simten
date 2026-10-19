@@ -89,8 +89,9 @@ export interface Level {
   /** Starting source in the editor. */
   stub: string;
   /**
-   * The truth table. Exhaustive where the input space allows it: every
-   * combinational level shipped so far is small enough that it is.
+   * The truth table. Exhaustive up to 16 combinations. Past that it is a chosen
+   * set of at most 16, picked to cover the edge cases, because 16 columns is
+   * about as wide as the spec panel reads comfortably.
    *
    * On a `sequential` level these are ordered steps, not independent cases, and
    * reordering or deduplicating them destroys what they assert.
@@ -107,6 +108,16 @@ export interface Level {
    * table and the definition of memory in a sequence.
    */
   sequential?: boolean;
+  /**
+   * Bit groups the spec panel should read back as numbers.
+   *
+   * Keyed by prefix: `a` gathers `a3 a2 a1 a0` into one value, most significant
+   * digit first. Twelve columns of bits are hard to check by eye, so the panel
+   * says what the column in focus means ("a = 5, b = 3, s = 8"). `signed` adds
+   * the two's complement reading where it differs, so a negated 3 shows as
+   * "13 (-3)". Data rather than a formatter, so a level stays plain JSON.
+   */
+  numbers?: Record<string, 'unsigned' | 'signed'>;
   /**
    * Gate count worth beating. Used for scoring; not shown on the completion
    * dialog, where a par figure reads as a mark out of ten rather than an
