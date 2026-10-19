@@ -21,7 +21,7 @@ equal        subtract                   register
 four-way-multiplexer        negate                     counter
 decoder      4-bit-adder                    toggle
 wider-gates                 full-adder   d-latch
-majority                   half-adder   latch
+majority                   half-adder   sr-latch
 
 COMPONENTS   buses
              multiplexer
