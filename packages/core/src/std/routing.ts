@@ -84,9 +84,8 @@ export const Decoder = circuit('Decoder', {
 });
 
 /**
- * Splits a byte into two nibbles: an 8-bit bus into two 4-bit halves. `out0` is the
- * low nibble (bits 0..3), `out1` is the high nibble (bits 4..7). This was
- * `Splitter`; that name now belongs to the general bit splitter below.
+ * Splits a byte into two nibbles: `out0` is the low nibble (bits 0..3),
+ * `out1` the high nibble (bits 4..7).
  *
  * **Input:** `in` — `bus(8)`
  * **Outputs:** `out0`, `out1` — `bus(4)`
@@ -136,32 +135,14 @@ const bitPorts = (width: number) =>
   >;
 
 /**
- * Splits a bus into its bits. `bit0` is the LSB.
- *
- * **Input:** `in` — `bus(width)`
- * **Outputs:** `bit0`..`bit{width-1}` — `bit`
- * **Args:** `width` (default 8)
- *
- * Its set of ports changes with `width`, so each width registers as its own
- * primitive (`Splitter_4w`, `Splitter_8w`): the simulator compiles one
- * evaluator per primitive name with that primitive's port list baked in. Same
- * pattern as the importer's `Pmux`. Source still writes `Splitter({ width })`.
- *
- * **Example:** four switches' worth of bits from one 4-bit input
- * ```ts
- * circuit('Bits', {
- *   inputs:  { value: bus(4) },
- *   outputs: { low: bit, high: bit },
- *   nodes:   { s: Splitter({ width: 4 }) },
- *   connect: ({ inputs, outputs, nodes: { s } }) => [
- *     inputs.value.to(s.in),
- *     s.bit0.to(outputs.low),
- *     s.bit3.to(outputs.high),
- *   ],
- * })
- * ```
+ * Splits a bus into its bits, `bit0` (LSB) to `bit{width-1}`.
+ * e.g. `Splitter({ width: 4 })`. The inverse of `Combiner`.
  */
 export function Splitter({ width = 8 }: { width?: number } = {}) {
+  // Its set of ports changes with `width`, so each width registers as its own
+  // primitive (`Splitter_4w`, `Splitter_8w`): the simulator compiles one
+  // evaluator per primitive name with that primitive's port list baked in. Same
+  // pattern as the importer's `Pmux`. Source still writes `Splitter({ width })`.
   return withArgs(
     circuit(`Splitter_${width}w`, {
       inputs: { in: bus(width) },
@@ -180,15 +161,11 @@ export function Splitter({ width = 8 }: { width?: number } = {}) {
 }
 
 /**
- * Combines bits into a bus. `bit0` becomes the LSB. The inverse of `Splitter`.
- *
- * **Inputs:** `bit0`..`bit{width-1}` — `bit`
- * **Output:** `out` — `bus(width)`
- * **Args:** `width` (default 8)
- *
- * Registers per width (`Combiner_4w`), for the same reason as `Splitter`.
+ * Combines `bit0` (LSB) to `bit{width-1}` into a bus.
+ * e.g. `Combiner({ width: 4 })`. The inverse of `Splitter`.
  */
 export function Combiner({ width = 8 }: { width?: number } = {}) {
+  // Registers per width (`Combiner_4w`), for the same reason as `Splitter`.
   return withArgs(
     circuit(`Combiner_${width}w`, {
       inputs: bitPorts(width),
