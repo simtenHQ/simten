@@ -41,6 +41,7 @@ import makingAComponent from './making-a-component.ts?raw';
 import multiplexer from './multiplexer.ts?raw';
 import mux4 from './mux-4.ts?raw';
 import nand from './nand.ts?raw';
+import negate from './negate.ts?raw';
 import norGate from './nor.ts?raw';
 import notGate from './not.ts?raw';
 import orGate from './or.ts?raw';
@@ -72,4 +73,5 @@ export const SOLUTIONS: Record<string, string> = {
   'mux-4': mux4,
   parity,
   'adder-4': adder4,
+  negate,
 };

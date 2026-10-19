@@ -1099,6 +1099,66 @@ export default circuit('Adder4', {
       body: 'Each bit waits for the carry from the one below, so the answer ripples up from bit 0. Real CPUs spend extra gates working the carries out ahead of time, because waiting on 64 of them is slow.',
     },
   },
+
+  {
+    id: 'negate',
+    title: 'Negative Numbers',
+    tagline: 'Turn a number into its negative.',
+    brief: "Put the negative of `a3 a2 a1 a0` on `n3` to `n0`, in two's complement",
+    target: 'Negate4',
+    inputs: ['a3', 'a2', 'a1', 'a0'],
+    outputs: ['n3', 'n2', 'n1', 'n0'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// Four bits count up to 15 and then wrap round to 0. So the
+// negative of 3 is whatever you add to 3 to get 16: that's 13.
+// This way of writing negatives is called two's complement.
+//
+// The recipe: flip every bit, then add 1.
+//
+// You could build that from NOTs and adders. It comes out much
+// smaller if you work out what the recipe does to each bit,
+// starting from bit 0.
+
+export default circuit('Negate4', {
+  nodes: {
+    a3: Switch,
+    a2: Switch,
+    a1: Switch,
+    a0: Switch,
+    n3: Led,
+    n2: Led,
+    n1: Led,
+    n0: Led,
+  },
+  connect: ({ nodes: { a3, a2, a1, a0, n3, n2, n1, n0 } }) => [
+    //
+  ],
+});
+`,
+    vectors: [
+      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0 }, expect: { n3: 0, n2: 0, n1: 0, n0: 0 } },
+      { inputs: { a3: 0, a2: 0, a1: 0, a0: 1 }, expect: { n3: 1, n2: 1, n1: 1, n0: 1 } },
+      { inputs: { a3: 0, a2: 0, a1: 1, a0: 0 }, expect: { n3: 1, n2: 1, n1: 1, n0: 0 } },
+      { inputs: { a3: 0, a2: 0, a1: 1, a0: 1 }, expect: { n3: 1, n2: 1, n1: 0, n0: 1 } },
+      { inputs: { a3: 0, a2: 1, a1: 0, a0: 0 }, expect: { n3: 1, n2: 1, n1: 0, n0: 0 } },
+      { inputs: { a3: 0, a2: 1, a1: 0, a0: 1 }, expect: { n3: 1, n2: 0, n1: 1, n0: 1 } },
+      { inputs: { a3: 0, a2: 1, a1: 1, a0: 0 }, expect: { n3: 1, n2: 0, n1: 1, n0: 0 } },
+      { inputs: { a3: 0, a2: 1, a1: 1, a0: 1 }, expect: { n3: 1, n2: 0, n1: 0, n0: 1 } },
+      { inputs: { a3: 1, a2: 0, a1: 0, a0: 0 }, expect: { n3: 1, n2: 0, n1: 0, n0: 0 } },
+      { inputs: { a3: 1, a2: 0, a1: 0, a0: 1 }, expect: { n3: 0, n2: 1, n1: 1, n0: 1 } },
+      { inputs: { a3: 1, a2: 0, a1: 1, a0: 0 }, expect: { n3: 0, n2: 1, n1: 1, n0: 0 } },
+      { inputs: { a3: 1, a2: 0, a1: 1, a0: 1 }, expect: { n3: 0, n2: 1, n1: 0, n0: 1 } },
+      { inputs: { a3: 1, a2: 1, a1: 0, a0: 0 }, expect: { n3: 0, n2: 1, n1: 0, n0: 0 } },
+      { inputs: { a3: 1, a2: 1, a1: 0, a0: 1 }, expect: { n3: 0, n2: 0, n1: 1, n0: 1 } },
+      { inputs: { a3: 1, a2: 1, a1: 1, a0: 0 }, expect: { n3: 0, n2: 0, n1: 1, n0: 0 } },
+      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1 }, expect: { n3: 0, n2: 0, n1: 0, n0: 1 } },
+    ],
+    par: 5,
+    outro: {
+      headline: 'Minus, without a minus',
+      body: 'Written this way, negatives add like any other number: 5 + 13 is 18, which wraps to 2, the same as 5 - 3. So subtracting needs no circuit of its own. The adder already does it.',
+    },
+  },
 ];
 
 export const LEVELS_BY_ID = new Map(LEVELS.map((l) => [l.id, l]));
