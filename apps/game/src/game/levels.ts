@@ -1684,14 +1684,14 @@ export default circuit('Register4', {
   {
     id: 'register-file',
     title: 'Register File',
-    tagline: 'Two registers, and a choice of which to read and write.',
+    tagline: 'Two registers: write one, read both.',
     brief:
-      'When `write` is on, store `d3` to `d0` in the register `wsel` picks. Show the register `rsel` picks on `q3` to `q0`',
+      'When `write` is on, store `d3` to `d0` in the register `wsel` picks. Show the register `asel` picks on `a3` to `a0`, and the one `bsel` picks on `b3` to `b0`',
     target: 'RegFile2',
-    inputs: ['write', 'wsel', 'rsel', 'd3', 'd2', 'd1', 'd0'],
-    outputs: ['q3', 'q2', 'q1', 'q0'],
+    inputs: ['write', 'wsel', 'asel', 'bsel', 'd3', 'd2', 'd1', 'd0'],
+    outputs: ['a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
     allowed: MEMORY_GATES,
-    numbers: { d: 'unsigned', q: 'unsigned' },
+    numbers: { d: 'unsigned', a: 'unsigned', b: 'unsigned' },
     sequential: true,
     stub: `// Your register, finished, with ports.
 
@@ -1700,87 +1700,98 @@ ${REGISTER_BIT}
 ${REGISTER4}
 
 // Two of them, numbered 0 and 1. Each needs its own load line,
-// on only when write is on and wsel names it. Then pick which
-// one reaches q3 to q0 with rsel.
+// on only when write is on and wsel names it.
+//
+// There are two ways out, a and b, each with its own select,
+// so you can read both registers at once. An ALU needs two
+// numbers at the same time, which is why real ones work
+// like this.
 
 export default circuit('RegFile2', {
   nodes: {
     write: Switch,
     wsel: Switch,
-    rsel: Switch,
+    asel: Switch,
+    bsel: Switch,
     d3: Switch,
     d2: Switch,
     d1: Switch,
     d0: Switch,
-    q3: Led,
-    q2: Led,
-    q1: Led,
-    q0: Led,
+    a3: Led,
+    a2: Led,
+    a1: Led,
+    a0: Led,
+    b3: Led,
+    b2: Led,
+    b1: Led,
+    b0: Led,
   },
-  connect: ({ nodes: { write, wsel, rsel, d3, d2, d1, d0, q3, q2, q1, q0 } }) => [
+  connect: ({
+    nodes: { write, wsel, asel, bsel, d3, d2, d1, d0, a3, a2, a1, a0, b3, b2, b1, b0 },
+  }) => [
     //
   ],
 });
 `,
     // Ordered steps. Steps 4, 6 and 12 carry the same inputs, reading register
-    // 0 each time, and expect 5, then 3, then 9 as it gets overwritten.
+    // 0 on both ports each time, and expect 5, then 3, then 9 as it gets
+    // overwritten.
     vectors: [
       {
-        inputs: { write: 1, wsel: 0, rsel: 0, d3: 0, d2: 1, d1: 0, d0: 1 },
-        expect: { q3: 0, q2: 1, q1: 0, q0: 1 },
+        inputs: { write: 1, wsel: 0, asel: 0, bsel: 1, d3: 0, d2: 1, d1: 0, d0: 1 },
+        expect: { a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 0, b1: 0, b0: 0 },
       },
       {
-        inputs: { write: 1, wsel: 1, rsel: 0, d3: 1, d2: 0, d1: 1, d0: 0 },
-        expect: { q3: 0, q2: 1, q1: 0, q0: 1 },
+        inputs: { write: 1, wsel: 1, asel: 0, bsel: 1, d3: 1, d2: 0, d1: 1, d0: 0 },
+        expect: { a3: 0, a2: 1, a1: 0, a0: 1, b3: 1, b2: 0, b1: 1, b0: 0 },
       },
       {
-        inputs: { write: 0, wsel: 0, rsel: 1, d3: 0, d2: 0, d1: 0, d0: 0 },
-        expect: { q3: 1, q2: 0, q1: 1, q0: 0 },
+        inputs: { write: 0, wsel: 0, asel: 1, bsel: 0, d3: 0, d2: 0, d1: 0, d0: 0 },
+        expect: { a3: 1, a2: 0, a1: 1, a0: 0, b3: 0, b2: 1, b1: 0, b0: 1 },
       },
       {
-        inputs: { write: 0, wsel: 0, rsel: 0, d3: 0, d2: 0, d1: 0, d0: 0 },
-        expect: { q3: 0, q2: 1, q1: 0, q0: 1 },
+        inputs: { write: 0, wsel: 0, asel: 0, bsel: 0, d3: 0, d2: 0, d1: 0, d0: 0 },
+        expect: { a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 1, b1: 0, b0: 1 },
       },
       {
-        inputs: { write: 1, wsel: 0, rsel: 1, d3: 0, d2: 0, d1: 1, d0: 1 },
-        expect: { q3: 1, q2: 0, q1: 1, q0: 0 },
+        inputs: { write: 1, wsel: 0, asel: 1, bsel: 1, d3: 0, d2: 0, d1: 1, d0: 1 },
+        expect: { a3: 1, a2: 0, a1: 1, a0: 0, b3: 1, b2: 0, b1: 1, b0: 0 },
       },
       {
-        inputs: { write: 0, wsel: 0, rsel: 0, d3: 0, d2: 0, d1: 0, d0: 0 },
-        expect: { q3: 0, q2: 0, q1: 1, q0: 1 },
+        inputs: { write: 0, wsel: 0, asel: 0, bsel: 0, d3: 0, d2: 0, d1: 0, d0: 0 },
+        expect: { a3: 0, a2: 0, a1: 1, a0: 1, b3: 0, b2: 0, b1: 1, b0: 1 },
       },
       {
-        inputs: { write: 0, wsel: 1, rsel: 1, d3: 1, d2: 1, d1: 1, d0: 1 },
-        expect: { q3: 1, q2: 0, q1: 1, q0: 0 },
+        inputs: { write: 0, wsel: 1, asel: 1, bsel: 0, d3: 1, d2: 1, d1: 1, d0: 1 },
+        expect: { a3: 1, a2: 0, a1: 1, a0: 0, b3: 0, b2: 0, b1: 1, b0: 1 },
       },
       {
-        inputs: { write: 1, wsel: 1, rsel: 1, d3: 1, d2: 1, d1: 0, d0: 0 },
-        expect: { q3: 1, q2: 1, q1: 0, q0: 0 },
+        inputs: { write: 1, wsel: 1, asel: 0, bsel: 1, d3: 1, d2: 1, d1: 0, d0: 0 },
+        expect: { a3: 0, a2: 0, a1: 1, a0: 1, b3: 1, b2: 1, b1: 0, b0: 0 },
       },
       {
-        inputs: { write: 0, wsel: 0, rsel: 0, d3: 1, d2: 1, d1: 0, d0: 0 },
-        expect: { q3: 0, q2: 0, q1: 1, q0: 1 },
+        inputs: { write: 0, wsel: 0, asel: 1, bsel: 1, d3: 1, d2: 1, d1: 0, d0: 0 },
+        expect: { a3: 1, a2: 1, a1: 0, a0: 0, b3: 1, b2: 1, b1: 0, b0: 0 },
       },
       {
-        inputs: { write: 1, wsel: 0, rsel: 0, d3: 1, d2: 0, d1: 0, d0: 1 },
-        expect: { q3: 1, q2: 0, q1: 0, q0: 1 },
+        inputs: { write: 1, wsel: 0, asel: 0, bsel: 1, d3: 1, d2: 0, d1: 0, d0: 1 },
+        expect: { a3: 1, a2: 0, a1: 0, a0: 1, b3: 1, b2: 1, b1: 0, b0: 0 },
       },
       {
-        inputs: { write: 0, wsel: 0, rsel: 1, d3: 0, d2: 0, d1: 0, d0: 0 },
-        expect: { q3: 1, q2: 1, q1: 0, q0: 0 },
+        inputs: { write: 0, wsel: 0, asel: 1, bsel: 0, d3: 0, d2: 0, d1: 0, d0: 0 },
+        expect: { a3: 1, a2: 1, a1: 0, a0: 0, b3: 1, b2: 0, b1: 0, b0: 1 },
       },
       {
-        inputs: { write: 0, wsel: 0, rsel: 0, d3: 0, d2: 0, d1: 0, d0: 0 },
-        expect: { q3: 1, q2: 0, q1: 0, q0: 1 },
+        inputs: { write: 0, wsel: 0, asel: 0, bsel: 0, d3: 0, d2: 0, d1: 0, d0: 0 },
+        expect: { a3: 1, a2: 0, a1: 0, a0: 1, b3: 1, b2: 0, b1: 0, b0: 1 },
       },
     ],
-    par: 46,
+    par: 58,
     outro: {
-      headline: 'A set of registers',
-      body: "Real CPUs have more: the 6502 has three and a RISC-V core has 32. With four, you'd pick which to write with your decoder and which to read with your four-way multiplexer.",
+      headline: 'Write one, read two',
+      body: "Real CPUs read two registers at once and write one, the same as this, just with more of them: the 6502 has three and a RISC-V core has 32. With four, you'd pick which to write with your decoder and which to read with your four-way multiplexer.",
     },
   },
-
   {
     id: 'program-counter',
     title: 'Program Counter',

@@ -170,11 +170,11 @@ Three sequential levels above `counter`, built the same way: single-bit inputs a
 
 ### 14. `register-file`: Register File
 
-- **New idea:** several registers, choosing which one to write and which to read.
-- **Interface:** `write`, `wsel`, `rsel`, `d3`–`d0` → `q3`–`q0`. Two registers, so the choices are single bits. Needs `register`.
+- **New idea:** several registers, writing one and reading two at once. Two reads and one write is how real register files work (RISC-V reads `rs1` and `rs2`, writes `rd`), and the CPU needs it: its ALU takes two registers at the same time.
+- **Interface:** `write`, `wsel`, `asel`, `bsel`, `d3`–`d0` → `a3`–`a0`, `b3`–`b0`. Two registers, so each select is one bit. Needs `register`.
 - **Starter:** the finished `Register4`.
-- **Why two:** four would want the decoder and four-way multiplexer, but those are in the logic lane and a wire from there to here would cross the arithmetic lane. The outro says so.
-- **Vectors:** 12 steps. Par 46.
+- **Why two registers:** four would want the decoder and four-way multiplexer, but those are in the logic lane and a wire from there to here would cross the arithmetic lane. The outro says so.
+- **Vectors:** 12 steps. Par 58.
 
 ### 15. `program-counter`: Program Counter
 
