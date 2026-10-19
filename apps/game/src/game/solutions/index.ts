@@ -41,7 +41,6 @@ import fourWayMultiplexer from './four-way-multiplexer.ts?raw';
 import fullAdder from './full-adder.ts?raw';
 import halfAdder from './half-adder.ts?raw';
 import jump from './jump.ts?raw';
-import latch from './latch.ts?raw';
 import lessThan from './less-than.ts?raw';
 import load from './load.ts?raw';
 import majorityVote from './majority-vote.ts?raw';
@@ -56,6 +55,7 @@ import parity from './parity.ts?raw';
 import programCounter from './program-counter.ts?raw';
 import register from './register.ts?raw';
 import registerFile from './register-file.ts?raw';
+import srLatch from './sr-latch.ts?raw';
 import subtractor from './subtractor.ts?raw';
 import toggle from './toggle.ts?raw';
 import widerGates from './wider-gates.ts?raw';
@@ -74,7 +74,7 @@ export const SOLUTIONS: Record<string, string> = {
   buses,
   'half-adder': halfAdder,
   'd-latch': dLatch,
-  latch,
+  'sr-latch': srLatch,
   toggle,
   counter,
   'full-adder': fullAdder,

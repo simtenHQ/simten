@@ -1574,7 +1574,7 @@ export default circuit('LessThan4', {
   },
 
   {
-    id: 'latch',
+    id: 'sr-latch',
     title: 'SR Latch',
     tagline: 'Remember a bit after the input goes away.',
     brief:

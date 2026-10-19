@@ -39,7 +39,7 @@ const UNFINISHED_NOT = `export const Not1 = circuit('Not1', {
 
 describe('a wrong output', () => {
   it('reports the step that failed, not the first step with the same inputs', async () => {
-    const latch = level('latch');
+    const latch = level('sr-latch');
     expect(latch.vectors[3].inputs).toEqual(latch.vectors[1].inputs);
 
     const result = await grade(localRuntime(), latch, COPIES_R);
@@ -50,7 +50,7 @@ describe('a wrong output', () => {
   });
 
   it('is explained with the step on a sequential level', async () => {
-    const latch = level('latch');
+    const latch = level('sr-latch');
     const result = await grade(localRuntime(), latch, COPIES_R);
     expect(explain(result, latch)).toBe(
       'At step 4 (s = 1, r = 1), q should be 0 but your circuit gives 1.',

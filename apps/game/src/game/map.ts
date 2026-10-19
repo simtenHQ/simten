@@ -34,7 +34,7 @@ export const MAP_ROWS: string[][] = [
   ['buses'],
   // The fork. Rows past here are ranks only; `MAP_COLUMNS` says which column
   // each level sits in.
-  ['majority-vote', 'half-adder', 'latch'],
+  ['majority-vote', 'half-adder', 'sr-latch'],
   ['wider-gates', 'full-adder', 'd-latch'],
   ['decoder', '4-bit-adder', 'toggle'],
   ['four-way-multiplexer', 'negative-numbers', 'counter'],
@@ -80,7 +80,7 @@ export const MAP_COLUMNS: Record<string, number> = {
   'half-adder': 0.5,
   'full-adder': 0.5,
 
-  latch: 1.5,
+  'sr-latch': 1.5,
   'd-latch': 1.5,
   toggle: 1.5,
   counter: 1.5,
@@ -127,7 +127,7 @@ export const MAP_REQUIRES: Record<string, string[]> = {
 
   'majority-vote': ['buses'],
   'half-adder': ['buses'],
-  latch: ['buses'],
+  'sr-latch': ['buses'],
   'wider-gates': ['majority-vote'],
   // Single switches first, then numbers on buses. The decoder and the
   // four-way multiplexer sit together: both pick one of four with two bits.
@@ -144,7 +144,7 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   subtractor: ['negative-numbers'],
   'less-than': ['subtractor'],
 
-  'd-latch': ['latch'],
+  'd-latch': ['sr-latch'],
   toggle: ['d-latch'],
 
   // Where the branches rejoin. The AND is honest: a counter is memory holding
