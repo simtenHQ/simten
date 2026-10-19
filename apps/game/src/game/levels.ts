@@ -2069,44 +2069,19 @@ ${CPU_INSTRUCTION}
 ${CHOOSE4}
 // #endregion
 
-// The parts, each one you built (inputs → outputs):
-//   Alu4             ALU            op1 op0 a b → r
-//   LessThan4        Less Than      a b → lt
-//   RegFile2         Register File  write wsel asel bsel d → a b r0 r1
-//                    On write, d goes into register wsel. a and
-//                    b show registers asel and bsel.
-//   ProgramCounter4  Program Counter  jump a → pc
-//                    Counts up, or loads a when jump is on.
-// And two new ones that are only plumbing:
-//   Instruction      i → op1 op0 ra rb n aluOp1 aluOp0
-//                    Splits an instruction into its parts.
-//   Choose4          sel a b → out
-//                    Four of your multiplexers side by side:
-//                    sel 0 gives a, sel 1 gives b.
+// Control: make it do this. less means ra < rb, and - means it
+// doesn't matter.
 //
-// An instruction is 8 bits:
-//   op1 op0  what to do: 00 LOAD, 01 ALU, 10 JUMP, 11 JUMP IF LESS
-//   ra       a register: 0 for r0, 1 for r1
-//   rb       the other register
-//   n        a number or an address. Its low two bits are
-//            also aluOp1 aluOp0, the ALU's op.
-//
-//   LOAD ra, n              ra = n
-//   ADD/SUB/AND/OR ra, rb   ra = ra op rb
-//   JUMP n                  go to n
-//   JUMP IF LESS ra, rb, n  go to n if ra < rb
-//
-// Control is yours. Here is what it has to do (less is
-// whether ra < rb, and - means it does not matter):
-//
-//   op1 op0 | write useAlu jump
-//    0   0  |   1     0     0      LOAD
-//    0   1  |   1     1     0      ALU
-//    1   0  |   0     -     1      JUMP
-//    1   1  |   0     -    less    JUMP IF LESS
-
+//   op1 op0 | write useAlu jump  | instruction
+//    0   0  |   1     0     0    | LOAD ra, n             ra = n
+//    0   1  |   1     1     0    | ADD/SUB/AND/OR ra, rb  ra = ra op rb
+//    1   0  |   0     -     1    | JUMP n                 go to n
+//    1   1  |   0     -    less  | JUMP IF LESS ra,rb,n   go to n if ra < rb
 ${CONTROL_SKELETON}
 
+// Then wire the parts. Their ports show on the canvas.
+// ra is the register read on regs.a and the one written; rb is read
+// on regs.b. choose gives n when sel is 0, the ALU's answer when 1.
 export default circuit('Cpu4', {
   nodes: {
     i: Input({ width: 8 }),
