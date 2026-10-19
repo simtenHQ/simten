@@ -36,8 +36,9 @@ const STEPS: TourStep[] = [
   {
     target: 'editor',
     title: 'Write your code here',
+    // driver.js renders descriptions as HTML, so <code> marks the code names.
     description:
-      'Your circuit is TypeScript. The comments tell you what to do on each level, and the circuit on the right redraws as you type.',
+      'Your circuit is TypeScript. <code>circuit()</code> defines it: <code>nodes</code> lists the parts (switches, gates, LEDs), and <code>connect</code> wires them up, so <code>a.out.to(n1.a)</code> joins a’s output to n1’s <code>a</code> input. The circuit on the right redraws as you type.',
     side: 'right',
     align: 'start',
   },
