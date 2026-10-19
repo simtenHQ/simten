@@ -1,6 +1,6 @@
 {
   "note": "Pre-migration Verilog hashes. See packages/core/src/verilog/__tests__/golden-hashes.test.ts.",
-  "capturedAt": "2026-07-27T13:37:38.348Z",
+  "capturedAt": "2026-10-19T17:08:22.706Z",
   "hashes": {
     "And": "adf38b97fba788dc2eab31d728191216311314927f43550f416849cea9ceebdd",
     "Or": "85b24de96f3cda0f9a4907d820dbcd4f94d4cc6a5969a54b721d9e2e1e44ef53",
@@ -26,7 +26,7 @@
     "RV32I_RegisterFile": "40a02c67eeb2031666b5c836a55a46c0079505b6cffb8970b9625394e44a82f8",
     "GOLDEN_HalfAdder": "91f6b2e8d872e1bf0444e3553812a67d6f0a8d824669df54b8344cb8de3b28b8",
     "GOLDEN_FullAdder": "e02eee48e4ae92cb188029332222a1a3036a22ebfc0724da94d694fce229afea",
-    "GOLDEN_BusPassthrough": "e09d65492f9963ccce59e2de7bbff9f2fec79bdcb567d6b6f7a7331fdf930799",
+    "GOLDEN_BusPassthrough": "1811e19b1b1627672f3e414ad5c3084411746d8445cf3277fb8ffa4260940f09",
     "GOLDEN_Counter": "0a362363a6df5c422318f9f9d915be1b59115e4702074453fa125e8aae1a53b4"
   }
 }

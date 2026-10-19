@@ -35,8 +35,10 @@ export function explain(result: GradeResult | null, level: Level): string | null
         .join(', and ');
       // On a sequential level the step is what tells two identical rows apart.
       if (level.sequential) {
-        return inputs
-          ? `At step ${f.index + 1} (${inputs}), ${wrong}.`
+        // A labelled step (the CPU's instructions) says what ran, not its bits.
+        const step = level.labels?.[f.index] ?? inputs;
+        return step
+          ? `At step ${f.index + 1} (${step}), ${wrong}.`
           : `At step ${f.index + 1}, ${wrong}.`;
       }
       return inputs ? `With ${inputs}, ${wrong}.` : `${wrong[0].toUpperCase()}${wrong.slice(1)}.`;

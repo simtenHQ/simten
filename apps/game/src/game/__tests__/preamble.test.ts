@@ -15,7 +15,20 @@ describe('given-preamble detection', () => {
     const skipped = LEVELS.filter((l) => givenPreambleEnd(l.stub.split('\n')) !== null).map(
       (l) => l.id,
     );
-    expect(skipped).toEqual(['full-adder']);
+    expect(skipped).toEqual([
+      'four-way-multiplexer',
+      'full-adder',
+      '4-bit-adder',
+      'subtractor',
+      'less-than',
+      'register',
+      'register-file',
+      'program-counter',
+      'arithmetic-logic-unit',
+      'load',
+      'compute',
+      'jump',
+    ]);
   });
 
   it('leaves instruction comments visible', () => {
@@ -32,5 +45,14 @@ describe('given-preamble detection', () => {
     const at = givenPreambleEnd(lines);
     if (at === null) throw new Error('expected a preamble');
     expect(lines[at - 1]).toContain("export default circuit('FullAdder'");
+  });
+
+  it('opens on a part the player has to finish, ahead of the target', () => {
+    const cpu = LEVELS.find((l) => l.id === 'load');
+    if (!cpu) throw new Error('missing level');
+    const lines = cpu.stub.split('\n');
+    const at = givenPreambleEnd(lines);
+    if (at === null) throw new Error('expected a preamble');
+    expect(lines[at - 1]).toContain("const Control = circuit('Control'");
   });
 });

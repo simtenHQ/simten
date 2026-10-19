@@ -49,6 +49,16 @@ describe('permittedFor', () => {
     expect(forbiddenPrimitives(flat as never, level.allowed)).toEqual(['Not']);
   });
 
+  it('accepts a splitter or combiner at any width, under its source name', () => {
+    const flat = {
+      nodes: ['Splitter_4w', 'Combiner_4w', 'Splitter_8w'].map((primitiveType, i) => ({
+        id: `n${i}`,
+        primitiveType,
+      })),
+    };
+    expect(forbiddenPrimitives(flat as never, [])).toEqual([]);
+  });
+
   it('exempts structural nodes without naming them in allowed', () => {
     const flat = {
       nodes: [...STRUCTURAL].map((primitiveType, i) => ({ id: `n${i}`, primitiveType })),

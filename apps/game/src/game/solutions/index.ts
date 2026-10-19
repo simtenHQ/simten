@@ -28,18 +28,37 @@
  * test-only means finding something else for an unopened level to inspect to.
  */
 
+import fourBitAdder from './4-bit-adder.ts?raw';
 import andGate from './and.ts?raw';
+import arithmeticLogicUnit from './arithmetic-logic-unit.ts?raw';
+import buses from './buses.ts?raw';
+import compute from './compute.ts?raw';
 import counter from './counter.ts?raw';
 import dLatch from './d-latch.ts?raw';
+import decoder from './decoder.ts?raw';
+import equality from './equality.ts?raw';
+import fourWayMultiplexer from './four-way-multiplexer.ts?raw';
 import fullAdder from './full-adder.ts?raw';
 import halfAdder from './half-adder.ts?raw';
-import latch from './latch.ts?raw';
+import jump from './jump.ts?raw';
+import lessThan from './less-than.ts?raw';
+import load from './load.ts?raw';
+import majorityVote from './majority-vote.ts?raw';
 import makingAComponent from './making-a-component.ts?raw';
+import multiplexer from './multiplexer.ts?raw';
 import nand from './nand.ts?raw';
+import negativeNumbers from './negative-numbers.ts?raw';
 import norGate from './nor.ts?raw';
 import notGate from './not.ts?raw';
 import orGate from './or.ts?raw';
+import parity from './parity.ts?raw';
+import programCounter from './program-counter.ts?raw';
+import register from './register.ts?raw';
+import registerFile from './register-file.ts?raw';
+import srLatch from './sr-latch.ts?raw';
+import subtractor from './subtractor.ts?raw';
 import toggle from './toggle.ts?raw';
+import widerGates from './wider-gates.ts?raw';
 import xnorGate from './xnor.ts?raw';
 import xorGate from './xor.ts?raw';
 
@@ -52,10 +71,29 @@ export const SOLUTIONS: Record<string, string> = {
   xor: xorGate,
   xnor: xnorGate,
   'making-a-component': makingAComponent,
+  buses,
   'half-adder': halfAdder,
   'd-latch': dLatch,
-  latch,
+  'sr-latch': srLatch,
   toggle,
   counter,
   'full-adder': fullAdder,
+  multiplexer,
+  'majority-vote': majorityVote,
+  'wider-gates': widerGates,
+  decoder,
+  'four-way-multiplexer': fourWayMultiplexer,
+  parity,
+  '4-bit-adder': fourBitAdder,
+  'negative-numbers': negativeNumbers,
+  subtractor: subtractor,
+  equality: equality,
+  'less-than': lessThan,
+  'arithmetic-logic-unit': arithmeticLogicUnit,
+  register,
+  'register-file': registerFile,
+  'program-counter': programCounter,
+  load: load,
+  compute: compute,
+  jump: jump,
 };

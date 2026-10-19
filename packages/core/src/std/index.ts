@@ -87,10 +87,12 @@ export { DynamicSlice, SignExtend, Slice, ZeroExtend } from './reconstruction.js
 export {
   AddressCombiner,
   BitSlice,
+  Combiner,
   Combiner8to8,
   Concat,
   Decoder,
   Mux,
+  NibbleSplitter,
   Probe,
   Splitter,
   Splitter8to8,
