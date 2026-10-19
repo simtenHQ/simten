@@ -365,7 +365,7 @@ export default circuit('And2', {
     par: 2,
     outro: {
       headline: 'Four gates deep',
-      body: 'Each gate makes the next one cheaper. XOR will not: it needs a shape you have not built yet.',
+      body: 'XOR is next. It takes more thought than the others.',
     },
   },
 
@@ -432,7 +432,7 @@ export default circuit('And2', {
     par: 2,
     outro: {
       headline: 'Every gate, from one gate',
-      body: 'Six gates out of the one you were given. None of them can leave this screen yet.',
+      body: 'Six gates built from the NAND you started with. Next you turn one into a part other circuits can use.',
     },
   },
 
@@ -626,7 +626,7 @@ export default circuit('Latch1', {
     par: 2,
     outro: {
       headline: 'It remembers',
-      body: "Two NANDs, each reading the other's answer. That loop is what every memory is made of, but it has a state you were told to avoid, and the next level gets rid of it.",
+      body: "Two NANDs, each reading the other's output, and it holds a bit. Next you fix the state you were told to avoid.",
     },
   },
 
@@ -748,8 +748,8 @@ export default circuit('Toggle1', {
     ],
     par: 1,
     outro: {
-      headline: 'A clock, and something that counts it',
-      body: 'Nothing drives this but time. Flip a second one every time the first falls and you are counting in binary.',
+      headline: 'It toggles',
+      body: 'One flip-flop and one wire. Add a second flip-flop and some logic and you can count, which is next.',
     },
   },
   {
@@ -788,7 +788,7 @@ const Counter2 = circuit('Counter2', {
     par: 6,
     outro: {
       headline: 'It counts',
-      body: 'Memory holds the number and logic works out the next one. Widen it and that is every counter in every clock, every program counter in every CPU.',
+      body: "Flip-flops hold the number and logic works out the next one. A CPU's program counter is the same thing, only wider.",
     },
   },
 
@@ -834,7 +834,7 @@ export default circuit('Mux2', {
     par: 3,
     outro: {
       headline: 'A switch made of gates',
-      body: 'Anything that picks between values is built from this, including the ALU this section ends on. Par is three. If you used four, XOR has a shorter way.',
+      body: "You'll use this whenever a circuit has to choose between values. Par is three, so if you used four, try XOR.",
     },
   },
 
@@ -875,7 +875,7 @@ export default circuit('Majority3', {
     par: 4,
     outro: {
       headline: 'Two out of three',
-      body: 'Some aircraft and spacecraft run three copies of the same computer and vote on every answer, so a single faulty unit gets outvoted. This is the circuit that counts the votes.',
+      body: 'Some spacecraft run three copies of the same computer and go with the majority, so one faulty copy gets outvoted.',
     },
   },
 
@@ -927,7 +927,7 @@ export default circuit('Gates4', {
     par: 6,
     outro: {
       headline: 'Any width you like',
-      body: 'Pairing them up, a with b and c with d, is shallower than a chain of three, and in a real chip shallower means faster. The equality check later on needs exactly this.',
+      body: "Pairing a with b and c with d is faster in a real chip than a chain. You'll need this again for the equality check.",
     },
   },
 
@@ -967,7 +967,7 @@ export default circuit('Decoder2', {
     par: 4,
     outro: {
       headline: 'One line per number',
-      body: 'Memory uses one of these to pick which cell to read, and a CPU uses one to pick a register. Par is one gate per output. If y1 and y2 cost you more, look at what y0 already knows.',
+      body: 'Memory uses one of these to pick a cell, and a CPU to pick a register. Par is one gate per output. If y1 and y2 cost more, try using y0.',
     },
   },
 
@@ -1028,7 +1028,7 @@ export default circuit('Mux4', {
     par: 9,
     outro: {
       headline: 'Built from parts',
-      body: 'Three multiplexers in a tree, each layer halving the choices, so eight inputs would take three layers. The decoder works too, an AND per input and then an OR, but the tree is cheaper.',
+      body: 'Three multiplexers in a tree. The decoder plus some ANDs and an OR works too, but the tree is cheaper.',
     },
   },
 
@@ -1041,8 +1041,7 @@ export default circuit('Mux4', {
     inputs: ['a', 'b', 'c', 'd'],
     outputs: ['odd'],
     allowed: ARITHMETIC_GATES,
-    stub: `// This one has a short answer. It is not the first one
-// most people try.
+    stub: `// There's a three-gate answer.
 
 export default circuit('Parity4', {
   nodes: {
@@ -1078,7 +1077,7 @@ export default circuit('Parity4', {
     par: 3,
     outro: {
       headline: 'Odd one out',
-      body: 'XOR is on when an odd number of its inputs are, and chaining keeps that true. Send this bit along with your data and any single flipped bit shows up, which is why serial links and some memory carry one.',
+      body: 'XOR is on when an odd number of its inputs are, and that holds when you chain them. Send this bit with your data and you can spot a single flipped bit.',
     },
   },
 
@@ -1179,7 +1178,7 @@ export default circuit('Adder4', {
     par: 17,
     outro: {
       headline: 'Ripple carry',
-      body: 'Each bit waits for the carry from the one below, so the answer ripples up from bit 0. Real CPUs spend extra gates working the carries out ahead of time, because waiting on 64 of them is slow.',
+      body: 'Each bit waits for the carry from the one below. Real CPUs spend extra gates working the carries out early, because waiting on 64 of them is slow.',
     },
   },
 
@@ -1239,8 +1238,8 @@ export default circuit('Negate4', {
     ],
     par: 5,
     outro: {
-      headline: 'Minus, without a minus',
-      body: 'Written this way, negatives add like any other number: 5 + 13 is 18, which wraps to 2, the same as 5 - 3. So subtracting needs no circuit of its own. The adder already does it.',
+      headline: 'Negatives that add',
+      body: '5 + 13 is 18, which wraps to 2, the same as 5 - 3. So an adder can subtract, which is next.',
     },
   },
 
@@ -1345,7 +1344,7 @@ export default circuit('Subtract4', {
     par: 25,
     outro: {
       headline: 'Two rows of NOTs',
-      body: 'The adder did the real work. CPUs go one better: a single adder with a control line that flips b and feeds in a carry of 1, so the same circuit adds or subtracts depending on the instruction.',
+      body: 'Real CPUs use one adder for both: a control line flips b and feeds in a carry of 1 when the instruction is a subtract.',
     },
   },
 
@@ -1398,7 +1397,7 @@ export default circuit('Equal4', {
     par: 7,
     outro: {
       headline: 'Bit for bit',
-      body: 'Most CPUs get this answer another way: they subtract, then check whether every bit of the result is 0. Same question, and it reuses the subtractor they already have.',
+      body: 'Most CPUs do this by subtracting and checking that every bit of the result is 0.',
     },
   },
 
@@ -1459,8 +1458,8 @@ export default circuit('LessThan4', {
     ],
     par: 25,
     outro: {
-      headline: 'Comparison is subtraction',
-      body: 'A CPU compares two numbers by subtracting them and keeping only the flags, borrow among them. Par counts the whole subtractor. The difference bits go nowhere, so some of those gates are doing nothing.',
+      headline: 'Less than, from a borrow',
+      body: 'CPUs compare by subtracting and keeping only the flags. The difference bits go nowhere here, so there are gates to save.',
     },
   },
 
@@ -1585,8 +1584,8 @@ export default circuit('Alu4', {
     ],
     par: 86,
     outro: {
-      headline: 'The heart of a CPU',
-      body: 'Work out every answer, keep the one you asked for. Every processor has an ALU shaped like this. Give it registers to read from and a counter to step through a program, and you have most of a computer.',
+      headline: 'An ALU',
+      body: 'Every CPU has one of these. Add registers and a counter to step through a program and you have most of a computer.',
     },
   },
 ];
