@@ -1600,12 +1600,11 @@ export default circuit('Register4', {
     title: 'Register File',
     tagline: 'Two registers: write one, read both.',
     brief:
-      'When `write` is on, store `d3` to `d0` in the register `wsel` picks. Show the register `asel` picks on `a3` to `a0`, and the one `bsel` picks on `b3` to `b0`',
+      'When `write` is on, store `d` in the register `wsel` picks. Show the register `asel` picks on `a`, and the one `bsel` picks on `b`',
     target: 'RegFile2',
-    inputs: ['write', 'wsel', 'asel', 'bsel', 'd3', 'd2', 'd1', 'd0'],
-    outputs: ['a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
+    inputs: ['write', 'wsel', 'asel', 'bsel', 'd'],
+    outputs: ['a', 'b'],
     allowed: MEMORY_GATES,
-    numbers: { d: 'unsigned', a: 'unsigned', b: 'unsigned' },
     sequential: true,
     stub: `// Your register, finished, with ports.
 
@@ -1627,22 +1626,19 @@ export default circuit('RegFile2', {
     wsel: Switch,
     asel: Switch,
     bsel: Switch,
-    d3: Switch,
-    d2: Switch,
-    d1: Switch,
-    d0: Switch,
-    a3: Led,
-    a2: Led,
-    a1: Led,
-    a0: Led,
-    b3: Led,
-    b2: Led,
-    b1: Led,
-    b0: Led,
+    d: Input({ width: 4 }),
+    dBits: Splitter({ width: 4 }),
+    a: HexDisplay({ width: 4 }),
+    aBits: Combiner({ width: 4 }),
+    b: HexDisplay({ width: 4 }),
+    bBits: Combiner({ width: 4 }),
   },
   connect: ({
-    nodes: { write, wsel, asel, bsel, d3, d2, d1, d0, a3, a2, a1, a0, b3, b2, b1, b0 },
+    nodes: { write, wsel, asel, bsel, d, dBits, a, aBits, b, bBits },
   }) => [
+    d.out.to(dBits.in),
+    aBits.out.to(a.in),
+    bBits.out.to(b.in),
     //
   ],
 });
@@ -1651,54 +1647,18 @@ export default circuit('RegFile2', {
     // 0 on both ports each time, and expect 5, then 3, then 9 as it gets
     // overwritten.
     vectors: [
-      {
-        inputs: { write: 1, wsel: 0, asel: 0, bsel: 1, d3: 0, d2: 1, d1: 0, d0: 1 },
-        expect: { a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 0, b1: 0, b0: 0 },
-      },
-      {
-        inputs: { write: 1, wsel: 1, asel: 0, bsel: 1, d3: 1, d2: 0, d1: 1, d0: 0 },
-        expect: { a3: 0, a2: 1, a1: 0, a0: 1, b3: 1, b2: 0, b1: 1, b0: 0 },
-      },
-      {
-        inputs: { write: 0, wsel: 0, asel: 1, bsel: 0, d3: 0, d2: 0, d1: 0, d0: 0 },
-        expect: { a3: 1, a2: 0, a1: 1, a0: 0, b3: 0, b2: 1, b1: 0, b0: 1 },
-      },
-      {
-        inputs: { write: 0, wsel: 0, asel: 0, bsel: 0, d3: 0, d2: 0, d1: 0, d0: 0 },
-        expect: { a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 1, b1: 0, b0: 1 },
-      },
-      {
-        inputs: { write: 1, wsel: 0, asel: 1, bsel: 1, d3: 0, d2: 0, d1: 1, d0: 1 },
-        expect: { a3: 1, a2: 0, a1: 1, a0: 0, b3: 1, b2: 0, b1: 1, b0: 0 },
-      },
-      {
-        inputs: { write: 0, wsel: 0, asel: 0, bsel: 0, d3: 0, d2: 0, d1: 0, d0: 0 },
-        expect: { a3: 0, a2: 0, a1: 1, a0: 1, b3: 0, b2: 0, b1: 1, b0: 1 },
-      },
-      {
-        inputs: { write: 0, wsel: 1, asel: 1, bsel: 0, d3: 1, d2: 1, d1: 1, d0: 1 },
-        expect: { a3: 1, a2: 0, a1: 1, a0: 0, b3: 0, b2: 0, b1: 1, b0: 1 },
-      },
-      {
-        inputs: { write: 1, wsel: 1, asel: 0, bsel: 1, d3: 1, d2: 1, d1: 0, d0: 0 },
-        expect: { a3: 0, a2: 0, a1: 1, a0: 1, b3: 1, b2: 1, b1: 0, b0: 0 },
-      },
-      {
-        inputs: { write: 0, wsel: 0, asel: 1, bsel: 1, d3: 1, d2: 1, d1: 0, d0: 0 },
-        expect: { a3: 1, a2: 1, a1: 0, a0: 0, b3: 1, b2: 1, b1: 0, b0: 0 },
-      },
-      {
-        inputs: { write: 1, wsel: 0, asel: 0, bsel: 1, d3: 1, d2: 0, d1: 0, d0: 1 },
-        expect: { a3: 1, a2: 0, a1: 0, a0: 1, b3: 1, b2: 1, b1: 0, b0: 0 },
-      },
-      {
-        inputs: { write: 0, wsel: 0, asel: 1, bsel: 0, d3: 0, d2: 0, d1: 0, d0: 0 },
-        expect: { a3: 1, a2: 1, a1: 0, a0: 0, b3: 1, b2: 0, b1: 0, b0: 1 },
-      },
-      {
-        inputs: { write: 0, wsel: 0, asel: 0, bsel: 0, d3: 0, d2: 0, d1: 0, d0: 0 },
-        expect: { a3: 1, a2: 0, a1: 0, a0: 1, b3: 1, b2: 0, b1: 0, b0: 1 },
-      },
+      { inputs: { write: 1, wsel: 0, asel: 0, bsel: 1, d: 5 }, expect: { a: 5, b: 0 } },
+      { inputs: { write: 1, wsel: 1, asel: 0, bsel: 1, d: 10 }, expect: { a: 5, b: 10 } },
+      { inputs: { write: 0, wsel: 0, asel: 1, bsel: 0, d: 0 }, expect: { a: 10, b: 5 } },
+      { inputs: { write: 0, wsel: 0, asel: 0, bsel: 0, d: 0 }, expect: { a: 5, b: 5 } },
+      { inputs: { write: 1, wsel: 0, asel: 1, bsel: 1, d: 3 }, expect: { a: 10, b: 10 } },
+      { inputs: { write: 0, wsel: 0, asel: 0, bsel: 0, d: 0 }, expect: { a: 3, b: 3 } },
+      { inputs: { write: 0, wsel: 1, asel: 1, bsel: 0, d: 15 }, expect: { a: 10, b: 3 } },
+      { inputs: { write: 1, wsel: 1, asel: 0, bsel: 1, d: 12 }, expect: { a: 3, b: 12 } },
+      { inputs: { write: 0, wsel: 0, asel: 1, bsel: 1, d: 12 }, expect: { a: 12, b: 12 } },
+      { inputs: { write: 1, wsel: 0, asel: 0, bsel: 1, d: 9 }, expect: { a: 9, b: 12 } },
+      { inputs: { write: 0, wsel: 0, asel: 1, bsel: 0, d: 0 }, expect: { a: 12, b: 9 } },
+      { inputs: { write: 0, wsel: 0, asel: 0, bsel: 0, d: 0 }, expect: { a: 9, b: 9 } },
     ],
     par: 58,
     outro: {
