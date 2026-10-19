@@ -16,6 +16,7 @@ describe('givenParts', () => {
       'Mux4',
       'HalfAdder',
       'FullAdder',
+      'Invert4',
       'Adder4',
       'Subtract4',
     ]);

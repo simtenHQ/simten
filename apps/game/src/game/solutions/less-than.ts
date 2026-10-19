@@ -1,12 +1,15 @@
 /** Reference solution for `less-than`. Proven by `__tests__/levels.test.ts`. */
 
-import { bit, circuit } from '@simten/core/circuit';
-import { And, Input, Led, Not, Or, Splitter, Xor } from '@simten/core/std';
+import { bit, bus, circuit } from '@simten/core/circuit';
+import { And, Combiner, Input, Led, Not, Or, Splitter, Xor } from '@simten/core/std';
 
 const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
   outputs: { sum: bit, carry: bit },
-  nodes: { x1: Xor, a1: And },
+  nodes: {
+    x1: Xor,
+    a1: And,
+  },
   connect: ({ inputs, outputs, nodes: { x1, a1 } }) => [
     inputs.a.to(x1.a, a1.a),
     inputs.b.to(x1.b, a1.b),
@@ -14,10 +17,15 @@ const HalfAdder = circuit('HalfAdder', {
     a1.out.to(outputs.carry),
   ],
 });
+
 const FullAdder = circuit('FullAdder', {
   inputs: { a: bit, b: bit, cin: bit },
   outputs: { sum: bit, cout: bit },
-  nodes: { h1: HalfAdder, h2: HalfAdder, o1: Or },
+  nodes: {
+    h1: HalfAdder,
+    h2: HalfAdder,
+    o1: Or,
+  },
   connect: ({ inputs, outputs, nodes: { h1, h2, o1 } }) => [
     inputs.a.to(h1.a),
     inputs.b.to(h1.b),
@@ -29,90 +37,95 @@ const FullAdder = circuit('FullAdder', {
     o1.out.to(outputs.cout),
   ],
 });
+
+const Invert4 = circuit('Invert4', {
+  inputs: { a: bus(4) },
+  outputs: { out: bus(4) },
+  nodes: {
+    bits: Splitter({ width: 4 }),
+    join: Combiner({ width: 4 }),
+    n0: Not,
+    n1: Not,
+    n2: Not,
+    n3: Not,
+  },
+  connect: ({ inputs, outputs, nodes: { bits, join, n0, n1, n2, n3 } }) => [
+    inputs.a.to(bits.in),
+    bits.bit0.to(n0.in),
+    bits.bit1.to(n1.in),
+    bits.bit2.to(n2.in),
+    bits.bit3.to(n3.in),
+    n0.out.to(join.bit0),
+    n1.out.to(join.bit1),
+    n2.out.to(join.bit2),
+    n3.out.to(join.bit3),
+    join.out.to(outputs.out),
+  ],
+});
+
 const Adder4 = circuit('Adder4', {
-  inputs: { a3: bit, a2: bit, a1: bit, a0: bit, b3: bit, b2: bit, b1: bit, b0: bit },
-  outputs: { s3: bit, s2: bit, s1: bit, s0: bit, cout: bit },
-  nodes: { add0: HalfAdder, add1: FullAdder, add2: FullAdder, add3: FullAdder },
-  connect: ({ inputs, outputs, nodes: { add0, add1, add2, add3 } }) => [
-    inputs.a0.to(add0.a),
-    inputs.b0.to(add0.b),
-    add0.sum.to(outputs.s0),
+  inputs: { a: bus(4), b: bus(4) },
+  outputs: { s: bus(4), cout: bit },
+  nodes: {
+    aBits: Splitter({ width: 4 }),
+    bBits: Splitter({ width: 4 }),
+    sBits: Combiner({ width: 4 }),
+    add0: HalfAdder,
+    add1: FullAdder,
+    add2: FullAdder,
+    add3: FullAdder,
+  },
+  connect: ({ inputs, outputs, nodes: { aBits, bBits, sBits, add0, add1, add2, add3 } }) => [
+    inputs.a.to(aBits.in),
+    inputs.b.to(bBits.in),
+    sBits.out.to(outputs.s),
+    aBits.bit0.to(add0.a),
+    bBits.bit0.to(add0.b),
+    add0.sum.to(sBits.bit0),
     add0.carry.to(add1.cin),
-    inputs.a1.to(add1.a),
-    inputs.b1.to(add1.b),
-    add1.sum.to(outputs.s1),
+    aBits.bit1.to(add1.a),
+    bBits.bit1.to(add1.b),
+    add1.sum.to(sBits.bit1),
     add1.cout.to(add2.cin),
-    inputs.a2.to(add2.a),
-    inputs.b2.to(add2.b),
-    add2.sum.to(outputs.s2),
+    aBits.bit2.to(add2.a),
+    bBits.bit2.to(add2.b),
+    add2.sum.to(sBits.bit2),
     add2.cout.to(add3.cin),
-    inputs.a3.to(add3.a),
-    inputs.b3.to(add3.b),
-    add3.sum.to(outputs.s3),
+    aBits.bit3.to(add3.a),
+    bBits.bit3.to(add3.b),
+    add3.sum.to(sBits.bit3),
     add3.cout.to(outputs.cout),
   ],
 });
 
 const Subtract4 = circuit('Subtract4', {
-  inputs: { a3: bit, a2: bit, a1: bit, a0: bit, b3: bit, b2: bit, b1: bit, b0: bit },
-  outputs: { d3: bit, d2: bit, d1: bit, d0: bit, borrow: bit },
+  inputs: { a: bus(4), b: bus(4) },
+  outputs: { d: bus(4), borrow: bit },
   nodes: {
-    na3: Not,
-    na2: Not,
-    na1: Not,
-    na0: Not,
+    flipA: Invert4,
     add: Adder4,
-    ns3: Not,
-    ns2: Not,
-    ns1: Not,
-    ns0: Not,
+    flipSum: Invert4,
   },
-  connect: ({ inputs, outputs, nodes: { na3, na2, na1, na0, add, ns3, ns2, ns1, ns0 } }) => [
-    inputs.a3.to(na3.in),
-    inputs.a2.to(na2.in),
-    inputs.a1.to(na1.in),
-    inputs.a0.to(na0.in),
-    na3.out.to(add.a3),
-    na2.out.to(add.a2),
-    na1.out.to(add.a1),
-    na0.out.to(add.a0),
-    inputs.b3.to(add.b3),
-    inputs.b2.to(add.b2),
-    inputs.b1.to(add.b1),
-    inputs.b0.to(add.b0),
-    add.s3.to(ns3.in),
-    add.s2.to(ns2.in),
-    add.s1.to(ns1.in),
-    add.s0.to(ns0.in),
-    ns3.out.to(outputs.d3),
-    ns2.out.to(outputs.d2),
-    ns1.out.to(outputs.d1),
-    ns0.out.to(outputs.d0),
+  connect: ({ inputs, outputs, nodes: { flipA, add, flipSum } }) => [
+    inputs.a.to(flipA.a),
+    flipA.out.to(add.a),
+    inputs.b.to(add.b),
+    add.s.to(flipSum.a),
+    flipSum.out.to(outputs.d),
     add.cout.to(outputs.borrow),
   ],
 });
 
-// a is less than b exactly when a - b has to borrow.
 export const LessThan4 = circuit('LessThan4', {
   nodes: {
     a: Input({ width: 4 }),
-    aBits: Splitter({ width: 4 }),
     b: Input({ width: 4 }),
-    bBits: Splitter({ width: 4 }),
-    sub: Subtract4,
     lt: Led,
+    sub: Subtract4,
   },
-  connect: ({ nodes: { a, aBits, b, bBits, sub, lt } }) => [
-    a.out.to(aBits.in),
-    b.out.to(bBits.in),
-    aBits.bit3.to(sub.a3),
-    aBits.bit2.to(sub.a2),
-    aBits.bit1.to(sub.a1),
-    aBits.bit0.to(sub.a0),
-    bBits.bit3.to(sub.b3),
-    bBits.bit2.to(sub.b2),
-    bBits.bit1.to(sub.b1),
-    bBits.bit0.to(sub.b0),
+  connect: ({ nodes: { a, b, lt, sub } }) => [
+    a.out.to(sub.a),
+    b.out.to(sub.b),
     sub.borrow.to(lt.in),
   ],
 });

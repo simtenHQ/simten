@@ -1,6 +1,6 @@
 /** Reference solution for `program-counter`. Proven by `__tests__/levels.test.ts`. */
 
-import { circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core/circuit';
 import {
   And,
   Combiner,
@@ -12,98 +12,87 @@ import {
   Xor,
 } from '@simten/core/std';
 
+const Mux2 = circuit('Mux2', {
+  inputs: { a: bit, b: bit, sel: bit },
+  outputs: { out: bit },
+  nodes: {
+    x1: Xor,
+    a1: And,
+    x2: Xor,
+  },
+  connect: ({ inputs, outputs, nodes: { x1, a1, x2 } }) => [
+    inputs.a.to(x1.a, x2.a),
+    inputs.b.to(x1.b),
+    inputs.sel.to(a1.b),
+    x1.out.to(a1.a),
+    a1.out.to(x2.b),
+    x2.out.to(outputs.out),
+  ],
+});
+
+const HalfAdder = circuit('HalfAdder', {
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
+  nodes: {
+    x1: Xor,
+    a1: And,
+  },
+  connect: ({ inputs, outputs, nodes: { x1, a1 } }) => [
+    inputs.a.to(x1.a, a1.a),
+    inputs.b.to(x1.b, a1.b),
+    x1.out.to(outputs.sum),
+    a1.out.to(outputs.carry),
+  ],
+});
+
+const CounterBit = circuit('CounterBit', {
+  inputs: { carry: bit, jump: bit, a: bit },
+  outputs: { q: bit, carryOut: bit },
+  nodes: {
+    ff: DFlipFlop(),
+    add: HalfAdder,
+    pick: Mux2,
+  },
+  connect: ({ inputs, outputs, nodes: { ff, add, pick } }) => [
+    ff.q.to(add.a, outputs.q),
+    inputs.carry.to(add.b),
+    add.sum.to(pick.a),
+    inputs.a.to(pick.b),
+    inputs.jump.to(pick.sel),
+    pick.out.to(ff.d),
+    add.carry.to(outputs.carryOut),
+  ],
+});
+
 export const ProgramCounter4 = circuit('ProgramCounter4', {
   nodes: {
     jump: Switch,
     a: Input({ width: 4 }),
     aBits: Splitter({ width: 4 }),
-    ff3: DFlipFlop(),
-    ff2: DFlipFlop(),
-    ff1: DFlipFlop(),
-    ff0: DFlipFlop(),
-    inc1: Xor,
-    carry2: And,
-    inc2: Xor,
-    carry3: And,
-    inc3: Xor,
-    x3a: Xor,
-    j3: And,
-    x3b: Xor,
-    x2a: Xor,
-    j2: And,
-    x2b: Xor,
-    x1a: Xor,
-    j1: And,
-    x1b: Xor,
-    x0a: Xor,
-    j0: And,
-    x0b: Xor,
     pc: HexDisplay({ width: 4 }),
     pcBits: Combiner({ width: 4 }),
+    ff0: DFlipFlop(),
+    pick0: Mux2,
+    bit1: CounterBit,
+    bit2: CounterBit,
+    bit3: CounterBit,
   },
-  connect: ({
-    nodes: {
-      jump,
-      a,
-      aBits,
-      ff3,
-      ff2,
-      ff1,
-      ff0,
-      inc1,
-      carry2,
-      inc2,
-      carry3,
-      inc3,
-      x3a,
-      j3,
-      x3b,
-      x2a,
-      j2,
-      x2b,
-      x1a,
-      j1,
-      x1b,
-      x0a,
-      j0,
-      x0b,
-      pc,
-      pcBits,
-    },
-  }) => [
+  connect: ({ nodes: { jump, a, aBits, pc, pcBits, ff0, pick0, bit1, bit2, bit3 } }) => [
     a.out.to(aBits.in),
     pcBits.out.to(pc.in),
-    // Add one: bit 0 always flips, and each bit above flips when every bit
-    // below it is 1.
-    ff0.q.to(pcBits.bit0, inc1.b, carry2.b),
-    ff1.q.to(pcBits.bit1, inc1.a, carry2.a),
-    ff2.q.to(pcBits.bit2, inc2.a, carry3.a),
-    ff3.q.to(pcBits.bit3, inc3.a),
-    carry2.out.to(inc2.b, carry3.b),
-    carry3.out.to(inc3.b),
-
-    // Then each bit picks the count or the jump address, a multiplexer as
-    // inc XOR (jump AND (inc XOR a)).
-    jump.out.to(j3.b, j2.b, j1.b, j0.b),
-    inc3.out.to(x3a.a, x3b.a),
-    aBits.bit3.to(x3a.b),
-    x3a.out.to(j3.a),
-    j3.out.to(x3b.b),
-    x3b.out.to(ff3.d),
-    inc2.out.to(x2a.a, x2b.a),
-    aBits.bit2.to(x2a.b),
-    x2a.out.to(j2.a),
-    j2.out.to(x2b.b),
-    x2b.out.to(ff2.d),
-    inc1.out.to(x1a.a, x1b.a),
-    aBits.bit1.to(x1a.b),
-    x1a.out.to(j1.a),
-    j1.out.to(x1b.b),
-    x1b.out.to(ff1.d),
-    ff0.q_bar.to(x0a.a, x0b.a),
-    aBits.bit0.to(x0a.b),
-    x0a.out.to(j0.a),
-    j0.out.to(x0b.b),
-    x0b.out.to(ff0.d),
+    // Bit 0 flips every tick; q_bar is already the flipped bit.
+    ff0.q_bar.to(pick0.a),
+    aBits.bit0.to(pick0.b),
+    jump.out.to(pick0.sel, bit1.jump, bit2.jump, bit3.jump),
+    pick0.out.to(ff0.d),
+    ff0.q.to(pcBits.bit0, bit1.carry),
+    bit1.carryOut.to(bit2.carry),
+    bit2.carryOut.to(bit3.carry),
+    aBits.bit1.to(bit1.a),
+    aBits.bit2.to(bit2.a),
+    aBits.bit3.to(bit3.a),
+    bit1.q.to(pcBits.bit1),
+    bit2.q.to(pcBits.bit2),
+    bit3.q.to(pcBits.bit3),
   ],
 });

@@ -12,19 +12,36 @@ import {
   Xor,
 } from '@simten/core/std';
 
-// One bit: the flip-flop's next value is d when load is on and its own q when
-// it is off, which is a multiplexer: q XOR (load AND (q XOR d)).
+const Mux2 = circuit('Mux2', {
+  inputs: { a: bit, b: bit, sel: bit },
+  outputs: { out: bit },
+  nodes: {
+    x1: Xor,
+    a1: And,
+    x2: Xor,
+  },
+  connect: ({ inputs, outputs, nodes: { x1, a1, x2 } }) => [
+    inputs.a.to(x1.a, x2.a),
+    inputs.b.to(x1.b),
+    inputs.sel.to(a1.b),
+    x1.out.to(a1.a),
+    a1.out.to(x2.b),
+    x2.out.to(outputs.out),
+  ],
+});
+
 const RegisterBit = circuit('RegisterBit', {
   inputs: { load: bit, d: bit },
   outputs: { q: bit },
-  nodes: { ff: DFlipFlop(), x1: Xor, a1: And, x2: Xor },
-  connect: ({ inputs, outputs, nodes: { ff, x1, a1, x2 } }) => [
-    ff.q.to(x1.a, x2.a, outputs.q),
-    inputs.d.to(x1.b),
-    x1.out.to(a1.a),
-    inputs.load.to(a1.b),
-    a1.out.to(x2.b),
-    x2.out.to(ff.d),
+  nodes: {
+    ff: DFlipFlop(),
+    pick: Mux2,
+  },
+  connect: ({ inputs, outputs, nodes: { ff, pick } }) => [
+    ff.q.to(pick.a, outputs.q),
+    inputs.d.to(pick.b),
+    inputs.load.to(pick.sel),
+    pick.out.to(ff.d),
   ],
 });
 
@@ -33,24 +50,24 @@ export const Register4 = circuit('Register4', {
     load: Switch,
     d: Input({ width: 4 }),
     dBits: Splitter({ width: 4 }),
-    b3: RegisterBit,
-    b2: RegisterBit,
-    b1: RegisterBit,
-    b0: RegisterBit,
     q: HexDisplay({ width: 4 }),
     qBits: Combiner({ width: 4 }),
+    b0: RegisterBit,
+    b1: RegisterBit,
+    b2: RegisterBit,
+    b3: RegisterBit,
   },
-  connect: ({ nodes: { load, d, dBits, b3, b2, b1, b0, q, qBits } }) => [
+  connect: ({ nodes: { load, d, dBits, q, qBits, b0, b1, b2, b3 } }) => [
     d.out.to(dBits.in),
     qBits.out.to(q.in),
-    load.out.to(b3.load, b2.load, b1.load, b0.load),
-    dBits.bit3.to(b3.d),
-    dBits.bit2.to(b2.d),
-    dBits.bit1.to(b1.d),
+    load.out.to(b0.load, b1.load, b2.load, b3.load),
     dBits.bit0.to(b0.d),
-    b3.q.to(qBits.bit3),
-    b2.q.to(qBits.bit2),
-    b1.q.to(qBits.bit1),
     b0.q.to(qBits.bit0),
+    dBits.bit1.to(b1.d),
+    b1.q.to(qBits.bit1),
+    dBits.bit2.to(b2.d),
+    b2.q.to(qBits.bit2),
+    dBits.bit3.to(b3.d),
+    b3.q.to(qBits.bit3),
   ],
 });

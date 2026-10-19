@@ -203,6 +203,21 @@ Load Instruction needs `alu-4` and `program-counter`, so all three lanes meet th
 
 Levels with real 4-bit numbers take them on one wire: `Input({ width: 4 })` in, `HexDisplay({ width: 4 })` out, with a `Splitter` and `Combiner` placed in the stub so the player still works with bits. The `buses` level teaches this on the trunk, right after `making-a-component`, so every lane can use it. Decoder and four-way multiplexer keep their selects as separate bits.
 
+## Parts and sub-circuits
+
+Every part a stub hands over is the reference answer of the level that introduced it, with ports, and with the same interface the player built: numbers on buses where their level used buses (`Invert4`, `Adder4`, `Subtract4`, `Register4`). The sources live once in `levels.ts`, folded into one region in each stub.
+
+Where a level repeats something per bit, it asks for a sub-circuit rather than wiring it flat, which keeps every level's canvas to about a dozen boxes:
+
+| Level | The player makes | Top-level boxes |
+|---|---|---|
+| Register | one bit (a flip-flop and a `Mux2`), used four times | 9 |
+| Register File | a 4-bit-wide chooser (`BusMux2`), one per way out | 13 |
+| Program Counter | one counter bit (flip-flop, half adder, `Mux2`) | 10 |
+| ALU | bitwise AND, bitwise OR, a 4-way number chooser | 10 |
+
+Subtractor uses the player's own `Invert4` from Buses: invert a, add, invert the sum. The Buses completion card mentions that a node can be a list and `connect` can loop over it, which shortens the per-bit parts.
+
 ## Spec panel changes
 
 1. Levels can set `numbers`, naming bit groups to read as numbers (`a` gathers `a3 a2 a1 a0`), each `unsigned` or `signed`. Under the table, the panel reads the hovered column back, or the failed one after a bad submit: "a = 5, b = 3, s = 8", or "n = 13 (-3)" for a signed group. One line instead of a footnote listing every column, which wouldn't fit. Used on the decoder, mux-4 and the 4-bit levels.

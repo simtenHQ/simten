@@ -66,7 +66,11 @@ const MEMORY_GATES = [...ARITHMETIC_GATES, 'DFlipFlop'];
 const MUX2 = `const Mux2 = circuit('Mux2', {
   inputs: { a: bit, b: bit, sel: bit },
   outputs: { out: bit },
-  nodes: { x1: Xor, a1: And, x2: Xor },
+  nodes: {
+    x1: Xor,
+    a1: And,
+    x2: Xor,
+  },
   connect: ({ inputs, outputs, nodes: { x1, a1, x2 } }) => [
     inputs.a.to(x1.a, x2.a),
     inputs.b.to(x1.b),
@@ -80,7 +84,11 @@ const MUX2 = `const Mux2 = circuit('Mux2', {
 const MUX4 = `const Mux4 = circuit('Mux4', {
   inputs: { d0: bit, d1: bit, d2: bit, d3: bit, s1: bit, s0: bit },
   outputs: { out: bit },
-  nodes: { low: Mux2, high: Mux2, pick: Mux2 },
+  nodes: {
+    low: Mux2,
+    high: Mux2,
+    pick: Mux2,
+  },
   connect: ({ inputs, outputs, nodes: { low, high, pick } }) => [
     inputs.d0.to(low.a),
     inputs.d1.to(low.b),
@@ -97,7 +105,10 @@ const MUX4 = `const Mux4 = circuit('Mux4', {
 const HALF_ADDER = `const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
   outputs: { sum: bit, carry: bit },
-  nodes: { x1: Xor, a1: And },
+  nodes: {
+    x1: Xor,
+    a1: And,
+  },
   connect: ({ inputs, outputs, nodes: { x1, a1 } }) => [
     inputs.a.to(x1.a, a1.a),
     inputs.b.to(x1.b, a1.b),
@@ -109,7 +120,11 @@ const HALF_ADDER = `const HalfAdder = circuit('HalfAdder', {
 const FULL_ADDER = `const FullAdder = circuit('FullAdder', {
   inputs: { a: bit, b: bit, cin: bit },
   outputs: { sum: bit, cout: bit },
-  nodes: { h1: HalfAdder, h2: HalfAdder, o1: Or },
+  nodes: {
+    h1: HalfAdder,
+    h2: HalfAdder,
+    o1: Or,
+  },
   connect: ({ inputs, outputs, nodes: { h1, h2, o1 } }) => [
     inputs.a.to(h1.a),
     inputs.b.to(h1.b),
@@ -122,297 +137,376 @@ const FULL_ADDER = `const FullAdder = circuit('FullAdder', {
   ],
 });`;
 
+const INVERT4 = `const Invert4 = circuit('Invert4', {
+  inputs: { a: bus(4) },
+  outputs: { out: bus(4) },
+  nodes: {
+    bits: Splitter({ width: 4 }),
+    join: Combiner({ width: 4 }),
+    n0: Not,
+    n1: Not,
+    n2: Not,
+    n3: Not,
+  },
+  connect: ({ inputs, outputs, nodes: { bits, join, n0, n1, n2, n3 } }) => [
+    inputs.a.to(bits.in),
+    bits.bit0.to(n0.in),
+    bits.bit1.to(n1.in),
+    bits.bit2.to(n2.in),
+    bits.bit3.to(n3.in),
+    n0.out.to(join.bit0),
+    n1.out.to(join.bit1),
+    n2.out.to(join.bit2),
+    n3.out.to(join.bit3),
+    join.out.to(outputs.out),
+  ],
+});`;
+
 const ADDER4 = `const Adder4 = circuit('Adder4', {
-  inputs: { a3: bit, a2: bit, a1: bit, a0: bit, b3: bit, b2: bit, b1: bit, b0: bit },
-  outputs: { s3: bit, s2: bit, s1: bit, s0: bit, cout: bit },
-  nodes: { add0: HalfAdder, add1: FullAdder, add2: FullAdder, add3: FullAdder },
-  connect: ({ inputs, outputs, nodes: { add0, add1, add2, add3 } }) => [
-    inputs.a0.to(add0.a),
-    inputs.b0.to(add0.b),
-    add0.sum.to(outputs.s0),
+  inputs: { a: bus(4), b: bus(4) },
+  outputs: { s: bus(4), cout: bit },
+  nodes: {
+    aBits: Splitter({ width: 4 }),
+    bBits: Splitter({ width: 4 }),
+    sBits: Combiner({ width: 4 }),
+    add0: HalfAdder,
+    add1: FullAdder,
+    add2: FullAdder,
+    add3: FullAdder,
+  },
+  connect: ({ inputs, outputs, nodes: { aBits, bBits, sBits, add0, add1, add2, add3 } }) => [
+    inputs.a.to(aBits.in),
+    inputs.b.to(bBits.in),
+    sBits.out.to(outputs.s),
+    aBits.bit0.to(add0.a),
+    bBits.bit0.to(add0.b),
+    add0.sum.to(sBits.bit0),
     add0.carry.to(add1.cin),
-    inputs.a1.to(add1.a),
-    inputs.b1.to(add1.b),
-    add1.sum.to(outputs.s1),
+    aBits.bit1.to(add1.a),
+    bBits.bit1.to(add1.b),
+    add1.sum.to(sBits.bit1),
     add1.cout.to(add2.cin),
-    inputs.a2.to(add2.a),
-    inputs.b2.to(add2.b),
-    add2.sum.to(outputs.s2),
+    aBits.bit2.to(add2.a),
+    bBits.bit2.to(add2.b),
+    add2.sum.to(sBits.bit2),
     add2.cout.to(add3.cin),
-    inputs.a3.to(add3.a),
-    inputs.b3.to(add3.b),
-    add3.sum.to(outputs.s3),
+    aBits.bit3.to(add3.a),
+    bBits.bit3.to(add3.b),
+    add3.sum.to(sBits.bit3),
     add3.cout.to(outputs.cout),
   ],
 });`;
 
 const SUBTRACT4 = `const Subtract4 = circuit('Subtract4', {
-  inputs: { a3: bit, a2: bit, a1: bit, a0: bit, b3: bit, b2: bit, b1: bit, b0: bit },
-  outputs: { d3: bit, d2: bit, d1: bit, d0: bit, borrow: bit },
+  inputs: { a: bus(4), b: bus(4) },
+  outputs: { d: bus(4), borrow: bit },
   nodes: {
-    na3: Not,
-    na2: Not,
-    na1: Not,
-    na0: Not,
+    flipA: Invert4,
     add: Adder4,
-    ns3: Not,
-    ns2: Not,
-    ns1: Not,
-    ns0: Not,
+    flipSum: Invert4,
   },
-  connect: ({ inputs, outputs, nodes: { na3, na2, na1, na0, add, ns3, ns2, ns1, ns0 } }) => [
-    inputs.a3.to(na3.in),
-    inputs.a2.to(na2.in),
-    inputs.a1.to(na1.in),
-    inputs.a0.to(na0.in),
-    na3.out.to(add.a3),
-    na2.out.to(add.a2),
-    na1.out.to(add.a1),
-    na0.out.to(add.a0),
-    inputs.b3.to(add.b3),
-    inputs.b2.to(add.b2),
-    inputs.b1.to(add.b1),
-    inputs.b0.to(add.b0),
-    add.s3.to(ns3.in),
-    add.s2.to(ns2.in),
-    add.s1.to(ns1.in),
-    add.s0.to(ns0.in),
-    ns3.out.to(outputs.d3),
-    ns2.out.to(outputs.d2),
-    ns1.out.to(outputs.d1),
-    ns0.out.to(outputs.d0),
+  connect: ({ inputs, outputs, nodes: { flipA, add, flipSum } }) => [
+    inputs.a.to(flipA.a),
+    flipA.out.to(add.a),
+    inputs.b.to(add.b),
+    add.s.to(flipSum.a),
+    flipSum.out.to(outputs.d),
     add.cout.to(outputs.borrow),
+  ],
+});`;
+
+const LESS_THAN4 = `const LessThan4 = circuit('LessThan4', {
+  inputs: { a: bus(4), b: bus(4) },
+  outputs: { lt: bit },
+  nodes: {
+    sub: Subtract4,
+  },
+  connect: ({ inputs, outputs, nodes: { sub } }) => [
+    inputs.a.to(sub.a),
+    inputs.b.to(sub.b),
+    sub.borrow.to(outputs.lt),
+  ],
+});`;
+
+const BITWISE_AND = `const BitwiseAnd = circuit('BitwiseAnd', {
+  inputs: { a: bus(4), b: bus(4) },
+  outputs: { out: bus(4) },
+  nodes: {
+    aBits: Splitter({ width: 4 }),
+    bBits: Splitter({ width: 4 }),
+    outBits: Combiner({ width: 4 }),
+    g0: And,
+    g1: And,
+    g2: And,
+    g3: And,
+  },
+  connect: ({ inputs, outputs, nodes: { aBits, bBits, outBits, g0, g1, g2, g3 } }) => [
+    inputs.a.to(aBits.in),
+    inputs.b.to(bBits.in),
+    outBits.out.to(outputs.out),
+    aBits.bit0.to(g0.a),
+    bBits.bit0.to(g0.b),
+    g0.out.to(outBits.bit0),
+    aBits.bit1.to(g1.a),
+    bBits.bit1.to(g1.b),
+    g1.out.to(outBits.bit1),
+    aBits.bit2.to(g2.a),
+    bBits.bit2.to(g2.b),
+    g2.out.to(outBits.bit2),
+    aBits.bit3.to(g3.a),
+    bBits.bit3.to(g3.b),
+    g3.out.to(outBits.bit3),
+  ],
+});`;
+
+const BITWISE_OR = `const BitwiseOr = circuit('BitwiseOr', {
+  inputs: { a: bus(4), b: bus(4) },
+  outputs: { out: bus(4) },
+  nodes: {
+    aBits: Splitter({ width: 4 }),
+    bBits: Splitter({ width: 4 }),
+    outBits: Combiner({ width: 4 }),
+    g0: Or,
+    g1: Or,
+    g2: Or,
+    g3: Or,
+  },
+  connect: ({ inputs, outputs, nodes: { aBits, bBits, outBits, g0, g1, g2, g3 } }) => [
+    inputs.a.to(aBits.in),
+    inputs.b.to(bBits.in),
+    outBits.out.to(outputs.out),
+    aBits.bit0.to(g0.a),
+    bBits.bit0.to(g0.b),
+    g0.out.to(outBits.bit0),
+    aBits.bit1.to(g1.a),
+    bBits.bit1.to(g1.b),
+    g1.out.to(outBits.bit1),
+    aBits.bit2.to(g2.a),
+    bBits.bit2.to(g2.b),
+    g2.out.to(outBits.bit2),
+    aBits.bit3.to(g3.a),
+    bBits.bit3.to(g3.b),
+    g3.out.to(outBits.bit3),
+  ],
+});`;
+
+const BUS_MUX4 = `const BusMux4 = circuit('BusMux4', {
+  inputs: { s1: bit, s0: bit, d0: bus(4), d1: bus(4), d2: bus(4), d3: bus(4) },
+  outputs: { out: bus(4) },
+  nodes: {
+    d0Bits: Splitter({ width: 4 }),
+    d1Bits: Splitter({ width: 4 }),
+    d2Bits: Splitter({ width: 4 }),
+    d3Bits: Splitter({ width: 4 }),
+    outBits: Combiner({ width: 4 }),
+    m0: Mux4,
+    m1: Mux4,
+    m2: Mux4,
+    m3: Mux4,
+  },
+  connect: ({ inputs, outputs, nodes: { d0Bits, d1Bits, d2Bits, d3Bits, outBits, m0, m1, m2, m3 } }) => [
+    inputs.d0.to(d0Bits.in),
+    inputs.d1.to(d1Bits.in),
+    inputs.d2.to(d2Bits.in),
+    inputs.d3.to(d3Bits.in),
+    outBits.out.to(outputs.out),
+    inputs.s1.to(m0.s1, m1.s1, m2.s1, m3.s1),
+    inputs.s0.to(m0.s0, m1.s0, m2.s0, m3.s0),
+    d0Bits.bit0.to(m0.d0),
+    d1Bits.bit0.to(m0.d1),
+    d2Bits.bit0.to(m0.d2),
+    d3Bits.bit0.to(m0.d3),
+    m0.out.to(outBits.bit0),
+    d0Bits.bit1.to(m1.d0),
+    d1Bits.bit1.to(m1.d1),
+    d2Bits.bit1.to(m1.d2),
+    d3Bits.bit1.to(m1.d3),
+    m1.out.to(outBits.bit1),
+    d0Bits.bit2.to(m2.d0),
+    d1Bits.bit2.to(m2.d1),
+    d2Bits.bit2.to(m2.d2),
+    d3Bits.bit2.to(m2.d3),
+    m2.out.to(outBits.bit2),
+    d0Bits.bit3.to(m3.d0),
+    d1Bits.bit3.to(m3.d1),
+    d2Bits.bit3.to(m3.d2),
+    d3Bits.bit3.to(m3.d3),
+    m3.out.to(outBits.bit3),
+  ],
+});`;
+
+const ALU4 = `const Alu4 = circuit('Alu4', {
+  inputs: { op1: bit, op0: bit, a: bus(4), b: bus(4) },
+  outputs: { r: bus(4) },
+  nodes: {
+    add: Adder4,
+    sub: Subtract4,
+    and: BitwiseAnd,
+    or: BitwiseOr,
+    pick: BusMux4,
+  },
+  connect: ({ inputs, outputs, nodes: { add, sub, and, or, pick } }) => [
+    inputs.a.to(add.a, sub.a, and.a, or.a),
+    inputs.b.to(add.b, sub.b, and.b, or.b),
+    add.s.to(pick.d0),
+    sub.d.to(pick.d1),
+    and.out.to(pick.d2),
+    or.out.to(pick.d3),
+    inputs.op1.to(pick.s1),
+    inputs.op0.to(pick.s0),
+    pick.out.to(outputs.r),
   ],
 });`;
 
 const REGISTER_BIT = `const RegisterBit = circuit('RegisterBit', {
   inputs: { load: bit, d: bit },
   outputs: { q: bit },
-  nodes: { ff: DFlipFlop(), x1: Xor, a1: And, x2: Xor },
-  connect: ({ inputs, outputs, nodes: { ff, x1, a1, x2 } }) => [
-    ff.q.to(x1.a, x2.a, outputs.q),
-    inputs.d.to(x1.b),
-    x1.out.to(a1.a),
-    inputs.load.to(a1.b),
-    a1.out.to(x2.b),
-    x2.out.to(ff.d),
+  nodes: {
+    ff: DFlipFlop(),
+    pick: Mux2,
+  },
+  connect: ({ inputs, outputs, nodes: { ff, pick } }) => [
+    ff.q.to(pick.a, outputs.q),
+    inputs.d.to(pick.b),
+    inputs.load.to(pick.sel),
+    pick.out.to(ff.d),
   ],
 });`;
 
 const REGISTER4 = `const Register4 = circuit('Register4', {
-  inputs: { load: bit, d3: bit, d2: bit, d1: bit, d0: bit },
-  outputs: { q3: bit, q2: bit, q1: bit, q0: bit },
-  nodes: { b3: RegisterBit, b2: RegisterBit, b1: RegisterBit, b0: RegisterBit },
-  connect: ({ inputs, outputs, nodes: { b3, b2, b1, b0 } }) => [
-    inputs.load.to(b3.load, b2.load, b1.load, b0.load),
-    inputs.d3.to(b3.d),
-    inputs.d2.to(b2.d),
-    inputs.d1.to(b1.d),
-    inputs.d0.to(b0.d),
-    b3.q.to(outputs.q3),
-    b2.q.to(outputs.q2),
-    b1.q.to(outputs.q1),
-    b0.q.to(outputs.q0),
+  inputs: { load: bit, d: bus(4) },
+  outputs: { q: bus(4) },
+  nodes: {
+    dBits: Splitter({ width: 4 }),
+    qBits: Combiner({ width: 4 }),
+    b0: RegisterBit,
+    b1: RegisterBit,
+    b2: RegisterBit,
+    b3: RegisterBit,
+  },
+  connect: ({ inputs, outputs, nodes: { dBits, qBits, b0, b1, b2, b3 } }) => [
+    inputs.d.to(dBits.in),
+    qBits.out.to(outputs.q),
+    inputs.load.to(b0.load, b1.load, b2.load, b3.load),
+    dBits.bit0.to(b0.d),
+    b0.q.to(qBits.bit0),
+    dBits.bit1.to(b1.d),
+    b1.q.to(qBits.bit1),
+    dBits.bit2.to(b2.d),
+    b2.q.to(qBits.bit2),
+    dBits.bit3.to(b3.d),
+    b3.q.to(qBits.bit3),
   ],
 });`;
 
-const CPU_ALU = `const Alu4 = circuit('Alu4', {
-  inputs: { op1: bit, op0: bit, a: bus(4), b: bus(4) },
-  outputs: { r: bus(4) },
+const BUS_MUX2 = `const BusMux2 = circuit('BusMux2', {
+  inputs: { sel: bit, a: bus(4), b: bus(4) },
+  outputs: { out: bus(4) },
   nodes: {
     aBits: Splitter({ width: 4 }),
     bBits: Splitter({ width: 4 }),
-    rBits: Combiner({ width: 4 }),
-    add: Adder4,
-    sub: Subtract4,
-    and3: And,
-    and2: And,
-    and1: And,
-    and0: And,
-    or3: Or,
-    or2: Or,
-    or1: Or,
-    or0: Or,
-    pick3: Mux4,
-    pick2: Mux4,
-    pick1: Mux4,
-    pick0: Mux4,
+    outBits: Combiner({ width: 4 }),
+    m0: Mux2,
+    m1: Mux2,
+    m2: Mux2,
+    m3: Mux2,
   },
-  connect: ({ inputs, outputs, nodes: { aBits, bBits, rBits, add, sub, and3, and2, and1, and0, or3, or2, or1, or0, pick3, pick2, pick1, pick0 } }) => [
+  connect: ({ inputs, outputs, nodes: { aBits, bBits, outBits, m0, m1, m2, m3 } }) => [
     inputs.a.to(aBits.in),
     inputs.b.to(bBits.in),
-    rBits.out.to(outputs.r),
-    aBits.bit3.to(add.a3, sub.a3, and3.a, or3.a),
-    bBits.bit3.to(add.b3, sub.b3, and3.b, or3.b),
-    add.s3.to(pick3.d0),
-    sub.d3.to(pick3.d1),
-    and3.out.to(pick3.d2),
-    or3.out.to(pick3.d3),
-    pick3.out.to(rBits.bit3),
-    aBits.bit2.to(add.a2, sub.a2, and2.a, or2.a),
-    bBits.bit2.to(add.b2, sub.b2, and2.b, or2.b),
-    add.s2.to(pick2.d0),
-    sub.d2.to(pick2.d1),
-    and2.out.to(pick2.d2),
-    or2.out.to(pick2.d3),
-    pick2.out.to(rBits.bit2),
-    aBits.bit1.to(add.a1, sub.a1, and1.a, or1.a),
-    bBits.bit1.to(add.b1, sub.b1, and1.b, or1.b),
-    add.s1.to(pick1.d0),
-    sub.d1.to(pick1.d1),
-    and1.out.to(pick1.d2),
-    or1.out.to(pick1.d3),
-    pick1.out.to(rBits.bit1),
-    aBits.bit0.to(add.a0, sub.a0, and0.a, or0.a),
-    bBits.bit0.to(add.b0, sub.b0, and0.b, or0.b),
-    add.s0.to(pick0.d0),
-    sub.d0.to(pick0.d1),
-    and0.out.to(pick0.d2),
-    or0.out.to(pick0.d3),
-    pick0.out.to(rBits.bit0),
-    inputs.op1.to(pick3.s1, pick2.s1, pick1.s1, pick0.s1),
-    inputs.op0.to(pick3.s0, pick2.s0, pick1.s0, pick0.s0),
+    outBits.out.to(outputs.out),
+    inputs.sel.to(m0.sel, m1.sel, m2.sel, m3.sel),
+    aBits.bit0.to(m0.a),
+    bBits.bit0.to(m0.b),
+    m0.out.to(outBits.bit0),
+    aBits.bit1.to(m1.a),
+    bBits.bit1.to(m1.b),
+    m1.out.to(outBits.bit1),
+    aBits.bit2.to(m2.a),
+    bBits.bit2.to(m2.b),
+    m2.out.to(outBits.bit2),
+    aBits.bit3.to(m3.a),
+    bBits.bit3.to(m3.b),
+    m3.out.to(outBits.bit3),
   ],
 });`;
 
-const CPU_LESS_THAN = `const LessThan4 = circuit('LessThan4', {
-  inputs: { a: bus(4), b: bus(4) },
-  outputs: { lt: bit },
-  nodes: {
-    aBits: Splitter({ width: 4 }),
-    bBits: Splitter({ width: 4 }),
-    sub: Subtract4,
-  },
-  connect: ({ inputs, outputs, nodes: { aBits, bBits, sub } }) => [
-    inputs.a.to(aBits.in),
-    inputs.b.to(bBits.in),
-    aBits.bit3.to(sub.a3),
-    aBits.bit2.to(sub.a2),
-    aBits.bit1.to(sub.a1),
-    aBits.bit0.to(sub.a0),
-    bBits.bit3.to(sub.b3),
-    bBits.bit2.to(sub.b2),
-    bBits.bit1.to(sub.b1),
-    bBits.bit0.to(sub.b0),
-    sub.borrow.to(outputs.lt),
-  ],
-});`;
-
-const CPU_REGFILE = `const RegFile2 = circuit('RegFile2', {
+const REGFILE2 = `const RegFile2 = circuit('RegFile2', {
   inputs: { write: bit, wsel: bit, asel: bit, bsel: bit, d: bus(4) },
   outputs: { a: bus(4), b: bus(4), r0: bus(4), r1: bus(4) },
   nodes: {
-    dBits: Splitter({ width: 4 }),
-    aBits: Combiner({ width: 4 }),
-    bBits: Combiner({ width: 4 }),
-    r0Bits: Combiner({ width: 4 }),
-    r1Bits: Combiner({ width: 4 }),
     reg0: Register4,
     reg1: Register4,
     load1: And,
     load0: Xor,
-    ma3: Mux2,
-    ma2: Mux2,
-    ma1: Mux2,
-    ma0: Mux2,
-    mb3: Mux2,
-    mb2: Mux2,
-    mb1: Mux2,
-    mb0: Mux2,
+    readA: BusMux2,
+    readB: BusMux2,
   },
-  connect: ({ inputs, outputs, nodes: { dBits, aBits, bBits, r0Bits, r1Bits, reg0, reg1, load1, load0, ma3, ma2, ma1, ma0, mb3, mb2, mb1, mb0 } }) => [
-    inputs.d.to(dBits.in),
-    aBits.out.to(outputs.a),
-    bBits.out.to(outputs.b),
-    r0Bits.out.to(outputs.r0),
-    r1Bits.out.to(outputs.r1),
+  connect: ({ inputs, outputs, nodes: { reg0, reg1, load1, load0, readA, readB } }) => [
     inputs.write.to(load1.a, load0.a),
     inputs.wsel.to(load1.b),
     load1.out.to(reg1.load, load0.b),
     load0.out.to(reg0.load),
-    dBits.bit3.to(reg0.d3, reg1.d3),
-    dBits.bit2.to(reg0.d2, reg1.d2),
-    dBits.bit1.to(reg0.d1, reg1.d1),
-    dBits.bit0.to(reg0.d0, reg1.d0),
-    inputs.asel.to(ma3.sel, ma2.sel, ma1.sel, ma0.sel),
-    reg0.q3.to(ma3.a),
-    reg1.q3.to(ma3.b),
-    ma3.out.to(aBits.bit3),
-    reg0.q2.to(ma2.a),
-    reg1.q2.to(ma2.b),
-    ma2.out.to(aBits.bit2),
-    reg0.q1.to(ma1.a),
-    reg1.q1.to(ma1.b),
-    ma1.out.to(aBits.bit1),
-    reg0.q0.to(ma0.a),
-    reg1.q0.to(ma0.b),
-    ma0.out.to(aBits.bit0),
-    inputs.bsel.to(mb3.sel, mb2.sel, mb1.sel, mb0.sel),
-    reg0.q3.to(mb3.a),
-    reg1.q3.to(mb3.b),
-    mb3.out.to(bBits.bit3),
-    reg0.q2.to(mb2.a),
-    reg1.q2.to(mb2.b),
-    mb2.out.to(bBits.bit2),
-    reg0.q1.to(mb1.a),
-    reg1.q1.to(mb1.b),
-    mb1.out.to(bBits.bit1),
-    reg0.q0.to(mb0.a),
-    reg1.q0.to(mb0.b),
-    mb0.out.to(bBits.bit0),
-    reg0.q3.to(r0Bits.bit3),
-    reg0.q2.to(r0Bits.bit2),
-    reg0.q1.to(r0Bits.bit1),
-    reg0.q0.to(r0Bits.bit0),
-    reg1.q3.to(r1Bits.bit3),
-    reg1.q2.to(r1Bits.bit2),
-    reg1.q1.to(r1Bits.bit1),
-    reg1.q0.to(r1Bits.bit0),
+    inputs.d.to(reg0.d, reg1.d),
+    reg0.q.to(readA.a, readB.a),
+    reg1.q.to(readA.b, readB.b),
+    inputs.asel.to(readA.sel),
+    inputs.bsel.to(readB.sel),
+    readA.out.to(outputs.a),
+    readB.out.to(outputs.b),
+    reg0.q.to(outputs.r0),
+    reg1.q.to(outputs.r1),
   ],
 });`;
 
-const CPU_PC = `const ProgramCounter4 = circuit('ProgramCounter4', {
+const COUNTER_BIT = `const CounterBit = circuit('CounterBit', {
+  inputs: { carry: bit, jump: bit, a: bit },
+  outputs: { q: bit, carryOut: bit },
+  nodes: {
+    ff: DFlipFlop(),
+    add: HalfAdder,
+    pick: Mux2,
+  },
+  connect: ({ inputs, outputs, nodes: { ff, add, pick } }) => [
+    ff.q.to(add.a, outputs.q),
+    inputs.carry.to(add.b),
+    add.sum.to(pick.a),
+    inputs.a.to(pick.b),
+    inputs.jump.to(pick.sel),
+    pick.out.to(ff.d),
+    add.carry.to(outputs.carryOut),
+  ],
+});`;
+
+const PC4 = `const ProgramCounter4 = circuit('ProgramCounter4', {
   inputs: { jump: bit, a: bus(4) },
   outputs: { pc: bus(4) },
   nodes: {
     aBits: Splitter({ width: 4 }),
     pcBits: Combiner({ width: 4 }),
-    ff3: DFlipFlop(),
-    ff2: DFlipFlop(),
-    ff1: DFlipFlop(),
     ff0: DFlipFlop(),
-    inc1: Xor,
-    carry2: And,
-    inc2: Xor,
-    carry3: And,
-    inc3: Xor,
-    pick3: Mux2,
-    pick2: Mux2,
-    pick1: Mux2,
     pick0: Mux2,
+    bit1: CounterBit,
+    bit2: CounterBit,
+    bit3: CounterBit,
   },
-  connect: ({ inputs, outputs, nodes: { aBits, pcBits, ff3, ff2, ff1, ff0, inc1, carry2, inc2, carry3, inc3, pick3, pick2, pick1, pick0 } }) => [
+  connect: ({ inputs, outputs, nodes: { aBits, pcBits, ff0, pick0, bit1, bit2, bit3 } }) => [
     inputs.a.to(aBits.in),
     pcBits.out.to(outputs.pc),
-    ff0.q.to(pcBits.bit0, inc1.b, carry2.b),
-    ff1.q.to(pcBits.bit1, inc1.a, carry2.a),
-    ff2.q.to(pcBits.bit2, inc2.a, carry3.a),
-    ff3.q.to(pcBits.bit3, inc3.a),
-    carry2.out.to(inc2.b, carry3.b),
-    carry3.out.to(inc3.b),
-    inputs.jump.to(pick3.sel, pick2.sel, pick1.sel, pick0.sel),
-    inc3.out.to(pick3.a),
-    aBits.bit3.to(pick3.b),
-    pick3.out.to(ff3.d),
-    inc2.out.to(pick2.a),
-    aBits.bit2.to(pick2.b),
-    pick2.out.to(ff2.d),
-    inc1.out.to(pick1.a),
-    aBits.bit1.to(pick1.b),
-    pick1.out.to(ff1.d),
+    // Bit 0 flips every tick; q_bar is already the flipped bit.
     ff0.q_bar.to(pick0.a),
     aBits.bit0.to(pick0.b),
+    inputs.jump.to(pick0.sel, bit1.jump, bit2.jump, bit3.jump),
     pick0.out.to(ff0.d),
+    ff0.q.to(pcBits.bit0, bit1.carry),
+    bit1.carryOut.to(bit2.carry),
+    bit2.carryOut.to(bit3.carry),
+    aBits.bit1.to(bit1.a),
+    aBits.bit2.to(bit2.a),
+    aBits.bit3.to(bit3.a),
+    bit1.q.to(pcBits.bit1),
+    bit2.q.to(pcBits.bit2),
+    bit3.q.to(pcBits.bit3),
   ],
 });`;
 
@@ -431,38 +525,6 @@ const CPU_INSTRUCTION = `const Instruction = circuit('Instruction', {
     bits.bit1.to(number.bit1, outputs.aluOp1),
     bits.bit0.to(number.bit0, outputs.aluOp0),
     number.out.to(outputs.n),
-  ],
-});`;
-
-const CHOOSE4 = `const Choose4 = circuit('Choose4', {
-  inputs: { sel: bit, a: bus(4), b: bus(4) },
-  outputs: { out: bus(4) },
-  nodes: {
-    aBits: Splitter({ width: 4 }),
-    bBits: Splitter({ width: 4 }),
-    outBits: Combiner({ width: 4 }),
-    m3: Mux2,
-    m2: Mux2,
-    m1: Mux2,
-    m0: Mux2,
-  },
-  connect: ({ inputs, outputs, nodes: { aBits, bBits, outBits, m3, m2, m1, m0 } }) => [
-    inputs.a.to(aBits.in),
-    inputs.b.to(bBits.in),
-    inputs.sel.to(m3.sel, m2.sel, m1.sel, m0.sel),
-    aBits.bit3.to(m3.a),
-    bBits.bit3.to(m3.b),
-    m3.out.to(outBits.bit3),
-    aBits.bit2.to(m2.a),
-    bBits.bit2.to(m2.b),
-    m2.out.to(outBits.bit2),
-    aBits.bit1.to(m1.a),
-    bBits.bit1.to(m1.b),
-    m1.out.to(outBits.bit1),
-    aBits.bit0.to(m0.a),
-    bBits.bit0.to(m0.b),
-    m0.out.to(outBits.bit0),
-    outBits.out.to(outputs.out),
   ],
 });`;
 
@@ -820,7 +882,7 @@ export default circuit('Invert4', {
     par: 4,
     outro: {
       headline: 'Numbers on wires',
-      body: 'From here on, numbers travel on one wire, and you split them wherever you need the bits.',
+      body: 'From here on, numbers travel on one wire, and you split them wherever you need the bits. When you need the same wire four times, a node can be a list, like Array.from({ length: 4 }, () => Not), and connect can loop over it.',
     },
   },
   {
@@ -1608,20 +1670,23 @@ export default circuit('Negate4', {
     inputs: ['a', 'b'],
     outputs: ['d', 'borrow'],
     allowed: ARITHMETIC_GATES,
-    stub: `// Your 4-bit adder, finished, with the parts it is made of.
+    stub: `// Your 4-bit adder, finished, and Invert4, your circuit from
+// Buses that flips every bit of a number.
 
 // #region Your parts, finished (click the arrow to read them)
 ${HALF_ADDER}
 
 ${FULL_ADDER}
 
+${INVERT4}
+
 ${ADDER4}
 // #endregion
 
 // a - b is a plus the negative of b. You could negate b and add,
 // but then cout would not tell you when b was the bigger one.
-// Flipping both ends works out better: NOT every bit of a, add
-// b, then NOT every bit of the sum. Try 5 - 3 on paper.
+// Flipping both ends works out better: invert a, add b, then
+// invert the sum. Try 5 - 3 on paper.
 //
 // Done that way, cout comes on exactly when b is bigger than a,
 // so it is your borrow with no gate needed.
@@ -1629,17 +1694,11 @@ ${ADDER4}
 export default circuit('Subtract4', {
   nodes: {
     a: Input({ width: 4 }),
-    aBits: Splitter({ width: 4 }),
     b: Input({ width: 4 }),
-    bBits: Splitter({ width: 4 }),
     d: HexDisplay({ width: 4 }),
-    dBits: Combiner({ width: 4 }),
     borrow: Led,
   },
-  connect: ({ nodes: { a, aBits, b, bBits, d, dBits, borrow } }) => [
-    a.out.to(aBits.in),
-    b.out.to(bBits.in),
-    dBits.out.to(d.in),
+  connect: ({ nodes: { a, b, d, borrow } }) => [
     //
   ],
 });
@@ -1682,6 +1741,8 @@ ${HALF_ADDER}
 
 ${FULL_ADDER}
 
+${INVERT4}
+
 ${ADDER4}
 
 ${SUBTRACT4}
@@ -1693,14 +1754,10 @@ ${SUBTRACT4}
 export default circuit('LessThan4', {
   nodes: {
     a: Input({ width: 4 }),
-    aBits: Splitter({ width: 4 }),
     b: Input({ width: 4 }),
-    bBits: Splitter({ width: 4 }),
     lt: Led,
   },
-  connect: ({ nodes: { a, aBits, b, bBits, lt } }) => [
-    a.out.to(aBits.in),
-    b.out.to(bBits.in),
+  connect: ({ nodes: { a, b, lt } }) => [
     //
   ],
 });
@@ -1737,8 +1794,7 @@ export default circuit('LessThan4', {
     inputs: ['op1', 'op0', 'a', 'b'],
     outputs: ['r'],
     allowed: ARITHMETIC_GATES,
-    stub: `// Everything you need is below, finished: your multiplexers,
-// your adder and your subtractor.
+    stub: `// Your multiplexers, adder and subtractor, finished, below.
 
 // #region Your parts, finished (click the arrow to read them)
 ${MUX2}
@@ -1749,29 +1805,32 @@ ${HALF_ADDER}
 
 ${FULL_ADDER}
 
+${INVERT4}
+
 ${ADDER4}
 
 ${SUBTRACT4}
 // #endregion
 
-// Work out all four answers at once, whatever op says. Then,
-// for each output bit, let op1 op0 pick which answer it shows.
+// Work out all four answers at once, whatever op says, then let
+// op1 op0 pick one.
+//
+// Adder4 and Subtract4 take whole numbers. For AND, OR and the
+// picking, build your own parts: a circuit() that ANDs two 4-bit
+// numbers bit by bit, one that ORs them, and one that picks one of
+// four numbers (a Mux4 for each bit). Their ports can carry
+// numbers, like inputs: { a: bus(4), b: bus(4) }. Then the ALU
+// is five parts.
 
 export default circuit('Alu4', {
   nodes: {
     op1: Switch,
     op0: Switch,
     a: Input({ width: 4 }),
-    aBits: Splitter({ width: 4 }),
     b: Input({ width: 4 }),
-    bBits: Splitter({ width: 4 }),
     r: HexDisplay({ width: 4 }),
-    rBits: Combiner({ width: 4 }),
   },
-  connect: ({ nodes: { op1, op0, a, aBits, b, bBits, r, rBits } }) => [
-    a.out.to(aBits.in),
-    b.out.to(bBits.in),
-    rBits.out.to(r.in),
+  connect: ({ nodes: { op1, op0, a, b, r } }) => [
     //
   ],
 });
@@ -1814,10 +1873,18 @@ export default circuit('Alu4', {
     outputs: ['q'],
     allowed: MEMORY_GATES,
     sequential: true,
-    stub: `// One flip-flop per bit. A flip-flop stores whatever is on
-// its d input every tick, so to keep a bit, feed it its own q.
-// To load, feed it the new bit instead. load picks which,
-// the same job your multiplexer did.
+    stub: `// Your multiplexer, finished, below.
+
+// #region Your parts, finished (click the arrow to read them)
+${MUX2}
+// #endregion
+
+// One flip-flop per bit. A flip-flop stores whatever is on its d
+// input every tick, so to keep a bit, feed it its own q. To load,
+// feed it the new bit instead. A Mux2 picks which, with load.
+//
+// Build one bit as its own circuit(), with load and d in and q
+// out. Then the register is four of them.
 
 export default circuit('Register4', {
   nodes: {
@@ -1866,21 +1933,24 @@ export default circuit('Register4', {
     outputs: ['a', 'b'],
     allowed: MEMORY_GATES,
     sequential: true,
-    stub: `// Your register, finished, with ports.
+    stub: `// Your register, finished, below.
 
 // #region Your parts, finished (click the arrow to read them)
+${MUX2}
+
 ${REGISTER_BIT}
 
 ${REGISTER4}
 // #endregion
 
-// Two of them, numbered 0 and 1. Each needs its own load line,
+// Two registers, numbered 0 and 1. Each needs its own load line,
 // on only when write is on and wsel names it.
 //
-// There are two ways out, a and b, each with its own select,
-// so you can read both registers at once. An ALU needs two
-// numbers at the same time, which is why real ones work
-// like this.
+// There are two ways out, a and b, each picking a register with
+// its own select, so you can read both at once. Picking between
+// two 4-bit numbers is four of your Mux2s side by side: build that
+// as its own circuit(), then use it once for each way out. Its
+// ports can carry numbers, like inputs: { a: bus(4), b: bus(4) }.
 
 export default circuit('RegFile2', {
   nodes: {
@@ -1889,18 +1959,10 @@ export default circuit('RegFile2', {
     asel: Switch,
     bsel: Switch,
     d: Input({ width: 4 }),
-    dBits: Splitter({ width: 4 }),
     a: HexDisplay({ width: 4 }),
-    aBits: Combiner({ width: 4 }),
     b: HexDisplay({ width: 4 }),
-    bBits: Combiner({ width: 4 }),
   },
-  connect: ({
-    nodes: { write, wsel, asel, bsel, d, dBits, a, aBits, b, bBits },
-  }) => [
-    d.out.to(dBits.in),
-    aBits.out.to(a.in),
-    bBits.out.to(b.in),
+  connect: ({ nodes: { write, wsel, asel, bsel, d, a, b } }) => [
     //
   ],
 });
@@ -1938,12 +2000,22 @@ export default circuit('RegFile2', {
     outputs: ['pc'],
     allowed: MEMORY_GATES,
     sequential: true,
-    stub: `// Your counter, four bits wide, with a way to jump. Each
-// bit's next value is either the count plus one or the jump
-// address, and jump picks.
+    stub: `// Your multiplexer and half adder, finished, below.
+
+// #region Your parts, finished (click the arrow to read them)
+${MUX2}
+
+${HALF_ADDER}
+// #endregion
+
+// Your counter, four bits wide, with a way to jump. Each bit's
+// next value is either the count plus one or the jump address,
+// and jump picks.
 //
-// Adding 1 flips bit 0 every tick, and flips each bit above
-// it when every bit below is 1.
+// Adding 1 flips bit 0 every tick (its flip-flop's q_bar is the
+// flipped bit). Each bit above adds the carry from the bit below,
+// which is what a half adder does. Bits 1 to 3 all work the same
+// way, so one of them makes a good circuit() of its own.
 
 export default circuit('ProgramCounter4', {
   nodes: {
@@ -1980,7 +2052,7 @@ export default circuit('ProgramCounter4', {
       { inputs: { jump: 1, a: 10 }, expect: { pc: 10 } },
       { inputs: { jump: 0, a: 0 }, expect: { pc: 11 } },
     ],
-    par: 21,
+    par: 22,
     outro: {
       headline: 'Where the program is',
       body: 'A CPU keeps the address of its next instruction in one of these. Counting moves on to the next instruction, and loading is how a jump or a loop works.',
@@ -2018,8 +2090,9 @@ export default circuit('ProgramCounter4', {
       'LOAD r0, 5',
       'LOAD r0, 15',
     ],
-    stub: `// Your register file is folded away below, with Instruction,
-// a new part that splits an instruction into named fields.
+    stub: `// Your register file is folded away below, with r0 and r1 outputs
+// added so you can watch both registers, and Instruction, a new
+// part that splits an instruction into named fields.
 
 // #region Your parts, finished (click the arrow to read them)
 ${MUX2}
@@ -2028,7 +2101,9 @@ ${REGISTER_BIT}
 
 ${REGISTER4}
 
-${CPU_REGFILE}
+${BUS_MUX2}
+
+${REGFILE2}
 
 ${CPU_INSTRUCTION}
 // #endregion
@@ -2065,10 +2140,9 @@ export default circuit('Cpu4', {
     i.out.to(fields.i),
     regs.r0.to(r0.in),
     regs.r1.to(r1.in),
-    // New this level:
-    //   Control needs to know the kind of instruction: op1, op0
-    //   ra picks the register written, n is what gets written
-    //   Control's write turns the write on
+    // New this level: Control needs the kind of instruction, and
+    // the register file needs to know which register to write,
+    // what to write into it, and when.
     //
   ],
 });
@@ -2129,7 +2203,7 @@ export default circuit('Cpu4', {
       'ADD r1, r0',
       'AND r1, r0',
     ],
-    stub: `// Your CPU from the last level, with your ALU and Choose4 added.
+    stub: `// Your CPU from the last level, with your ALU and BusMux2 added.
 // The parts are folded away below.
 
 // #region Your parts, finished (click the arrow to read them)
@@ -2141,21 +2215,29 @@ ${HALF_ADDER}
 
 ${FULL_ADDER}
 
+${INVERT4}
+
 ${ADDER4}
 
 ${SUBTRACT4}
 
-${CPU_ALU}
+${BITWISE_AND}
+
+${BITWISE_OR}
+
+${BUS_MUX4}
+
+${ALU4}
 
 ${REGISTER_BIT}
 
 ${REGISTER4}
 
-${CPU_REGFILE}
+${BUS_MUX2}
+
+${REGFILE2}
 
 ${CPU_INSTRUCTION}
-
-${CHOOSE4}
 // #endregion
 
 // ALU instructions have op1 op0 = 01. They run the ALU on
@@ -2168,19 +2250,19 @@ ${CHOOSE4}
 const Control = circuit('Control', {
   inputs: { op1: bit, op0: bit },
   outputs: { write: bit, useAlu: bit },
-  nodes: { none: Nor },
-  connect: ({ inputs, outputs, nodes: { none } }) => [
-    inputs.op1.to(none.a),
-    inputs.op0.to(none.b),
-    none.out.to(outputs.write),
+  nodes: { isLoad: Nor },
+  connect: ({ inputs, outputs, nodes: { isLoad } }) => [
+    inputs.op1.to(isLoad.a),
+    inputs.op0.to(isLoad.b),
+    isLoad.out.to(outputs.write),
     // New: useAlu, on for ALU instructions (01), so the ALU's
     // answer is written instead of n. They write too, so write
     // needs to be on for them as well as for LOAD.
   ],
 });
 
-// regs shows register asel on a and bsel on b. choose gives a
-// when sel is 0 and b when sel is 1.
+// regs shows register asel on a and bsel on b. choose is your
+// BusMux2 from Register File: a when sel is 0, b when sel is 1.
 export default circuit('Cpu4', {
   nodes: {
     i: Input({ width: 8 }),
@@ -2188,7 +2270,7 @@ export default circuit('Cpu4', {
     control: Control,
     regs: RegFile2,
     alu: Alu4,
-    choose: Choose4,
+    choose: BusMux2,
     r0: HexDisplay({ width: 4 }),
     r1: HexDisplay({ width: 4 }),
   },
@@ -2288,25 +2370,35 @@ ${HALF_ADDER}
 
 ${FULL_ADDER}
 
+${INVERT4}
+
 ${ADDER4}
 
 ${SUBTRACT4}
 
-${CPU_ALU}
+${LESS_THAN4}
 
-${CPU_LESS_THAN}
+${BITWISE_AND}
+
+${BITWISE_OR}
+
+${BUS_MUX4}
+
+${ALU4}
 
 ${REGISTER_BIT}
 
 ${REGISTER4}
 
-${CPU_REGFILE}
+${BUS_MUX2}
 
-${CPU_PC}
+${REGFILE2}
+
+${COUNTER_BIT}
+
+${PC4}
 
 ${CPU_INSTRUCTION}
-
-${CHOOSE4}
 // #endregion
 
 // The program counter says which instruction comes next. It
@@ -2338,7 +2430,7 @@ export default circuit('Cpu4', {
     control: Control,
     regs: RegFile2,
     alu: Alu4,
-    choose: Choose4,
+    choose: BusMux2,
     less: LessThan4,
     counter: ProgramCounter4,
     pc: HexDisplay({ width: 4 }),
@@ -2395,7 +2487,7 @@ export default circuit('Cpu4', {
       { inputs: { i: 136 }, expect: { pc: 8, r0: 5, r1: 5 } },
       { inputs: { i: 136 }, expect: { pc: 8, r0: 5, r1: 5 } },
     ],
-    par: 206,
+    par: 207,
     outro: {
       headline: 'It runs',
       body: 'Every part of that was built from the NAND gate you started with, and it just ran a loop. Real CPUs are the same idea, with wider numbers and more instructions.',
