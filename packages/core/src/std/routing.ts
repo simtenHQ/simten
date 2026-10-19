@@ -4,6 +4,7 @@
 
 import { bit, bus } from '../circuit/bit-bus.js';
 import { circuit } from '../circuit/circuit.js';
+import type { ArgumentValue, BuiltCircuit } from '../circuit/types.js';
 
 /**
  * Multiplexer — sel=0 picks in0, sel=1 picks in1. The fundamental
@@ -83,8 +84,9 @@ export const Decoder = circuit('Decoder', {
 });
 
 /**
- * Bus splitter. Splits an 8-bit bus into two 4-bit halves — `out0` is the
- * low nibble (bits 0..3), `out1` is the high nibble (bits 4..7).
+ * Splits a byte into two nibbles: an 8-bit bus into two 4-bit halves. `out0` is the
+ * low nibble (bits 0..3), `out1` is the high nibble (bits 4..7). This was
+ * `Splitter`; that name now belongs to the general bit splitter below.
  *
  * **Input:** `in` — `bus(8)`
  * **Outputs:** `out0`, `out1` — `bus(4)`
@@ -94,7 +96,7 @@ export const Decoder = circuit('Decoder', {
  * circuit('Nibbles', {
  *   inputs:  { byte: bus(8) },
  *   outputs: { lo: bus(4), hi: bus(4) },
- *   nodes:   { s: Splitter },
+ *   nodes:   { s: NibbleSplitter },
  *   connect: ({ inputs, outputs, nodes: { s } }) => [
  *     inputs.byte.to(s.in),
  *     s.out0.to(outputs.lo),
@@ -103,12 +105,97 @@ export const Decoder = circuit('Decoder', {
  * })
  * ```
  */
-export const Splitter = circuit('Splitter', {
+export const NibbleSplitter = circuit('NibbleSplitter', {
   inputs: { in: bus(8) },
   outputs: { out0: bus(4), out1: bus(4) },
-  meta: { category: 'utilities', icon: '⊢', description: 'Bus splitter' },
+  meta: { category: 'utilities', icon: '⊢', description: 'Splits a byte into two nibbles' },
   eval: ({ in: val }) => ({ out0: val & 0xf, out1: (val >> 4) & 0xf }),
 });
+
+/**
+ * Attach shape args so a source-compiled node carries them in
+ * `node.arguments`, the same as the factory form of `circuit()` does. The
+ * evals below read their width from there, never from the factory's `width`:
+ * the editor sandbox rebuilds evals from their source, which drops closures.
+ * The literal `8` fallback is only for a node somehow missing its args.
+ */
+function withArgs(c: BuiltCircuit, args: Record<string, ArgumentValue>): BuiltCircuit {
+  (c as { _args?: Record<string, ArgumentValue> })._args = args;
+  return c;
+}
+
+const bitPorts = (width: number) =>
+  Object.fromEntries(Array.from({ length: width }, (_, i) => [`bit${i}`, bit]));
+
+/**
+ * Splits a bus into its bits. `bit0` is the LSB.
+ *
+ * **Input:** `in` — `bus(width)`
+ * **Outputs:** `bit0`..`bit{width-1}` — `bit`
+ * **Args:** `width` (default 8)
+ *
+ * Its set of ports changes with `width`, so each width registers as its own
+ * primitive (`Splitter_4w`, `Splitter_8w`): the simulator compiles one
+ * evaluator per primitive name with that primitive's port list baked in. Same
+ * pattern as the importer's `Pmux`. Source still writes `Splitter({ width })`.
+ *
+ * **Example:** four switches' worth of bits from one 4-bit input
+ * ```ts
+ * circuit('Bits', {
+ *   inputs:  { value: bus(4) },
+ *   outputs: { low: bit, high: bit },
+ *   nodes:   { s: Splitter({ width: 4 }) },
+ *   connect: ({ inputs, outputs, nodes: { s } }) => [
+ *     inputs.value.to(s.in),
+ *     s.bit0.to(outputs.low),
+ *     s.bit3.to(outputs.high),
+ *   ],
+ * })
+ * ```
+ */
+export function Splitter({ width = 8 }: { width?: number } = {}): BuiltCircuit {
+  return withArgs(
+    circuit(`Splitter_${width}w`, {
+      inputs: { in: bus(width) },
+      outputs: bitPorts(width),
+      meta: { category: 'utilities', icon: '⊢', description: 'Splits a bus into its bits' },
+      eval: (io: Record<string, unknown>) => {
+        const w = (io.width as number | undefined) ?? 8;
+        const v = (io.in as number) >>> 0;
+        const out: Record<string, number> = {};
+        for (let i = 0; i < w; i++) out[`bit${i}`] = (v >>> i) & 1;
+        return out;
+      },
+    }),
+    { width },
+  );
+}
+
+/**
+ * Combines bits into a bus. `bit0` becomes the LSB. The inverse of `Splitter`.
+ *
+ * **Inputs:** `bit0`..`bit{width-1}` — `bit`
+ * **Output:** `out` — `bus(width)`
+ * **Args:** `width` (default 8)
+ *
+ * Registers per width (`Combiner_4w`), for the same reason as `Splitter`.
+ */
+export function Combiner({ width = 8 }: { width?: number } = {}): BuiltCircuit {
+  return withArgs(
+    circuit(`Combiner_${width}w`, {
+      inputs: bitPorts(width),
+      outputs: { out: bus(width) },
+      meta: { category: 'utilities', icon: '⊣', description: 'Combines bits into a bus' },
+      eval: (io: Record<string, unknown>) => {
+        const w = (io.width as number | undefined) ?? 8;
+        let out = 0;
+        for (let i = 0; i < w; i++) out += ((io[`bit${i}`] as number) & 1) * 2 ** i;
+        return { out: out >>> 0 };
+      },
+    }),
+    { width },
+  );
+}
 
 /**
  * Splits 8-bit bus into 8 individual bits. `bit0` is the LSB; `bit7` is
