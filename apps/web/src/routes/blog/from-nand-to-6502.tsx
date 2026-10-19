@@ -117,12 +117,12 @@ function BuildingACPUPage() {
         </ErrorBoundary>
       </div>
 
-      <BlogFooter slug="building-a-cpu" />
+      <BlogFooter slug="from-nand-to-6502" />
     </>
   );
 }
 
-export const Route = createFileRoute('/blog/building-a-cpu')({
-  head: () => blogPostHead(getPost('building-a-cpu')),
+export const Route = createFileRoute('/blog/from-nand-to-6502')({
+  head: () => blogPostHead(getPost('from-nand-to-6502')),
   component: BuildingACPUPage,
 });

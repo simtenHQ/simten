@@ -20,12 +20,12 @@ void print_yay(void) {
     CONSOLE = 'Y';
 }
 
-void main(void) {
+int main(void) {
     print_smiley();
     print_space();
     print_yay();
     print_space();
     print_smiley();
     CONSOLE = '\n';
-    while(1);
+    return 0;
 }

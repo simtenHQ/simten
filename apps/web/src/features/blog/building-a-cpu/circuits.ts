@@ -1,5 +1,5 @@
 /**
- * Circuit definitions for the "Building a CPU" blog post.
+ * Circuit definitions for the "From NAND to a 6502" blog post.
  *
  * Reuses basic gates from splash and adds sequential circuits
  * (SR Latch, D Flip-Flop, Register, Counter) for the memory sections.

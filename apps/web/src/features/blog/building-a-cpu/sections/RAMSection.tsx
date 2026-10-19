@@ -4,30 +4,27 @@ import { BLOG_CIRCUITS } from '../circuits';
 export function RAMSection() {
   return (
     <section className="py-12">
-      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-        RAM: Read/Write Memory
-      </h2>
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">RAM</h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Registers store a few values. A CPU needs <em>thousands</em> of addressable bytes.
-          That&rsquo;s <strong className="text-gray-900 dark:text-white">RAM</strong>: an array of
-          memory cells, each with an address. You put an address on the bus and the data at that
-          address appears on the output.
+          Registers hold a handful of values. Programs need <em>thousands</em> of bytes, each at its
+          own address, and that&rsquo;s what{' '}
+          <strong className="text-gray-900 dark:text-white">RAM</strong> is for. Put an address in
+          and the byte stored there comes out.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The key insight:{' '}
-          <strong className="text-gray-900 dark:text-white">reads are instant</strong>{' '}
-          (combinational) but{' '}
-          <strong className="text-gray-900 dark:text-white">writes need a clock tick</strong>.
-          Change the <strong>addr</strong> input and <strong>data_out</strong> updates immediately.
-          To write: set <strong>addr</strong>, set <strong>data_in</strong>, turn{' '}
-          <strong>we</strong> (write-enable) ON, then <strong>Tick</strong>. Turn{' '}
-          <strong>we</strong> OFF and change the address to read it back.
+          In this RAM,{' '}
+          <strong className="text-gray-900 dark:text-white">reading happens straight away</strong>{' '}
+          and <strong className="text-gray-900 dark:text-white">writing waits for a tick</strong>.
+          Change <strong>addr</strong> and <strong>data_out</strong> follows. To write, set{' '}
+          <strong>addr</strong> and <strong>data_in</strong>, turn <strong>we</strong> (write
+          enable) on, and click <strong>Tick</strong>. Then turn <strong>we</strong> off and change
+          the address to read it back.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Try it: write the value 42 to address 1, then write 7 to address 2. Switch between
-          addresses to see both values are remembered. The 6502 has 2&nbsp;KB of RAM wired to its
-          address bus: same idea, just 2,048 locations instead of 256.
+          Write 42 to address 1 and 7 to address 2, then switch between the two addresses to read
+          them back. The 6502 computer at the end of this post has 2,048 bytes of RAM instead of
+          256, wired up the same way.
         </p>
       </div>
 

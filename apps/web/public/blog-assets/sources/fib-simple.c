@@ -17,7 +17,7 @@ void print_number(unsigned int n) {
     print_char('0' + (n % 10));
 }
 
-void main(void) {
+int main(void) {
     unsigned int a, b, next;
     unsigned char i;
 
@@ -33,6 +33,5 @@ void main(void) {
         b = next;
     }
     print_char('\n');
-
-    while(1);
+    return 0;
 }

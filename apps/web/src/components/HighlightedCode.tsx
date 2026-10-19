@@ -12,7 +12,7 @@ import { highlight } from 'sugar-high';
 // sugar-high is driven by CSS custom properties (--sh-*). Both palettes
 // below are exposed as arbitrary-property Tailwind classes; the `dark:`
 // variants kick in under class-based dark mode.
-const SH_THEME_CLASSES = [
+export const SH_THEME_CLASSES = [
   // Light mode: GitHub-light
   '[--sh-keyword:#d73a49]',
   '[--sh-identifier:#24292e]',
