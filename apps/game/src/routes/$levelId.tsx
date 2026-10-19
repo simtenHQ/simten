@@ -592,7 +592,10 @@ function PlayLevel({ level }: { level: Level }) {
                       // away finds none: wait for the first decorations pass,
                       // which is when the fold markers exist.
                       const fold = ed.getAction('editor.foldAllMarkerRegions');
-                      if (!fold) {
+                      // With its parts folded a stub is short, and its top is
+                      // the explanation: open there rather than scrolling past.
+                      const folds = ed.getModel()?.getValue().includes('// #region') ?? false;
+                      if (!fold || !folds) {
                         reveal();
                         return;
                       }
@@ -601,7 +604,7 @@ function PlayLevel({ level }: { level: Level }) {
                         if (done) return;
                         done = true;
                         listener.dispose();
-                        void fold.run().then(reveal);
+                        void fold.run();
                       };
                       const listener = ed.onDidChangeModelDecorations(run);
                       setTimeout(run, 400);

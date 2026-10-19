@@ -13,9 +13,15 @@
 import type { Level } from './types';
 
 export function givenParts(level: Level): string[] {
+  // Stubs that fold their parts keep them in one `#region`. Anything after it,
+  // like a CPU's Control carried over from the last level, is the player's.
+  const start = level.stub.indexOf('// #region');
+  const end = level.stub.indexOf('// #endregion');
+  const source = start >= 0 && end > start ? level.stub.slice(start, end) : level.stub;
+
   const parts: string[] = [];
-  for (const match of level.stub.matchAll(/^const (\w+) = circuit\('\1'/gm)) {
-    const body = level.stub.slice(match.index, level.stub.indexOf('\n});', match.index));
+  for (const match of source.matchAll(/^const (\w+) = circuit\('\1'/gm)) {
+    const body = source.slice(match.index, source.indexOf('\n});', match.index));
     if (match[1] !== level.target && !isSkeleton(body)) parts.push(match[1]);
   }
   return parts;

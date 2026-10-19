@@ -1,4 +1,4 @@
-/** Reference solution for `cpu`. Proven by `__tests__/levels.test.ts`. */
+/** Reference solution for `cpu-jumps`. Proven by `__tests__/levels.test.ts`. */
 
 import { bit, bus, circuit } from '@simten/core/circuit';
 import {
@@ -488,7 +488,6 @@ const Control = circuit('Control', {
     // LOAD (00) and the ALU instructions (01) write; jumps (1x) do not.
     inputs.op1.to(notOp1.in, both.a),
     notOp1.out.to(outputs.write),
-    // Of the two that write, only the ALU instructions write the ALU's answer.
     inputs.op0.to(outputs.useAlu, notOp0.in),
     // JUMP (10) always jumps; JUMP IF LESS (11) jumps when less is on.
     notOp0.out.to(either.a),
@@ -505,38 +504,38 @@ export const Cpu4 = circuit('Cpu4', {
     control: Control,
     regs: RegFile2,
     alu: Alu4,
-    less: LessThan4,
     choose: Choose4,
+    less: LessThan4,
     counter: ProgramCounter4,
     pc: HexDisplay({ width: 4 }),
     r0: HexDisplay({ width: 4 }),
     r1: HexDisplay({ width: 4 }),
   },
-  connect: ({ nodes: { i, fields, control, regs, alu, less, choose, counter, pc, r0, r1 } }) => [
+  connect: ({ nodes: { i, fields, control, regs, alu, choose, less, counter, pc, r0, r1 } }) => [
     i.out.to(fields.i),
     counter.pc.to(pc.in),
     regs.r0.to(r0.in),
     regs.r1.to(r1.in),
 
-    // ra is read on port a and is the register written; rb is read on port b.
-    fields.ra.to(regs.asel, regs.wsel),
-    fields.rb.to(regs.bsel),
-    regs.a.to(alu.a, less.a),
-    regs.b.to(alu.b, less.b),
-    fields.aluOp1.to(alu.op1),
-    fields.aluOp0.to(alu.op0),
-
+    fields.ra.to(regs.wsel),
     fields.op1.to(control.op1),
     fields.op0.to(control.op0),
-    less.lt.to(control.less),
-
-    // What gets written: n, or the ALU's answer.
     control.write.to(regs.write),
+    fields.ra.to(regs.asel),
+    fields.rb.to(regs.bsel),
+    regs.a.to(alu.a),
+    regs.b.to(alu.b),
+    fields.aluOp1.to(alu.op1),
+    fields.aluOp0.to(alu.op0),
     control.useAlu.to(choose.sel),
-    fields.n.to(choose.a, counter.a),
+    fields.n.to(choose.a),
     alu.r.to(choose.b),
     choose.out.to(regs.d),
 
+    regs.a.to(less.a),
+    regs.b.to(less.b),
+    less.lt.to(control.less),
     control.jump.to(counter.jump),
+    fields.n.to(counter.a),
   ],
 });

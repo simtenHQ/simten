@@ -58,11 +58,11 @@ describe('a wrong output', () => {
   });
 
   it('names the instruction a CPU step ran, not its bits', async () => {
-    const cpu = level('cpu');
+    const cpu = level('cpu-load');
     // The stub as given: nothing wired, so r0 is never loaded.
     const result = await grade(localRuntime(), cpu, cpu.stub);
     expect(explain(result, cpu)).toBe(
-      'At step 1 (LOAD r0, 1), r0 should be 1 but your circuit gives 0.',
+      'At step 1 (LOAD r0, 5), r0 should be 5 but your circuit gives 0.',
     );
   });
 

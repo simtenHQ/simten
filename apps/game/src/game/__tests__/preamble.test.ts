@@ -23,7 +23,9 @@ describe('given-preamble detection', () => {
       'less-than',
       'alu-4',
       'register-file',
-      'cpu',
+      'cpu-load',
+      'cpu-alu',
+      'cpu-jumps',
     ]);
   });
 
@@ -44,7 +46,7 @@ describe('given-preamble detection', () => {
   });
 
   it('opens on a part the player has to finish, ahead of the target', () => {
-    const cpu = LEVELS.find((l) => l.id === 'cpu');
+    const cpu = LEVELS.find((l) => l.id === 'cpu-load');
     if (!cpu) throw new Error('missing level');
     const lines = cpu.stub.split('\n');
     const at = givenPreambleEnd(lines);

@@ -183,17 +183,21 @@ Three sequential levels above `counter`, built the same way: single-bit inputs a
 - **Starter:** nothing handed over.
 - **Vectors:** 15 steps, including wrap from 15 to 0 and an address set with `jump` off, which must be ignored. Par 21, using the flip-flop's `q_bar` for bit 0.
 
-### 16. `cpu`: CPU
+### 16–18. The CPU, in three levels
 
-- **Where:** top of the Processor band, needing `alu-4` and `program-counter`, so all three lanes meet here.
-- **New idea:** an instruction is a set of bits wired straight to the control lines. Nothing new is built; the parts are handed over finished, with 4-bit bus ports.
-- **Instruction format** (8 bits): bits 7–6 the operation (`00` LOAD, `01` ALU, `10` JUMP, `11` JUMP IF LESS), bit 5 `ra`, bit 4 `rb`, bits 3–0 `n` (a number, an address, or in bits 1–0 the ALU op).
-  - `LOAD ra, n`, `ADD/SUB/AND/OR ra, rb` (into ra), `JUMP n`, `JUMP IF LESS ra, rb, n`.
-- **Interface:** `i` (8-bit) → `pc`, `r0`, `r1`. The grader plays memory: each step's `i` is the instruction at the address the last step left in `pc`.
-- **Program:** 4-bit Fibonacci. It loops twice, wraps 21 to 5, falls through, then runs SUB, AND and OR and stops on `JUMP 8`. 16 steps, every instruction used, the branch taken both ways.
-- **Parts:** handed over finished, with 4-bit bus ports: ALU, Less Than, Register File, Program Counter, plus `Instruction` (splits `i` into named fields `op1 op0 ra rb n aluOp1 aluOp0`) and `Choose4` (four `Mux2`s across a 4-bit value). These keep the canvas to about a dozen boxes without taking a decision away.
-- **Player work:** a `Control` unit, given as an empty skeleton with its ports (`op1`, `op0`, `less` in; `write`, `useAlu`, `jump` out), and the wiring between the parts: register selects from `ra`/`rb`, the ALU op from `aluOp1 aluOp0`, `Choose4` picking `n` or the ALU's answer. About 16 gates on top of the parts. Par 206. The editor opens on `Control`, and the "parts, finished" list leaves it out.
-- **Spec panel:** the program listing shows under the goal, and hovering a column shows the instruction that step ran.
+The CPU is built up the Processor band one kind of instruction at a time, the way a real one is brought up, rather than all at once. Each level starts from the last level's finished CPU, wired, with the new parts placed, and is tested by running a short program. The parts are folded away in one region.
+
+- **Instruction format** (8 bits): bits 7–6 the kind (`00` LOAD, `01` ALU, `10` JUMP, `11` JUMP IF LESS), bit 5 `ra`, bit 4 `rb`, bits 3–0 `n` (a number, an address, or in bits 1–0 the ALU op). `Instruction` splits it into named fields.
+- **The grader plays memory:** each step's input `i` is the instruction at the address the last step left in `pc`.
+- **`Control` grows with the CPU**, one output per level.
+
+| Level | Player adds | Control | Tested by | Par |
+|---|---|---|---|---|
+| `cpu-load` Load Instruction | Control, and wiring Instruction to the register file | `op1 op0 → write` | eight LOADs | 59 |
+| `cpu-alu` ALU Instructions | the ALU path: registers into the ALU, `Choose4` picking n or its answer | `+ useAlu`, and ALU instructions write too | LOADs, then ADD/SUB/AND/OR | 157 |
+| `cpu-jumps` Jumps | the program counter's jump, and the comparison | `+ less → jump` | 4-bit Fibonacci: loops twice, wraps, falls through, stops on `JUMP 8` (16 steps) | 206 |
+
+Load Instruction needs `alu-4` and `program-counter`, so all three lanes meet there. The level names avoid Turing Complete's (Registers, Instruction Decoder, Calculations, Conditions); the instruction set is our own, closer to RISC-V (compare two registers and branch to an address in the instruction).
 
 ## Buses
 

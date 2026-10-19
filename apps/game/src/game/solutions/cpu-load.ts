@@ -1,0 +1,196 @@
+/** Reference solution for `cpu-load`. Proven by `__tests__/levels.test.ts`. */
+
+import { bit, bus, circuit } from '@simten/core/circuit';
+import { And, Combiner, DFlipFlop, HexDisplay, Input, Nor, Splitter, Xor } from '@simten/core/std';
+
+const Mux2 = circuit('Mux2', {
+  inputs: { a: bit, b: bit, sel: bit },
+  outputs: { out: bit },
+  nodes: { x1: Xor, a1: And, x2: Xor },
+  connect: ({ inputs, outputs, nodes: { x1, a1, x2 } }) => [
+    inputs.a.to(x1.a, x2.a),
+    inputs.b.to(x1.b),
+    inputs.sel.to(a1.b),
+    x1.out.to(a1.a),
+    a1.out.to(x2.b),
+    x2.out.to(outputs.out),
+  ],
+});
+
+const RegisterBit = circuit('RegisterBit', {
+  inputs: { load: bit, d: bit },
+  outputs: { q: bit },
+  nodes: { ff: DFlipFlop(), x1: Xor, a1: And, x2: Xor },
+  connect: ({ inputs, outputs, nodes: { ff, x1, a1, x2 } }) => [
+    ff.q.to(x1.a, x2.a, outputs.q),
+    inputs.d.to(x1.b),
+    x1.out.to(a1.a),
+    inputs.load.to(a1.b),
+    a1.out.to(x2.b),
+    x2.out.to(ff.d),
+  ],
+});
+
+const Register4 = circuit('Register4', {
+  inputs: { load: bit, d3: bit, d2: bit, d1: bit, d0: bit },
+  outputs: { q3: bit, q2: bit, q1: bit, q0: bit },
+  nodes: { b3: RegisterBit, b2: RegisterBit, b1: RegisterBit, b0: RegisterBit },
+  connect: ({ inputs, outputs, nodes: { b3, b2, b1, b0 } }) => [
+    inputs.load.to(b3.load, b2.load, b1.load, b0.load),
+    inputs.d3.to(b3.d),
+    inputs.d2.to(b2.d),
+    inputs.d1.to(b1.d),
+    inputs.d0.to(b0.d),
+    b3.q.to(outputs.q3),
+    b2.q.to(outputs.q2),
+    b1.q.to(outputs.q1),
+    b0.q.to(outputs.q0),
+  ],
+});
+
+const RegFile2 = circuit('RegFile2', {
+  inputs: { write: bit, wsel: bit, asel: bit, bsel: bit, d: bus(4) },
+  outputs: { a: bus(4), b: bus(4), r0: bus(4), r1: bus(4) },
+  nodes: {
+    dBits: Splitter({ width: 4 }),
+    aBits: Combiner({ width: 4 }),
+    bBits: Combiner({ width: 4 }),
+    r0Bits: Combiner({ width: 4 }),
+    r1Bits: Combiner({ width: 4 }),
+    reg0: Register4,
+    reg1: Register4,
+    load1: And,
+    load0: Xor,
+    ma3: Mux2,
+    ma2: Mux2,
+    ma1: Mux2,
+    ma0: Mux2,
+    mb3: Mux2,
+    mb2: Mux2,
+    mb1: Mux2,
+    mb0: Mux2,
+  },
+  connect: ({
+    inputs,
+    outputs,
+    nodes: {
+      dBits,
+      aBits,
+      bBits,
+      r0Bits,
+      r1Bits,
+      reg0,
+      reg1,
+      load1,
+      load0,
+      ma3,
+      ma2,
+      ma1,
+      ma0,
+      mb3,
+      mb2,
+      mb1,
+      mb0,
+    },
+  }) => [
+    inputs.d.to(dBits.in),
+    aBits.out.to(outputs.a),
+    bBits.out.to(outputs.b),
+    r0Bits.out.to(outputs.r0),
+    r1Bits.out.to(outputs.r1),
+    inputs.write.to(load1.a, load0.a),
+    inputs.wsel.to(load1.b),
+    load1.out.to(reg1.load, load0.b),
+    load0.out.to(reg0.load),
+    dBits.bit3.to(reg0.d3, reg1.d3),
+    dBits.bit2.to(reg0.d2, reg1.d2),
+    dBits.bit1.to(reg0.d1, reg1.d1),
+    dBits.bit0.to(reg0.d0, reg1.d0),
+    inputs.asel.to(ma3.sel, ma2.sel, ma1.sel, ma0.sel),
+    reg0.q3.to(ma3.a),
+    reg1.q3.to(ma3.b),
+    ma3.out.to(aBits.bit3),
+    reg0.q2.to(ma2.a),
+    reg1.q2.to(ma2.b),
+    ma2.out.to(aBits.bit2),
+    reg0.q1.to(ma1.a),
+    reg1.q1.to(ma1.b),
+    ma1.out.to(aBits.bit1),
+    reg0.q0.to(ma0.a),
+    reg1.q0.to(ma0.b),
+    ma0.out.to(aBits.bit0),
+    inputs.bsel.to(mb3.sel, mb2.sel, mb1.sel, mb0.sel),
+    reg0.q3.to(mb3.a),
+    reg1.q3.to(mb3.b),
+    mb3.out.to(bBits.bit3),
+    reg0.q2.to(mb2.a),
+    reg1.q2.to(mb2.b),
+    mb2.out.to(bBits.bit2),
+    reg0.q1.to(mb1.a),
+    reg1.q1.to(mb1.b),
+    mb1.out.to(bBits.bit1),
+    reg0.q0.to(mb0.a),
+    reg1.q0.to(mb0.b),
+    mb0.out.to(bBits.bit0),
+    reg0.q3.to(r0Bits.bit3),
+    reg0.q2.to(r0Bits.bit2),
+    reg0.q1.to(r0Bits.bit1),
+    reg0.q0.to(r0Bits.bit0),
+    reg1.q3.to(r1Bits.bit3),
+    reg1.q2.to(r1Bits.bit2),
+    reg1.q1.to(r1Bits.bit1),
+    reg1.q0.to(r1Bits.bit0),
+  ],
+});
+
+const Instruction = circuit('Instruction', {
+  inputs: { i: bus(8) },
+  outputs: { op1: bit, op0: bit, ra: bit, rb: bit, n: bus(4), aluOp1: bit, aluOp0: bit },
+  nodes: { bits: Splitter({ width: 8 }), number: Combiner({ width: 4 }) },
+  connect: ({ inputs, outputs, nodes: { bits, number } }) => [
+    inputs.i.to(bits.in),
+    bits.bit7.to(outputs.op1),
+    bits.bit6.to(outputs.op0),
+    bits.bit5.to(outputs.ra),
+    bits.bit4.to(outputs.rb),
+    bits.bit3.to(number.bit3),
+    bits.bit2.to(number.bit2),
+    bits.bit1.to(number.bit1, outputs.aluOp1),
+    bits.bit0.to(number.bit0, outputs.aluOp0),
+    number.out.to(outputs.n),
+  ],
+});
+
+const Control = circuit('Control', {
+  inputs: { op1: bit, op0: bit },
+  outputs: { write: bit },
+  nodes: { none: Nor },
+  connect: ({ inputs, outputs, nodes: { none } }) => [
+    inputs.op1.to(none.a),
+    inputs.op0.to(none.b),
+    // Only a LOAD (00) writes.
+    none.out.to(outputs.write),
+  ],
+});
+
+export const Cpu4 = circuit('Cpu4', {
+  nodes: {
+    i: Input({ width: 8 }),
+    fields: Instruction,
+    control: Control,
+    regs: RegFile2,
+    r0: HexDisplay({ width: 4 }),
+    r1: HexDisplay({ width: 4 }),
+  },
+  connect: ({ nodes: { i, fields, control, regs, r0, r1 } }) => [
+    i.out.to(fields.i),
+    regs.r0.to(r0.in),
+    regs.r1.to(r1.in),
+
+    fields.ra.to(regs.wsel),
+    fields.op1.to(control.op1),
+    fields.op0.to(control.op0),
+    control.write.to(regs.write),
+    fields.n.to(regs.d),
+  ],
+});

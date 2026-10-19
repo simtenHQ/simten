@@ -466,15 +466,6 @@ const CHOOSE4 = `const Choose4 = circuit('Choose4', {
   ],
 });`;
 
-const CONTROL_SKELETON = `const Control = circuit('Control', {
-  inputs: { op1: bit, op0: bit, less: bit },
-  outputs: { write: bit, useAlu: bit, jump: bit },
-  nodes: {},
-  connect: ({ inputs, outputs, nodes: {} }) => [
-    //
-  ],
-});`;
-
 export const LEVELS: Level[] = [
   {
     id: 'nand',
@@ -1997,11 +1988,248 @@ export default circuit('ProgramCounter4', {
   },
 
   {
-    id: 'cpu',
-    title: 'CPU',
-    tagline: 'Run a program on the parts you built.',
+    id: 'cpu-load',
+    title: 'Load Instruction',
+    tagline: 'Make your CPU load a number into a register.',
     brief:
-      'Carry out each instruction `i` as it arrives. The table checks `pc`, `r0` and `r1` after every step. This is the program it runs:',
+      'Each step feeds your CPU one instruction, `i`. Make `LOAD ra, n` work: it puts the number n into register ra. This is the program it runs:',
+    target: 'Cpu4',
+    inputs: ['i'],
+    outputs: ['r0', 'r1'],
+    allowed: MEMORY_GATES,
+    sequential: true,
+    program: [
+      'LOAD r0, 5',
+      'LOAD r1, 3',
+      'LOAD r0, 9',
+      'LOAD r1, 12',
+      'LOAD r0, 0',
+      'LOAD r1, 3',
+      'LOAD r0, 5',
+      'LOAD r0, 15',
+    ],
+    labels: [
+      'LOAD r0, 5',
+      'LOAD r1, 3',
+      'LOAD r0, 9',
+      'LOAD r1, 12',
+      'LOAD r0, 0',
+      'LOAD r1, 3',
+      'LOAD r0, 5',
+      'LOAD r0, 15',
+    ],
+    stub: `// Your register file is folded away below, with Instruction,
+// a new part that splits an instruction into named fields.
+
+// #region Your parts, finished (click the arrow to read them)
+${MUX2}
+
+${REGISTER_BIT}
+
+${REGISTER4}
+
+${CPU_REGFILE}
+
+${CPU_INSTRUCTION}
+// #endregion
+
+// An instruction is 8 bits. Instruction splits it into:
+//   op1 op0  what kind it is. 00 is LOAD, the only kind so far.
+//   ra, rb   registers: 0 for r0, 1 for r1
+//   n        a number
+//
+// LOAD ra, n puts n into register ra. Control decides whether a
+// register gets written: only for a LOAD.
+
+const Control = circuit('Control', {
+  inputs: { op1: bit, op0: bit },
+  outputs: { write: bit },
+  nodes: {},
+  connect: ({ inputs, outputs, nodes: {} }) => [
+    //
+  ],
+});
+
+// Then wire Instruction, Control and the register file.
+// regs writes d into register wsel when write is on.
+export default circuit('Cpu4', {
+  nodes: {
+    i: Input({ width: 8 }),
+    fields: Instruction,
+    control: Control,
+    regs: RegFile2,
+    r0: HexDisplay({ width: 4 }),
+    r1: HexDisplay({ width: 4 }),
+  },
+  connect: ({ nodes: { i, fields, control, regs, r0, r1 } }) => [
+    i.out.to(fields.i),
+    regs.r0.to(r0.in),
+    regs.r1.to(r1.in),
+    //
+  ],
+});
+`,
+    // Ordered steps. The grader plays memory: each step's input is the
+    // instruction at the address the last step left in pc.
+    vectors: [
+      { inputs: { i: 5 }, expect: { r0: 5, r1: 0 } },
+      { inputs: { i: 35 }, expect: { r0: 5, r1: 3 } },
+      { inputs: { i: 9 }, expect: { r0: 9, r1: 3 } },
+      { inputs: { i: 44 }, expect: { r0: 9, r1: 12 } },
+      { inputs: { i: 0 }, expect: { r0: 0, r1: 12 } },
+      { inputs: { i: 35 }, expect: { r0: 0, r1: 3 } },
+      { inputs: { i: 5 }, expect: { r0: 5, r1: 3 } },
+      { inputs: { i: 15 }, expect: { r0: 15, r1: 3 } },
+    ],
+    par: 59,
+    outro: {
+      headline: 'It loads',
+      body: 'Instructions are just bits, and Control turns those bits into the wire that says what to do. Next it calculates.',
+    },
+  },
+
+  {
+    id: 'cpu-alu',
+    title: 'ALU Instructions',
+    tagline: 'Make your CPU add, subtract, AND and OR.',
+    brief:
+      'Your CPU can load. Make `ADD`, `SUB`, `AND` and `OR` work too: `ADD ra, rb` leaves ra + rb in ra. This is the program it runs:',
+    target: 'Cpu4',
+    inputs: ['i'],
+    outputs: ['r0', 'r1'],
+    allowed: MEMORY_GATES,
+    sequential: true,
+    program: [
+      'LOAD r0, 12',
+      'LOAD r1, 10',
+      'ADD r0, r1',
+      'SUB r0, r1',
+      'SUB r0, r1',
+      'LOAD r0, 12',
+      'AND r0, r1',
+      'LOAD r0, 5',
+      'OR r0, r1',
+      'ADD r1, r0',
+      'AND r1, r0',
+    ],
+    labels: [
+      'LOAD r0, 12',
+      'LOAD r1, 10',
+      'ADD r0, r1',
+      'SUB r0, r1',
+      'SUB r0, r1',
+      'LOAD r0, 12',
+      'AND r0, r1',
+      'LOAD r0, 5',
+      'OR r0, r1',
+      'ADD r1, r0',
+      'AND r1, r0',
+    ],
+    stub: `// Your CPU from the last level, with your ALU and Choose4 added.
+// The parts are folded away below.
+
+// #region Your parts, finished (click the arrow to read them)
+${MUX2}
+
+${MUX4}
+
+${HALF_ADDER}
+
+${FULL_ADDER}
+
+${ADDER4}
+
+${SUBTRACT4}
+
+${CPU_ALU}
+
+${REGISTER_BIT}
+
+${REGISTER4}
+
+${CPU_REGFILE}
+
+${CPU_INSTRUCTION}
+
+${CHOOSE4}
+// #endregion
+
+// ALU instructions have op1 op0 = 01. They run the ALU on
+// registers ra and rb, and write the answer back into ra.
+// aluOp1 aluOp0 (the low bits of n) say which operation.
+//
+// So ALU instructions write too, and Control needs a second
+// output, useAlu: write the ALU's answer instead of n.
+
+const Control = circuit('Control', {
+  inputs: { op1: bit, op0: bit },
+  outputs: { write: bit, useAlu: bit },
+  nodes: { none: Nor },
+  connect: ({ inputs, outputs, nodes: { none } }) => [
+    inputs.op1.to(none.a),
+    inputs.op0.to(none.b),
+    none.out.to(outputs.write),
+    // useAlu: new this level.
+  ],
+});
+
+// regs shows register asel on a and bsel on b. choose gives a
+// when sel is 0 and b when sel is 1.
+export default circuit('Cpu4', {
+  nodes: {
+    i: Input({ width: 8 }),
+    fields: Instruction,
+    control: Control,
+    regs: RegFile2,
+    alu: Alu4,
+    choose: Choose4,
+    r0: HexDisplay({ width: 4 }),
+    r1: HexDisplay({ width: 4 }),
+  },
+  connect: ({ nodes: { i, fields, control, regs, alu, choose, r0, r1 } }) => [
+    i.out.to(fields.i),
+    regs.r0.to(r0.in),
+    regs.r1.to(r1.in),
+
+    // From the last level.
+    fields.ra.to(regs.wsel),
+    fields.op1.to(control.op1),
+    fields.op0.to(control.op0),
+    control.write.to(regs.write),
+    fields.n.to(regs.d),
+
+    //
+  ],
+});
+`,
+    // Ordered steps. The grader plays memory: each step's input is the
+    // instruction at the address the last step left in pc.
+    vectors: [
+      { inputs: { i: 12 }, expect: { r0: 12, r1: 0 } },
+      { inputs: { i: 42 }, expect: { r0: 12, r1: 10 } },
+      { inputs: { i: 80 }, expect: { r0: 6, r1: 10 } },
+      { inputs: { i: 81 }, expect: { r0: 12, r1: 10 } },
+      { inputs: { i: 81 }, expect: { r0: 2, r1: 10 } },
+      { inputs: { i: 12 }, expect: { r0: 12, r1: 10 } },
+      { inputs: { i: 82 }, expect: { r0: 8, r1: 10 } },
+      { inputs: { i: 5 }, expect: { r0: 5, r1: 10 } },
+      { inputs: { i: 83 }, expect: { r0: 15, r1: 10 } },
+      { inputs: { i: 96 }, expect: { r0: 15, r1: 9 } },
+      { inputs: { i: 98 }, expect: { r0: 15, r1: 9 } },
+    ],
+    par: 157,
+    outro: {
+      headline: 'It calculates',
+      body: 'Load numbers, then do maths on them. One thing missing: every program runs straight through once. Next, jumps.',
+    },
+  },
+
+  {
+    id: 'cpu-jumps',
+    title: 'Jumps',
+    tagline: 'Make your CPU jump, and loop.',
+    brief:
+      'Make `JUMP n` and `JUMP IF LESS ra, rb, n` work. Then your CPU runs this program, a loop that adds up Fibonacci numbers:',
     target: 'Cpu4',
     inputs: ['i'],
     outputs: ['pc', 'r0', 'r1'],
@@ -2036,8 +2264,8 @@ export default circuit('ProgramCounter4', {
       'JUMP 8',
       'JUMP 8',
     ],
-    stub: `// Everything but Control is finished, folded away below.
-// The rest is wiring.
+    stub: `// Your CPU so far, with your program counter and LessThan added.
+// The parts are folded away below.
 
 // #region Your parts, finished (click the arrow to read them)
 ${MUX2}
@@ -2069,19 +2297,27 @@ ${CPU_INSTRUCTION}
 ${CHOOSE4}
 // #endregion
 
-// Control: make it do this. less means ra < rb, and - means it
-// doesn't matter.
+// The program counter says which instruction comes next. It
+// counts up each step, or loads a when jump is on.
 //
-//   op1 op0 | write useAlu jump  | instruction
-//    0   0  |   1     0     0    | LOAD ra, n             ra = n
-//    0   1  |   1     1     0    | ADD/SUB/AND/OR ra, rb  ra = ra op rb
-//    1   0  |   0     -     1    | JUMP n                 go to n
-//    1   1  |   0     -    less  | JUMP IF LESS ra,rb,n   go to n if ra < rb
-${CONTROL_SKELETON}
+// JUMP n (op1 op0 = 10) jumps to n. JUMP IF LESS ra, rb, n
+// (11) jumps only if ra < rb. Neither writes a register.
+//
+// Control gets a new input, less, and a new output, jump.
 
-// Then wire the parts. Their ports show on the canvas.
-// ra is the register read on regs.a and the one written; rb is read
-// on regs.b. choose gives n when sel is 0, the ALU's answer when 1.
+const Control = circuit('Control', {
+  inputs: { op1: bit, op0: bit, less: bit },
+  outputs: { write: bit, useAlu: bit, jump: bit },
+  nodes: { notOp1: Not },
+  connect: ({ inputs, outputs, nodes: { notOp1 } }) => [
+    inputs.op1.to(notOp1.in),
+    notOp1.out.to(outputs.write),
+    inputs.op0.to(outputs.useAlu),
+    // jump: new this level.
+  ],
+});
+
+// less.lt is on when its a is smaller than its b.
 export default circuit('Cpu4', {
   nodes: {
     i: Input({ width: 8 }),
@@ -2089,25 +2325,41 @@ export default circuit('Cpu4', {
     control: Control,
     regs: RegFile2,
     alu: Alu4,
-    less: LessThan4,
     choose: Choose4,
+    less: LessThan4,
     counter: ProgramCounter4,
     pc: HexDisplay({ width: 4 }),
     r0: HexDisplay({ width: 4 }),
     r1: HexDisplay({ width: 4 }),
   },
-  connect: ({ nodes: { i, fields, control, regs, alu, less, choose, counter, pc, r0, r1 } }) => [
+  connect: ({ nodes: { i, fields, control, regs, alu, choose, less, counter, pc, r0, r1 } }) => [
     i.out.to(fields.i),
     counter.pc.to(pc.in),
     regs.r0.to(r0.in),
     regs.r1.to(r1.in),
+
+    // From the last levels.
+    fields.ra.to(regs.wsel),
+    fields.op1.to(control.op1),
+    fields.op0.to(control.op0),
+    control.write.to(regs.write),
+    fields.ra.to(regs.asel),
+    fields.rb.to(regs.bsel),
+    regs.a.to(alu.a),
+    regs.b.to(alu.b),
+    fields.aluOp1.to(alu.op1),
+    fields.aluOp0.to(alu.op0),
+    control.useAlu.to(choose.sel),
+    fields.n.to(choose.a),
+    alu.r.to(choose.b),
+    choose.out.to(regs.d),
+
     //
   ],
 });
 `,
-    // Ordered steps, starting from pc 0 with both registers 0. The grader plays
-    // memory: each step's input is the instruction at the address the last
-    // step left in pc, jumps included.
+    // Ordered steps. The grader plays memory: each step's input is the
+    // instruction at the address the last step left in pc.
     vectors: [
       { inputs: { i: 1 }, expect: { pc: 1, r0: 1, r1: 0 } },
       { inputs: { i: 33 }, expect: { pc: 2, r0: 1, r1: 1 } },
@@ -2129,7 +2381,7 @@ export default circuit('Cpu4', {
     par: 206,
     outro: {
       headline: 'It runs',
-      body: 'Every part of that was built from the NAND gate you started with, and it just ran a program. Real CPUs are the same idea, with wider numbers and more instructions.',
+      body: 'Every part of that was built from the NAND gate you started with, and it just ran a loop. Real CPUs are the same idea, with wider numbers and more instructions.',
     },
   },
 ];

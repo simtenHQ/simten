@@ -22,8 +22,10 @@ describe('givenParts', () => {
   });
 
   it('leaves out a part the player is meant to finish', () => {
-    expect(parts('cpu')).not.toContain('Control');
-    expect(parts('cpu')).toContain('Instruction');
+    expect(parts('cpu-load')).not.toContain('Control');
+    expect(parts('cpu-load')).toContain('Instruction');
+    // Carried over from the last level, so not empty, but still theirs.
+    expect(parts('cpu-jumps')).not.toContain('Control');
   });
 
   it('lists nothing when the stub only holds the circuit to write', () => {

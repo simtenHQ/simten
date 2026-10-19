@@ -41,7 +41,9 @@ export const MAP_ROWS: string[][] = [
   ['mux-4', 'less-than', 'register-file'],
   ['parity', 'program-counter'],
   ['alu-4'],
-  ['cpu'],
+  ['cpu-load'],
+  ['cpu-alu'],
+  ['cpu-jumps'],
 ];
 
 /**
@@ -88,7 +90,9 @@ export const MAP_COLUMNS: Record<string, number> = {
 
   // Over the tops of the two columns it needs.
   'alu-4': -1,
-  cpu: 0,
+  'cpu-load': 0,
+  'cpu-alu': 0,
+  'cpu-jumps': 0,
 };
 
 /**
@@ -153,8 +157,11 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   'alu-4': ['parity', 'less-than'],
 
   // Where everything meets: the ALU, and the program counter at the top of
-  // memory.
-  cpu: ['alu-4', 'program-counter'],
+  // memory. The CPU is then built in three steps, one kind of instruction
+  // each, the way a real one is brought up.
+  'cpu-load': ['alu-4', 'program-counter'],
+  'cpu-alu': ['cpu-load'],
+  'cpu-jumps': ['cpu-alu'],
 };
 
 export interface MapSection {
