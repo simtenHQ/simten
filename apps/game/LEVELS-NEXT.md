@@ -9,21 +9,23 @@ This is the next section only. The longer arc (an 8-bit CPU, machine code, an as
 The map forks after `making-a-component`. This section adds a logic column and an arithmetic column, so no existing level gets new prerequisites and nobody's progress changes. The new arithmetic branches off the full adder, so the fork is four columns wide:
 
 ```
-alu-4 (needs parity and less-than)
+PROCESSOR    alu-4
+
+LOGIC        ARITHMETIC                 MEMORY
 parity
 mux-4        less-than
 decoder      subtract
-equal        negate                    counter
-wide-gates   adder-4  <-.              |      ^
-majority                full-adder ----'   toggle
-multiplexer
-                        half-adder         d-latch
-                                           latch
+equal        negate                     counter
+wide-gates   adder-4                    toggle
+majority                   full-adder   d-latch
+multiplexer                half-adder   latch
 ```
 
-`alu-4` is the first level that needs two columns finished. It requires the top of each (`parity` and `less-than`) and sits over them.
+The fork is three lanes side by side, each labelled at its foot, and the ALU opens a new full-width "Processor" band above them. That band is where the registers and the CPU go later.
 
-Why four columns: the full adder feeds both `adder-4` and `counter`. With either one directly above it, the other's wire runs through it and reads as a dependency that isn't there. Branching the new arithmetic off to the left leaves the square above the full adder empty for the counter's wire.
+`alu-4` is the first level that needs two lanes finished. It requires the top of each (`parity` and `less-than`).
+
+Why the arithmetic lane is two columns wide: the full adder feeds both `adder-4` and `counter`. With `adder-4` directly above it, the counter's wire would run through it and read as a dependency that isn't there. Branching the new arithmetic off to the left leaves the column above the full adder empty, so the counter's wire climbs it and turns in under the counter, which sits at the top of the memory lane.
 
 `counter` keeps its requirements (`full-adder` and `toggle`).
 
@@ -31,7 +33,7 @@ Map changes, all in `map.ts`:
 
 - `MAP_ROWS`: ranks only. `MAP_COLUMNS` pins each fork level to a column, so a row of two no longer re-centres and drifts off its branch.
 - `MAP_REQUIRES`: each new level needs the one below it in its column (`equal` sits in the logic column after `wide-gates`, since it is XNORs plus a four-input AND and no arithmetic), `multiplexer` needs `making-a-component`, `adder-4` needs `full-adder`, and `alu-4` needs `parity` and `less-than`.
-- `MAP_SECTIONS`: the band is now "Logic, arithmetic and memory".
+- `MAP_SECTIONS`: a section can be a lane (`columns`) instead of a full-width band. The fork is lanes for Logic, Arithmetic and Memory, and "Processor" starts at the ALU.
 - Width: four 210px nodes plus gaps is about 970px, and the bands are 1010px. Fine on desktop. Not yet checked on a phone.
 
 ## Conventions for every level
