@@ -582,7 +582,29 @@ function PlayLevel({ level }: { level: Level }) {
                     intellisense={intellisense}
                     onMount={(ed) => {
                       const at = givenPreambleEnd(ed.getModel()?.getLinesContent() ?? []);
-                      if (at !== null) ed.revealLineNearTop(at, 0);
+                      const reveal = () => {
+                        if (at !== null) ed.revealLineNearTop(at, 0);
+                      };
+                      // Stubs keep the parts they hand over in one `#region`.
+                      // Fold it, so the level opens on what the player writes;
+                      // the arrow beside it expands the parts to read. Monaco
+                      // works out the regions after mount, so folding straight
+                      // away finds none: wait for the first decorations pass,
+                      // which is when the fold markers exist.
+                      const fold = ed.getAction('editor.foldAllMarkerRegions');
+                      if (!fold) {
+                        reveal();
+                        return;
+                      }
+                      let done = false;
+                      const run = () => {
+                        if (done) return;
+                        done = true;
+                        listener.dispose();
+                        void fold.run().then(reveal);
+                      };
+                      const listener = ed.onDidChangeModelDecorations(run);
+                      setTimeout(run, 400);
                     }}
                     beforeMount={registerSimtenThemes}
                     theme={SIMTEN_DARK}

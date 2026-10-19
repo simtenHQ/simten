@@ -470,7 +470,7 @@ const CONTROL_SKELETON = `const Control = circuit('Control', {
   inputs: { op1: bit, op0: bit, less: bit },
   outputs: { write: bit, useAlu: bit, jump: bit },
   nodes: {},
-  connect: ({ inputs, outputs }) => [
+  connect: ({ inputs, outputs, nodes: {} }) => [
     //
   ],
 });`;
@@ -1386,7 +1386,9 @@ export default circuit('Decoder2', {
     stub: `// Your multiplexer from earlier, finished, with ports so it
 // works as a part.
 
+// #region Your parts, finished (click the arrow to read them)
 ${MUX2}
+// #endregion
 
 // s1 s0 is a number from 0 to 3, like the decoder's input.
 // One Mux2 can narrow d0 and d1 down to one signal.
@@ -1494,9 +1496,11 @@ export default circuit('Parity4', {
     allowed: ARITHMETIC_GATES,
     stub: `// Your half adder and full adder, finished, with ports.
 
+// #region Your parts, finished (click the arrow to read them)
 ${HALF_ADDER}
 
 ${FULL_ADDER}
+// #endregion
 
 // One adder per bit, the same way you add on paper: start at
 // bit 0 and carry into the next column. Nothing carries into
@@ -1615,11 +1619,13 @@ export default circuit('Negate4', {
     allowed: ARITHMETIC_GATES,
     stub: `// Your 4-bit adder, finished, with the parts it is made of.
 
+// #region Your parts, finished (click the arrow to read them)
 ${HALF_ADDER}
 
 ${FULL_ADDER}
 
 ${ADDER4}
+// #endregion
 
 // a - b is a plus the negative of b. You could negate b and add,
 // but then cout would not tell you when b was the bigger one.
@@ -1680,6 +1686,7 @@ export default circuit('Subtract4', {
     allowed: ARITHMETIC_GATES,
     stub: `// Your subtractor, finished, with the parts it is made of.
 
+// #region Your parts, finished (click the arrow to read them)
 ${HALF_ADDER}
 
 ${FULL_ADDER}
@@ -1687,6 +1694,7 @@ ${FULL_ADDER}
 ${ADDER4}
 
 ${SUBTRACT4}
+// #endregion
 
 // Both numbers run from 0 to 15 here, no negatives. You already
 // have something that knows when b is bigger than a.
@@ -1741,6 +1749,7 @@ export default circuit('LessThan4', {
     stub: `// Everything you need is below, finished: your multiplexers,
 // your adder and your subtractor.
 
+// #region Your parts, finished (click the arrow to read them)
 ${MUX2}
 
 ${MUX4}
@@ -1752,6 +1761,7 @@ ${FULL_ADDER}
 ${ADDER4}
 
 ${SUBTRACT4}
+// #endregion
 
 // Work out all four answers at once, whatever op says. Then,
 // for each output bit, let op1 op0 pick which answer it shows.
@@ -1867,9 +1877,11 @@ export default circuit('Register4', {
     sequential: true,
     stub: `// Your register, finished, with ports.
 
+// #region Your parts, finished (click the arrow to read them)
 ${REGISTER_BIT}
 
 ${REGISTER4}
+// #endregion
 
 // Two of them, numbered 0 and 1. Each needs its own load line,
 // on only when write is on and wsel names it.
@@ -2024,9 +2036,10 @@ export default circuit('ProgramCounter4', {
       'JUMP 8',
       'JUMP 8',
     ],
-    stub: `// Every part is finished, below, apart from Control, which is
-// yours. The rest is wiring.
+    stub: `// Everything but Control is finished, folded away below.
+// The rest is wiring.
 
+// #region Your parts, finished (click the arrow to read them)
 ${MUX2}
 
 ${MUX4}
@@ -2054,23 +2067,43 @@ ${CPU_PC}
 ${CPU_INSTRUCTION}
 
 ${CHOOSE4}
+// #endregion
 
-// An instruction is 8 bits, and Instruction splits it up:
+// The parts, each one you built (inputs → outputs):
+//   Alu4             ALU            op1 op0 a b → r
+//   LessThan4        Less Than      a b → lt
+//   RegFile2         Register File  write wsel asel bsel d → a b r0 r1
+//                    On write, d goes into register wsel. a and
+//                    b show registers asel and bsel.
+//   ProgramCounter4  Program Counter  jump a → pc
+//                    Counts up, or loads a when jump is on.
+// And two new ones that are only plumbing:
+//   Instruction      i → op1 op0 ra rb n aluOp1 aluOp0
+//                    Splits an instruction into its parts.
+//   Choose4          sel a b → out
+//                    Four of your multiplexers side by side:
+//                    sel 0 gives a, sel 1 gives b.
+//
+// An instruction is 8 bits:
 //   op1 op0  what to do: 00 LOAD, 01 ALU, 10 JUMP, 11 JUMP IF LESS
 //   ra       a register: 0 for r0, 1 for r1
 //   rb       the other register
-//   n        a number or an address, and its low two bits,
-//            aluOp1 aluOp0, are the ALU op
+//   n        a number or an address. Its low two bits are
+//            also aluOp1 aluOp0, the ALU's op.
 //
 //   LOAD ra, n              ra = n
 //   ADD/SUB/AND/OR ra, rb   ra = ra op rb
 //   JUMP n                  go to n
 //   JUMP IF LESS ra, rb, n  go to n if ra < rb
 //
-// Control decides from op1, op0 and less (is ra < rb?):
-//   write   should a register be written?
-//   useAlu  write the ALU's answer rather than n?
-//   jump    should the program counter jump to n?
+// Control is yours. Here is what it has to do (less is
+// whether ra < rb, and - means it does not matter):
+//
+//   op1 op0 | write useAlu jump
+//    0   0  |   1     0     0      LOAD
+//    0   1  |   1     1     0      ALU
+//    1   0  |   0     -     1      JUMP
+//    1   1  |   0     -    less    JUMP IF LESS
 
 ${CONTROL_SKELETON}
 
