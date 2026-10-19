@@ -28,6 +28,7 @@
  * test-only means finding something else for an unopened level to inspect to.
  */
 
+import adder4 from './adder-4.ts?raw';
 import andGate from './and.ts?raw';
 import counter from './counter.ts?raw';
 import dLatch from './d-latch.ts?raw';
@@ -70,4 +71,5 @@ export const SOLUTIONS: Record<string, string> = {
   decoder,
   'mux-4': mux4,
   parity,
+  'adder-4': adder4,
 };

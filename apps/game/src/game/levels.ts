@@ -71,6 +71,34 @@ const MUX2 = `const Mux2 = circuit('Mux2', {
   ],
 });`;
 
+const HALF_ADDER = `const HalfAdder = circuit('HalfAdder', {
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
+  nodes: { x1: Xor, a1: And },
+  connect: ({ inputs, outputs, nodes: { x1, a1 } }) => [
+    inputs.a.to(x1.a, a1.a),
+    inputs.b.to(x1.b, a1.b),
+    x1.out.to(outputs.sum),
+    a1.out.to(outputs.carry),
+  ],
+});`;
+
+const FULL_ADDER = `const FullAdder = circuit('FullAdder', {
+  inputs: { a: bit, b: bit, cin: bit },
+  outputs: { sum: bit, cout: bit },
+  nodes: { h1: HalfAdder, h2: HalfAdder, o1: Or },
+  connect: ({ inputs, outputs, nodes: { h1, h2, o1 } }) => [
+    inputs.a.to(h1.a),
+    inputs.b.to(h1.b),
+    h1.sum.to(h2.a),
+    inputs.cin.to(h2.b),
+    h2.sum.to(outputs.sum),
+    h1.carry.to(o1.a),
+    h2.carry.to(o1.b),
+    o1.out.to(outputs.cout),
+  ],
+});`;
+
 export const LEVELS: Level[] = [
   {
     id: 'nand',
@@ -969,6 +997,106 @@ export default circuit('Parity4', {
     outro: {
       headline: 'Odd one out',
       body: 'XOR is on when an odd number of its inputs are, and chaining keeps that true. Send this bit along with your data and any single flipped bit shows up, which is why serial links and some memory carry one.',
+    },
+  },
+
+  {
+    id: 'adder-4',
+    title: '4-Bit Adder',
+    tagline: 'Add two 4-bit numbers.',
+    brief:
+      'Add `a3 a2 a1 a0` to `b3 b2 b1 b0`. The sum goes on `s3` to `s0`, and anything too big for four bits lights `cout`',
+    target: 'Adder4',
+    inputs: ['a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
+    outputs: ['s3', 's2', 's1', 's0', 'cout'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// Your half adder and full adder, finished, with ports.
+
+${HALF_ADDER}
+
+${FULL_ADDER}
+
+// One adder per bit, the same way you add on paper: start at
+// bit 0 and carry into the next column. Nothing carries into
+// bit 0, so it does not need a full adder.
+
+export default circuit('Adder4', {
+  nodes: {
+    a3: Switch,
+    a2: Switch,
+    a1: Switch,
+    a0: Switch,
+    b3: Switch,
+    b2: Switch,
+    b1: Switch,
+    b0: Switch,
+    s3: Led,
+    s2: Led,
+    s1: Led,
+    s0: Led,
+    cout: Led,
+  },
+  connect: ({ nodes: { a3, a2, a1, a0, b3, b2, b1, b0, s3, s2, s1, s0, cout } }) => [
+    //
+  ],
+});
+`,
+    // 12 of the 256 sums, picked so every carry gets used: 15 + 1 ripples
+    // through all four bits, and 15 + 15 overflows with every bit set.
+    vectors: [
+      {
+        inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 0 },
+        expect: { s3: 0, s2: 0, s1: 0, s0: 0, cout: 0 },
+      },
+      {
+        inputs: { a3: 0, a2: 0, a1: 0, a0: 1, b3: 0, b2: 0, b1: 0, b0: 1 },
+        expect: { s3: 0, s2: 0, s1: 1, s0: 0, cout: 0 },
+      },
+      {
+        inputs: { a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 0, b1: 1, b0: 1 },
+        expect: { s3: 1, s2: 0, s1: 0, s0: 0, cout: 0 },
+      },
+      {
+        inputs: { a3: 0, a2: 1, a1: 1, a0: 1, b3: 1, b2: 0, b1: 0, b0: 0 },
+        expect: { s3: 1, s2: 1, s1: 1, s0: 1, cout: 0 },
+      },
+      {
+        inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 0, b2: 0, b1: 0, b0: 1 },
+        expect: { s3: 0, s2: 0, s1: 0, s0: 0, cout: 1 },
+      },
+      {
+        inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 1, b1: 1, b0: 1 },
+        expect: { s3: 1, s2: 1, s1: 1, s0: 0, cout: 1 },
+      },
+      {
+        inputs: { a3: 1, a2: 0, a1: 0, a0: 0, b3: 1, b2: 0, b1: 0, b0: 0 },
+        expect: { s3: 0, s2: 0, s1: 0, s0: 0, cout: 1 },
+      },
+      {
+        inputs: { a3: 0, a2: 1, a1: 1, a0: 0, b3: 1, b2: 0, b1: 0, b0: 1 },
+        expect: { s3: 1, s2: 1, s1: 1, s0: 1, cout: 0 },
+      },
+      {
+        inputs: { a3: 1, a2: 0, a1: 1, a0: 0, b3: 0, b2: 1, b1: 0, b0: 1 },
+        expect: { s3: 1, s2: 1, s1: 1, s0: 1, cout: 0 },
+      },
+      {
+        inputs: { a3: 0, a2: 0, a1: 1, a0: 1, b3: 1, b2: 1, b1: 0, b0: 1 },
+        expect: { s3: 0, s2: 0, s1: 0, s0: 0, cout: 1 },
+      },
+      {
+        inputs: { a3: 0, a2: 1, a1: 1, a0: 1, b3: 0, b2: 0, b1: 0, b0: 1 },
+        expect: { s3: 1, s2: 0, s1: 0, s0: 0, cout: 0 },
+      },
+      {
+        inputs: { a3: 1, a2: 1, a1: 0, a0: 0, b3: 0, b2: 1, b1: 0, b0: 0 },
+        expect: { s3: 0, s2: 0, s1: 0, s0: 0, cout: 1 },
+      },
+    ],
+    par: 17,
+    outro: {
+      headline: 'Ripple carry',
+      body: 'Each bit waits for the carry from the one below, so the answer ripples up from bit 0. Real CPUs spend extra gates working the carries out ahead of time, because waiting on 64 of them is slow.',
     },
   },
 ];
