@@ -4,35 +4,30 @@ import { GATE_CIRCUITS } from '../circuits';
 export function GatesSection() {
   return (
     <section className="py-12">
-      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-        Starting from Nothing: The NAND Gate
-      </h2>
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">The NAND gate</h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Every computer ever built, from the Apollo Guidance Computer to the M4 chip in your
-          MacBook, can be constructed from a single type of logic gate:{' '}
-          <strong className="text-gray-900 dark:text-white">NAND</strong>.
+          Any digital logic can be built from one kind of gate, the{' '}
+          <strong className="text-gray-900 dark:text-white">NAND</strong>. Real chips aren&rsquo;t
+          designed that way, but it&rsquo;s the simplest place to start.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          A NAND gate outputs 0 only when <em>both</em> its inputs are 1. That&rsquo;s it. From this
-          one building block, we can create every other logic gate, and from those gates, an entire
-          computer.
+          A NAND gate outputs 0 when <em>both</em> its inputs are 1, and 1 the rest of the time.
+          Every other gate can be made out of NANDs, and everything further down this page is made
+          out of those gates.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Let&rsquo;s start by building the basic gates. Click the switches to toggle inputs and
-          watch the output LED respond.
+          Here are the basic gates, each built from NANDs. Click a switch to flip an input.
         </p>
       </div>
 
       <div className="mt-8 space-y-8">
         {/* NOT Gate */}
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            NOT: The Inverter
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">NOT</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            Wire both NAND inputs together. When the input is 1, both NAND inputs are 1, so the
-            output is 0. Inversion!
+            Tie both NAND inputs together. A 1 going in means both inputs are 1, so a 0 comes out,
+            and a 0 going in gives a 1.
           </p>
           <CircuitEmbed
             circuit={GATE_CIRCUITS.inverter.circuit}
@@ -45,8 +40,8 @@ export function GatesSection() {
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">AND Gate</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            NAND followed by NOT. The double negation cancels out, giving us a gate that outputs 1
-            only when both inputs are 1.
+            A NAND followed by a NOT. Inverting the output again leaves a gate that gives 1 only
+            when both inputs are 1.
           </p>
           <CircuitEmbed
             circuit={GATE_CIRCUITS.and.circuit}
@@ -59,8 +54,8 @@ export function GatesSection() {
         <div>
           <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">OR Gate</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            De Morgan&rsquo;s theorem in action: NOT each input, then NAND the results. The output
-            is 1 when <em>either</em> input is 1.
+            Invert each input, then NAND them together (De Morgan&rsquo;s law). The output is 1 when{' '}
+            <em>either</em> input is 1.
           </p>
           <CircuitEmbed
             circuit={GATE_CIRCUITS.or.circuit}
@@ -71,12 +66,10 @@ export function GatesSection() {
 
         {/* XOR Gate */}
         <div>
-          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
-            XOR: Exclusive OR
-          </h3>
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">XOR</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-3">
-            The &ldquo;difference detector&rdquo;: outputs 1 only when inputs are <em>different</em>
-            . Built from 4 NAND gates. This one is essential for arithmetic.
+            Outputs 1 when the inputs are <em>different</em>. It takes four NANDs, and it does most
+            of the work in the adders below.
           </p>
           <CircuitEmbed
             circuit={GATE_CIRCUITS.xor.circuit}
