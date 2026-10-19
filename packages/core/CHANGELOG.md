@@ -1,5 +1,17 @@
 # @simten/core
 
+## 0.22.0
+
+### Minor Changes
+
+- 5dd1c45: Add `Splitter({ width })` and `Combiner({ width })`, which split a bus of any width into `bit0`…`bitN-1` and join bits back into a bus.
+
+  Breaking: the old `Splitter`, which split a byte into two 4-bit halves, is now `NibbleSplitter`. Its ports are unchanged. `Splitter8to8` and `Combiner8to8` still work and match `Splitter({ width: 8 })` and `Combiner({ width: 8 })`.
+
+### Patch Changes
+
+- 5dd1c45: A circuit with inputs and outputs but no nodes and no `eval` is now an empty composite rather than a primitive. Its outputs are simply undriven, and a pass-through built this way now carries its signal (#147) and exports as a plain `assign`.
+
 ## 0.21.0
 
 ### Minor Changes

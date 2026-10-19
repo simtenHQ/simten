@@ -1,5 +1,14 @@
 # @simten/ui
 
+## 0.15.6
+
+### Patch Changes
+
+- 5dd1c45: Splitter and Combiner nodes show the name you wrote, `Splitter(4)`, rather than the per-width name they register under.
+- Updated dependencies [5dd1c45]
+- Updated dependencies [5dd1c45]
+  - @simten/core@0.22.0
+
 ## 0.15.5
 
 ### Patch Changes
