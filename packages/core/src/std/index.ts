@@ -65,6 +65,10 @@ export { hasMadeOf, MADE_OF, MADE_OF_NAMES, type MadeOfBuilder } from './made-of
 
 // Memory
 export { DualPortRAM, RAM, ROM, romFromBytes, romFromEntries, romFromWords } from './memory.js';
+// MOS 6502 (cycle-accurate core — see ./mos6502-cpu.ts). Its bus and decode
+// blocks stay internal; the core and the ALU are the public pieces.
+export { MOS6502_ALU } from './mos6502.js';
+export { MOS6502_Core } from './mos6502-cpu.js';
 // Networking
 export {
   Eth_AddrClassifier,
@@ -129,6 +133,8 @@ import * as Display from './display.js';
 import * as IO from './io.js';
 import * as Logic from './logic.js';
 import * as Memory from './memory.js';
+import { MOS6502_ALU } from './mos6502.js';
+import * as MOS6502Cpu from './mos6502-cpu.js';
 import * as Networking from './networking.js';
 import * as Reconstruction from './reconstruction.js';
 import * as Routing from './routing.js';
@@ -150,6 +156,8 @@ const _allExports: unknown[] = [
   ...Object.values(Display),
   ...Object.values(RV32I),
   ...Object.values(RV32ICpu),
+  MOS6502_ALU,
+  ...Object.values(MOS6502Cpu),
   ...Object.values(Networking),
 ];
 

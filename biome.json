@@ -13,6 +13,7 @@
       "!**/.source",
       "!**/worker-configuration.d.ts",
       "!hardware/**/vendor",
+      "!packages/core/src/std/__tests__/mos6502/**/*.json",
       "!apps/web/public",
       "!**/*.min.js",
       "!**/*.css"
