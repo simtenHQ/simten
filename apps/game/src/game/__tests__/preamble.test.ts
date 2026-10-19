@@ -42,4 +42,13 @@ describe('given-preamble detection', () => {
     if (at === null) throw new Error('expected a preamble');
     expect(lines[at - 1]).toContain("export default circuit('FullAdder'");
   });
+
+  it('opens on a part the player has to finish, ahead of the target', () => {
+    const cpu = LEVELS.find((l) => l.id === 'cpu');
+    if (!cpu) throw new Error('missing level');
+    const lines = cpu.stub.split('\n');
+    const at = givenPreambleEnd(lines);
+    if (at === null) throw new Error('expected a preamble');
+    expect(lines[at - 1]).toContain("const Control = circuit('Control'");
+  });
 });

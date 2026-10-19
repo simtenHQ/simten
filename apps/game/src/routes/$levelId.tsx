@@ -42,6 +42,7 @@ import ThemeToggle from '../components/ThemeToggle';
 import { forbiddenPrimitives, grade, permittedFor } from '../game/grade';
 import { nameDiagnostics } from '../game/level-name';
 import { LEVELS_BY_ID, nextLevel } from '../game/levels';
+import { isSkeleton } from '../game/parts';
 import { sandboxRuntime } from '../game/runtime';
 import {
   clearDraft,
@@ -155,6 +156,12 @@ export function givenPreambleEnd(lines: string[]): number | null {
   const target = lines.findIndex((l) => l.startsWith('export default circuit('));
   if (target <= 0) return null;
   if (!lines.slice(0, target).some((l) => l.includes('circuit('))) return null;
+  // A part left for the player to finish sits above the target; open on that.
+  for (let start = 0; start < target; start++) {
+    if (!/^const \w+ = circuit\(/.test(lines[start])) continue;
+    const end = lines.findIndex((l, i) => i > start && l.startsWith('});'));
+    if (isSkeleton(lines.slice(start, end + 1).join('\n'))) return start + 1;
+  }
   return target + 1;
 }
 

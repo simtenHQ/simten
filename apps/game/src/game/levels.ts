@@ -416,6 +416,65 @@ const CPU_PC = `const ProgramCounter4 = circuit('ProgramCounter4', {
   ],
 });`;
 
+const CPU_INSTRUCTION = `const Instruction = circuit('Instruction', {
+  inputs: { i: bus(8) },
+  outputs: { op1: bit, op0: bit, ra: bit, rb: bit, n: bus(4), aluOp1: bit, aluOp0: bit },
+  nodes: { bits: Splitter({ width: 8 }), number: Combiner({ width: 4 }) },
+  connect: ({ inputs, outputs, nodes: { bits, number } }) => [
+    inputs.i.to(bits.in),
+    bits.bit7.to(outputs.op1),
+    bits.bit6.to(outputs.op0),
+    bits.bit5.to(outputs.ra),
+    bits.bit4.to(outputs.rb),
+    bits.bit3.to(number.bit3),
+    bits.bit2.to(number.bit2),
+    bits.bit1.to(number.bit1, outputs.aluOp1),
+    bits.bit0.to(number.bit0, outputs.aluOp0),
+    number.out.to(outputs.n),
+  ],
+});`;
+
+const CHOOSE4 = `const Choose4 = circuit('Choose4', {
+  inputs: { sel: bit, a: bus(4), b: bus(4) },
+  outputs: { out: bus(4) },
+  nodes: {
+    aBits: Splitter({ width: 4 }),
+    bBits: Splitter({ width: 4 }),
+    outBits: Combiner({ width: 4 }),
+    m3: Mux2,
+    m2: Mux2,
+    m1: Mux2,
+    m0: Mux2,
+  },
+  connect: ({ inputs, outputs, nodes: { aBits, bBits, outBits, m3, m2, m1, m0 } }) => [
+    inputs.a.to(aBits.in),
+    inputs.b.to(bBits.in),
+    inputs.sel.to(m3.sel, m2.sel, m1.sel, m0.sel),
+    aBits.bit3.to(m3.a),
+    bBits.bit3.to(m3.b),
+    m3.out.to(outBits.bit3),
+    aBits.bit2.to(m2.a),
+    bBits.bit2.to(m2.b),
+    m2.out.to(outBits.bit2),
+    aBits.bit1.to(m1.a),
+    bBits.bit1.to(m1.b),
+    m1.out.to(outBits.bit1),
+    aBits.bit0.to(m0.a),
+    bBits.bit0.to(m0.b),
+    m0.out.to(outBits.bit0),
+    outBits.out.to(outputs.out),
+  ],
+});`;
+
+const CONTROL_SKELETON = `const Control = circuit('Control', {
+  inputs: { op1: bit, op0: bit, less: bit },
+  outputs: { write: bit, useAlu: bit, jump: bit },
+  nodes: {},
+  connect: ({ inputs, outputs }) => [
+    //
+  ],
+});`;
+
 export const LEVELS: Level[] = [
   {
     id: 'nand',
@@ -1965,8 +2024,8 @@ export default circuit('ProgramCounter4', {
       'JUMP 8',
       'JUMP 8',
     ],
-    stub: `// Every part is finished, below. What's left is the wiring
-// that makes an instruction happen.
+    stub: `// Every part is finished, below, apart from Control, which is
+// yours. The rest is wiring.
 
 ${MUX2}
 
@@ -1992,40 +2051,45 @@ ${CPU_REGFILE}
 
 ${CPU_PC}
 
-// An instruction is 8 bits:
-//   bits 7-6  what to do: 00 LOAD, 01 ALU, 10 JUMP, 11 JUMP IF LESS
-//   bit 5     ra, a register: 0 for r0, 1 for r1
-//   bit 4     rb, the other register
-//   bits 3-0  n: a number, an address, or in bits 1-0 the ALU op
+${CPU_INSTRUCTION}
+
+${CHOOSE4}
+
+// An instruction is 8 bits, and Instruction splits it up:
+//   op1 op0  what to do: 00 LOAD, 01 ALU, 10 JUMP, 11 JUMP IF LESS
+//   ra       a register: 0 for r0, 1 for r1
+//   rb       the other register
+//   n        a number or an address, and its low two bits,
+//            aluOp1 aluOp0, are the ALU op
 //
 //   LOAD ra, n              ra = n
 //   ADD/SUB/AND/OR ra, rb   ra = ra op rb
 //   JUMP n                  go to n
 //   JUMP IF LESS ra, rb, n  go to n if ra < rb
 //
-// n is wired up already. Registers are written on LOAD and ALU
-// instructions, always into ra. LOAD writes n; the ALU
-// instructions write the ALU's answer.
+// Control decides from op1, op0 and less (is ra < rb?):
+//   write   should a register be written?
+//   useAlu  write the ALU's answer rather than n?
+//   jump    should the program counter jump to n?
+
+${CONTROL_SKELETON}
 
 export default circuit('Cpu4', {
   nodes: {
     i: Input({ width: 8 }),
-    iBits: Splitter({ width: 8 }),
-    n: Combiner({ width: 4 }),
+    fields: Instruction,
+    control: Control,
+    regs: RegFile2,
     alu: Alu4,
     less: LessThan4,
-    regs: RegFile2,
+    choose: Choose4,
     counter: ProgramCounter4,
     pc: HexDisplay({ width: 4 }),
     r0: HexDisplay({ width: 4 }),
     r1: HexDisplay({ width: 4 }),
   },
-  connect: ({ nodes: { i, iBits, n, alu, less, regs, counter, pc, r0, r1 } }) => [
-    i.out.to(iBits.in),
-    iBits.bit3.to(n.bit3),
-    iBits.bit2.to(n.bit2),
-    iBits.bit1.to(n.bit1),
-    iBits.bit0.to(n.bit0),
+  connect: ({ nodes: { i, fields, control, regs, alu, less, choose, counter, pc, r0, r1 } }) => [
+    i.out.to(fields.i),
     counter.pc.to(pc.in),
     regs.r0.to(r0.in),
     regs.r1.to(r1.in),

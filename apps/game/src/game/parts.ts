@@ -15,7 +15,18 @@ import type { Level } from './types';
 export function givenParts(level: Level): string[] {
   const parts: string[] = [];
   for (const match of level.stub.matchAll(/^const (\w+) = circuit\('\1'/gm)) {
-    if (match[1] !== level.target) parts.push(match[1]);
+    const body = level.stub.slice(match.index, level.stub.indexOf('\n});', match.index));
+    if (match[1] !== level.target && !isSkeleton(body)) parts.push(match[1]);
   }
   return parts;
+}
+
+/**
+ * Is this circuit the player's to finish? A stub can declare a part with its
+ * ports in place and nothing inside, for the player to fill (the CPU's
+ * `Control`). Its wiring is only the `//` placeholder, which no finished part
+ * ever has.
+ */
+export function isSkeleton(circuitSource: string): boolean {
+  return /=> \[\s*\/\/\s*\],/.test(circuitSource);
 }

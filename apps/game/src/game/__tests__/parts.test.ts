@@ -21,6 +21,11 @@ describe('givenParts', () => {
     ]);
   });
 
+  it('leaves out a part the player is meant to finish', () => {
+    expect(parts('cpu')).not.toContain('Control');
+    expect(parts('cpu')).toContain('Instruction');
+  });
+
   it('lists nothing when the stub only holds the circuit to write', () => {
     expect(parts('nand')).toEqual([]);
     // The counter's stub defines its target with `const` rather than

@@ -430,97 +430,113 @@ const ProgramCounter4 = circuit('ProgramCounter4', {
   ],
 });
 
+const Instruction = circuit('Instruction', {
+  inputs: { i: bus(8) },
+  outputs: { op1: bit, op0: bit, ra: bit, rb: bit, n: bus(4), aluOp1: bit, aluOp0: bit },
+  nodes: { bits: Splitter({ width: 8 }), number: Combiner({ width: 4 }) },
+  connect: ({ inputs, outputs, nodes: { bits, number } }) => [
+    inputs.i.to(bits.in),
+    bits.bit7.to(outputs.op1),
+    bits.bit6.to(outputs.op0),
+    bits.bit5.to(outputs.ra),
+    bits.bit4.to(outputs.rb),
+    bits.bit3.to(number.bit3),
+    bits.bit2.to(number.bit2),
+    bits.bit1.to(number.bit1, outputs.aluOp1),
+    bits.bit0.to(number.bit0, outputs.aluOp0),
+    number.out.to(outputs.n),
+  ],
+});
+
+const Choose4 = circuit('Choose4', {
+  inputs: { sel: bit, a: bus(4), b: bus(4) },
+  outputs: { out: bus(4) },
+  nodes: {
+    aBits: Splitter({ width: 4 }),
+    bBits: Splitter({ width: 4 }),
+    outBits: Combiner({ width: 4 }),
+    m3: Mux2,
+    m2: Mux2,
+    m1: Mux2,
+    m0: Mux2,
+  },
+  connect: ({ inputs, outputs, nodes: { aBits, bBits, outBits, m3, m2, m1, m0 } }) => [
+    inputs.a.to(aBits.in),
+    inputs.b.to(bBits.in),
+    inputs.sel.to(m3.sel, m2.sel, m1.sel, m0.sel),
+    aBits.bit3.to(m3.a),
+    bBits.bit3.to(m3.b),
+    m3.out.to(outBits.bit3),
+    aBits.bit2.to(m2.a),
+    bBits.bit2.to(m2.b),
+    m2.out.to(outBits.bit2),
+    aBits.bit1.to(m1.a),
+    bBits.bit1.to(m1.b),
+    m1.out.to(outBits.bit1),
+    aBits.bit0.to(m0.a),
+    bBits.bit0.to(m0.b),
+    m0.out.to(outBits.bit0),
+    outBits.out.to(outputs.out),
+  ],
+});
+
+const Control = circuit('Control', {
+  inputs: { op1: bit, op0: bit, less: bit },
+  outputs: { write: bit, useAlu: bit, jump: bit },
+  nodes: { notOp1: Not, notOp0: Not, either: Or, both: And },
+  connect: ({ inputs, outputs, nodes: { notOp1, notOp0, either, both } }) => [
+    // LOAD (00) and the ALU instructions (01) write; jumps (1x) do not.
+    inputs.op1.to(notOp1.in, both.a),
+    notOp1.out.to(outputs.write),
+    // Of the two that write, only the ALU instructions write the ALU's answer.
+    inputs.op0.to(outputs.useAlu, notOp0.in),
+    // JUMP (10) always jumps; JUMP IF LESS (11) jumps when less is on.
+    notOp0.out.to(either.a),
+    inputs.less.to(either.b),
+    either.out.to(both.b),
+    both.out.to(outputs.jump),
+  ],
+});
+
 export const Cpu4 = circuit('Cpu4', {
   nodes: {
     i: Input({ width: 8 }),
-    iBits: Splitter({ width: 8 }),
-    n: Combiner({ width: 4 }),
+    fields: Instruction,
+    control: Control,
+    regs: RegFile2,
     alu: Alu4,
     less: LessThan4,
-    regs: RegFile2,
+    choose: Choose4,
     counter: ProgramCounter4,
     pc: HexDisplay({ width: 4 }),
     r0: HexDisplay({ width: 4 }),
     r1: HexDisplay({ width: 4 }),
-    noWrite: Not,
-    notAlu: Not,
-    either: Or,
-    jump: And,
-    answer: Splitter({ width: 4 }),
-    pick3: Mux2,
-    pick2: Mux2,
-    pick1: Mux2,
-    pick0: Mux2,
-    d: Combiner({ width: 4 }),
   },
-  connect: ({
-    nodes: {
-      i,
-      iBits,
-      n,
-      alu,
-      less,
-      regs,
-      counter,
-      pc,
-      r0,
-      r1,
-      noWrite,
-      notAlu,
-      either,
-      jump,
-      answer,
-      pick3,
-      pick2,
-      pick1,
-      pick0,
-      d,
-    },
-  }) => [
-    i.out.to(iBits.in),
-    iBits.bit3.to(n.bit3),
-    iBits.bit2.to(n.bit2),
-    iBits.bit1.to(n.bit1),
-    iBits.bit0.to(n.bit0),
+  connect: ({ nodes: { i, fields, control, regs, alu, less, choose, counter, pc, r0, r1 } }) => [
+    i.out.to(fields.i),
     counter.pc.to(pc.in),
     regs.r0.to(r0.in),
     regs.r1.to(r1.in),
 
-    // Registers: ra (bit 5) is read on port a and is the one written; rb (bit
-    // 4) is read on port b. LOAD and ALU instructions write; jumps do not.
-    iBits.bit5.to(regs.asel, regs.wsel),
-    iBits.bit4.to(regs.bsel),
-    iBits.bit7.to(noWrite.in, jump.a),
-    noWrite.out.to(regs.write),
-
-    // The ALU and the comparison both work on ra and rb.
+    // ra is read on port a and is the register written; rb is read on port b.
+    fields.ra.to(regs.asel, regs.wsel),
+    fields.rb.to(regs.bsel),
     regs.a.to(alu.a, less.a),
     regs.b.to(alu.b, less.b),
-    iBits.bit1.to(alu.op1),
-    iBits.bit0.to(alu.op0),
+    fields.aluOp1.to(alu.op1),
+    fields.aluOp0.to(alu.op0),
 
-    // What gets written: n on LOAD (bit 6 off), the ALU's answer otherwise.
-    alu.r.to(answer.in),
-    iBits.bit6.to(pick3.sel, pick2.sel, pick1.sel, pick0.sel, notAlu.in),
-    iBits.bit3.to(pick3.a),
-    iBits.bit2.to(pick2.a),
-    iBits.bit1.to(pick1.a),
-    iBits.bit0.to(pick0.a),
-    answer.bit3.to(pick3.b),
-    answer.bit2.to(pick2.b),
-    answer.bit1.to(pick1.b),
-    answer.bit0.to(pick0.b),
-    pick3.out.to(d.bit3),
-    pick2.out.to(d.bit2),
-    pick1.out.to(d.bit1),
-    pick0.out.to(d.bit0),
-    d.out.to(regs.d),
+    fields.op1.to(control.op1),
+    fields.op0.to(control.op0),
+    less.lt.to(control.less),
 
-    // Jump on JUMP (10), or on JUMP IF LESS (11) when ra < rb.
-    notAlu.out.to(either.a),
-    less.lt.to(either.b),
-    either.out.to(jump.b),
-    jump.out.to(counter.jump),
-    n.out.to(counter.a),
+    // What gets written: n, or the ALU's answer.
+    control.write.to(regs.write),
+    control.useAlu.to(choose.sel),
+    fields.n.to(choose.a, counter.a),
+    alu.r.to(choose.b),
+    choose.out.to(regs.d),
+
+    control.jump.to(counter.jump),
   ],
 });
