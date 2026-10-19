@@ -30,6 +30,7 @@ export const MAP_ROWS: string[][] = [
   ['xor'],
   ['xnor'],
   ['making-a-component'],
+  ['buses'],
   // The fork. Rows past here are ranks only; `MAP_COLUMNS` says which column
   // each level sits in.
   ['multiplexer', 'half-adder', 'latch'],
@@ -113,9 +114,12 @@ export const MAP_REQUIRES: Record<string, string[]> = {
 
   // The fork. Every branch needs every gate, so it splits after the last one:
   // nothing downstream can reach for a gate the player skipped.
-  multiplexer: ['making-a-component'],
-  'half-adder': ['making-a-component'],
-  latch: ['making-a-component'],
+  // Numbers on wires come before the fork: every branch has 4-bit levels.
+  buses: ['making-a-component'],
+
+  multiplexer: ['buses'],
+  'half-adder': ['buses'],
+  latch: ['buses'],
 
   majority: ['multiplexer'],
   'wide-gates': ['majority'],
@@ -181,11 +185,11 @@ export const MAP_SECTIONS: MapSection[] = [
   // The fork's branches run side by side, so they get a lane each rather than
   // one band across all three. It was one band, and seventeen levels under a
   // single label read as one undivided slab.
-  { label: 'Logic', startRow: 8, columns: [-1.5, -1.5] },
-  { label: 'Arithmetic', startRow: 8, columns: [-0.5, 0.5] },
-  { label: 'Memory', startRow: 8, columns: [1.5, 1.5] },
+  { label: 'Logic', startRow: 9, columns: [-1.5, -1.5] },
+  { label: 'Arithmetic', startRow: 9, columns: [-0.5, 0.5] },
+  { label: 'Memory', startRow: 9, columns: [1.5, 1.5] },
   // Where the lanes come back together. The ALU now; registers and a CPU later.
-  { label: 'Processor', startRow: 15 },
+  { label: 'Processor', startRow: 16 },
 ];
 
 /**

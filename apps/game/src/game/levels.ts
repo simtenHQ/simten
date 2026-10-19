@@ -518,6 +518,62 @@ export default circuit('Xor2', {
   },
 
   {
+    id: 'buses',
+    title: 'Buses',
+    tagline: 'Carry a whole number on one wire.',
+    brief:
+      'Show `a` with every bit flipped on `out`. 5 is 0101, so `out` should be 1010, which is 10',
+    target: 'Invert4',
+    inputs: ['a'],
+    outputs: ['out'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// A bus is several bits on one wire. a carries a 4-bit
+// number, 0 to 15, and out shows one.
+//
+// A Splitter takes a bus apart into its bits: bits.bit0 is
+// the lowest bit of a and bits.bit3 the highest. A Combiner
+// puts bits back together into a bus. Both are wired up
+// already. You connect the middle.
+
+export default circuit('Invert4', {
+  nodes: {
+    a: Input({ width: 4 }),
+    bits: Splitter({ width: 4 }),
+    join: Combiner({ width: 4 }),
+    out: HexDisplay({ width: 4 }),
+  },
+  connect: ({ nodes: { a, bits, join, out } }) => [
+    a.out.to(bits.in),
+    join.out.to(out.in),
+    //
+  ],
+});
+`,
+    vectors: [
+      { inputs: { a: 0 }, expect: { out: 15 } },
+      { inputs: { a: 1 }, expect: { out: 14 } },
+      { inputs: { a: 2 }, expect: { out: 13 } },
+      { inputs: { a: 3 }, expect: { out: 12 } },
+      { inputs: { a: 4 }, expect: { out: 11 } },
+      { inputs: { a: 5 }, expect: { out: 10 } },
+      { inputs: { a: 6 }, expect: { out: 9 } },
+      { inputs: { a: 7 }, expect: { out: 8 } },
+      { inputs: { a: 8 }, expect: { out: 7 } },
+      { inputs: { a: 9 }, expect: { out: 6 } },
+      { inputs: { a: 10 }, expect: { out: 5 } },
+      { inputs: { a: 11 }, expect: { out: 4 } },
+      { inputs: { a: 12 }, expect: { out: 3 } },
+      { inputs: { a: 13 }, expect: { out: 2 } },
+      { inputs: { a: 14 }, expect: { out: 1 } },
+      { inputs: { a: 15 }, expect: { out: 0 } },
+    ],
+    par: 4,
+    outro: {
+      headline: 'Numbers on wires',
+      body: 'From here on, numbers travel on one wire, and you split them wherever you need the bits.',
+    },
+  },
+  {
     id: 'half-adder',
     title: 'Half Adder',
     tagline: 'Add two bits, and keep what carries.',

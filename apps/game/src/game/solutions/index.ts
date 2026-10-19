@@ -31,6 +31,7 @@
 import adder4 from './adder-4.ts?raw';
 import alu4 from './alu-4.ts?raw';
 import andGate from './and.ts?raw';
+import buses from './buses.ts?raw';
 import counter from './counter.ts?raw';
 import dLatch from './d-latch.ts?raw';
 import decoder from './decoder.ts?raw';
@@ -67,6 +68,7 @@ export const SOLUTIONS: Record<string, string> = {
   xor: xorGate,
   xnor: xnorGate,
   'making-a-component': makingAComponent,
+  buses,
   'half-adder': halfAdder,
   'd-latch': dLatch,
   latch,
