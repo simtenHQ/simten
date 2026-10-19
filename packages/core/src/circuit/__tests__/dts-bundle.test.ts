@@ -49,7 +49,7 @@ describe('dist/bundle.d.ts', () => {
     expect(bundle).toContain('_dependencies');
   });
 
-  it('stays under the 118 KB headroom budget', () => {
+  it('stays under the 119 KB headroom budget', () => {
     // Guard on the Monaco type-payload size (affects editor cold-load). Bump
     // deliberately when the public stdlib grows: raised 100 → 110 KB for the
     // four import-reconstruction components (Slice/Concat/SignExtend/ZeroExtend),
@@ -64,8 +64,11 @@ describe('dist/bundle.d.ts', () => {
     // width check required (a fixed bus(8) sink cannot accept a 16-bit
     // accumulator without silently truncating it). Trimming its JSDoc first got
     // the bundle to 5 bytes under the old cap, which is not a real margin.
+    //
+    // 118 → 119 KB for the 6502 (`MOS6502_Core`, `MOS6502_ALU`): about 900
+    // bytes of port types after cutting their JSDoc to one line each.
     const { size } = statSync(bundlePath);
-    expect(size).toBeLessThan(118 * 1024);
+    expect(size).toBeLessThan(119 * 1024);
   });
 });
 
