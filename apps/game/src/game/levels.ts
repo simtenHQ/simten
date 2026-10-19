@@ -801,6 +801,45 @@ export default circuit('Gates4', {
       body: 'Pairing them up, a with b and c with d, is shallower than a chain of three, and in a real chip shallower means faster. The equality check later on needs exactly this.',
     },
   },
+
+  {
+    id: 'decoder',
+    title: 'Decoder',
+    tagline: 'Turn a 2-bit number into one of four lines.',
+    brief: 'Light exactly one of `y0` to `y3`, the one numbered by `a1 a0` read as binary',
+    target: 'Decoder2',
+    inputs: ['a1', 'a0'],
+    outputs: ['y0', 'y1', 'y2', 'y3'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// a1 is worth 2 and a0 is worth 1, so a1 on and a0 off is
+// the number 2, and only y2 should light.
+
+export default circuit('Decoder2', {
+  nodes: {
+    a1: Switch,
+    a0: Switch,
+    y0: Led,
+    y1: Led,
+    y2: Led,
+    y3: Led,
+  },
+  connect: ({ nodes: { a1, a0, y0, y1, y2, y3 } }) => [
+    //
+  ],
+});
+`,
+    vectors: [
+      { inputs: { a1: 0, a0: 0 }, expect: { y0: 1, y1: 0, y2: 0, y3: 0 } },
+      { inputs: { a1: 0, a0: 1 }, expect: { y0: 0, y1: 1, y2: 0, y3: 0 } },
+      { inputs: { a1: 1, a0: 0 }, expect: { y0: 0, y1: 0, y2: 1, y3: 0 } },
+      { inputs: { a1: 1, a0: 1 }, expect: { y0: 0, y1: 0, y2: 0, y3: 1 } },
+    ],
+    par: 4,
+    outro: {
+      headline: 'One line per number',
+      body: 'Memory uses one of these to pick which cell to read, and a CPU uses one to pick a register. Par is one gate per output. If y1 and y2 cost you more, look at what y0 already knows.',
+    },
+  },
 ];
 
 export const LEVELS_BY_ID = new Map(LEVELS.map((l) => [l.id, l]));
