@@ -36,9 +36,9 @@ export const MAP_ROWS: string[][] = [
   ['multiplexer', 'half-adder', 'latch'],
   ['majority', 'full-adder', 'd-latch'],
   ['wide-gates', 'adder-4', 'toggle'],
-  ['equal', 'negate', 'counter'],
-  ['decoder', 'subtract', 'register'],
-  ['mux-4', 'less-than', 'register-file'],
+  ['decoder', 'negate', 'counter'],
+  ['mux-4', 'subtract', 'register'],
+  ['equal', 'less-than', 'register-file'],
   ['parity', 'program-counter'],
   ['alu-4'],
   ['cpu-load'],
@@ -67,9 +67,9 @@ export const MAP_COLUMNS: Record<string, number> = {
   multiplexer: -1.5,
   majority: -1.5,
   'wide-gates': -1.5,
-  equal: -1.5,
   decoder: -1.5,
   'mux-4': -1.5,
+  equal: -1.5,
   parity: -1.5,
 
   'adder-4': -0.5,
@@ -129,12 +129,14 @@ export const MAP_REQUIRES: Record<string, string[]> = {
 
   majority: ['multiplexer'],
   'wide-gates': ['majority'],
-  // Equality is XNORs and the four-input AND from wider gates, no arithmetic,
-  // so it belongs here rather than with the adders.
-  equal: ['wide-gates'],
-  decoder: ['equal'],
+  // Single switches first, then numbers on buses. The decoder and the
+  // four-way multiplexer sit together: both pick one of four with two bits.
+  decoder: ['wide-gates'],
   'mux-4': ['decoder'],
-  parity: ['mux-4'],
+  // Equality is XNORs and the four-input AND from wider gates, no
+  // arithmetic, so it belongs here rather than with the adders.
+  equal: ['mux-4'],
+  parity: ['equal'],
 
   'full-adder': ['half-adder'],
   'adder-4': ['full-adder'],

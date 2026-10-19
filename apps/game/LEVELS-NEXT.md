@@ -13,9 +13,9 @@ PROCESSOR    alu-4
 
 LOGIC        ARITHMETIC                 MEMORY
 parity                                  program-counter
-mux-4        less-than                  register-file
-decoder      subtract                   register
-equal        negate                     counter
+equal        less-than                  register-file
+mux-4        subtract                   register
+decoder      negate                     counter
 wide-gates   adder-4                    toggle
 majority                   full-adder   d-latch
 multiplexer                half-adder   latch
@@ -76,14 +76,7 @@ Map changes, all in `map.ts`:
 - **Vectors:** all 16.
 - **Why here:** the decoder and the equality check both need a 4-input AND.
 
-### 4. `equal`: Equality
-*Light up when two 4-bit numbers are the same.*
-
-- **New idea:** compare bit by bit (XNOR), then require all bits to match (the 4-input AND from level 3).
-- **Interface:** inputs `a3`–`a0`, `b3`–`b0` → output `eq`
-- **Vectors:** 12: several equal pairs, and pairs differing in exactly one bit, each bit position at least once.
-
-### 5. `decoder`: Decoder
+### 4. `decoder`: Decoder
 *Turn a 2-bit number into one of four lines.*
 
 - **New idea:** one output per value. Exactly one of `y0` to `y3` is on, the one numbered by `a1 a0`.
@@ -91,13 +84,20 @@ Map changes, all in `map.ts`:
 - **Vectors:** all 4.
 - **Why here:** this is how memory picks a cell and how a CPU picks a register, later on.
 
-### 6. `mux-4`: Four-Way Multiplexer
+### 5. `mux-4`: Four-Way Multiplexer
 *Choose one of four signals with a 2-bit select.*
 
 - **New idea:** building a bigger multiplexer from smaller ones (a tree of three), or from the decoder plus AND/OR. Both work, and par rewards the cheaper.
 - **Interface:** inputs `d0`, `d1`, `d2`, `d3`, `s1`, `s0` → output `out`
 - **Starter:** the finished `Mux` from level 1.
 - **Vectors:** 16 of the 64. For each select value: the selected input on and the rest off, the reverse, and two mixed patterns. The first two catch a circuit that reads the wrong input, whichever one it reads.
+
+### 6. `equal`: Equality
+*Light up when two 4-bit numbers are the same.*
+
+- **New idea:** compare bit by bit (XNOR), then require all bits to match (the 4-input AND from level 3).
+- **Interface:** inputs `a3`–`a0`, `b3`–`b0` → output `eq`
+- **Vectors:** 12: several equal pairs, and pairs differing in exactly one bit, each bit position at least once.
 
 ### 7. `parity`: Parity
 *Light up when an odd number of switches are on.*

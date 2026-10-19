@@ -1337,67 +1337,21 @@ export default circuit('Gates4', {
   },
 
   {
-    id: 'equal',
-    title: 'Equality',
-    tagline: 'Light the led when two 4-bit numbers are the same.',
-    brief: 'Light `eq` when `a` and `b` are the same number',
-    target: 'Equal4',
-    inputs: ['a', 'b'],
-    outputs: ['eq'],
-    allowed: ARITHMETIC_GATES,
-    stub: `// Two numbers are the same when every bit matches the bit
-// in the same place in the other one.
-
-export default circuit('Equal4', {
-  nodes: {
-    a: Input({ width: 4 }),
-    aBits: Splitter({ width: 4 }),
-    b: Input({ width: 4 }),
-    bBits: Splitter({ width: 4 }),
-    eq: Led,
-  },
-  connect: ({ nodes: { a, aBits, b, bBits, eq } }) => [
-    a.out.to(aBits.in),
-    b.out.to(bBits.in),
-    //
-  ],
-});
-`,
-    // Four equal pairs, then pairs that differ in exactly one bit, each
-    // position twice, so a bit left out of the comparison gets caught.
-    vectors: [
-      { inputs: { a: 0, b: 0 }, expect: { eq: 1 } },
-      { inputs: { a: 15, b: 15 }, expect: { eq: 1 } },
-      { inputs: { a: 9, b: 9 }, expect: { eq: 1 } },
-      { inputs: { a: 6, b: 6 }, expect: { eq: 1 } },
-      { inputs: { a: 0, b: 1 }, expect: { eq: 0 } },
-      { inputs: { a: 0, b: 2 }, expect: { eq: 0 } },
-      { inputs: { a: 0, b: 4 }, expect: { eq: 0 } },
-      { inputs: { a: 0, b: 8 }, expect: { eq: 0 } },
-      { inputs: { a: 15, b: 14 }, expect: { eq: 0 } },
-      { inputs: { a: 15, b: 13 }, expect: { eq: 0 } },
-      { inputs: { a: 15, b: 11 }, expect: { eq: 0 } },
-      { inputs: { a: 15, b: 7 }, expect: { eq: 0 } },
-    ],
-    par: 7,
-    outro: {
-      headline: 'Bit for bit',
-      body: 'Most CPUs get this from subtraction instead: subtract one number from the other and check that every bit of the result is 0.',
-    },
-  },
-
-  {
     id: 'decoder',
     title: 'Decoder',
     tagline: 'Turn a 2-bit number into one of four lines.',
-    brief: 'Light exactly one of `y0` to `y3`, the one numbered by `a1 a0` read as binary',
+    brief:
+      'Two switches give four combinations. Light one output for each: `y0` when both are off, `y1` when only `a0` is on, `y2` when only `a1` is on, `y3` when both are on. The others stay off',
     target: 'Decoder2',
     inputs: ['a1', 'a0'],
     outputs: ['y0', 'y1', 'y2', 'y3'],
     allowed: ARITHMETIC_GATES,
     numbers: { a: 'unsigned' },
-    stub: `// a1 is worth 2 and a0 is worth 1, so a1 on and a0 off is
-// the number 2, and only y2 should light.
+    stub: `// That's counting. Read a1 a0 as a binary number, 00 to 11,
+// and the output that lights is that number.
+//
+// y0 and y3 are one gate each. Once you have them, look at what
+// they can tell you about the other two.
 
 export default circuit('Decoder2', {
   nodes: {
@@ -1422,7 +1376,7 @@ export default circuit('Decoder2', {
     par: 4,
     outro: {
       headline: 'One line per number',
-      body: 'Memory uses one of these to pick a cell, and a CPU to pick a register. Par is one gate per output. If y1 and y2 cost more, try using y0.',
+      body: 'Memory uses one of these to pick a cell, and a CPU to pick a register. Par is one gate per output: y1 and y2 can each be one gate built from y0 or y3.',
     },
   },
 
@@ -1486,6 +1440,56 @@ export default circuit('Mux4', {
     outro: {
       headline: 'Built from parts',
       body: 'Three multiplexers in a tree. The decoder plus some ANDs and an OR works too, but the tree is cheaper.',
+    },
+  },
+
+  {
+    id: 'equal',
+    title: 'Equality',
+    tagline: 'Light the led when two 4-bit numbers are the same.',
+    brief: 'Light `eq` when `a` and `b` are the same number',
+    target: 'Equal4',
+    inputs: ['a', 'b'],
+    outputs: ['eq'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// Two numbers are the same when every bit matches the bit
+// in the same place in the other one.
+
+export default circuit('Equal4', {
+  nodes: {
+    a: Input({ width: 4 }),
+    aBits: Splitter({ width: 4 }),
+    b: Input({ width: 4 }),
+    bBits: Splitter({ width: 4 }),
+    eq: Led,
+  },
+  connect: ({ nodes: { a, aBits, b, bBits, eq } }) => [
+    a.out.to(aBits.in),
+    b.out.to(bBits.in),
+    //
+  ],
+});
+`,
+    // Four equal pairs, then pairs that differ in exactly one bit, each
+    // position twice, so a bit left out of the comparison gets caught.
+    vectors: [
+      { inputs: { a: 0, b: 0 }, expect: { eq: 1 } },
+      { inputs: { a: 15, b: 15 }, expect: { eq: 1 } },
+      { inputs: { a: 9, b: 9 }, expect: { eq: 1 } },
+      { inputs: { a: 6, b: 6 }, expect: { eq: 1 } },
+      { inputs: { a: 0, b: 1 }, expect: { eq: 0 } },
+      { inputs: { a: 0, b: 2 }, expect: { eq: 0 } },
+      { inputs: { a: 0, b: 4 }, expect: { eq: 0 } },
+      { inputs: { a: 0, b: 8 }, expect: { eq: 0 } },
+      { inputs: { a: 15, b: 14 }, expect: { eq: 0 } },
+      { inputs: { a: 15, b: 13 }, expect: { eq: 0 } },
+      { inputs: { a: 15, b: 11 }, expect: { eq: 0 } },
+      { inputs: { a: 15, b: 7 }, expect: { eq: 0 } },
+    ],
+    par: 7,
+    outro: {
+      headline: 'Bit for bit',
+      body: 'Most CPUs get this from subtraction instead: subtract one number from the other and check that every bit of the result is 0.',
     },
   },
 
