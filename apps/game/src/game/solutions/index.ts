@@ -42,6 +42,7 @@ import norGate from './nor.ts?raw';
 import notGate from './not.ts?raw';
 import orGate from './or.ts?raw';
 import toggle from './toggle.ts?raw';
+import wideGates from './wide-gates.ts?raw';
 import xnorGate from './xnor.ts?raw';
 import xorGate from './xor.ts?raw';
 
@@ -62,4 +63,5 @@ export const SOLUTIONS: Record<string, string> = {
   'full-adder': fullAdder,
   multiplexer,
   majority,
+  'wide-gates': wideGates,
 };

@@ -35,7 +35,7 @@ export const MAP_ROWS: string[][] = [
   // `toggle` sits alone on the last one.
   ['multiplexer', 'half-adder', 'latch'],
   ['majority', 'full-adder', 'd-latch'],
-  ['toggle'],
+  ['wide-gates', 'toggle'],
   ['counter'],
 ];
 
@@ -68,6 +68,7 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   latch: ['making-a-component'],
   multiplexer: ['making-a-component'],
   majority: ['multiplexer'],
+  'wide-gates': ['majority'],
 
   'full-adder': ['half-adder'],
   'd-latch': ['latch'],

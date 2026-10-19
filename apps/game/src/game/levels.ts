@@ -749,6 +749,58 @@ export default circuit('Majority3', {
       body: 'Some aircraft and spacecraft run three copies of the same computer and vote on every answer, so a single faulty unit gets outvoted. This is the circuit that counts the votes.',
     },
   },
+
+  {
+    id: 'wide-gates',
+    title: 'Wider Gates',
+    tagline: 'Check four signals at once.',
+    brief: 'Light `all` when every switch is on, and `any` when at least one is',
+    target: 'Gates4',
+    inputs: ['a', 'b', 'c', 'd'],
+    outputs: ['all', 'any'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// Every gate you have takes two inputs. A gate's output can
+// be another gate's input, though, so two-input gates can
+// add up to wider ones.
+
+export default circuit('Gates4', {
+  nodes: {
+    a: Switch,
+    b: Switch,
+    c: Switch,
+    d: Switch,
+    all: Led,
+    any: Led,
+  },
+  connect: ({ nodes: { a, b, c, d, all, any } }) => [
+    //
+  ],
+});
+`,
+    vectors: [
+      { inputs: { a: 0, b: 0, c: 0, d: 0 }, expect: { all: 0, any: 0 } },
+      { inputs: { a: 0, b: 0, c: 0, d: 1 }, expect: { all: 0, any: 1 } },
+      { inputs: { a: 0, b: 0, c: 1, d: 0 }, expect: { all: 0, any: 1 } },
+      { inputs: { a: 0, b: 0, c: 1, d: 1 }, expect: { all: 0, any: 1 } },
+      { inputs: { a: 0, b: 1, c: 0, d: 0 }, expect: { all: 0, any: 1 } },
+      { inputs: { a: 0, b: 1, c: 0, d: 1 }, expect: { all: 0, any: 1 } },
+      { inputs: { a: 0, b: 1, c: 1, d: 0 }, expect: { all: 0, any: 1 } },
+      { inputs: { a: 0, b: 1, c: 1, d: 1 }, expect: { all: 0, any: 1 } },
+      { inputs: { a: 1, b: 0, c: 0, d: 0 }, expect: { all: 0, any: 1 } },
+      { inputs: { a: 1, b: 0, c: 0, d: 1 }, expect: { all: 0, any: 1 } },
+      { inputs: { a: 1, b: 0, c: 1, d: 0 }, expect: { all: 0, any: 1 } },
+      { inputs: { a: 1, b: 0, c: 1, d: 1 }, expect: { all: 0, any: 1 } },
+      { inputs: { a: 1, b: 1, c: 0, d: 0 }, expect: { all: 0, any: 1 } },
+      { inputs: { a: 1, b: 1, c: 0, d: 1 }, expect: { all: 0, any: 1 } },
+      { inputs: { a: 1, b: 1, c: 1, d: 0 }, expect: { all: 0, any: 1 } },
+      { inputs: { a: 1, b: 1, c: 1, d: 1 }, expect: { all: 1, any: 1 } },
+    ],
+    par: 6,
+    outro: {
+      headline: 'Any width you like',
+      body: 'Pairing them up, a with b and c with d, is shallower than a chain of three, and in a real chip shallower means faster. The equality check later on needs exactly this.',
+    },
+  },
 ];
 
 export const LEVELS_BY_ID = new Map(LEVELS.map((l) => [l.id, l]));
