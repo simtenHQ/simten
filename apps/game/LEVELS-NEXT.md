@@ -183,9 +183,20 @@ Three sequential levels above `counter`, built the same way: single-bit inputs a
 - **Starter:** nothing handed over.
 - **Vectors:** 15 steps, including wrap from 15 to 0 and an address set with `jump` off, which must be ignored. Par 21, using the flip-flop's `q_bar` for bit 0.
 
-### Next: the CPU
+### 16. `cpu`: CPU
 
-Goes in the Processor band, needing `alu-4` and `program-counter`. Not built: it needs an instruction set, and a spec panel that can show multi-bit values and runs longer than 16 steps.
+- **Where:** top of the Processor band, needing `alu-4` and `program-counter`, so all three lanes meet here.
+- **New idea:** an instruction is a set of bits wired straight to the control lines. Nothing new is built; the parts are handed over finished, with 4-bit bus ports.
+- **Instruction format** (8 bits): bits 7–6 the operation (`00` LOAD, `01` ALU, `10` JUMP, `11` JUMP IF LESS), bit 5 `ra`, bit 4 `rb`, bits 3–0 `n` (a number, an address, or in bits 1–0 the ALU op).
+  - `LOAD ra, n`, `ADD/SUB/AND/OR ra, rb` (into ra), `JUMP n`, `JUMP IF LESS ra, rb, n`.
+- **Interface:** `i` (8-bit) → `pc`, `r0`, `r1`. The grader plays memory: each step's `i` is the instruction at the address the last step left in `pc`.
+- **Program:** 4-bit Fibonacci. It loops twice, wraps 21 to 5, falls through, then runs SUB, AND and OR and stops on `JUMP 8`. 16 steps, every instruction used, the branch taken both ways.
+- **Player work:** register selects from bits 5 and 4, write on LOAD and ALU, a row of four multiplexers choosing `n` or the ALU's answer, and the jump condition. About 16 gates on top of the parts. Par 206.
+- **Spec panel:** the program listing shows under the goal, and hovering a column shows the instruction that step ran.
+
+## Buses
+
+Levels with real 4-bit numbers take them on one wire: `Input({ width: 4 })` in, `HexDisplay({ width: 4 })` out, with a `Splitter` and `Combiner` placed in the stub so the player still works with bits. The `buses` level teaches this on the trunk, right after `making-a-component`, so every lane can use it. Decoder and four-way multiplexer keep their selects as separate bits.
 
 ## Spec panel changes
 

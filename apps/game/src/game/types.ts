@@ -119,6 +119,17 @@ export interface Level {
    */
   numbers?: Record<string, 'unsigned' | 'signed'>;
   /**
+   * A program the level runs, one instruction per line, shown under the goal.
+   * Only the CPU level has one: its inputs are machine code, which is
+   * unreadable as numbers in the table.
+   */
+  program?: string[];
+  /**
+   * What each vector means, one per vector: the instruction a CPU step runs.
+   * The spec panel shows it for the column in focus.
+   */
+  labels?: string[];
+  /**
    * Gate count worth beating. Used for scoring; not shown on the completion
    * dialog, where a par figure reads as a mark out of ten rather than an
    * invitation. `undefined` means the level has no interesting optimum.

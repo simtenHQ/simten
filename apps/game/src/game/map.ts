@@ -41,6 +41,7 @@ export const MAP_ROWS: string[][] = [
   ['mux-4', 'less-than', 'register-file'],
   ['parity', 'program-counter'],
   ['alu-4'],
+  ['cpu'],
 ];
 
 /**
@@ -87,6 +88,7 @@ export const MAP_COLUMNS: Record<string, number> = {
 
   // Over the tops of the two columns it needs.
   'alu-4': -1,
+  cpu: 0,
 };
 
 /**
@@ -149,6 +151,10 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   // Where logic and arithmetic meet. It needs both columns finished: by then
   // the player has every part an ALU is made of.
   'alu-4': ['parity', 'less-than'],
+
+  // Where everything meets: the ALU, and the program counter at the top of
+  // memory.
+  cpu: ['alu-4', 'program-counter'],
 };
 
 export interface MapSection {

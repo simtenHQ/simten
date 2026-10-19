@@ -33,6 +33,7 @@ import alu4 from './alu-4.ts?raw';
 import andGate from './and.ts?raw';
 import buses from './buses.ts?raw';
 import counter from './counter.ts?raw';
+import cpu from './cpu.ts?raw';
 import dLatch from './d-latch.ts?raw';
 import decoder from './decoder.ts?raw';
 import equal from './equal.ts?raw';
@@ -90,4 +91,5 @@ export const SOLUTIONS: Record<string, string> = {
   register,
   'register-file': registerFile,
   'program-counter': programCounter,
+  cpu,
 };

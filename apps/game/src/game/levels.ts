@@ -216,6 +216,206 @@ const REGISTER4 = `const Register4 = circuit('Register4', {
   ],
 });`;
 
+const CPU_ALU = `const Alu4 = circuit('Alu4', {
+  inputs: { op1: bit, op0: bit, a: bus(4), b: bus(4) },
+  outputs: { r: bus(4) },
+  nodes: {
+    aBits: Splitter({ width: 4 }),
+    bBits: Splitter({ width: 4 }),
+    rBits: Combiner({ width: 4 }),
+    add: Adder4,
+    sub: Subtract4,
+    and3: And,
+    and2: And,
+    and1: And,
+    and0: And,
+    or3: Or,
+    or2: Or,
+    or1: Or,
+    or0: Or,
+    pick3: Mux4,
+    pick2: Mux4,
+    pick1: Mux4,
+    pick0: Mux4,
+  },
+  connect: ({ inputs, outputs, nodes: { aBits, bBits, rBits, add, sub, and3, and2, and1, and0, or3, or2, or1, or0, pick3, pick2, pick1, pick0 } }) => [
+    inputs.a.to(aBits.in),
+    inputs.b.to(bBits.in),
+    rBits.out.to(outputs.r),
+    aBits.bit3.to(add.a3, sub.a3, and3.a, or3.a),
+    bBits.bit3.to(add.b3, sub.b3, and3.b, or3.b),
+    add.s3.to(pick3.d0),
+    sub.d3.to(pick3.d1),
+    and3.out.to(pick3.d2),
+    or3.out.to(pick3.d3),
+    pick3.out.to(rBits.bit3),
+    aBits.bit2.to(add.a2, sub.a2, and2.a, or2.a),
+    bBits.bit2.to(add.b2, sub.b2, and2.b, or2.b),
+    add.s2.to(pick2.d0),
+    sub.d2.to(pick2.d1),
+    and2.out.to(pick2.d2),
+    or2.out.to(pick2.d3),
+    pick2.out.to(rBits.bit2),
+    aBits.bit1.to(add.a1, sub.a1, and1.a, or1.a),
+    bBits.bit1.to(add.b1, sub.b1, and1.b, or1.b),
+    add.s1.to(pick1.d0),
+    sub.d1.to(pick1.d1),
+    and1.out.to(pick1.d2),
+    or1.out.to(pick1.d3),
+    pick1.out.to(rBits.bit1),
+    aBits.bit0.to(add.a0, sub.a0, and0.a, or0.a),
+    bBits.bit0.to(add.b0, sub.b0, and0.b, or0.b),
+    add.s0.to(pick0.d0),
+    sub.d0.to(pick0.d1),
+    and0.out.to(pick0.d2),
+    or0.out.to(pick0.d3),
+    pick0.out.to(rBits.bit0),
+    inputs.op1.to(pick3.s1, pick2.s1, pick1.s1, pick0.s1),
+    inputs.op0.to(pick3.s0, pick2.s0, pick1.s0, pick0.s0),
+  ],
+});`;
+
+const CPU_LESS_THAN = `const LessThan4 = circuit('LessThan4', {
+  inputs: { a: bus(4), b: bus(4) },
+  outputs: { lt: bit },
+  nodes: {
+    aBits: Splitter({ width: 4 }),
+    bBits: Splitter({ width: 4 }),
+    sub: Subtract4,
+  },
+  connect: ({ inputs, outputs, nodes: { aBits, bBits, sub } }) => [
+    inputs.a.to(aBits.in),
+    inputs.b.to(bBits.in),
+    aBits.bit3.to(sub.a3),
+    aBits.bit2.to(sub.a2),
+    aBits.bit1.to(sub.a1),
+    aBits.bit0.to(sub.a0),
+    bBits.bit3.to(sub.b3),
+    bBits.bit2.to(sub.b2),
+    bBits.bit1.to(sub.b1),
+    bBits.bit0.to(sub.b0),
+    sub.borrow.to(outputs.lt),
+  ],
+});`;
+
+const CPU_REGFILE = `const RegFile2 = circuit('RegFile2', {
+  inputs: { write: bit, wsel: bit, asel: bit, bsel: bit, d: bus(4) },
+  outputs: { a: bus(4), b: bus(4), r0: bus(4), r1: bus(4) },
+  nodes: {
+    dBits: Splitter({ width: 4 }),
+    aBits: Combiner({ width: 4 }),
+    bBits: Combiner({ width: 4 }),
+    r0Bits: Combiner({ width: 4 }),
+    r1Bits: Combiner({ width: 4 }),
+    reg0: Register4,
+    reg1: Register4,
+    load1: And,
+    load0: Xor,
+    ma3: Mux2,
+    ma2: Mux2,
+    ma1: Mux2,
+    ma0: Mux2,
+    mb3: Mux2,
+    mb2: Mux2,
+    mb1: Mux2,
+    mb0: Mux2,
+  },
+  connect: ({ inputs, outputs, nodes: { dBits, aBits, bBits, r0Bits, r1Bits, reg0, reg1, load1, load0, ma3, ma2, ma1, ma0, mb3, mb2, mb1, mb0 } }) => [
+    inputs.d.to(dBits.in),
+    aBits.out.to(outputs.a),
+    bBits.out.to(outputs.b),
+    r0Bits.out.to(outputs.r0),
+    r1Bits.out.to(outputs.r1),
+    inputs.write.to(load1.a, load0.a),
+    inputs.wsel.to(load1.b),
+    load1.out.to(reg1.load, load0.b),
+    load0.out.to(reg0.load),
+    dBits.bit3.to(reg0.d3, reg1.d3),
+    dBits.bit2.to(reg0.d2, reg1.d2),
+    dBits.bit1.to(reg0.d1, reg1.d1),
+    dBits.bit0.to(reg0.d0, reg1.d0),
+    inputs.asel.to(ma3.sel, ma2.sel, ma1.sel, ma0.sel),
+    reg0.q3.to(ma3.a),
+    reg1.q3.to(ma3.b),
+    ma3.out.to(aBits.bit3),
+    reg0.q2.to(ma2.a),
+    reg1.q2.to(ma2.b),
+    ma2.out.to(aBits.bit2),
+    reg0.q1.to(ma1.a),
+    reg1.q1.to(ma1.b),
+    ma1.out.to(aBits.bit1),
+    reg0.q0.to(ma0.a),
+    reg1.q0.to(ma0.b),
+    ma0.out.to(aBits.bit0),
+    inputs.bsel.to(mb3.sel, mb2.sel, mb1.sel, mb0.sel),
+    reg0.q3.to(mb3.a),
+    reg1.q3.to(mb3.b),
+    mb3.out.to(bBits.bit3),
+    reg0.q2.to(mb2.a),
+    reg1.q2.to(mb2.b),
+    mb2.out.to(bBits.bit2),
+    reg0.q1.to(mb1.a),
+    reg1.q1.to(mb1.b),
+    mb1.out.to(bBits.bit1),
+    reg0.q0.to(mb0.a),
+    reg1.q0.to(mb0.b),
+    mb0.out.to(bBits.bit0),
+    reg0.q3.to(r0Bits.bit3),
+    reg0.q2.to(r0Bits.bit2),
+    reg0.q1.to(r0Bits.bit1),
+    reg0.q0.to(r0Bits.bit0),
+    reg1.q3.to(r1Bits.bit3),
+    reg1.q2.to(r1Bits.bit2),
+    reg1.q1.to(r1Bits.bit1),
+    reg1.q0.to(r1Bits.bit0),
+  ],
+});`;
+
+const CPU_PC = `const ProgramCounter4 = circuit('ProgramCounter4', {
+  inputs: { jump: bit, a: bus(4) },
+  outputs: { pc: bus(4) },
+  nodes: {
+    aBits: Splitter({ width: 4 }),
+    pcBits: Combiner({ width: 4 }),
+    ff3: DFlipFlop(),
+    ff2: DFlipFlop(),
+    ff1: DFlipFlop(),
+    ff0: DFlipFlop(),
+    inc1: Xor,
+    carry2: And,
+    inc2: Xor,
+    carry3: And,
+    inc3: Xor,
+    pick3: Mux2,
+    pick2: Mux2,
+    pick1: Mux2,
+    pick0: Mux2,
+  },
+  connect: ({ inputs, outputs, nodes: { aBits, pcBits, ff3, ff2, ff1, ff0, inc1, carry2, inc2, carry3, inc3, pick3, pick2, pick1, pick0 } }) => [
+    inputs.a.to(aBits.in),
+    pcBits.out.to(outputs.pc),
+    ff0.q.to(pcBits.bit0, inc1.b, carry2.b),
+    ff1.q.to(pcBits.bit1, inc1.a, carry2.a),
+    ff2.q.to(pcBits.bit2, inc2.a, carry3.a),
+    ff3.q.to(pcBits.bit3, inc3.a),
+    carry2.out.to(inc2.b, carry3.b),
+    carry3.out.to(inc3.b),
+    inputs.jump.to(pick3.sel, pick2.sel, pick1.sel, pick0.sel),
+    inc3.out.to(pick3.a),
+    aBits.bit3.to(pick3.b),
+    pick3.out.to(ff3.d),
+    inc2.out.to(pick2.a),
+    aBits.bit2.to(pick2.b),
+    pick2.out.to(ff2.d),
+    inc1.out.to(pick1.a),
+    aBits.bit1.to(pick1.b),
+    pick1.out.to(ff1.d),
+    ff0.q_bar.to(pick0.a),
+    aBits.bit0.to(pick0.b),
+    pick0.out.to(ff0.d),
+  ],
+});`;
+
 export const LEVELS: Level[] = [
   {
     id: 'nand',
@@ -1722,6 +1922,142 @@ export default circuit('ProgramCounter4', {
     outro: {
       headline: 'Where the program is',
       body: 'A CPU keeps the address of its next instruction in one of these. Counting moves on to the next instruction, and loading is how a jump or a loop works.',
+    },
+  },
+
+  {
+    id: 'cpu',
+    title: 'CPU',
+    tagline: 'Run a program on the parts you built.',
+    brief:
+      'Carry out each instruction `i` as it arrives. The table checks `pc`, `r0` and `r1` after every step. This is the program it runs:',
+    target: 'Cpu4',
+    inputs: ['i'],
+    outputs: ['pc', 'r0', 'r1'],
+    allowed: MEMORY_GATES,
+    sequential: true,
+    program: [
+      'LOAD r0, 1',
+      'LOAD r1, 1',
+      'ADD r0, r1',
+      'ADD r1, r0',
+      'JUMP IF LESS r0, r1, 2',
+      'SUB r0, r1',
+      'AND r0, r1',
+      'OR r0, r1',
+      'JUMP 8',
+    ],
+    labels: [
+      'LOAD r0, 1',
+      'LOAD r1, 1',
+      'ADD r0, r1',
+      'ADD r1, r0',
+      'JUMP IF LESS r0, r1, 2',
+      'ADD r0, r1',
+      'ADD r1, r0',
+      'JUMP IF LESS r0, r1, 2',
+      'ADD r0, r1',
+      'ADD r1, r0',
+      'JUMP IF LESS r0, r1, 2',
+      'SUB r0, r1',
+      'AND r0, r1',
+      'OR r0, r1',
+      'JUMP 8',
+      'JUMP 8',
+    ],
+    stub: `// Every part is finished, below. What's left is the wiring
+// that makes an instruction happen.
+
+${MUX2}
+
+${MUX4}
+
+${HALF_ADDER}
+
+${FULL_ADDER}
+
+${ADDER4}
+
+${SUBTRACT4}
+
+${CPU_ALU}
+
+${CPU_LESS_THAN}
+
+${REGISTER_BIT}
+
+${REGISTER4}
+
+${CPU_REGFILE}
+
+${CPU_PC}
+
+// An instruction is 8 bits:
+//   bits 7-6  what to do: 00 LOAD, 01 ALU, 10 JUMP, 11 JUMP IF LESS
+//   bit 5     ra, a register: 0 for r0, 1 for r1
+//   bit 4     rb, the other register
+//   bits 3-0  n: a number, an address, or in bits 1-0 the ALU op
+//
+//   LOAD ra, n              ra = n
+//   ADD/SUB/AND/OR ra, rb   ra = ra op rb
+//   JUMP n                  go to n
+//   JUMP IF LESS ra, rb, n  go to n if ra < rb
+//
+// n is wired up already. Registers are written on LOAD and ALU
+// instructions, always into ra. LOAD writes n; the ALU
+// instructions write the ALU's answer.
+
+export default circuit('Cpu4', {
+  nodes: {
+    i: Input({ width: 8 }),
+    iBits: Splitter({ width: 8 }),
+    n: Combiner({ width: 4 }),
+    alu: Alu4,
+    less: LessThan4,
+    regs: RegFile2,
+    counter: ProgramCounter4,
+    pc: HexDisplay({ width: 4 }),
+    r0: HexDisplay({ width: 4 }),
+    r1: HexDisplay({ width: 4 }),
+  },
+  connect: ({ nodes: { i, iBits, n, alu, less, regs, counter, pc, r0, r1 } }) => [
+    i.out.to(iBits.in),
+    iBits.bit3.to(n.bit3),
+    iBits.bit2.to(n.bit2),
+    iBits.bit1.to(n.bit1),
+    iBits.bit0.to(n.bit0),
+    counter.pc.to(pc.in),
+    regs.r0.to(r0.in),
+    regs.r1.to(r1.in),
+    //
+  ],
+});
+`,
+    // Ordered steps, starting from pc 0 with both registers 0. The grader plays
+    // memory: each step's input is the instruction at the address the last
+    // step left in pc, jumps included.
+    vectors: [
+      { inputs: { i: 1 }, expect: { pc: 1, r0: 1, r1: 0 } },
+      { inputs: { i: 33 }, expect: { pc: 2, r0: 1, r1: 1 } },
+      { inputs: { i: 80 }, expect: { pc: 3, r0: 2, r1: 1 } },
+      { inputs: { i: 96 }, expect: { pc: 4, r0: 2, r1: 3 } },
+      { inputs: { i: 210 }, expect: { pc: 2, r0: 2, r1: 3 } },
+      { inputs: { i: 80 }, expect: { pc: 3, r0: 5, r1: 3 } },
+      { inputs: { i: 96 }, expect: { pc: 4, r0: 5, r1: 8 } },
+      { inputs: { i: 210 }, expect: { pc: 2, r0: 5, r1: 8 } },
+      { inputs: { i: 80 }, expect: { pc: 3, r0: 13, r1: 8 } },
+      { inputs: { i: 96 }, expect: { pc: 4, r0: 13, r1: 5 } },
+      { inputs: { i: 210 }, expect: { pc: 5, r0: 13, r1: 5 } },
+      { inputs: { i: 81 }, expect: { pc: 6, r0: 8, r1: 5 } },
+      { inputs: { i: 82 }, expect: { pc: 7, r0: 0, r1: 5 } },
+      { inputs: { i: 83 }, expect: { pc: 8, r0: 5, r1: 5 } },
+      { inputs: { i: 136 }, expect: { pc: 8, r0: 5, r1: 5 } },
+      { inputs: { i: 136 }, expect: { pc: 8, r0: 5, r1: 5 } },
+    ],
+    par: 206,
+    outro: {
+      headline: 'It runs',
+      body: 'Every part of that was built from the NAND gate you started with, and it just ran a program. Real CPUs are the same idea, with wider numbers and more instructions.',
     },
   },
 ];

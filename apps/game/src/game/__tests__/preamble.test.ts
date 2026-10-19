@@ -23,6 +23,7 @@ describe('given-preamble detection', () => {
       'less-than',
       'alu-4',
       'register-file',
+      'cpu',
     ]);
   });
 

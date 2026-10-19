@@ -79,6 +79,7 @@ export function SpecPanel({ level, result, activeRow, provenRows, checking }: Sp
   const [hovered, setHovered] = useState<number | null>(null);
   const focus = hovered ?? failedIndex;
   const asNumbers = focus === null ? null : readNumbers(level, level.vectors[focus]);
+  const label = focus === null ? null : (level.labels?.[focus] ?? null);
   return (
     <div className="h-full overflow-x-auto overflow-y-auto px-6 py-4">
       {/* Four equal columns across the sheet. They sit inside its padding, so
@@ -94,6 +95,17 @@ export function SpecPanel({ level, result, activeRow, provenRows, checking }: Sp
             text={level.brief}
             className="max-w-md text-[13px] leading-relaxed text-muted-foreground"
           />
+          {level.program && (
+            <ol className="mt-2 font-mono text-[12px] leading-relaxed text-foreground">
+              {level.program.map((line, address) => (
+                // The address is the identity: two lines can hold the same instruction.
+                <li key={`${address}-${line}`}>
+                  <span className="inline-block w-5 text-muted-foreground">{address}</span>
+                  {line}
+                </li>
+              ))}
+            </ol>
+          )}
         </div>
 
         <div>
@@ -116,6 +128,11 @@ export function SpecPanel({ level, result, activeRow, provenRows, checking }: Sp
           </p>
           {/* Rows of bits are hard to check by eye, so arithmetic levels read
               one column back in decimal. */}
+          {level.labels && (
+            <p className="mt-0.5 max-w-[240px] font-mono text-[11px] text-muted-foreground">
+              {label ?? 'Hover a column to see which instruction ran.'}
+            </p>
+          )}
           {level.numbers && (
             <p className="mt-0.5 max-w-[240px] font-mono text-[11px] text-muted-foreground">
               {asNumbers ?? 'Hover a column to read it as numbers.'}
