@@ -40,6 +40,7 @@ export const MAP_ROWS: string[][] = [
   ['mux-4', 'subtract'],
   ['parity', 'equal'],
   ['less-than'],
+  ['alu-4'],
 ];
 
 /**
@@ -82,6 +83,10 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   subtract: ['negate'],
   equal: ['subtract'],
   'less-than': ['equal'],
+
+  // Where logic and arithmetic meet: an ALU is a subtractor's worth of
+  // arithmetic with a multiplexer choosing between the answers.
+  'alu-4': ['mux-4', 'subtract'],
   'd-latch': ['latch'],
   toggle: ['d-latch'],
 

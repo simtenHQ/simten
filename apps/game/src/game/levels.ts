@@ -71,6 +71,23 @@ const MUX2 = `const Mux2 = circuit('Mux2', {
   ],
 });`;
 
+const MUX4 = `const Mux4 = circuit('Mux4', {
+  inputs: { d0: bit, d1: bit, d2: bit, d3: bit, s1: bit, s0: bit },
+  outputs: { out: bit },
+  nodes: { low: Mux2, high: Mux2, pick: Mux2 },
+  connect: ({ inputs, outputs, nodes: { low, high, pick } }) => [
+    inputs.d0.to(low.a),
+    inputs.d1.to(low.b),
+    inputs.d2.to(high.a),
+    inputs.d3.to(high.b),
+    inputs.s0.to(low.sel, high.sel),
+    low.out.to(pick.a),
+    high.out.to(pick.b),
+    inputs.s1.to(pick.sel),
+    pick.out.to(outputs.out),
+  ],
+});`;
+
 const HALF_ADDER = `const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
   outputs: { sum: bit, carry: bit },
@@ -1437,6 +1454,131 @@ export default circuit('LessThan4', {
     outro: {
       headline: 'Comparison is subtraction',
       body: 'A CPU compares two numbers by subtracting them and keeping only the flags, borrow among them. Par counts the whole subtractor. The difference bits go nowhere, so some of those gates are doing nothing.',
+    },
+  },
+
+  {
+    id: 'alu-4',
+    title: 'Arithmetic Logic Unit',
+    tagline: 'One circuit that adds, subtracts, ANDs or ORs.',
+    brief:
+      'Put the result of the operation `op1 op0` picks on `r3` to `r0`: 00 is a + b, 01 is a - b, 10 is a AND b, and 11 is a OR b, bit by bit',
+    target: 'Alu4',
+    inputs: ['op1', 'op0', 'a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
+    outputs: ['r3', 'r2', 'r1', 'r0'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// Everything you need is below, finished: your multiplexers,
+// your adder and your subtractor.
+
+${MUX2}
+
+${MUX4}
+
+${HALF_ADDER}
+
+${FULL_ADDER}
+
+${ADDER4}
+
+${SUBTRACT4}
+
+// Work out all four answers at once, whatever op says. Then,
+// for each output bit, let op1 op0 pick which answer it shows.
+
+export default circuit('Alu4', {
+  nodes: {
+    op1: Switch,
+    op0: Switch,
+    a3: Switch,
+    a2: Switch,
+    a1: Switch,
+    a0: Switch,
+    b3: Switch,
+    b2: Switch,
+    b1: Switch,
+    b0: Switch,
+    r3: Led,
+    r2: Led,
+    r1: Led,
+    r0: Led,
+  },
+  connect: ({ nodes: { op1, op0, a3, a2, a1, a0, b3, b2, b1, b0, r3, r2, r1, r0 } }) => [
+    //
+  ],
+});
+`,
+    // Four per operation. 12 and 10, and 5 and 3, appear under every op, so a
+    // circuit that ignores op, or swaps two of them, gets caught.
+    vectors: [
+      {
+        inputs: { op1: 0, op0: 0, a3: 1, a2: 1, a1: 0, a0: 0, b3: 1, b2: 0, b1: 1, b0: 0 },
+        expect: { r3: 0, r2: 1, r1: 1, r0: 0 },
+      },
+      {
+        inputs: { op1: 0, op0: 0, a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 0, b1: 1, b0: 1 },
+        expect: { r3: 1, r2: 0, r1: 0, r0: 0 },
+      },
+      {
+        inputs: { op1: 0, op0: 0, a3: 1, a2: 1, a1: 1, a0: 1, b3: 0, b2: 0, b1: 0, b0: 1 },
+        expect: { r3: 0, r2: 0, r1: 0, r0: 0 },
+      },
+      {
+        inputs: { op1: 0, op0: 0, a3: 1, a2: 0, a1: 0, a0: 1, b3: 1, b2: 0, b1: 0, b0: 1 },
+        expect: { r3: 0, r2: 0, r1: 1, r0: 0 },
+      },
+      {
+        inputs: { op1: 0, op0: 1, a3: 1, a2: 1, a1: 0, a0: 0, b3: 1, b2: 0, b1: 1, b0: 0 },
+        expect: { r3: 0, r2: 0, r1: 1, r0: 0 },
+      },
+      {
+        inputs: { op1: 0, op0: 1, a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 0, b1: 1, b0: 1 },
+        expect: { r3: 0, r2: 0, r1: 1, r0: 0 },
+      },
+      {
+        inputs: { op1: 0, op0: 1, a3: 0, a2: 0, a1: 1, a0: 1, b3: 0, b2: 1, b1: 0, b0: 1 },
+        expect: { r3: 1, r2: 1, r1: 1, r0: 0 },
+      },
+      {
+        inputs: { op1: 0, op0: 1, a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 1 },
+        expect: { r3: 1, r2: 1, r1: 1, r0: 1 },
+      },
+      {
+        inputs: { op1: 1, op0: 0, a3: 1, a2: 1, a1: 0, a0: 0, b3: 1, b2: 0, b1: 1, b0: 0 },
+        expect: { r3: 1, r2: 0, r1: 0, r0: 0 },
+      },
+      {
+        inputs: { op1: 1, op0: 0, a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 0, b1: 1, b0: 1 },
+        expect: { r3: 0, r2: 0, r1: 0, r0: 1 },
+      },
+      {
+        inputs: { op1: 1, op0: 0, a3: 1, a2: 1, a1: 1, a0: 1, b3: 0, b2: 1, b1: 1, b0: 0 },
+        expect: { r3: 0, r2: 1, r1: 1, r0: 0 },
+      },
+      {
+        inputs: { op1: 1, op0: 0, a3: 1, a2: 0, a1: 0, a0: 1, b3: 0, b2: 1, b1: 1, b0: 0 },
+        expect: { r3: 0, r2: 0, r1: 0, r0: 0 },
+      },
+      {
+        inputs: { op1: 1, op0: 1, a3: 1, a2: 1, a1: 0, a0: 0, b3: 1, b2: 0, b1: 1, b0: 0 },
+        expect: { r3: 1, r2: 1, r1: 1, r0: 0 },
+      },
+      {
+        inputs: { op1: 1, op0: 1, a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 0, b1: 1, b0: 1 },
+        expect: { r3: 0, r2: 1, r1: 1, r0: 1 },
+      },
+      {
+        inputs: { op1: 1, op0: 1, a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 0 },
+        expect: { r3: 0, r2: 0, r1: 0, r0: 0 },
+      },
+      {
+        inputs: { op1: 1, op0: 1, a3: 1, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 1 },
+        expect: { r3: 1, r2: 0, r1: 0, r0: 1 },
+      },
+    ],
+    par: 86,
+    outro: {
+      headline: 'The heart of a CPU',
+      body: 'Work out every answer, keep the one you asked for. Every processor has an ALU shaped like this. Give it registers to read from and a counter to step through a program, and you have most of a computer.',
     },
   },
 ];

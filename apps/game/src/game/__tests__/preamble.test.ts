@@ -15,7 +15,7 @@ describe('given-preamble detection', () => {
     const skipped = LEVELS.filter((l) => givenPreambleEnd(l.stub.split('\n')) !== null).map(
       (l) => l.id,
     );
-    expect(skipped).toEqual(['full-adder', 'mux-4', 'adder-4', 'subtract', 'less-than']);
+    expect(skipped).toEqual(['full-adder', 'mux-4', 'adder-4', 'subtract', 'less-than', 'alu-4']);
   });
 
   it('leaves instruction comments visible', () => {

@@ -29,6 +29,7 @@
  */
 
 import adder4 from './adder-4.ts?raw';
+import alu4 from './alu-4.ts?raw';
 import andGate from './and.ts?raw';
 import counter from './counter.ts?raw';
 import dLatch from './d-latch.ts?raw';
@@ -80,4 +81,5 @@ export const SOLUTIONS: Record<string, string> = {
   subtract,
   equal,
   'less-than': lessThan,
+  'alu-4': alu4,
 };
