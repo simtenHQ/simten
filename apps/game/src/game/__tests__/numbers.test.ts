@@ -11,16 +11,22 @@ function level(id: string): Level {
 
 describe('readNumbers', () => {
   it('reads each group most significant bit first', () => {
-    const adder = level('adder-4');
-    // Third in the list: 5 + 3.
-    const fivePlusThree = adder.vectors[2];
-    expect(readNumbers(adder, fivePlusThree)).toBe('a = 5, b = 3, s = 8');
+    const mux4 = level('mux-4');
+    // The select is s1 s0; the fourth vector picks input 2.
+    const pick2 = mux4.vectors.find((v) => v.inputs.s1 === 1 && v.inputs.s0 === 0);
+    if (!pick2) throw new Error('expected a vector selecting input 2');
+    expect(readNumbers(mux4, pick2)).toBe('s = 2');
   });
 
   it('adds the negative reading for a signed group', () => {
-    const negate = level('negate');
-    const three = negate.vectors[3];
-    expect(readNumbers(negate, three)).toBe('a = 3, n = 13 (-3)');
+    const signed: Level = {
+      ...level('decoder'),
+      inputs: ['n3', 'n2', 'n1', 'n0'],
+      outputs: [],
+      numbers: { n: 'signed' },
+    };
+    const vector = { inputs: { n3: 1, n2: 1, n1: 0, n0: 1 }, expect: {} };
+    expect(readNumbers(signed, vector)).toBe('n = 13 (-3)');
   });
 
   it('says nothing for a level without numbers', () => {

@@ -1,7 +1,7 @@
 /** Reference solution for `adder-4`. Proven by `__tests__/levels.test.ts`. */
 
 import { bit, circuit } from '@simten/core/circuit';
-import { And, Led, Or, Switch, Xor } from '@simten/core/std';
+import { And, Combiner, HexDisplay, Input, Led, Or, Splitter, Xor } from '@simten/core/std';
 
 const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
@@ -35,42 +35,37 @@ const FullAdder = circuit('FullAdder', {
 // feeds the next bit's carry in.
 export const Adder4 = circuit('Adder4', {
   nodes: {
-    a3: Switch,
-    a2: Switch,
-    a1: Switch,
-    a0: Switch,
-    b3: Switch,
-    b2: Switch,
-    b1: Switch,
-    b0: Switch,
+    a: Input({ width: 4 }),
+    aBits: Splitter({ width: 4 }),
+    b: Input({ width: 4 }),
+    bBits: Splitter({ width: 4 }),
     add0: HalfAdder,
     add1: FullAdder,
     add2: FullAdder,
     add3: FullAdder,
-    s3: Led,
-    s2: Led,
-    s1: Led,
-    s0: Led,
+    s: HexDisplay({ width: 4 }),
+    sBits: Combiner({ width: 4 }),
     cout: Led,
   },
-  connect: ({
-    nodes: { a3, a2, a1, a0, b3, b2, b1, b0, add0, add1, add2, add3, s3, s2, s1, s0, cout },
-  }) => [
-    a0.out.to(add0.a),
-    b0.out.to(add0.b),
-    add0.sum.to(s0.in),
+  connect: ({ nodes: { a, aBits, b, bBits, add0, add1, add2, add3, s, sBits, cout } }) => [
+    a.out.to(aBits.in),
+    b.out.to(bBits.in),
+    sBits.out.to(s.in),
+    aBits.bit0.to(add0.a),
+    bBits.bit0.to(add0.b),
+    add0.sum.to(sBits.bit0),
     add0.carry.to(add1.cin),
-    a1.out.to(add1.a),
-    b1.out.to(add1.b),
-    add1.sum.to(s1.in),
+    aBits.bit1.to(add1.a),
+    bBits.bit1.to(add1.b),
+    add1.sum.to(sBits.bit1),
     add1.cout.to(add2.cin),
-    a2.out.to(add2.a),
-    b2.out.to(add2.b),
-    add2.sum.to(s2.in),
+    aBits.bit2.to(add2.a),
+    bBits.bit2.to(add2.b),
+    add2.sum.to(sBits.bit2),
     add2.cout.to(add3.cin),
-    a3.out.to(add3.a),
-    b3.out.to(add3.b),
-    add3.sum.to(s3.in),
+    aBits.bit3.to(add3.a),
+    bBits.bit3.to(add3.b),
+    add3.sum.to(sBits.bit3),
     add3.cout.to(cout.in),
   ],
 });

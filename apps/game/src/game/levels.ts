@@ -1231,13 +1231,11 @@ export default circuit('Parity4', {
     id: 'adder-4',
     title: '4-Bit Adder',
     tagline: 'Add two 4-bit numbers.',
-    brief:
-      'Add `a3 a2 a1 a0` to `b3 b2 b1 b0`. The sum goes on `s3` to `s0`, and anything too big for four bits lights `cout`',
+    brief: 'Add `a` to `b`. The sum goes on `s`, and anything too big for four bits lights `cout`',
     target: 'Adder4',
-    inputs: ['a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
-    outputs: ['s3', 's2', 's1', 's0', 'cout'],
+    inputs: ['a', 'b'],
+    outputs: ['s', 'cout'],
     allowed: ARITHMETIC_GATES,
-    numbers: { a: 'unsigned', b: 'unsigned', s: 'unsigned' },
     stub: `// Your half adder and full adder, finished, with ports.
 
 ${HALF_ADDER}
@@ -1247,24 +1245,24 @@ ${FULL_ADDER}
 // One adder per bit, the same way you add on paper: start at
 // bit 0 and carry into the next column. Nothing carries into
 // bit 0, so it does not need a full adder.
+//
+// aBits.bit0 is the lowest bit of a, and sBits.bit0 the lowest
+// bit of the sum.
 
 export default circuit('Adder4', {
   nodes: {
-    a3: Switch,
-    a2: Switch,
-    a1: Switch,
-    a0: Switch,
-    b3: Switch,
-    b2: Switch,
-    b1: Switch,
-    b0: Switch,
-    s3: Led,
-    s2: Led,
-    s1: Led,
-    s0: Led,
+    a: Input({ width: 4 }),
+    aBits: Splitter({ width: 4 }),
+    b: Input({ width: 4 }),
+    bBits: Splitter({ width: 4 }),
+    s: HexDisplay({ width: 4 }),
+    sBits: Combiner({ width: 4 }),
     cout: Led,
   },
-  connect: ({ nodes: { a3, a2, a1, a0, b3, b2, b1, b0, s3, s2, s1, s0, cout } }) => [
+  connect: ({ nodes: { a, aBits, b, bBits, s, sBits, cout } }) => [
+    a.out.to(aBits.in),
+    b.out.to(bBits.in),
+    sBits.out.to(s.in),
     //
   ],
 });
@@ -1272,54 +1270,18 @@ export default circuit('Adder4', {
     // 12 of the 256 sums, picked so every carry gets used: 15 + 1 ripples
     // through all four bits, and 15 + 15 overflows with every bit set.
     vectors: [
-      {
-        inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 0 },
-        expect: { s3: 0, s2: 0, s1: 0, s0: 0, cout: 0 },
-      },
-      {
-        inputs: { a3: 0, a2: 0, a1: 0, a0: 1, b3: 0, b2: 0, b1: 0, b0: 1 },
-        expect: { s3: 0, s2: 0, s1: 1, s0: 0, cout: 0 },
-      },
-      {
-        inputs: { a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 0, b1: 1, b0: 1 },
-        expect: { s3: 1, s2: 0, s1: 0, s0: 0, cout: 0 },
-      },
-      {
-        inputs: { a3: 0, a2: 1, a1: 1, a0: 1, b3: 1, b2: 0, b1: 0, b0: 0 },
-        expect: { s3: 1, s2: 1, s1: 1, s0: 1, cout: 0 },
-      },
-      {
-        inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 0, b2: 0, b1: 0, b0: 1 },
-        expect: { s3: 0, s2: 0, s1: 0, s0: 0, cout: 1 },
-      },
-      {
-        inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 1, b1: 1, b0: 1 },
-        expect: { s3: 1, s2: 1, s1: 1, s0: 0, cout: 1 },
-      },
-      {
-        inputs: { a3: 1, a2: 0, a1: 0, a0: 0, b3: 1, b2: 0, b1: 0, b0: 0 },
-        expect: { s3: 0, s2: 0, s1: 0, s0: 0, cout: 1 },
-      },
-      {
-        inputs: { a3: 0, a2: 1, a1: 1, a0: 0, b3: 1, b2: 0, b1: 0, b0: 1 },
-        expect: { s3: 1, s2: 1, s1: 1, s0: 1, cout: 0 },
-      },
-      {
-        inputs: { a3: 1, a2: 0, a1: 1, a0: 0, b3: 0, b2: 1, b1: 0, b0: 1 },
-        expect: { s3: 1, s2: 1, s1: 1, s0: 1, cout: 0 },
-      },
-      {
-        inputs: { a3: 0, a2: 0, a1: 1, a0: 1, b3: 1, b2: 1, b1: 0, b0: 1 },
-        expect: { s3: 0, s2: 0, s1: 0, s0: 0, cout: 1 },
-      },
-      {
-        inputs: { a3: 0, a2: 1, a1: 1, a0: 1, b3: 0, b2: 0, b1: 0, b0: 1 },
-        expect: { s3: 1, s2: 0, s1: 0, s0: 0, cout: 0 },
-      },
-      {
-        inputs: { a3: 1, a2: 1, a1: 0, a0: 0, b3: 0, b2: 1, b1: 0, b0: 0 },
-        expect: { s3: 0, s2: 0, s1: 0, s0: 0, cout: 1 },
-      },
+      { inputs: { a: 0, b: 0 }, expect: { s: 0, cout: 0 } },
+      { inputs: { a: 1, b: 1 }, expect: { s: 2, cout: 0 } },
+      { inputs: { a: 5, b: 3 }, expect: { s: 8, cout: 0 } },
+      { inputs: { a: 7, b: 8 }, expect: { s: 15, cout: 0 } },
+      { inputs: { a: 15, b: 1 }, expect: { s: 0, cout: 1 } },
+      { inputs: { a: 15, b: 15 }, expect: { s: 14, cout: 1 } },
+      { inputs: { a: 8, b: 8 }, expect: { s: 0, cout: 1 } },
+      { inputs: { a: 6, b: 9 }, expect: { s: 15, cout: 0 } },
+      { inputs: { a: 10, b: 5 }, expect: { s: 15, cout: 0 } },
+      { inputs: { a: 3, b: 13 }, expect: { s: 0, cout: 1 } },
+      { inputs: { a: 7, b: 1 }, expect: { s: 8, cout: 0 } },
+      { inputs: { a: 12, b: 4 }, expect: { s: 0, cout: 1 } },
     ],
     par: 17,
     outro: {
