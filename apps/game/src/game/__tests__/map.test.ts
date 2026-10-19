@@ -11,7 +11,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { LEVELS } from '../levels';
-import { buildMapGraph, MAP_ROWS, NODE_WIDTH } from '../map';
+import { buildMapGraph, MAP_COLUMNS, MAP_ROWS, NODE_WIDTH } from '../map';
 
 const mapped = MAP_ROWS.flat();
 
@@ -48,13 +48,33 @@ describe('the graph it builds', () => {
     const { nodes } = buildMapGraph();
     const byId = new Map(nodes.map((n) => [n.id, n]));
 
-    for (const row of MAP_ROWS) {
-      const centres = row
-        .map((id) => byId.get(id))
-        .filter((n) => n !== undefined)
-        .map((n) => n.position.x + NODE_WIDTH / 2);
-      const midpoint = (Math.min(...centres) + Math.max(...centres)) / 2;
-      expect(midpoint).toBeCloseTo(0);
+    const centreOf = (id: string) => {
+      const node = byId.get(id);
+      return node === undefined ? undefined : node.position.x + NODE_WIDTH / 2;
+    };
+    const balanced = (ids: string[]) => {
+      const centres = ids.map(centreOf).filter((x) => x !== undefined);
+      return (Math.min(...centres) + Math.max(...centres)) / 2;
+    };
+
+    for (const row of MAP_ROWS.filter((r) => r.every((id) => !(id in MAP_COLUMNS)))) {
+      expect(balanced(row)).toBeCloseTo(0);
+    }
+    // Pinned columns leave some rows lopsided on purpose; the fork as a whole
+    // still has to sit on the centre line.
+    expect(balanced(Object.keys(MAP_COLUMNS))).toBeCloseTo(0);
+  });
+
+  it('keeps every pinned column clear of its neighbours', () => {
+    // Two levels on the same row closer than a card's width would overlap.
+    const { nodes } = buildMapGraph();
+    const byY = new Map<number, number[]>();
+    for (const n of nodes) byY.set(n.position.y, [...(byY.get(n.position.y) ?? []), n.position.x]);
+    for (const row of byY.values()) {
+      const xs = row.sort((a, b) => a - b);
+      for (let i = 1; i < xs.length; i++) {
+        expect(xs[i] - xs[i - 1]).toBeGreaterThanOrEqual(NODE_WIDTH);
+      }
     }
   });
 

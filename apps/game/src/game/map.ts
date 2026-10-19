@@ -30,9 +30,8 @@ export const MAP_ROWS: string[][] = [
   ['xor'],
   ['xnor'],
   ['making-a-component'],
-  // The fork: combinational logic on the left, arithmetic in the middle,
-  // memory on the right. Rows are ranks, so a shorter branch simply stops and
-  // `toggle` sits alone on the last one.
+  // The fork. Rows past here are ranks only; `MAP_COLUMNS` says which column
+  // each level sits in.
   ['multiplexer', 'half-adder', 'latch'],
   ['majority', 'full-adder', 'd-latch'],
   ['wide-gates', 'adder-4', 'toggle'],
@@ -42,6 +41,49 @@ export const MAP_ROWS: string[][] = [
   ['less-than'],
   ['alu-4'],
 ];
+
+/**
+ * Fixed columns for the fork, in node widths from the centre line.
+ *
+ * Centring each row works while every branch is the same length. Once they are
+ * not, a row of two re-centres and its levels drift half a column off the
+ * branch they belong to. So the fork pins its columns instead:
+ *
+ *   logic | new arithmetic | half adder, full adder, counter | memory
+ *
+ * The full adder feeds both the 4-bit adder and the counter. Stacking either
+ * one directly above it would run the other's wire through it, which reads as
+ * a dependency that is not there. Branching the new arithmetic off to the
+ * left leaves the square above the full adder empty for the counter's wire,
+ * and the counter sits two rows up where the toggle can reach it from the side.
+ *
+ * Rows without an entry here are centred, which is the whole trunk.
+ */
+export const MAP_COLUMNS: Record<string, number> = {
+  multiplexer: -1.5,
+  majority: -1.5,
+  'wide-gates': -1.5,
+  decoder: -1.5,
+  'mux-4': -1.5,
+  parity: -1.5,
+
+  'adder-4': -0.5,
+  negate: -0.5,
+  subtract: -0.5,
+  equal: -0.5,
+  'less-than': -0.5,
+
+  'half-adder': 0.5,
+  'full-adder': 0.5,
+  counter: 0.5,
+
+  latch: 1.5,
+  'd-latch': 1.5,
+  toggle: 1.5,
+
+  // Over the tops of the two columns it needs.
+  'alu-4': -1,
+};
 
 /**
  * What each level needs finished before it opens.
@@ -66,11 +108,12 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   xnor: ['xor'],
   'making-a-component': ['xnor'],
 
-  // The fork. Both branches need every gate, so it splits after the last one:
+  // The fork. Every branch needs every gate, so it splits after the last one:
   // nothing downstream can reach for a gate the player skipped.
+  multiplexer: ['making-a-component'],
   'half-adder': ['making-a-component'],
   latch: ['making-a-component'],
-  multiplexer: ['making-a-component'],
+
   majority: ['multiplexer'],
   'wide-gates': ['majority'],
   decoder: ['wide-gates'],
@@ -84,15 +127,16 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   equal: ['subtract'],
   'less-than': ['equal'],
 
-  // Where logic and arithmetic meet: an ALU is a subtractor's worth of
-  // arithmetic with a multiplexer choosing between the answers.
-  'alu-4': ['mux-4', 'subtract'],
   'd-latch': ['latch'],
   toggle: ['d-latch'],
 
   // Where the branches rejoin. The AND is honest: a counter is memory holding
   // the number and logic working out the next one, so it needs both halves.
   counter: ['full-adder', 'toggle'],
+
+  // Where logic and arithmetic meet. It needs both columns finished: by then
+  // the player has every part an ALU is made of.
+  'alu-4': ['parity', 'less-than'],
 };
 
 export interface MapSection {
@@ -175,7 +219,7 @@ export interface MapSectionNode {
 }
 
 /** Width of a band. Wide enough to read as an area, not a caption. */
-export const SECTION_WIDTH = 760;
+export const SECTION_WIDTH = 1010;
 
 /**
  * Vertical budget for a band, spent out of the space between two rows.
@@ -223,7 +267,7 @@ export function buildMapGraph(solved: ReadonlySet<string> = new Set()): {
       // React Flow positions a node by its top-left corner, so half a node's
       // width comes off to make x = 0 the row's visual centre rather than its
       // left edge. Without it every row sits `NODE_WIDTH / 2` right of centre.
-      const offset = columnIndex - (row.length - 1) / 2;
+      const offset = MAP_COLUMNS[levelId] ?? columnIndex - (row.length - 1) / 2;
       nodes.push({
         id: levelId,
         position: { x: offset * (NODE_WIDTH + COLUMN_GAP) - NODE_WIDTH / 2, y },
