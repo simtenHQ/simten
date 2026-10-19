@@ -1602,16 +1602,6 @@ export function nextLevel(id: string): Level | undefined {
 }
 
 /**
- * Gates the player walks away from `level` holding that they did not have on
- * arrival: what the completion card announces as unlocked.
- *
- * Normally that is whatever the next level adds. The first level is the
- * exception: its baseline is nothing at all, so the gate it hands over is its
- * own `allowed` set. Without that case the opening card claimed in prose to
- * have unlocked NAND while showing no unlock at all, which is the one card
- * every player sees.
- */
-/**
  * Every gate the campaign hands over, in unlock order.
  *
  * Walked out of LEVELS rather than written down, so it cannot drift from what
@@ -1627,7 +1617,25 @@ export const ALL_GATES: string[] = (() => {
   return seen;
 })();
 
+/**
+ * Gates the player walks away from `level` holding that they did not have on
+ * arrival: what the completion card announces as unlocked.
+ *
+ * Normally that is whatever the next level adds that no earlier level allowed.
+ * Comparing with this level alone was right while the campaign was one line,
+ * but the map branches now and the list does not: the counter is followed by
+ * the multiplexer, and the counter's `Nand` and `DFlipFlop` against the
+ * multiplexer's full gate set announced six gates the player has held since
+ * the gate levels.
+ *
+ * The first level is the exception: its baseline is nothing at all, so the
+ * gate it hands over is its own `allowed` set. Without that case the opening card claimed in prose to
+ * have unlocked NAND while showing no unlock at all, which is the one card
+ * every player sees.
+ */
 export function gatesGainedAfter(level: Level, next: Level | undefined): string[] {
   if (levelIndex(level.id) === 0) return level.allowed;
-  return next ? next.allowed.filter((name) => !level.allowed.includes(name)) : [];
+  if (!next) return [];
+  const earlier = LEVELS.slice(0, levelIndex(next.id));
+  return next.allowed.filter((name) => !earlier.some((l) => l.allowed.includes(name)));
 }
