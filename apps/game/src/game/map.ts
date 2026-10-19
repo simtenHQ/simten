@@ -201,6 +201,11 @@ export interface MapEdge {
   id: string;
   source: string;
   target: string;
+  /**
+   * Where along the edge its horizontal run sits, 0 at the source and 1 at the
+   * target, for React Flow's smoothstep path. Absent means halfway.
+   */
+  stepPosition?: number;
 }
 
 /**
@@ -234,6 +239,22 @@ const SECTION_PAD_TOP = 24;
 const SECTION_PAD_BOTTOM = 30;
 
 /**
+ * Extra room under a band whose first row splits into several levels.
+ *
+ * Wires into a split row fan out along one horizontal run. Halfway between the
+ * rows, that run landed on the band's bottom edge, right on top of the band's
+ * caption. So a split band sits higher, and its wires split just under the
+ * cards instead, with the caption below them in the corner like every other
+ * band's.
+ */
+const SPLIT_ROOM = 36;
+/** How far under the cards a split's horizontal run sits. */
+const SPLIT_DROP = 14;
+
+/** Does this band open on a row of more than one level? */
+const opensOnSplit = (section: MapSection) => (MAP_ROWS[section.startRow]?.length ?? 0) > 1;
+
+/**
  * Build the graph.
  *
  * Y is inverted because React Flow's axis grows downward and the map reads
@@ -255,7 +276,12 @@ export function buildMapGraph(solved: ReadonlySet<string> = new Set()): {
   const nodes: MapNode[] = [];
   const edges: MapEdge[] = [];
   const lastRow = MAP_ROWS.length - 1;
-  const rowY = (rowIndex: number) => (lastRow - rowIndex) * ROW_GAP;
+  // Rows climb by ROW_GAP, plus SPLIT_ROOM for every split band at or below
+  // them. The top row stays at y = 0.
+  const lift = (rowIndex: number) =>
+    MAP_SECTIONS.filter((s) => opensOnSplit(s) && s.startRow <= rowIndex).length * SPLIT_ROOM;
+  const rowY = (rowIndex: number) =>
+    (lastRow - rowIndex) * ROW_GAP + lift(lastRow) - lift(rowIndex);
 
   MAP_ROWS.forEach((row, rowIndex) => {
     const y = rowY(rowIndex);
@@ -283,9 +309,21 @@ export function buildMapGraph(solved: ReadonlySet<string> = new Set()): {
 
   // Edges come from the dependency graph, not from row adjacency, so two
   // branches of different lengths do not acquire a link they never had.
+  const yOf = new Map(nodes.map((n) => [n.id, n.position.y]));
+  const splitRows = new Set(MAP_SECTIONS.filter(opensOnSplit).map((s) => s.startRow));
+  const splitTargets = new Set(MAP_ROWS.filter((_, i) => splitRows.has(i)).flat());
+
   for (const [levelId, requires] of Object.entries(MAP_REQUIRES)) {
     for (const source of requires) {
-      edges.push({ id: `${source}->${levelId}`, source, target: levelId });
+      const edge: MapEdge = { id: `${source}->${levelId}`, source, target: levelId };
+      // Into a split row: turn just under the target cards rather than halfway.
+      const from = yOf.get(source);
+      const to = yOf.get(levelId);
+      if (splitTargets.has(levelId) && from !== undefined && to !== undefined) {
+        const span = from - (to + NODE_HEIGHT);
+        edge.stepPosition = (span - SPLIT_DROP) / span;
+      }
+      edges.push(edge);
     }
   }
 
@@ -300,7 +338,11 @@ export function buildMapGraph(solved: ReadonlySet<string> = new Set()): {
   const sections: MapSectionNode[] = inRange.map((section, i) => {
     const endRow = i + 1 < inRange.length ? inRange[i + 1].startRow - 1 : lastRow;
     const top = rowY(Math.max(endRow, section.startRow)) - SECTION_PAD_TOP;
-    const bottom = rowY(section.startRow) + NODE_HEIGHT + SECTION_PAD_BOTTOM;
+    const bottom =
+      rowY(section.startRow) +
+      NODE_HEIGHT +
+      SECTION_PAD_BOTTOM +
+      (opensOnSplit(section) ? SPLIT_ROOM : 0);
 
     return {
       id: `section-${section.startRow}`,

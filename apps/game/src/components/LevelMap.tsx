@@ -269,6 +269,7 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
         return {
           ...e,
           type: 'smoothstep',
+          pathOptions: e.stepPosition === undefined ? undefined : { stepPosition: e.stepPosition },
           animated: false,
           style: { stroke: hot ? WIRE_LIVE : WIRE_LOW, strokeWidth: 2 },
         };
