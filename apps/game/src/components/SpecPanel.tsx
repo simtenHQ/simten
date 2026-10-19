@@ -12,6 +12,7 @@
  * waveform viewer, so the two read as one product.
  */
 
+import { explain } from '../game/explain';
 import type { GradeResult, Level } from '../game/types';
 import { TruthTable } from './TruthTable';
 
@@ -23,11 +24,13 @@ interface SpecPanelProps {
   activeRow: number | null;
   /** How many rows the victory run has proven so far. */
   provenRows: number;
+  /** A submit is being graded, or a pass is still sweeping the table. */
+  checking: boolean;
 }
 
 function Heading({ children }: { children: React.ReactNode }) {
   return (
-    <div className="mb-1 text-[11px] uppercase tracking-wider text-muted-foreground">
+    <div className="mb-1.5 text-xs font-medium uppercase tracking-wider text-muted-foreground">
       {children}
     </div>
   );
@@ -61,60 +64,30 @@ function Prose({ text, className }: { text: string; className: string }) {
   );
 }
 
-/**
- * What went wrong, in a sentence, for the failures a truth table cannot say.
- *
- * A red column expresses "your circuit computes the wrong thing" better than
- * prose does, so `vector` returns null and the table keeps that job. The other
- * four have nothing to redden: the circuit is missing, misnamed, uses a gate
- * the level forbids, or never ran. Those used to submit in silence, which read
- * as a broken button.
- *
- * Everything here comes off the failure itself; `GradeFailure` was written to
- * carry what the player needs to fix it, and then nothing displayed it.
- */
-function explain(result: GradeResult | null): string | null {
-  if (!result) return null;
-  if (result.status === 'error') return result.message;
-  if (result.status !== 'fail') return null;
-
-  const f = result.failure;
-  switch (f.kind) {
-    case 'vector':
-      return null;
-    case 'missing-circuit':
-      return f.found.length > 0
-        ? `No circuit called \`${f.expected}\`. This file defines: ${f.found.join(', ')}.`
-        : `No circuit called \`${f.expected}\`. Nothing is exported yet.`;
-    case 'interface':
-      return `This circuit has ${f.problems.join(', and ')}.`;
-    case 'forbidden': {
-      const plural = f.used.length > 1;
-      return `${f.used.join(', ')} ${plural ? 'are' : 'is'} not allowed on this level. You have: ${f.allowed.join(', ')}.`;
-    }
-  }
-}
-
-export function SpecPanel({ level, result, activeRow, provenRows }: SpecPanelProps) {
-  // Which column the grader stopped on. The failure carries the vector it was
-  // given rather than its position, and matching on the inputs rather than on
-  // object identity keeps this working if a verdict ever crosses postMessage.
+export function SpecPanel({ level, result, activeRow, provenRows, checking }: SpecPanelProps) {
+  // The column the grader stopped on: it reports the step's position, because
+  // on a sequential level the same inputs can appear at several steps.
   const failure = result?.status === 'fail' ? result.failure : null;
-  const failedKey = failure?.kind === 'vector' ? JSON.stringify(failure.vector.inputs) : null;
-  const failedAt =
-    failedKey === null
-      ? -1
-      : level.vectors.findIndex((v) => JSON.stringify(v.inputs) === failedKey);
-  const failedIndex = failedAt >= 0 ? failedAt : null;
-  const reason = explain(result);
-
+  const failedIndex = failure?.kind === 'vector' ? failure.index : null;
+  const reason = explain(result, level);
   return (
-    <div className="h-full overflow-x-auto overflow-y-auto px-4 py-3">
-      {/* Sized to its content, so the first-level tour can spotlight the
-          columns themselves. The sheet behind them is full width and runs to
-          the screen's edges, which left the spotlight with no visible frame. */}
-      <div data-tour="spec" className="flex w-fit items-start gap-8">
-        <div className="shrink-0">
+    <div className="h-full overflow-x-auto overflow-y-auto px-6 py-4">
+      {/* Four equal columns across the sheet. They sit inside its padding, so
+          the first-level tour's spotlight still has a visible frame (it had none
+          when this ran to the screen's edges). */}
+      <div
+        data-tour="spec"
+        className="grid h-full w-full grid-cols-[repeat(4,minmax(200px,1fr))] divide-x divide-border [&>*]:px-6 [&>*:first-child]:pl-0"
+      >
+        <div>
+          <Heading>Goal</Heading>
+          <Prose
+            text={level.brief}
+            className="max-w-md text-[13px] leading-relaxed text-muted-foreground"
+          />
+        </div>
+
+        <div>
           {/* A sequential level's rows are ordered steps, not independent cases.
             Calling that a truth table would tell the player order does not
             matter, when order is the entire lesson. */}
@@ -125,11 +98,12 @@ export function SpecPanel({ level, result, activeRow, provenRows }: SpecPanelPro
             proven={failedIndex ?? provenRows}
             failed={failedIndex}
           />
-        </div>
-
-        <div className="min-w-[220px] max-w-md shrink-0">
-          <Heading>The problem</Heading>
-          <Prose text={level.brief} className="text-sm leading-relaxed text-muted-foreground" />
+          {/* Footnote: how to read the table. */}
+          <p className="mt-1.5 max-w-[240px] text-[11px] text-muted-foreground">
+            {level.sequential
+              ? 'Each column is one tick of the clock, read left to right.'
+              : 'Expected outputs for each input combination.'}
+          </p>
         </div>
 
         {/* What you may build with, stated up front. It used to appear only in
@@ -137,7 +111,7 @@ export function SpecPanel({ level, result, activeRow, provenRows }: SpecPanelPro
           permits was to use something it did not. The unlock line on the
           previous level's completion card promises a gate; this is where that
           promise is visible on arrival. */}
-        <div className="min-w-[160px] shrink-0">
+        <div>
           <Heading>Allowed gates</Heading>
           <ul className="flex max-w-[240px] flex-wrap gap-1.5">
             {level.allowed.map((name) => (
@@ -146,20 +120,30 @@ export function SpecPanel({ level, result, activeRow, provenRows }: SpecPanelPro
               </li>
             ))}
           </ul>
-          <p className="mt-1.5 text-[11px] text-muted-foreground">
-            Switches and leds are always free.
-          </p>
         </div>
 
-        {reason && (
-          <div className="min-w-[220px] max-w-md shrink-0">
-            <Heading>Not yet</Heading>
+        {/* What the last submit said. Always here, so a verdict never moves the
+            rest of the sheet or turns up somewhere new; a wrong output also
+            reddens its column in the table. */}
+        <div>
+          <Heading>Feedback</Heading>
+          {checking ? (
+            <p className="text-[13px] leading-relaxed text-muted-foreground">Checking…</p>
+          ) : reason ? (
             <Prose
               text={reason}
-              className="text-sm leading-relaxed text-amber-600 dark:text-amber-400"
+              className="max-w-md text-[13px] leading-relaxed text-amber-600 dark:text-amber-400"
             />
-          </div>
-        )}
+          ) : result?.status === 'pass' ? (
+            <p className="text-[13px] leading-relaxed text-emerald-600 dark:text-emerald-400">
+              Passed, using {result.gates} {result.gates === 1 ? 'gate' : 'gates'}.
+            </p>
+          ) : (
+            <p className="text-[13px] leading-relaxed text-muted-foreground">
+              Press Submit to check your circuit.
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

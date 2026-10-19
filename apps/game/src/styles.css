@@ -52,6 +52,13 @@
 .simten-tour .driver-popover-description {
   @apply text-[13px] leading-normal text-muted-foreground;
 }
+/* Steps that show code: short lists, and code as a chip so it stands out. */
+.simten-tour .driver-popover-description ul {
+  @apply my-1.5 list-disc space-y-1 pl-4;
+}
+.simten-tour .driver-popover-description code {
+  @apply rounded bg-muted px-1 py-px font-mono text-[12px] text-popover-foreground;
+}
 .simten-tour .driver-popover-progress-text {
   @apply text-xs text-muted-foreground;
 }
