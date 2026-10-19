@@ -1349,12 +1349,11 @@ export default circuit('Negate4', {
     id: 'subtract',
     title: 'Subtractor',
     tagline: 'Take one 4-bit number away from another.',
-    brief: 'Put `a - b` on `d3` to `d0`, and light `borrow` when `b` is bigger than `a`',
+    brief: 'Put `a - b` on `d`, and light `borrow` when `b` is bigger than `a`',
     target: 'Subtract4',
-    inputs: ['a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
-    outputs: ['d3', 'd2', 'd1', 'd0', 'borrow'],
+    inputs: ['a', 'b'],
+    outputs: ['d', 'borrow'],
     allowed: ARITHMETIC_GATES,
-    numbers: { a: 'unsigned', b: 'unsigned', d: 'signed' },
     stub: `// Your 4-bit adder, finished, with the parts it is made of.
 
 ${HALF_ADDER}
@@ -1373,75 +1372,36 @@ ${ADDER4}
 
 export default circuit('Subtract4', {
   nodes: {
-    a3: Switch,
-    a2: Switch,
-    a1: Switch,
-    a0: Switch,
-    b3: Switch,
-    b2: Switch,
-    b1: Switch,
-    b0: Switch,
-    d3: Led,
-    d2: Led,
-    d1: Led,
-    d0: Led,
+    a: Input({ width: 4 }),
+    aBits: Splitter({ width: 4 }),
+    b: Input({ width: 4 }),
+    bBits: Splitter({ width: 4 }),
+    d: HexDisplay({ width: 4 }),
+    dBits: Combiner({ width: 4 }),
     borrow: Led,
   },
-  connect: ({ nodes: { a3, a2, a1, a0, b3, b2, b1, b0, d3, d2, d1, d0, borrow } }) => [
+  connect: ({ nodes: { a, aBits, b, bBits, d, dBits, borrow } }) => [
+    a.out.to(aBits.in),
+    b.out.to(bBits.in),
+    dBits.out.to(d.in),
     //
   ],
 });
 `,
     // Includes a below b (borrow set), a equal to b (zero), and 0 - 1.
     vectors: [
-      {
-        inputs: { a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 0, b1: 1, b0: 1 },
-        expect: { d3: 0, d2: 0, d1: 1, d0: 0, borrow: 0 },
-      },
-      {
-        inputs: { a3: 0, a2: 0, a1: 1, a0: 1, b3: 0, b2: 1, b1: 0, b0: 1 },
-        expect: { d3: 1, d2: 1, d1: 1, d0: 0, borrow: 1 },
-      },
-      {
-        inputs: { a3: 0, a2: 1, a1: 1, a0: 1, b3: 0, b2: 1, b1: 1, b0: 1 },
-        expect: { d3: 0, d2: 0, d1: 0, d0: 0, borrow: 0 },
-      },
-      {
-        inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 1 },
-        expect: { d3: 1, d2: 1, d1: 1, d0: 1, borrow: 1 },
-      },
-      {
-        inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 0 },
-        expect: { d3: 0, d2: 0, d1: 0, d0: 0, borrow: 0 },
-      },
-      {
-        inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 1, b1: 1, b0: 1 },
-        expect: { d3: 0, d2: 0, d1: 0, d0: 0, borrow: 0 },
-      },
-      {
-        inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 0, b2: 0, b1: 0, b0: 0 },
-        expect: { d3: 1, d2: 1, d1: 1, d0: 1, borrow: 0 },
-      },
-      {
-        inputs: { a3: 1, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 1 },
-        expect: { d3: 0, d2: 1, d1: 1, d0: 1, borrow: 0 },
-      },
-      {
-        inputs: { a3: 0, a2: 0, a1: 0, a0: 1, b3: 1, b2: 0, b1: 0, b0: 0 },
-        expect: { d3: 1, d2: 0, d1: 0, d0: 1, borrow: 1 },
-      },
-      {
-        inputs: { a3: 1, a2: 1, a1: 0, a0: 0, b3: 0, b2: 1, b1: 0, b0: 0 },
-        expect: { d3: 1, d2: 0, d1: 0, d0: 0, borrow: 0 },
-      },
-      {
-        inputs: { a3: 1, a2: 0, a1: 0, a0: 1, b3: 0, b2: 1, b1: 1, b0: 0 },
-        expect: { d3: 0, d2: 0, d1: 1, d0: 1, borrow: 0 },
-      },
-      {
-        inputs: { a3: 0, a2: 1, a1: 1, a0: 0, b3: 1, b2: 1, b1: 0, b0: 1 },
-        expect: { d3: 1, d2: 0, d1: 0, d0: 1, borrow: 1 },
-      },
+      { inputs: { a: 5, b: 3 }, expect: { d: 2, borrow: 0 } },
+      { inputs: { a: 3, b: 5 }, expect: { d: 14, borrow: 1 } },
+      { inputs: { a: 7, b: 7 }, expect: { d: 0, borrow: 0 } },
+      { inputs: { a: 0, b: 1 }, expect: { d: 15, borrow: 1 } },
+      { inputs: { a: 0, b: 0 }, expect: { d: 0, borrow: 0 } },
+      { inputs: { a: 15, b: 15 }, expect: { d: 0, borrow: 0 } },
+      { inputs: { a: 15, b: 0 }, expect: { d: 15, borrow: 0 } },
+      { inputs: { a: 8, b: 1 }, expect: { d: 7, borrow: 0 } },
+      { inputs: { a: 1, b: 8 }, expect: { d: 9, borrow: 1 } },
+      { inputs: { a: 12, b: 4 }, expect: { d: 8, borrow: 0 } },
+      { inputs: { a: 9, b: 6 }, expect: { d: 3, borrow: 0 } },
+      { inputs: { a: 6, b: 13 }, expect: { d: 9, borrow: 1 } },
     ],
     par: 25,
     outro: {
