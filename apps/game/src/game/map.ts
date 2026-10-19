@@ -7,8 +7,9 @@
  * point they could not, because two branches of different lengths put unrelated
  * levels on the same rank.
  *
- * The campaign runs as a trunk of gate levels, forks into arithmetic and memory
- * once every gate is earned, and rejoins at a counter that needs both.
+ * The campaign runs as a trunk of gate levels and forks three ways once every
+ * gate is earned: logic, arithmetic and memory. Arithmetic and memory rejoin at
+ * a counter, and logic and arithmetic at the ALU.
  *
  * Order lives here rather than in `levels.ts` because it is presentation: a
  * level stays pure data that could be fetched as JSON, and the map decides how
@@ -29,9 +30,10 @@ export const MAP_ROWS: string[][] = [
   ['xor'],
   ['xnor'],
   ['making-a-component'],
-  // The fork: arithmetic on the left, memory on the right. Rows are ranks, so
-  // the shorter branch simply stops and `toggle` sits alone on the last one.
-  ['half-adder', 'latch'],
+  // The fork: combinational logic on the left, arithmetic in the middle,
+  // memory on the right. Rows are ranks, so a shorter branch simply stops and
+  // `toggle` sits alone on the last one.
+  ['multiplexer', 'half-adder', 'latch'],
   ['full-adder', 'd-latch'],
   ['toggle'],
   ['counter'],
@@ -64,6 +66,7 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   // nothing downstream can reach for a gate the player skipped.
   'half-adder': ['making-a-component'],
   latch: ['making-a-component'],
+  multiplexer: ['making-a-component'],
 
   'full-adder': ['half-adder'],
   'd-latch': ['latch'],
@@ -98,10 +101,10 @@ export const MAP_SECTIONS: MapSection[] = [
   // player had done anything worth dividing.
   { label: 'Logic gates', startRow: 0 },
   { label: 'Components', startRow: 7 },
-  // Arithmetic and memory used to be two bands stacked one above the other.
-  // They run side by side now, and a band is a horizontal strip, so two labels
-  // would sit on the same rows and fight. One band covers the fork instead.
-  { label: 'Arithmetic and memory', startRow: 8 },
+  // The branches used to be bands stacked one above the other. They run side
+  // by side now, and a band is a horizontal strip, so separate labels would sit
+  // on the same rows and fight. One band covers the fork instead.
+  { label: 'Logic, arithmetic and memory', startRow: 8 },
 ];
 
 /**

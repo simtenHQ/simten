@@ -35,6 +35,7 @@ import fullAdder from './full-adder.ts?raw';
 import halfAdder from './half-adder.ts?raw';
 import latch from './latch.ts?raw';
 import makingAComponent from './making-a-component.ts?raw';
+import multiplexer from './multiplexer.ts?raw';
 import nand from './nand.ts?raw';
 import norGate from './nor.ts?raw';
 import notGate from './not.ts?raw';
@@ -58,4 +59,5 @@ export const SOLUTIONS: Record<string, string> = {
   toggle,
   counter,
   'full-adder': fullAdder,
+  multiplexer,
 };

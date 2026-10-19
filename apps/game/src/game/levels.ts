@@ -662,6 +662,52 @@ const Counter2 = circuit('Counter2', {
       body: 'Memory holds the number and logic works out the next one. Widen it and that is every counter in every clock, every program counter in every CPU.',
     },
   },
+
+  // The combinational column. Appended after the counter rather than slotted in
+  // beside the arithmetic levels, so every existing level keeps its number.
+  {
+    id: 'multiplexer',
+    title: 'Multiplexer',
+    tagline: 'Choose which of two signals gets through.',
+    brief: 'Send `a` to the led while `sel` is off, and `b` while it is on',
+    target: 'Mux2',
+    inputs: ['a', 'b', 'sel'],
+    outputs: ['out'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// sel decides which input reaches out: a when sel is 0,
+// b when sel is 1.
+//
+// One way in: give a and b an AND each, so each one only
+// gets through when sel lets it, then OR the two together.
+
+export default circuit('Mux2', {
+  nodes: {
+    a: Switch,
+    b: Switch,
+    sel: Switch,
+    out: Led,
+  },
+  connect: ({ nodes: { a, b, sel, out } }) => [
+    //
+  ],
+});
+`,
+    vectors: [
+      { inputs: { a: 0, b: 0, sel: 0 }, expect: { out: 0 } },
+      { inputs: { a: 0, b: 0, sel: 1 }, expect: { out: 0 } },
+      { inputs: { a: 0, b: 1, sel: 0 }, expect: { out: 0 } },
+      { inputs: { a: 0, b: 1, sel: 1 }, expect: { out: 1 } },
+      { inputs: { a: 1, b: 0, sel: 0 }, expect: { out: 1 } },
+      { inputs: { a: 1, b: 0, sel: 1 }, expect: { out: 0 } },
+      { inputs: { a: 1, b: 1, sel: 0 }, expect: { out: 1 } },
+      { inputs: { a: 1, b: 1, sel: 1 }, expect: { out: 1 } },
+    ],
+    par: 3,
+    outro: {
+      headline: 'A switch made of gates',
+      body: 'Anything that picks between values is built from this, including the ALU this section ends on. Par is three. If you used four, XOR has a shorter way.',
+    },
+  },
 ];
 
 export const LEVELS_BY_ID = new Map(LEVELS.map((l) => [l.id, l]));
