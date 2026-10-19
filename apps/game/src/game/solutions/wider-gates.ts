@@ -1,4 +1,4 @@
-/** Reference solution for `wide-gates`. Proven by `__tests__/levels.test.ts`. */
+/** Reference solution for `wider-gates`. Proven by `__tests__/levels.test.ts`. */
 
 import { circuit } from '@simten/core/circuit';
 import { And, Led, Or, Switch } from '@simten/core/std';

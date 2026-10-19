@@ -931,7 +931,7 @@ export default circuit('Invert4', {
   },
 
   {
-    id: 'majority',
+    id: 'majority-vote',
     title: 'Majority Vote',
     tagline: 'Light the led when at least two of three switches are on.',
     brief: 'Light `out` when two or more of `a`, `b` and `c` are on',
@@ -972,7 +972,7 @@ export default circuit('Majority3', {
   },
 
   {
-    id: 'wide-gates',
+    id: 'wider-gates',
     title: 'Wider Gates',
     tagline: 'Check four signals at once.',
     brief: 'Light `all` when every switch is on, and `any` when at least one is',
@@ -1068,7 +1068,7 @@ export default circuit('Decoder2', {
   },
 
   {
-    id: 'mux-4',
+    id: 'four-way-multiplexer',
     title: 'Four-Way Multiplexer',
     tagline: 'Choose one of four signals with a 2-bit select.',
     brief: 'Send whichever of `d0` to `d3` is numbered by `s1 s0` through to `out`',
@@ -1131,7 +1131,7 @@ export default circuit('Mux4', {
   },
 
   {
-    id: 'equal',
+    id: 'equality',
     title: 'Equality',
     tagline: 'Light the led when two 4-bit numbers are the same.',
     brief: 'Light `eq` when `a` and `b` are the same number',
@@ -1328,7 +1328,7 @@ export default circuit('FullAdder', {
   },
 
   {
-    id: 'adder-4',
+    id: '4-bit-adder',
     title: '4-Bit Adder',
     tagline: 'Add two 4-bit numbers.',
     brief: 'Add `a` to `b`. The sum goes on `s`, and anything too big for four bits lights `cout`',
@@ -1393,7 +1393,7 @@ export default circuit('Adder4', {
   },
 
   {
-    id: 'negate',
+    id: 'negative-numbers',
     title: 'Negative Numbers',
     tagline: 'Turn a number into its negative.',
     brief: "Put the negative of `a` on `n`, in two's complement. In four bits, -3 is written as 13",
@@ -1451,7 +1451,7 @@ export default circuit('Negate4', {
   },
 
   {
-    id: 'subtract',
+    id: 'subtractor',
     title: 'Subtractor',
     tagline: 'Take one 4-bit number away from another.',
     brief: 'Put `a - b` on `d`, and light `borrow` when `b` is bigger than `a`',
@@ -1987,7 +1987,7 @@ export default circuit('ProgramCounter4', {
   },
 
   {
-    id: 'alu-4',
+    id: 'arithmetic-logic-unit',
     title: 'Arithmetic Logic Unit',
     tagline: 'One circuit that adds, subtracts, ANDs or ORs.',
     brief:
@@ -2065,8 +2065,8 @@ export default circuit('Alu4', {
   },
 
   {
-    id: 'cpu-load',
-    title: 'Load Instruction',
+    id: 'load',
+    title: 'Load',
     tagline: 'Make your CPU load a number into a register.',
     brief:
       'Each step feeds your CPU one instruction, `i`. Make `LOAD ra, n` work, putting n into register ra: finish Control so it says when to write, then wire Instruction, Control and the register file. This is the program it runs:',
@@ -2172,8 +2172,8 @@ export default circuit('Cpu4', {
   },
 
   {
-    id: 'cpu-alu',
-    title: 'ALU Instructions',
+    id: 'compute',
+    title: 'Compute',
     tagline: 'Make your CPU add, subtract, AND and OR.',
     brief:
       'Your CPU can load. Make it calculate: give Control a `useAlu` output, and wire the ALU in, so `ADD ra, rb` leaves ra + rb in ra, and the same for `SUB`, `AND` and `OR`. This is the program it runs:',
@@ -2324,8 +2324,8 @@ export default circuit('Cpu4', {
   },
 
   {
-    id: 'cpu-jumps',
-    title: 'Jumps',
+    id: 'jump',
+    title: 'Jump',
     tagline: 'Make your CPU jump, and loop.',
     brief:
       'Your CPU so far is wired up. Finish it so it can jump: give Control a `jump` output, then wire up the program counter and LessThan. Then it runs this program, a loop that adds up Fibonacci numbers:',

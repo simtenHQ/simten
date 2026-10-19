@@ -1,4 +1,4 @@
-/** Reference solution for `equal`. Proven by `__tests__/levels.test.ts`. */
+/** Reference solution for `equality`. Proven by `__tests__/levels.test.ts`. */
 
 import { circuit } from '@simten/core/circuit';
 import { And, Input, Led, Splitter, Xnor } from '@simten/core/std';

@@ -34,17 +34,17 @@ export const MAP_ROWS: string[][] = [
   ['buses'],
   // The fork. Rows past here are ranks only; `MAP_COLUMNS` says which column
   // each level sits in.
-  ['majority', 'half-adder', 'latch'],
-  ['wide-gates', 'full-adder', 'd-latch'],
-  ['decoder', 'adder-4', 'toggle'],
-  ['mux-4', 'negate', 'counter'],
-  ['equal', 'subtract', 'register'],
+  ['majority-vote', 'half-adder', 'latch'],
+  ['wider-gates', 'full-adder', 'd-latch'],
+  ['decoder', '4-bit-adder', 'toggle'],
+  ['four-way-multiplexer', 'negative-numbers', 'counter'],
+  ['equality', 'subtractor', 'register'],
   ['parity', 'less-than', 'register-file'],
   ['program-counter'],
-  ['alu-4'],
-  ['cpu-load'],
-  ['cpu-alu'],
-  ['cpu-jumps'],
+  ['arithmetic-logic-unit'],
+  ['load'],
+  ['compute'],
+  ['jump'],
 ];
 
 /**
@@ -65,16 +65,16 @@ export const MAP_ROWS: string[][] = [
  * Rows without an entry here are centred, which is the whole trunk.
  */
 export const MAP_COLUMNS: Record<string, number> = {
-  majority: -1.5,
-  'wide-gates': -1.5,
+  'majority-vote': -1.5,
+  'wider-gates': -1.5,
   decoder: -1.5,
-  'mux-4': -1.5,
-  equal: -1.5,
+  'four-way-multiplexer': -1.5,
+  equality: -1.5,
   parity: -1.5,
 
-  'adder-4': -0.5,
-  negate: -0.5,
-  subtract: -0.5,
+  '4-bit-adder': -0.5,
+  'negative-numbers': -0.5,
+  subtractor: -0.5,
   'less-than': -0.5,
 
   'half-adder': 0.5,
@@ -89,10 +89,10 @@ export const MAP_COLUMNS: Record<string, number> = {
   'program-counter': 1.5,
 
   // Over the tops of the two columns it needs.
-  'alu-4': -1,
-  'cpu-load': 0,
-  'cpu-alu': 0,
-  'cpu-jumps': 0,
+  'arithmetic-logic-unit': -1,
+  load: 0,
+  compute: 0,
+  jump: 0,
 };
 
 /**
@@ -125,24 +125,24 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   multiplexer: ['making-a-component'],
   buses: ['multiplexer'],
 
-  majority: ['buses'],
+  'majority-vote': ['buses'],
   'half-adder': ['buses'],
   latch: ['buses'],
-  'wide-gates': ['majority'],
+  'wider-gates': ['majority-vote'],
   // Single switches first, then numbers on buses. The decoder and the
   // four-way multiplexer sit together: both pick one of four with two bits.
-  decoder: ['wide-gates'],
-  'mux-4': ['decoder'],
+  decoder: ['wider-gates'],
+  'four-way-multiplexer': ['decoder'],
   // Equality is XNORs and the four-input AND from wider gates, no
   // arithmetic, so it belongs here rather than with the adders.
-  equal: ['mux-4'],
-  parity: ['equal'],
+  equality: ['four-way-multiplexer'],
+  parity: ['equality'],
 
   'full-adder': ['half-adder'],
-  'adder-4': ['full-adder'],
-  negate: ['adder-4'],
-  subtract: ['negate'],
-  'less-than': ['subtract'],
+  '4-bit-adder': ['full-adder'],
+  'negative-numbers': ['4-bit-adder'],
+  subtractor: ['negative-numbers'],
+  'less-than': ['subtractor'],
 
   'd-latch': ['latch'],
   toggle: ['d-latch'],
@@ -156,14 +156,14 @@ export const MAP_REQUIRES: Record<string, string[]> = {
 
   // Where logic and arithmetic meet. It needs both columns finished: by then
   // the player has every part an ALU is made of.
-  'alu-4': ['parity', 'less-than'],
+  'arithmetic-logic-unit': ['parity', 'less-than'],
 
   // Where everything meets: the ALU, and the program counter at the top of
   // memory. The CPU is then built in three steps, one kind of instruction
   // each, the way a real one is brought up.
-  'cpu-load': ['alu-4', 'program-counter'],
-  'cpu-alu': ['cpu-load'],
-  'cpu-jumps': ['cpu-alu'],
+  load: ['arithmetic-logic-unit', 'program-counter'],
+  compute: ['load'],
+  jump: ['compute'],
 };
 
 export interface MapSection {

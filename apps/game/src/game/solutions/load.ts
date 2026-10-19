@@ -1,4 +1,4 @@
-/** Reference solution for `cpu-load`. Proven by `__tests__/levels.test.ts`. */
+/** Reference solution for `load`. Proven by `__tests__/levels.test.ts`. */
 
 import { bit, bus, circuit } from '@simten/core/circuit';
 import { And, Combiner, DFlipFlop, HexDisplay, Input, Nor, Splitter, Xor } from '@simten/core/std';

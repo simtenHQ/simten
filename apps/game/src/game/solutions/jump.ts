@@ -1,4 +1,4 @@
-/** Reference solution for `cpu-alu`. Proven by `__tests__/levels.test.ts`. */
+/** Reference solution for `jump`. Proven by `__tests__/levels.test.ts`. */
 
 import { bit, bus, circuit } from '@simten/core/circuit';
 import {
@@ -162,6 +162,19 @@ const Subtract4 = circuit('Subtract4', {
     add.s.to(flipSum.a),
     flipSum.out.to(outputs.d),
     add.cout.to(outputs.borrow),
+  ],
+});
+
+const LessThan4 = circuit('LessThan4', {
+  inputs: { a: bus(4), b: bus(4) },
+  outputs: { lt: bit },
+  nodes: {
+    sub: Subtract4,
+  },
+  connect: ({ inputs, outputs, nodes: { sub } }) => [
+    inputs.a.to(sub.a),
+    inputs.b.to(sub.b),
+    sub.borrow.to(outputs.lt),
   ],
 });
 
@@ -400,6 +413,57 @@ const RegFile2 = circuit('RegFile2', {
   ],
 });
 
+const CounterBit = circuit('CounterBit', {
+  inputs: { carry: bit, jump: bit, a: bit },
+  outputs: { q: bit, carryOut: bit },
+  nodes: {
+    ff: DFlipFlop(),
+    add: HalfAdder,
+    pick: Mux2,
+  },
+  connect: ({ inputs, outputs, nodes: { ff, add, pick } }) => [
+    ff.q.to(add.a, outputs.q),
+    inputs.carry.to(add.b),
+    add.sum.to(pick.a),
+    inputs.a.to(pick.b),
+    inputs.jump.to(pick.sel),
+    pick.out.to(ff.d),
+    add.carry.to(outputs.carryOut),
+  ],
+});
+
+const ProgramCounter4 = circuit('ProgramCounter4', {
+  inputs: { jump: bit, a: bus(4) },
+  outputs: { pc: bus(4) },
+  nodes: {
+    aBits: Splitter({ width: 4 }),
+    pcBits: Combiner({ width: 4 }),
+    ff0: DFlipFlop(),
+    pick0: Mux2,
+    bit1: CounterBit,
+    bit2: CounterBit,
+    bit3: CounterBit,
+  },
+  connect: ({ inputs, outputs, nodes: { aBits, pcBits, ff0, pick0, bit1, bit2, bit3 } }) => [
+    inputs.a.to(aBits.in),
+    pcBits.out.to(outputs.pc),
+    // Bit 0 flips every tick; q_bar is already the flipped bit.
+    ff0.q_bar.to(pick0.a),
+    aBits.bit0.to(pick0.b),
+    inputs.jump.to(pick0.sel, bit1.jump, bit2.jump, bit3.jump),
+    pick0.out.to(ff0.d),
+    ff0.q.to(pcBits.bit0, bit1.carry),
+    bit1.carryOut.to(bit2.carry),
+    bit2.carryOut.to(bit3.carry),
+    aBits.bit1.to(bit1.a),
+    aBits.bit2.to(bit2.a),
+    aBits.bit3.to(bit3.a),
+    bit1.q.to(pcBits.bit1),
+    bit2.q.to(pcBits.bit2),
+    bit3.q.to(pcBits.bit3),
+  ],
+});
+
 const Instruction = circuit('Instruction', {
   inputs: { i: bus(8) },
   outputs: { op1: bit, op0: bit, ra: bit, rb: bit, n: bus(4), aluOp1: bit, aluOp0: bit },
@@ -419,15 +483,19 @@ const Instruction = circuit('Instruction', {
 });
 
 const Control = circuit('Control', {
-  inputs: { op1: bit, op0: bit },
-  outputs: { write: bit, useAlu: bit },
-  nodes: { notOp1: Not },
-  connect: ({ inputs, outputs, nodes: { notOp1 } }) => [
-    // LOAD (00) and the ALU instructions (01) write.
-    inputs.op1.to(notOp1.in),
+  inputs: { op1: bit, op0: bit, less: bit },
+  outputs: { write: bit, useAlu: bit, jump: bit },
+  nodes: { notOp1: Not, notOp0: Not, either: Or, both: And },
+  connect: ({ inputs, outputs, nodes: { notOp1, notOp0, either, both } }) => [
+    // LOAD (00) and the ALU instructions (01) write; jumps (1x) do not.
+    inputs.op1.to(notOp1.in, both.a),
     notOp1.out.to(outputs.write),
-    // Only the ALU instructions write the ALU's answer.
-    inputs.op0.to(outputs.useAlu),
+    inputs.op0.to(outputs.useAlu, notOp0.in),
+    // JUMP (10) always jumps; JUMP IF LESS (11) jumps when less is on.
+    notOp0.out.to(either.a),
+    inputs.less.to(either.b),
+    either.out.to(both.b),
+    both.out.to(outputs.jump),
   ],
 });
 
@@ -439,11 +507,15 @@ export const Cpu4 = circuit('Cpu4', {
     regs: RegFile2,
     alu: Alu4,
     choose: BusMux2,
+    less: LessThan4,
+    counter: ProgramCounter4,
+    pc: HexDisplay({ width: 4 }),
     r0: HexDisplay({ width: 4 }),
     r1: HexDisplay({ width: 4 }),
   },
-  connect: ({ nodes: { i, fields, control, regs, alu, choose, r0, r1 } }) => [
+  connect: ({ nodes: { i, fields, control, regs, alu, choose, less, counter, pc, r0, r1 } }) => [
     i.out.to(fields.i),
+    counter.pc.to(pc.in),
     regs.r0.to(r0.in),
     regs.r1.to(r1.in),
 
@@ -451,7 +523,6 @@ export const Cpu4 = circuit('Cpu4', {
     fields.op1.to(control.op1),
     fields.op0.to(control.op0),
     control.write.to(regs.write),
-
     fields.ra.to(regs.asel),
     fields.rb.to(regs.bsel),
     regs.a.to(alu.a),
@@ -462,5 +533,11 @@ export const Cpu4 = circuit('Cpu4', {
     fields.n.to(choose.a),
     alu.r.to(choose.b),
     choose.out.to(regs.d),
+
+    regs.a.to(less.a),
+    regs.b.to(less.b),
+    less.lt.to(control.less),
+    control.jump.to(counter.jump),
+    fields.n.to(counter.a),
   ],
 });

@@ -58,7 +58,7 @@ describe('a wrong output', () => {
   });
 
   it('names the instruction a CPU step ran, not its bits', async () => {
-    const cpu = level('cpu-load');
+    const cpu = level('load');
     // The stub as given: nothing wired, so r0 is never loaded.
     const result = await grade(localRuntime(), cpu, cpu.stub);
     expect(explain(result, cpu)).toBe(

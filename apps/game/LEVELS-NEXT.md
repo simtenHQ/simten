@@ -9,18 +9,18 @@ This is the next section only. The longer arc (an 8-bit CPU, machine code, an as
 The map forks after `making-a-component`. This section adds a logic column and an arithmetic column, so no existing level gets new prerequisites and nobody's progress changes. The new arithmetic branches off the full adder, so the fork is four columns wide:
 
 ```
-PROCESSOR    cpu-jumps
-             cpu-alu
-             cpu-load
-             alu-4
+PROCESSOR    jump
+             compute
+             load
+             arithmetic-logic-unit
 
 LOGIC        ARITHMETIC                 MEMORY
                                         program-counter
 parity       less-than                  register-file
 equal        subtract                   register
-mux-4        negate                     counter
-decoder      adder-4                    toggle
-wide-gates                 full-adder   d-latch
+four-way-multiplexer        negate                     counter
+decoder      4-bit-adder                    toggle
+wider-gates                 full-adder   d-latch
 majority                   half-adder   latch
 
 COMPONENTS   buses
@@ -34,16 +34,16 @@ The multiplexer and buses sit on the trunk, before the fork, because every branc
 
 The fork is three lanes side by side, each labelled at its foot, and the ALU opens a new full-width "Processor" band above them. That band is where the registers and the CPU go later.
 
-`alu-4` is the first level that needs two lanes finished. It requires the top of each (`parity` and `less-than`).
+`arithmetic-logic-unit` is the first level that needs two lanes finished. It requires the top of each (`parity` and `less-than`).
 
-Why the arithmetic lane is two columns wide: the full adder feeds both `adder-4` and `counter`. With `adder-4` directly above it, the counter's wire would run through it and read as a dependency that isn't there. Branching the new arithmetic off to the left leaves the column above the full adder empty, so the counter's wire climbs it and turns in under the counter, which sits at the top of the memory lane.
+Why the arithmetic lane is two columns wide: the full adder feeds both `4-bit-adder` and `counter`. With `4-bit-adder` directly above it, the counter's wire would run through it and read as a dependency that isn't there. Branching the new arithmetic off to the left leaves the column above the full adder empty, so the counter's wire climbs it and turns in under the counter, which sits at the top of the memory lane.
 
 `counter` keeps its requirements (`full-adder` and `toggle`).
 
 Map changes, all in `map.ts`:
 
 - `MAP_ROWS`: ranks only. `MAP_COLUMNS` pins each fork level to a column, so a row of two no longer re-centres and drifts off its branch.
-- `MAP_REQUIRES`: each new level needs the one below it in its column (`equal` sits in the logic column after `wide-gates`, since it is XNORs plus a four-input AND and no arithmetic), `multiplexer` needs `making-a-component`, `adder-4` needs `full-adder`, and `alu-4` needs `parity` and `less-than`.
+- `MAP_REQUIRES`: each new level needs the one below it in its column (`equality` sits in the logic column after `wider-gates`, since it is XNORs plus a four-input AND and no arithmetic), `multiplexer` needs `making-a-component`, `4-bit-adder` needs `full-adder`, and `arithmetic-logic-unit` needs `parity` and `less-than`.
 - `MAP_SECTIONS`: a section can be a lane (`columns`) instead of a full-width band. The fork is lanes for Logic, Arithmetic and Memory, and "Processor" starts at the ALU.
 - Width: four 210px nodes plus gaps is about 970px, and the bands are 1010px. Fine on desktop. Not yet checked on a phone.
 
@@ -52,7 +52,7 @@ Map changes, all in `map.ts`:
 - **Order:** `LEVELS` runs trunk, logic, arithmetic, memory, processor. Array order sets the map numbers and the Next button.
 - **Allowed:** `ARITHMETIC_GATES` (Nand, Not, And, Or, Nor, Xor, Xnor) unless a level says otherwise.
 - **Par:** taken from the reference solution. `levels.test.ts` already requires par to equal the reference's gate count, so it can't drift.
-  - Proven minimal by exhaustive search for the small levels: multiplexer 3, majority 4, wider gates 6, decoder 4, parity 3, negate 5. The rest are the reference's count and can be beaten: mux-4 9, adder-4 17, subtract 25, equal 7, less-than 25, alu-4 86.
+  - Proven minimal by exhaustive search for the small levels: multiplexer 3, majority 4, wider gates 6, decoder 4, parity 3, negate 5. The rest are the reference's count and can be beaten: four-way-multiplexer 9, 4-bit-adder 17, subtract 25, equal 7, less-than 25, arithmetic-logic-unit 86.
 - **Target names** carry a size (`Mux2`, `Adder4`, `Alu4`), like `Xor2` and `Counter2`. The stdlib already has `Mux`, `Decoder` and `Subtractor`, and the grader also looks targets up among library circuits.
 - **Handed-over parts** are written once in `levels.ts` (`MUX2`, `MUX4`, `HALF_ADDER`, `FULL_ADDER`, `ADDER4`, `SUBTRACT4`) and interpolated into each stub that needs them.
 - **Vectors:** exhaustive when there are at most 16 combinations. Above that, a chosen set of at most 16 columns that covers the edge cases (listed per level). 16 columns is roughly the widest the spec table can show comfortably; the full adder has 8 today.
@@ -71,7 +71,7 @@ Map changes, all in `map.ts`:
 - **Par:** 3, the proven minimum: `a XOR (sel AND (a XOR b))`. The hinted AND/OR build costs 4, so it passes over par and leaves the shorter answer to find.
 - **Why here:** every later level that chooses between values uses this, the ALU above all.
 
-### 2. `majority`: Majority Vote
+### 2. `majority-vote`: Majority Vote
 *Turn the light on when at least two of three switches are on.*
 
 - **New idea:** none, on purpose. It's a puzzle using gates the player already has, a breather after the multiplexer.
@@ -79,7 +79,7 @@ Map changes, all in `map.ts`:
 - **Vectors:** all 8.
 - **Note:** a real circuit. Voting between three copies is how fault-tolerant systems (aircraft, spacecraft) mask one failing unit. Worth a line in the outro.
 
-### 3. `wide-gates`: Wider Gates
+### 3. `wider-gates`: Wider Gates
 *Check four signals at once.*
 
 - **New idea:** chaining two-input gates to make wider ones.
@@ -95,7 +95,7 @@ Map changes, all in `map.ts`:
 - **Vectors:** all 4.
 - **Why here:** this is how memory picks a cell and how a CPU picks a register, later on.
 
-### 5. `mux-4`: Four-Way Multiplexer
+### 5. `four-way-multiplexer`: Four-Way Multiplexer
 *Choose one of four signals with a 2-bit select.*
 
 - **New idea:** building a bigger multiplexer from smaller ones (a tree of three), or from the decoder plus AND/OR. Both work, and par rewards the cheaper.
@@ -103,7 +103,7 @@ Map changes, all in `map.ts`:
 - **Starter:** the finished `Mux` from level 1.
 - **Vectors:** 16 of the 64. For each select value: the selected input on and the rest off, the reverse, and two mixed patterns. The first two catch a circuit that reads the wrong input, whichever one it reads.
 
-### 6. `equal`: Equality
+### 6. `equality`: Equality
 *Light up when two 4-bit numbers are the same.*
 
 - **New idea:** compare bit by bit (XNOR), then require all bits to match (the 4-input AND from level 3).
@@ -120,7 +120,7 @@ Map changes, all in `map.ts`:
 
 ## Arithmetic column (after `full-adder`)
 
-### 8. `adder-4`: 4-Bit Adder
+### 8. `4-bit-adder`: 4-Bit Adder
 *Add two 4-bit numbers.*
 
 - **New idea:** chaining full adders, each carry feeding the next (ripple carry).
@@ -129,7 +129,7 @@ Map changes, all in `map.ts`:
 - **Vectors:** 12 of the 256: 0 + 0, 1 + 1, 5 + 3, 7 + 8, 15 + 1 (overflow), 15 + 15, and others that make the carry ripple through every bit.
 - **Spec display:** the table shows the bits. A footnote shows the same rows as decimal sums (5 + 3 = 8), so the player can see what the bits mean. That's a small addition to the spec panel.
 
-### 9. `negate`: Negative Numbers
+### 9. `negative-numbers`: Negative Numbers
 *Turn a number into its negative.*
 
 - **New idea:** two's complement. Flip every bit and add one. In 4 bits, 3 becomes 13, which is -3.
@@ -138,7 +138,7 @@ Map changes, all in `map.ts`:
 - **Vectors:** all 16.
 - **Outro:** why this trick means a CPU needs no separate subtraction circuit.
 
-### 10. `subtract`: Subtractor
+### 10. `subtractor`: Subtractor
 *Compute a − b.*
 
 - **New idea:** a − b is a + (−b), so the adder from level 7 does it, given an inverted `b` and a carry-in of 1.
@@ -157,7 +157,7 @@ Map changes, all in `map.ts`:
 
 ## Where the columns meet
 
-### 12. `alu-4`: Arithmetic Logic Unit
+### 12. `arithmetic-logic-unit`: Arithmetic Logic Unit
 *One circuit that adds, subtracts, ANDs or ORs, chosen by an op code.*
 
 - **Requires:** `parity` and `less-than`, the tops of the two columns.
@@ -204,11 +204,11 @@ The CPU is built up the Processor band one kind of instruction at a time, the wa
 
 | Level | Player adds | Control | Tested by | Par |
 |---|---|---|---|---|
-| `cpu-load` Load Instruction | Control, and wiring Instruction to the register file | `op1 op0 → write` | eight LOADs | 59 |
-| `cpu-alu` ALU Instructions | the ALU path: registers into the ALU, `Choose4` picking n or its answer | `+ useAlu`, and ALU instructions write too | LOADs, then ADD/SUB/AND/OR | 157 |
-| `cpu-jumps` Jumps | the program counter's jump, and the comparison | `+ less → jump` | 4-bit Fibonacci: loops twice, wraps, falls through, stops on `JUMP 8` (16 steps) | 206 |
+| `load` Load | Control, and wiring Instruction to the register file | `op1 op0 → write` | eight LOADs | 59 |
+| `compute` Compute | the ALU path: registers into the ALU, `Choose4` picking n or its answer | `+ useAlu`, and ALU instructions write too | LOADs, then ADD/SUB/AND/OR | 157 |
+| `jump` Jump | the program counter's jump, and the comparison | `+ less → jump` | 4-bit Fibonacci: loops twice, wraps, falls through, stops on `JUMP 8` (16 steps) | 206 |
 
-Load Instruction needs `alu-4` and `program-counter`, so all three lanes meet there. The level names avoid Turing Complete's (Registers, Instruction Decoder, Calculations, Conditions); the instruction set is our own, closer to RISC-V (compare two registers and branch to an address in the instruction).
+Load Instruction needs `arithmetic-logic-unit` and `program-counter`, so all three lanes meet there. The level names avoid Turing Complete's (Registers, Instruction Decoder, Calculations, Conditions); the instruction set is our own, closer to RISC-V (compare two registers and branch to an address in the instruction).
 
 ## Buses
 
@@ -231,11 +231,11 @@ Subtractor uses the player's own `Invert4` from Buses: invert a, add, invert the
 
 ## Spec panel changes
 
-1. Levels can set `numbers`, naming bit groups to read as numbers (`a` gathers `a3 a2 a1 a0`), each `unsigned` or `signed`. Under the table, the panel reads the hovered column back, or the failed one after a bad submit: "a = 5, b = 3, s = 8", or "n = 13 (-3)" for a signed group. One line instead of a footnote listing every column, which wouldn't fit. Used on the decoder, mux-4 and the 4-bit levels.
+1. Levels can set `numbers`, naming bit groups to read as numbers (`a` gathers `a3 a2 a1 a0`), each `unsigned` or `signed`. Under the table, the panel reads the hovered column back, or the failed one after a bad submit: "a = 5, b = 3, s = 8", or "n = 13 (-3)" for a signed group. One line instead of a footnote listing every column, which wouldn't fit. Used on the decoder, four-way-multiplexer and the 4-bit levels.
 2. Nothing else. The grader, the Feedback column and the tour are unchanged.
 
 ## Open questions
 
-- **Signed numbers:** `negate` introduces them, `less-than` stays unsigned. A signed less-than level could follow, or wait for the CPU section.
+- **Signed numbers:** `negative-numbers` introduces them, `less-than` stays unsigned. A signed less-than level could follow, or wait for the CPU section.
 - **A check level at the end of each column** (a mixed truth table using everything in it): cheap to make, but the puzzles may already do that job.
 - **Buses:** the section stays on single bits on purpose. The first level that needs a real `bus(8)` should introduce buses as its one new idea, and needs the spec panel to show multi-bit values in hex.

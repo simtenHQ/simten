@@ -16,18 +16,18 @@ describe('given-preamble detection', () => {
       (l) => l.id,
     );
     expect(skipped).toEqual([
-      'mux-4',
+      'four-way-multiplexer',
       'full-adder',
-      'adder-4',
-      'subtract',
+      '4-bit-adder',
+      'subtractor',
       'less-than',
       'register',
       'register-file',
       'program-counter',
-      'alu-4',
-      'cpu-load',
-      'cpu-alu',
-      'cpu-jumps',
+      'arithmetic-logic-unit',
+      'load',
+      'compute',
+      'jump',
     ]);
   });
 
@@ -48,7 +48,7 @@ describe('given-preamble detection', () => {
   });
 
   it('opens on a part the player has to finish, ahead of the target', () => {
-    const cpu = LEVELS.find((l) => l.id === 'cpu-load');
+    const cpu = LEVELS.find((l) => l.id === 'load');
     if (!cpu) throw new Error('missing level');
     const lines = cpu.stub.split('\n');
     const at = givenPreambleEnd(lines);

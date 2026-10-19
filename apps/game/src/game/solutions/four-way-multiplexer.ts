@@ -1,4 +1,4 @@
-/** Reference solution for `mux-4`. Proven by `__tests__/levels.test.ts`. */
+/** Reference solution for `four-way-multiplexer`. Proven by `__tests__/levels.test.ts`. */
 
 import { bit, circuit } from '@simten/core/circuit';
 import { And, Led, Switch, Xor } from '@simten/core/std';

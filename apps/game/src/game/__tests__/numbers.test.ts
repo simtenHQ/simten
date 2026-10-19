@@ -11,7 +11,7 @@ function level(id: string): Level {
 
 describe('readNumbers', () => {
   it('reads each group most significant bit first', () => {
-    const mux4 = level('mux-4');
+    const mux4 = level('four-way-multiplexer');
     // The select is s1 s0; the fourth vector picks input 2.
     const pick2 = mux4.vectors.find((v) => v.inputs.s1 === 1 && v.inputs.s0 === 0);
     if (!pick2) throw new Error('expected a vector selecting input 2');

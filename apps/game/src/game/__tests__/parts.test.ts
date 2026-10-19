@@ -11,7 +11,7 @@ function parts(id: string): string[] {
 describe('givenParts', () => {
   it('lists the parts a stub hands over, in order', () => {
     expect(parts('full-adder')).toEqual(['HalfAdder']);
-    expect(parts('alu-4')).toEqual([
+    expect(parts('arithmetic-logic-unit')).toEqual([
       'Mux2',
       'Mux4',
       'HalfAdder',
@@ -23,10 +23,10 @@ describe('givenParts', () => {
   });
 
   it('leaves out a part the player is meant to finish', () => {
-    expect(parts('cpu-load')).not.toContain('Control');
-    expect(parts('cpu-load')).toContain('Instruction');
+    expect(parts('load')).not.toContain('Control');
+    expect(parts('load')).toContain('Instruction');
     // Carried over from the last level, so not empty, but still theirs.
-    expect(parts('cpu-jumps')).not.toContain('Control');
+    expect(parts('jump')).not.toContain('Control');
   });
 
   it('lists nothing when the stub only holds the circuit to write', () => {

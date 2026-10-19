@@ -1,4 +1,4 @@
-/** Reference solution for `subtract`. Proven by `__tests__/levels.test.ts`. */
+/** Reference solution for `subtractor`. Proven by `__tests__/levels.test.ts`. */
 
 import { bit, bus, circuit } from '@simten/core/circuit';
 import { And, Combiner, HexDisplay, Input, Led, Not, Or, Splitter, Xor } from '@simten/core/std';

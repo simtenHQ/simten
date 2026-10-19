@@ -28,27 +28,27 @@
  * test-only means finding something else for an unopened level to inspect to.
  */
 
-import adder4 from './adder-4.ts?raw';
-import alu4 from './alu-4.ts?raw';
+import fourBitAdder from './4-bit-adder.ts?raw';
 import andGate from './and.ts?raw';
+import arithmeticLogicUnit from './arithmetic-logic-unit.ts?raw';
 import buses from './buses.ts?raw';
+import compute from './compute.ts?raw';
 import counter from './counter.ts?raw';
-import cpuAlu from './cpu-alu.ts?raw';
-import cpuJumps from './cpu-jumps.ts?raw';
-import cpuLoad from './cpu-load.ts?raw';
 import dLatch from './d-latch.ts?raw';
 import decoder from './decoder.ts?raw';
-import equal from './equal.ts?raw';
+import equality from './equality.ts?raw';
+import fourWayMultiplexer from './four-way-multiplexer.ts?raw';
 import fullAdder from './full-adder.ts?raw';
 import halfAdder from './half-adder.ts?raw';
+import jump from './jump.ts?raw';
 import latch from './latch.ts?raw';
 import lessThan from './less-than.ts?raw';
-import majority from './majority.ts?raw';
+import load from './load.ts?raw';
+import majorityVote from './majority-vote.ts?raw';
 import makingAComponent from './making-a-component.ts?raw';
 import multiplexer from './multiplexer.ts?raw';
-import mux4 from './mux-4.ts?raw';
 import nand from './nand.ts?raw';
-import negate from './negate.ts?raw';
+import negativeNumbers from './negative-numbers.ts?raw';
 import norGate from './nor.ts?raw';
 import notGate from './not.ts?raw';
 import orGate from './or.ts?raw';
@@ -56,9 +56,9 @@ import parity from './parity.ts?raw';
 import programCounter from './program-counter.ts?raw';
 import register from './register.ts?raw';
 import registerFile from './register-file.ts?raw';
-import subtract from './subtract.ts?raw';
+import subtractor from './subtractor.ts?raw';
 import toggle from './toggle.ts?raw';
-import wideGates from './wide-gates.ts?raw';
+import widerGates from './wider-gates.ts?raw';
 import xnorGate from './xnor.ts?raw';
 import xorGate from './xor.ts?raw';
 
@@ -79,21 +79,21 @@ export const SOLUTIONS: Record<string, string> = {
   counter,
   'full-adder': fullAdder,
   multiplexer,
-  majority,
-  'wide-gates': wideGates,
+  'majority-vote': majorityVote,
+  'wider-gates': widerGates,
   decoder,
-  'mux-4': mux4,
+  'four-way-multiplexer': fourWayMultiplexer,
   parity,
-  'adder-4': adder4,
-  negate,
-  subtract,
-  equal,
+  '4-bit-adder': fourBitAdder,
+  'negative-numbers': negativeNumbers,
+  subtractor: subtractor,
+  equality: equality,
   'less-than': lessThan,
-  'alu-4': alu4,
+  'arithmetic-logic-unit': arithmeticLogicUnit,
   register,
   'register-file': registerFile,
   'program-counter': programCounter,
-  'cpu-load': cpuLoad,
-  'cpu-alu': cpuAlu,
-  'cpu-jumps': cpuJumps,
+  load: load,
+  compute: compute,
+  jump: jump,
 };
