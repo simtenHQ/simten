@@ -57,7 +57,7 @@ const STEPS: TourStep[] = [
     target: 'spec',
     title: 'Spec',
     description:
-      'What your circuit has to do: the outputs it must give for each input, or for each step on levels with memory. Allowed gates lists what you can build with.',
+      'What your circuit has to do: the outputs it must give for each input, or for each step on levels with memory. The list beside it is everything you can build with.',
     side: 'top',
     align: 'start',
   },

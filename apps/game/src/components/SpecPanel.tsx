@@ -15,6 +15,7 @@
 import { useState } from 'react';
 import { explain } from '../game/explain';
 import { readNumbers } from '../game/numbers';
+import { givenParts } from '../game/parts';
 import type { GradeResult, Level } from '../game/types';
 import { TruthTable } from './TruthTable';
 
@@ -72,6 +73,7 @@ export function SpecPanel({ level, result, activeRow, provenRows, checking }: Sp
   const failure = result?.status === 'fail' ? result.failure : null;
   const failedIndex = failure?.kind === 'vector' ? failure.index : null;
   const reason = explain(result, level);
+  const parts = givenParts(level);
   // Which column the decimal footnote reads: the one under the pointer, or
   // failing that the one the grader stopped on.
   const [hovered, setHovered] = useState<number | null>(null);
@@ -127,7 +129,7 @@ export function SpecPanel({ level, result, activeRow, provenRows, checking }: Sp
           previous level's completion card promises a gate; this is where that
           promise is visible on arrival. */}
         <div>
-          <Heading>Allowed gates</Heading>
+          <Heading>You can use</Heading>
           <ul className="flex max-w-[240px] flex-wrap gap-1.5">
             {level.allowed.map((name) => (
               <li key={name} className={CHIP}>
@@ -135,6 +137,23 @@ export function SpecPanel({ level, result, activeRow, provenRows, checking }: Sp
               </li>
             ))}
           </ul>
+          {/* Parts the starter code hands over. They were invisible here, so a
+              list of gates read as "only these", with a finished adder sitting
+              at the top of the editor. */}
+          {parts.length > 0 && (
+            <>
+              <p className="mt-3 mb-1.5 text-[11px] text-muted-foreground">
+                And these parts, finished, at the top of your code:
+              </p>
+              <ul className="flex max-w-[240px] flex-wrap gap-1.5">
+                {parts.map((name) => (
+                  <li key={name} className={CHIP}>
+                    {name}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </div>
 
         {/* What the last submit said. Always here, so a verdict never moves the
