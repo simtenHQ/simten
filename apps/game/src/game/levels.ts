@@ -1992,7 +1992,7 @@ export default circuit('ProgramCounter4', {
     title: 'Load Instruction',
     tagline: 'Make your CPU load a number into a register.',
     brief:
-      'Each step feeds your CPU one instruction, `i`. Make `LOAD ra, n` work: it puts the number n into register ra. This is the program it runs:',
+      'Each step feeds your CPU one instruction, `i`. Make `LOAD ra, n` work, putting n into register ra: finish Control so it says when to write, then wire Instruction, Control and the register file. This is the program it runs:',
     target: 'Cpu4',
     inputs: ['i'],
     outputs: ['r0', 'r1'],
@@ -2065,6 +2065,10 @@ export default circuit('Cpu4', {
     i.out.to(fields.i),
     regs.r0.to(r0.in),
     regs.r1.to(r1.in),
+    // New this level:
+    //   Control needs to know the kind of instruction: op1, op0
+    //   ra picks the register written, n is what gets written
+    //   Control's write turns the write on
     //
   ],
 });
@@ -2093,7 +2097,7 @@ export default circuit('Cpu4', {
     title: 'ALU Instructions',
     tagline: 'Make your CPU add, subtract, AND and OR.',
     brief:
-      'Your CPU can load. Make `ADD`, `SUB`, `AND` and `OR` work too: `ADD ra, rb` leaves ra + rb in ra. This is the program it runs:',
+      'Your CPU can load. Make it calculate: give Control a `useAlu` output, and wire the ALU in, so `ADD ra, rb` leaves ra + rb in ra, and the same for `SUB`, `AND` and `OR`. This is the program it runs:',
     target: 'Cpu4',
     inputs: ['i'],
     outputs: ['r0', 'r1'],
@@ -2169,7 +2173,9 @@ const Control = circuit('Control', {
     inputs.op1.to(none.a),
     inputs.op0.to(none.b),
     none.out.to(outputs.write),
-    // useAlu: new this level.
+    // New: useAlu, on for ALU instructions (01), so the ALU's
+    // answer is written instead of n. They write too, so write
+    // needs to be on for them as well as for LOAD.
   ],
 });
 
@@ -2198,6 +2204,12 @@ export default circuit('Cpu4', {
     control.write.to(regs.write),
     fields.n.to(regs.d),
 
+    // New this level:
+    //   the ALU works on registers ra and rb, read out on regs.a
+    //   and regs.b
+    //   aluOp1 and aluOp0 pick the ALU's operation
+    //   choose decides what regs.d gets: n, or the ALU's answer
+    //   when useAlu is on. So n no longer goes straight to regs.d.
     //
   ],
 });
@@ -2229,7 +2241,7 @@ export default circuit('Cpu4', {
     title: 'Jumps',
     tagline: 'Make your CPU jump, and loop.',
     brief:
-      'Make `JUMP n` and `JUMP IF LESS ra, rb, n` work. Then your CPU runs this program, a loop that adds up Fibonacci numbers:',
+      'Your CPU so far is wired up. Finish it so it can jump: give Control a `jump` output, then wire up the program counter and LessThan. Then it runs this program, a loop that adds up Fibonacci numbers:',
     target: 'Cpu4',
     inputs: ['i'],
     outputs: ['pc', 'r0', 'r1'],
@@ -2313,7 +2325,8 @@ const Control = circuit('Control', {
     inputs.op1.to(notOp1.in),
     notOp1.out.to(outputs.write),
     inputs.op0.to(outputs.useAlu),
-    // jump: new this level.
+    // New: jump. JUMP (10) always jumps; JUMP IF LESS (11)
+    // jumps only when less is on. Nothing else jumps.
   ],
 });
 
@@ -2354,6 +2367,10 @@ export default circuit('Cpu4', {
     alu.r.to(choose.b),
     choose.out.to(regs.d),
 
+    // New this level:
+    //   less compares registers ra and rb: give it regs.a and regs.b
+    //   its answer, less.lt, goes into control.less
+    //   the counter jumps to n when control.jump is on
     //
   ],
 });
