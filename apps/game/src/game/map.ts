@@ -38,7 +38,7 @@ export const MAP_ROWS: string[][] = [
   ['equal', 'negate', 'counter'],
   ['decoder', 'subtract', 'register'],
   ['mux-4', 'less-than', 'register-file'],
-  ['parity'],
+  ['parity', 'program-counter'],
   ['alu-4'],
 ];
 
@@ -82,6 +82,7 @@ export const MAP_COLUMNS: Record<string, number> = {
   counter: 1.5,
   register: 1.5,
   'register-file': 1.5,
+  'program-counter': 1.5,
 
   // Over the tops of the two columns it needs.
   'alu-4': -1,
@@ -139,6 +140,7 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   counter: ['full-adder', 'toggle'],
   register: ['counter'],
   'register-file': ['register'],
+  'program-counter': ['register-file'],
 
   // Where logic and arithmetic meet. It needs both columns finished: by then
   // the player has every part an ALU is made of.

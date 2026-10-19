@@ -1780,6 +1780,113 @@ export default circuit('RegFile2', {
       body: "Real CPUs have more: the 6502 has three and a RISC-V core has 32. With four, you'd pick which to write with your decoder and which to read with your four-way multiplexer.",
     },
   },
+
+  {
+    id: 'program-counter',
+    title: 'Program Counter',
+    tagline: 'Count up, unless told to jump somewhere else.',
+    brief: 'Add 1 to `pc3 pc2 pc1 pc0` every tick. When `jump` is on, load `a3` to `a0` instead',
+    target: 'ProgramCounter4',
+    inputs: ['jump', 'a3', 'a2', 'a1', 'a0'],
+    outputs: ['pc3', 'pc2', 'pc1', 'pc0'],
+    allowed: MEMORY_GATES,
+    numbers: { a: 'unsigned', pc: 'unsigned' },
+    sequential: true,
+    stub: `// Your counter, four bits wide, with a way to jump. Each
+// bit's next value is either the count plus one or the jump
+// address, and jump picks.
+//
+// Adding 1 flips bit 0 every tick, and flips each bit above
+// it when every bit below is 1.
+
+export default circuit('ProgramCounter4', {
+  nodes: {
+    jump: Switch,
+    a3: Switch,
+    a2: Switch,
+    a1: Switch,
+    a0: Switch,
+    pc3: Led,
+    pc2: Led,
+    pc1: Led,
+    pc0: Led,
+  },
+  connect: ({ nodes: { jump, a3, a2, a1, a0, pc3, pc2, pc1, pc0 } }) => [
+    //
+  ],
+});
+`,
+    // Ordered steps from 0: count to 3, jump to 12, count through 15 and wrap
+    // to 0, then jumps with counting between. Step 11 sets an address with
+    // jump off, which has to be ignored.
+    vectors: [
+      {
+        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
+        expect: { pc3: 0, pc2: 0, pc1: 0, pc0: 1 },
+      },
+      {
+        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
+        expect: { pc3: 0, pc2: 0, pc1: 1, pc0: 0 },
+      },
+      {
+        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
+        expect: { pc3: 0, pc2: 0, pc1: 1, pc0: 1 },
+      },
+      {
+        inputs: { jump: 1, a3: 1, a2: 1, a1: 0, a0: 0 },
+        expect: { pc3: 1, pc2: 1, pc1: 0, pc0: 0 },
+      },
+      {
+        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
+        expect: { pc3: 1, pc2: 1, pc1: 0, pc0: 1 },
+      },
+      {
+        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
+        expect: { pc3: 1, pc2: 1, pc1: 1, pc0: 0 },
+      },
+      {
+        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
+        expect: { pc3: 1, pc2: 1, pc1: 1, pc0: 1 },
+      },
+      {
+        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
+        expect: { pc3: 0, pc2: 0, pc1: 0, pc0: 0 },
+      },
+      {
+        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
+        expect: { pc3: 0, pc2: 0, pc1: 0, pc0: 1 },
+      },
+      {
+        inputs: { jump: 1, a3: 0, a2: 1, a1: 1, a0: 0 },
+        expect: { pc3: 0, pc2: 1, pc1: 1, pc0: 0 },
+      },
+      {
+        inputs: { jump: 0, a3: 1, a2: 0, a1: 0, a0: 1 },
+        expect: { pc3: 0, pc2: 1, pc1: 1, pc0: 1 },
+      },
+      {
+        inputs: { jump: 1, a3: 0, a2: 0, a1: 1, a0: 1 },
+        expect: { pc3: 0, pc2: 0, pc1: 1, pc0: 1 },
+      },
+      {
+        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
+        expect: { pc3: 0, pc2: 1, pc1: 0, pc0: 0 },
+      },
+      {
+        inputs: { jump: 1, a3: 1, a2: 0, a1: 1, a0: 0 },
+        expect: { pc3: 1, pc2: 0, pc1: 1, pc0: 0 },
+      },
+      {
+        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
+        expect: { pc3: 1, pc2: 0, pc1: 1, pc0: 1 },
+      },
+    ],
+    par: 21,
+    outro: {
+      headline: 'Where the program is',
+      body: 'A CPU keeps the address of its next instruction in one of these. Counting moves on to the next instruction, and loading is how a jump or a loop works.',
+    },
+  },
 ];
 
 export const LEVELS_BY_ID = new Map(LEVELS.map((l) => [l.id, l]));

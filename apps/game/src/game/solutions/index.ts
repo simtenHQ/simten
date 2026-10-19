@@ -49,6 +49,7 @@ import norGate from './nor.ts?raw';
 import notGate from './not.ts?raw';
 import orGate from './or.ts?raw';
 import parity from './parity.ts?raw';
+import programCounter from './program-counter.ts?raw';
 import register from './register.ts?raw';
 import registerFile from './register-file.ts?raw';
 import subtract from './subtract.ts?raw';
@@ -86,4 +87,5 @@ export const SOLUTIONS: Record<string, string> = {
   'alu-4': alu4,
   register,
   'register-file': registerFile,
+  'program-counter': programCounter,
 };

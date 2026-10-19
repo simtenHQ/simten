@@ -12,9 +12,9 @@ The map forks after `making-a-component`. This section adds a logic column and a
 PROCESSOR    alu-4
 
 LOGIC        ARITHMETIC                 MEMORY
-parity
-mux-4        less-than
-decoder      subtract
+parity                                  program-counter
+mux-4        less-than                  register-file
+decoder      subtract                   register
 equal        negate                     counter
 wide-gates   adder-4                    toggle
 majority                   full-adder   d-latch
@@ -156,6 +156,36 @@ Map changes, all in `map.ts`:
 - **Starter:** the finished `Mux2`, `Mux4`, `Adder4` and `Subtract4`. Par 86. The player writes the bitwise AND/OR and the four multiplexers that pick each output bit.
 - **Vectors:** 16, four per operation.
 - **Size check:** this is the largest level in the section, but it's wiring parts the player has already built, not new logic.
+
+## Memory lane, continued
+
+Three sequential levels above `counter`, built the same way: single-bit inputs and outputs, at most 16 steps, the vector grader as it is. They fill the top of the memory lane and lead to the CPU. Allowed: every logic gate plus `DFlipFlop`.
+
+### 13. `register`: Register
+
+- **New idea:** a load line. Each bit is a flip-flop whose next value is a multiplexer's choice between its own `q` (hold) and the new bit (load).
+- **Interface:** `load`, `d3`–`d0` → `q3`–`q0`. Needs `counter`.
+- **Starter:** nothing handed over. The multiplexer is in the logic lane, which the player may not have done, so the hint describes it instead.
+- **Vectors:** 10 steps; the same inputs come back with a different number stored. Par 16.
+
+### 14. `register-file`: Register File
+
+- **New idea:** several registers, choosing which one to write and which to read.
+- **Interface:** `write`, `wsel`, `rsel`, `d3`–`d0` → `q3`–`q0`. Two registers, so the choices are single bits. Needs `register`.
+- **Starter:** the finished `Register4`.
+- **Why two:** four would want the decoder and four-way multiplexer, but those are in the logic lane and a wire from there to here would cross the arithmetic lane. The outro says so.
+- **Vectors:** 12 steps. Par 46.
+
+### 15. `program-counter`: Program Counter
+
+- **New idea:** a counter that can also be loaded, which is how a jump works.
+- **Interface:** `jump`, `a3`–`a0` → `pc3`–`pc0`. Needs `register-file` (ladder order; it builds on counter and register).
+- **Starter:** nothing handed over.
+- **Vectors:** 15 steps, including wrap from 15 to 0 and an address set with `jump` off, which must be ignored. Par 21, using the flip-flop's `q_bar` for bit 0.
+
+### Next: the CPU
+
+Goes in the Processor band, needing `alu-4` and `program-counter`. Not built: it needs an instruction set, and a spec panel that can show multi-bit values and runs longer than 16 steps.
 
 ## Spec panel changes
 
