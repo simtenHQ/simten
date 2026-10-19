@@ -39,7 +39,7 @@ const UNFINISHED_NOT = `export const Not1 = circuit('Not1', {
 
 describe('a wrong output', () => {
   it('reports the step that failed, not the first step with the same inputs', async () => {
-    const latch = level('latch');
+    const latch = level('sr-latch');
     expect(latch.vectors[3].inputs).toEqual(latch.vectors[1].inputs);
 
     const result = await grade(localRuntime(), latch, COPIES_R);
@@ -50,10 +50,19 @@ describe('a wrong output', () => {
   });
 
   it('is explained with the step on a sequential level', async () => {
-    const latch = level('latch');
+    const latch = level('sr-latch');
     const result = await grade(localRuntime(), latch, COPIES_R);
     expect(explain(result, latch)).toBe(
       'At step 4 (s = 1, r = 1), q should be 0 but your circuit gives 1.',
+    );
+  });
+
+  it('names the instruction a CPU step ran, not its bits', async () => {
+    const cpu = level('load');
+    // The stub as given: nothing wired, so r0 is never loaded.
+    const result = await grade(localRuntime(), cpu, cpu.stub);
+    expect(explain(result, cpu)).toBe(
+      'At step 1 (LOAD r0, 5), r0 should be 5 but your circuit gives 0.',
     );
   });
 

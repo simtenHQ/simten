@@ -42,6 +42,7 @@ import ThemeToggle from '../components/ThemeToggle';
 import { forbiddenPrimitives, grade, permittedFor } from '../game/grade';
 import { nameDiagnostics } from '../game/level-name';
 import { LEVELS_BY_ID, nextLevel } from '../game/levels';
+import { isSkeleton } from '../game/parts';
 import { sandboxRuntime } from '../game/runtime';
 import {
   clearDraft,
@@ -155,6 +156,12 @@ export function givenPreambleEnd(lines: string[]): number | null {
   const target = lines.findIndex((l) => l.startsWith('export default circuit('));
   if (target <= 0) return null;
   if (!lines.slice(0, target).some((l) => l.includes('circuit('))) return null;
+  // A part left for the player to finish sits above the target; open on that.
+  for (let start = 0; start < target; start++) {
+    if (!/^const \w+ = circuit\(/.test(lines[start])) continue;
+    const end = lines.findIndex((l, i) => i > start && l.startsWith('});'));
+    if (isSkeleton(lines.slice(start, end + 1).join('\n'))) return start + 1;
+  }
   return target + 1;
 }
 
@@ -575,7 +582,32 @@ function PlayLevel({ level }: { level: Level }) {
                     intellisense={intellisense}
                     onMount={(ed) => {
                       const at = givenPreambleEnd(ed.getModel()?.getLinesContent() ?? []);
-                      if (at !== null) ed.revealLineNearTop(at, 0);
+                      const reveal = () => {
+                        if (at !== null) ed.revealLineNearTop(at, 0);
+                      };
+                      // Stubs keep the parts they hand over in one `#region`.
+                      // Fold it, so the level opens on what the player writes;
+                      // the arrow beside it expands the parts to read. Monaco
+                      // works out the regions after mount, so folding straight
+                      // away finds none: wait for the first decorations pass,
+                      // which is when the fold markers exist.
+                      const fold = ed.getAction('editor.foldAllMarkerRegions');
+                      // With its parts folded a stub is short, and its top is
+                      // the explanation: open there rather than scrolling past.
+                      const folds = ed.getModel()?.getValue().includes('// #region') ?? false;
+                      if (!fold || !folds) {
+                        reveal();
+                        return;
+                      }
+                      let done = false;
+                      const run = () => {
+                        if (done) return;
+                        done = true;
+                        listener.dispose();
+                        void fold.run();
+                      };
+                      const listener = ed.onDidChangeModelDecorations(run);
+                      setTimeout(run, 400);
                     }}
                     beforeMount={registerSimtenThemes}
                     theme={SIMTEN_DARK}

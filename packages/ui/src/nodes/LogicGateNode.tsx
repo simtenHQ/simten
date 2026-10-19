@@ -15,7 +15,10 @@ const num = (v: unknown): number | undefined => (typeof v === 'number' ? v : und
  * announced itself as 4. `[3:1]` is what Verilog calls the same thing, and it
  * sits under a node name that already says why the slice exists.
  */
-function formatComponentLabel(componentRef: string, args?: Record<string, unknown>): string {
+function formatComponentLabel(ref: string, args?: Record<string, unknown>): string {
+  // A splitter or combiner registers one primitive per width (`Splitter_4w`);
+  // its face says what the player wrote, `Splitter(4)`.
+  const componentRef = ref.replace(/^(Splitter|Combiner)_\d+w$/, '$1');
   if (!args || Object.keys(args).length === 0) return componentRef;
 
   if (componentRef === 'BitSlice') {

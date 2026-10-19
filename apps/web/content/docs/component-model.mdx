@@ -91,7 +91,9 @@ All support `width` parameter (default: 8).
 |-----------|--------|---------|------------|-------------|
 | <PrimitiveLink name="Mux" /> | `in0`, `in1`, `sel: Bit` | `out` | `width` (default: 1) | 2-to-1 multiplexer |
 | <PrimitiveLink name="Decoder" /> | `in: Bus[2]` | `out0`–`out3: Bit` | — | 2-to-4 decoder |
-| `Splitter` | `in: Bus[8]` | `out0`, `out1: Bus[4]` | — | Split bus in half |
+| `Splitter` | `in: Bus[N]` | `bit0`–`bitN-1: Bit` | `width` (default: 8) | Split a bus into its bits |
+| `Combiner` | `bit0`–`bitN-1: Bit` | `out: Bus[N]` | `width` (default: 8) | Combine bits into a bus |
+| `NibbleSplitter` | `in: Bus[8]` | `out0`, `out1: Bus[4]` | — | Split a byte into two nibbles |
 | `Splitter8to8` | `in: Bus[8]` | `bit0`–`bit7: Bit` | — | Split bus to individual bits |
 | `Combiner8to8` | `bit0`–`bit7: Bit` | `out: Bus[8]` | — | Combine bits to bus |
 | <PrimitiveLink name="BitSlice" /> | `in: Bus[8]` | `out: Bus[N]` | `low` (0), `high` (7) | Extract bit range [low..high] |

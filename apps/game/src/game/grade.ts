@@ -34,7 +34,26 @@ import type { GradeFailure, GradeResult, Level } from './types';
  * Nothing here computes: a Switch sources a value, an Led consumes one. There
  * is no way to smuggle logic through an exempt node.
  */
-export const STRUCTURAL = new Set(['Switch', 'Led', 'Input', 'Output', 'HexDisplay']);
+export const STRUCTURAL = new Set([
+  'Switch',
+  'Led',
+  'Input',
+  'Output',
+  'HexDisplay',
+  // Pure wiring between a bus and its bits. Each width registers as its own
+  // primitive (`Splitter_4w`), so the netlist name is matched by its base.
+  'Splitter',
+  'Combiner',
+]);
+
+/**
+ * The name a primitive is permitted under. Parts whose ports change with an
+ * argument register one primitive per shape (`Splitter_4w`); the player writes
+ * `Splitter({ width: 4 })`, so that is the name the level permits.
+ */
+function permittedName(primitiveType: string): string {
+  return primitiveType.replace(/_\d+w$/, '');
+}
 
 /**
  * Does the circuit expose this signal, either as a top-level port or as a node of
@@ -75,7 +94,7 @@ export function forbiddenPrimitives(flat: FlatCircuit, allowed: string[]): strin
   const permitted = new Set(permittedFor(allowed));
   const used = new Set<string>();
   for (const node of flat.nodes) {
-    if (!permitted.has(node.primitiveType)) used.add(node.primitiveType);
+    if (!permitted.has(permittedName(node.primitiveType))) used.add(node.primitiveType);
   }
   return [...used].sort();
 }

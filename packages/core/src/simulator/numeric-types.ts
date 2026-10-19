@@ -34,7 +34,7 @@ export const PRIMITIVE_TYPE_INDICES: Record<string, number> = {
   Constant: 15,
 
   // Utilities (20-39)
-  Splitter: 20,
+  NibbleSplitter: 20,
   Splitter8to8: 21,
   Combiner8to8: 22,
   Probe: 23,

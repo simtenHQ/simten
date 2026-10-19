@@ -237,7 +237,7 @@ function writeOutput(ctx: EvalContext, outputIndex: number, value: number): void
 |--------|-----------|-------|
 | Inline (index.ts) | And, Or, Not, Nand, Nor, Xor, Xnor, Buffer, Switch, Led, Input, Constant, Probe | Simple enough to inline |
 | arithmetic.ts | Adder, Subtractor, Multiplier, Comparator, Shifters, Signed variants | Width-aware, carry/overflow detection |
-| routing.ts | Mux, Decoder, Splitter, BitSlice, Concat, Combiner8to8 | Pure wire routing, often zero logic cost |
+| routing.ts | Mux, Decoder, Splitter, Combiner, NibbleSplitter, BitSlice, Concat | Pure wire routing, often zero logic cost |
 | sequential.ts | DFlipFlop, Register, Screen, RasterDisplay, Console | Read from `currentState[nodeIndex]` |
 | memory.ts | ROM, RAM, DualPortRAM | Sparse Map storage, combinational read path |
 

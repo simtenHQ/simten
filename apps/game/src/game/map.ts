@@ -7,8 +7,9 @@
  * point they could not, because two branches of different lengths put unrelated
  * levels on the same rank.
  *
- * The campaign runs as a trunk of gate levels, forks into arithmetic and memory
- * once every gate is earned, and rejoins at a counter that needs both.
+ * The campaign runs as a trunk of gate levels and forks three ways once every
+ * gate is earned: logic, arithmetic and memory. Arithmetic and memory rejoin at
+ * a counter, and logic and arithmetic at the ALU.
  *
  * Order lives here rather than in `levels.ts` because it is presentation: a
  * level stays pure data that could be fetched as JSON, and the map decides how
@@ -29,13 +30,70 @@ export const MAP_ROWS: string[][] = [
   ['xor'],
   ['xnor'],
   ['making-a-component'],
-  // The fork: arithmetic on the left, memory on the right. Rows are ranks, so
-  // the shorter branch simply stops and `toggle` sits alone on the last one.
-  ['half-adder', 'latch'],
-  ['full-adder', 'd-latch'],
-  ['toggle'],
-  ['counter'],
+  ['multiplexer'],
+  ['buses'],
+  // The fork. Rows past here are ranks only; `MAP_COLUMNS` says which column
+  // each level sits in.
+  ['majority-vote', 'half-adder', 'sr-latch'],
+  ['wider-gates', 'full-adder', 'd-latch'],
+  ['decoder', '4-bit-adder', 'toggle'],
+  ['four-way-multiplexer', 'negative-numbers', 'counter'],
+  ['equality', 'subtractor', 'register'],
+  ['parity', 'less-than', 'register-file'],
+  ['program-counter'],
+  ['arithmetic-logic-unit'],
+  ['load'],
+  ['compute'],
+  ['jump'],
 ];
+
+/**
+ * Fixed columns for the fork, in node widths from the centre line.
+ *
+ * Centring each row works while every branch is the same length. Once they are
+ * not, a row of two re-centres and its levels drift half a column off the
+ * branch they belong to. So the fork pins its columns instead:
+ *
+ *   logic | new arithmetic | half adder, full adder | memory
+ *
+ * The full adder feeds both the 4-bit adder and the counter. Stacking the
+ * 4-bit adder directly above it would run the counter's wire through it, which
+ * reads as a dependency that is not there. Branching the new arithmetic off to
+ * the left leaves the column above the full adder empty, so the counter's wire
+ * climbs it and turns in under the counter, which sits with the rest of memory.
+ *
+ * Rows without an entry here are centred, which is the whole trunk.
+ */
+export const MAP_COLUMNS: Record<string, number> = {
+  'majority-vote': -1.5,
+  'wider-gates': -1.5,
+  decoder: -1.5,
+  'four-way-multiplexer': -1.5,
+  equality: -1.5,
+  parity: -1.5,
+
+  '4-bit-adder': -0.5,
+  'negative-numbers': -0.5,
+  subtractor: -0.5,
+  'less-than': -0.5,
+
+  'half-adder': 0.5,
+  'full-adder': 0.5,
+
+  'sr-latch': 1.5,
+  'd-latch': 1.5,
+  toggle: 1.5,
+  counter: 1.5,
+  register: 1.5,
+  'register-file': 1.5,
+  'program-counter': 1.5,
+
+  // Over the tops of the two columns it needs.
+  'arithmetic-logic-unit': -1,
+  load: 0,
+  compute: 0,
+  jump: 0,
+};
 
 /**
  * What each level needs finished before it opens.
@@ -60,24 +118,63 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   xnor: ['xor'],
   'making-a-component': ['xnor'],
 
-  // The fork. Both branches need every gate, so it splits after the last one:
-  // nothing downstream can reach for a gate the player skipped.
-  'half-adder': ['making-a-component'],
-  latch: ['making-a-component'],
+  // Every branch needs every gate, the multiplexer and numbers on wires, so the
+  // fork comes after all three: nothing downstream can hand over a part the
+  // player skipped. Memory uses the multiplexer to hold or load, and every
+  // branch has 4-bit levels.
+  multiplexer: ['making-a-component'],
+  buses: ['multiplexer'],
+
+  'majority-vote': ['buses'],
+  'half-adder': ['buses'],
+  'sr-latch': ['buses'],
+  'wider-gates': ['majority-vote'],
+  // Single switches first, then numbers on buses. The decoder and the
+  // four-way multiplexer sit together: both pick one of four with two bits.
+  decoder: ['wider-gates'],
+  'four-way-multiplexer': ['decoder'],
+  // Equality is XNORs and the four-input AND from wider gates, no
+  // arithmetic, so it belongs here rather than with the adders.
+  equality: ['four-way-multiplexer'],
+  parity: ['equality'],
 
   'full-adder': ['half-adder'],
-  'd-latch': ['latch'],
+  '4-bit-adder': ['full-adder'],
+  'negative-numbers': ['4-bit-adder'],
+  subtractor: ['negative-numbers'],
+  'less-than': ['subtractor'],
+
+  'd-latch': ['sr-latch'],
   toggle: ['d-latch'],
 
   // Where the branches rejoin. The AND is honest: a counter is memory holding
   // the number and logic working out the next one, so it needs both halves.
   counter: ['full-adder', 'toggle'],
+  register: ['counter'],
+  'register-file': ['register'],
+  'program-counter': ['register-file'],
+
+  // Where logic and arithmetic meet. It needs both columns finished: by then
+  // the player has every part an ALU is made of.
+  'arithmetic-logic-unit': ['parity', 'less-than'],
+
+  // Where everything meets: the ALU, and the program counter at the top of
+  // memory. The CPU is then built in three steps, one kind of instruction
+  // each, the way a real one is brought up.
+  load: ['arithmetic-logic-unit', 'program-counter'],
+  compute: ['load'],
+  jump: ['compute'],
 };
 
 export interface MapSection {
   label: string;
   /** Index into `MAP_ROWS` where this band begins, counting from the bottom. */
   startRow: number;
+  /**
+   * For a lane, the `MAP_COLUMNS` it covers, leftmost and rightmost. Absent
+   * means a band across the whole map.
+   */
+  columns?: [number, number];
 }
 
 /**
@@ -89,7 +186,9 @@ export interface MapSection {
  * *section* rather than the whole game.
  *
  * Declared by the row a band opens on rather than by a range, so adding a level
- * to the middle of a band does not require renumbering the one above it.
+ * to the middle of a band does not require renumbering the one above it. A band
+ * runs up to the next band that starts higher, so lanes that open on the same
+ * row sit side by side.
  */
 export const MAP_SECTIONS: MapSection[] = [
   // One band from the first wire to the last gate. It was two: a short
@@ -98,10 +197,14 @@ export const MAP_SECTIONS: MapSection[] = [
   // player had done anything worth dividing.
   { label: 'Logic gates', startRow: 0 },
   { label: 'Components', startRow: 7 },
-  // Arithmetic and memory used to be two bands stacked one above the other.
-  // They run side by side now, and a band is a horizontal strip, so two labels
-  // would sit on the same rows and fight. One band covers the fork instead.
-  { label: 'Arithmetic and memory', startRow: 8 },
+  // The fork's branches run side by side, so they get a lane each rather than
+  // one band across all three. It was one band, and seventeen levels under a
+  // single label read as one undivided slab.
+  { label: 'Logic', startRow: 10, columns: [-1.5, -1.5] },
+  { label: 'Arithmetic', startRow: 10, columns: [-0.5, 0.5] },
+  { label: 'Memory', startRow: 10, columns: [1.5, 1.5] },
+  // Where the lanes come back together. The ALU now; registers and a CPU later.
+  { label: 'Processor', startRow: 17 },
 ];
 
 /**
@@ -136,6 +239,11 @@ export interface MapEdge {
   id: string;
   source: string;
   target: string;
+  /**
+   * Where along the edge its horizontal run sits, 0 at the source and 1 at the
+   * target, for React Flow's smoothstep path. Absent means halfway.
+   */
+  stepPosition?: number;
 }
 
 /**
@@ -150,11 +258,15 @@ export interface MapSectionNode {
   id: string;
   label: string;
   position: { x: number; y: number };
+  width: number;
   height: number;
 }
 
-/** Width of a band. Wide enough to read as an area, not a caption. */
-export const SECTION_WIDTH = 760;
+/** Width of a full band. Wide enough to read as an area, not a caption. */
+export const SECTION_WIDTH = 1010;
+
+/** How far a lane reaches past the cards in its columns, either side. */
+const LANE_PAD = 12;
 
 /**
  * Vertical budget for a band, spent out of the space between two rows.
@@ -167,6 +279,32 @@ export const SECTION_WIDTH = 760;
  */
 const SECTION_PAD_TOP = 24;
 const SECTION_PAD_BOTTOM = 30;
+
+/**
+ * A wire that changes column turns just under the card it feeds, not halfway.
+ *
+ * Halfway is fine between neighbouring rows, but a wire that climbs two rows
+ * turned level with whatever sat in between, and ran through it: the full
+ * adder's wire to the counter cut straight across the toggle. Turning late
+ * keeps the climb in the wire's own column.
+ */
+const TURN_DROP = 14;
+
+/**
+ * Extra room under a band whose first row takes a turning wire from below.
+ *
+ * Those wires turn inside the band's bottom padding, which is where its label
+ * sits. The band sits higher by this much so the turn has room above the label.
+ */
+const TURN_ROOM = 36;
+
+/** A level's column, in node widths from the centre line. */
+function columnOf(levelId: string): number {
+  const row = MAP_ROWS.find((r) => r.includes(levelId)) ?? [levelId];
+  return MAP_COLUMNS[levelId] ?? row.indexOf(levelId) - (row.length - 1) / 2;
+}
+
+const columnX = (column: number) => column * (NODE_WIDTH + COLUMN_GAP);
 
 /**
  * Build the graph.
@@ -190,22 +328,40 @@ export function buildMapGraph(solved: ReadonlySet<string> = new Set()): {
   const nodes: MapNode[] = [];
   const edges: MapEdge[] = [];
   const lastRow = MAP_ROWS.length - 1;
-  const rowY = (rowIndex: number) => (lastRow - rowIndex) * ROW_GAP;
+  const rowOf = new Map(MAP_ROWS.flatMap((row, r) => row.map((id) => [id, r] as const)));
+  const turns = (source: string, target: string) => columnOf(source) !== columnOf(target);
+
+  // Bands that need room under their first row for a turning wire.
+  const roomy = new Set(
+    MAP_SECTIONS.map((s) => s.startRow).filter((start) =>
+      Object.entries(MAP_REQUIRES).some(
+        ([target, requires]) =>
+          rowOf.get(target) === start &&
+          requires.some((source) => (rowOf.get(source) ?? start) < start && turns(source, target)),
+      ),
+    ),
+  );
+
+  // Rows climb by ROW_GAP, plus TURN_ROOM for every roomy band at or below
+  // them. The top row stays at y = 0.
+  const lift = (rowIndex: number) =>
+    [...roomy].filter((start) => start <= rowIndex).length * TURN_ROOM;
+  const rowY = (rowIndex: number) =>
+    (lastRow - rowIndex) * ROW_GAP + lift(lastRow) - lift(rowIndex);
 
   MAP_ROWS.forEach((row, rowIndex) => {
     const y = rowY(rowIndex);
 
-    row.forEach((levelId, columnIndex) => {
+    for (const levelId of row) {
       const level = LEVELS_BY_ID.get(levelId);
-      if (!level) return; // Guarded by the drift test; ignore rather than crash a page.
+      if (!level) continue; // Guarded by the drift test; ignore rather than crash a page.
 
       // React Flow positions a node by its top-left corner, so half a node's
       // width comes off to make x = 0 the row's visual centre rather than its
       // left edge. Without it every row sits `NODE_WIDTH / 2` right of centre.
-      const offset = columnIndex - (row.length - 1) / 2;
       nodes.push({
         id: levelId,
-        position: { x: offset * (NODE_WIDTH + COLUMN_GAP) - NODE_WIDTH / 2, y },
+        position: { x: columnX(columnOf(levelId)) - NODE_WIDTH / 2, y },
         data: {
           levelId,
           title: level.title,
@@ -213,34 +369,55 @@ export function buildMapGraph(solved: ReadonlySet<string> = new Set()): {
           state: solved.has(levelId) ? 'solved' : 'available',
         },
       });
-    });
+    }
   });
 
   // Edges come from the dependency graph, not from row adjacency, so two
   // branches of different lengths do not acquire a link they never had.
+  const yOf = new Map(nodes.map((n) => [n.id, n.position.y]));
   for (const [levelId, requires] of Object.entries(MAP_REQUIRES)) {
     for (const source of requires) {
-      edges.push({ id: `${source}->${levelId}`, source, target: levelId });
+      const edge: MapEdge = { id: `${source}->${levelId}`, source, target: levelId };
+      const from = yOf.get(source);
+      const to = yOf.get(levelId);
+      if (turns(source, levelId) && from !== undefined && to !== undefined) {
+        const span = from - (to + NODE_HEIGHT);
+        edge.stepPosition = (span - TURN_DROP) / span;
+      }
+      edges.push(edge);
     }
   }
 
   /**
    * Each band spans from the row it opens on up to the row below the next
-   * band's start. Y grows downward while rows climb, so the band's *top* comes
-   * from its last row and its *bottom* from its first, inverted relative to
-   * how it reads.
+   * band that starts higher. Y grows downward while rows climb, so the band's
+   * *top* comes from its last row and its *bottom* from its first, inverted
+   * relative to how it reads.
    */
   const inRange = MAP_SECTIONS.filter((s) => s.startRow >= 0 && s.startRow < MAP_ROWS.length);
 
   const sections: MapSectionNode[] = inRange.map((section, i) => {
-    const endRow = i + 1 < inRange.length ? inRange[i + 1].startRow - 1 : lastRow;
-    const top = rowY(Math.max(endRow, section.startRow)) - SECTION_PAD_TOP;
-    const bottom = rowY(section.startRow) + NODE_HEIGHT + SECTION_PAD_BOTTOM;
+    const later = inRange.map((s) => s.startRow).filter((r) => r > section.startRow);
+    const endRow = later.length > 0 ? Math.min(...later) - 1 : lastRow;
+    const top = rowY(endRow) - SECTION_PAD_TOP;
+    const bottom =
+      rowY(section.startRow) +
+      NODE_HEIGHT +
+      SECTION_PAD_BOTTOM +
+      (roomy.has(section.startRow) ? TURN_ROOM : 0);
+
+    const [left, width] = section.columns
+      ? [
+          columnX(section.columns[0]) - NODE_WIDTH / 2 - LANE_PAD,
+          columnX(section.columns[1]) - columnX(section.columns[0]) + NODE_WIDTH + 2 * LANE_PAD,
+        ]
+      : [-SECTION_WIDTH / 2, SECTION_WIDTH];
 
     return {
-      id: `section-${section.startRow}`,
+      id: `section-${i}`,
       label: section.label,
-      position: { x: -SECTION_WIDTH / 2, y: top },
+      position: { x: left, y: top },
+      width,
       height: Math.max(bottom - top, NODE_HEIGHT),
     };
   });

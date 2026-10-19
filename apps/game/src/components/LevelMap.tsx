@@ -30,14 +30,7 @@ import {
 import { Crosshair } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
 import { useCallback, useMemo, useState } from 'react';
-import {
-  buildMapGraph,
-  type LevelNodeData,
-  MAP_ROWS,
-  NODE_HEIGHT,
-  NODE_WIDTH,
-  SECTION_WIDTH,
-} from '../game/map';
+import { buildMapGraph, type LevelNodeData, MAP_ROWS, NODE_HEIGHT, NODE_WIDTH } from '../game/map';
 import { simulateMap } from '../game/map-circuit';
 
 /** Node data plus the interaction callbacks, which are view state rather than map data. */
@@ -186,7 +179,7 @@ function SectionBand({ data }: NodeProps<SectionFlowNode>) {
   return (
     <div
       className="pointer-events-none select-none rounded-xl border border-dashed border-border/60 bg-foreground/[0.025]"
-      style={{ width: SECTION_WIDTH, height: data.height }}
+      style={{ width: data.width, height: data.height }}
     >
       <span className="absolute bottom-2 left-4 whitespace-nowrap text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground/70">
         {data.label}
@@ -195,7 +188,7 @@ function SectionBand({ data }: NodeProps<SectionFlowNode>) {
   );
 }
 
-type SectionFlowNode = Node<{ label: string; height: number }, 'section'>;
+type SectionFlowNode = Node<{ label: string; width: number; height: number }, 'section'>;
 
 /** Everything the map renders: level cards and band labels. */
 type MapFlowNode = LevelNode | SectionFlowNode;
@@ -252,7 +245,7 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
         id: s.id,
         type: 'section' as const,
         position: s.position,
-        data: { label: s.label, height: s.height },
+        data: { label: s.label, width: s.width, height: s.height },
         selectable: false,
         draggable: false,
         zIndex: -1,
@@ -269,6 +262,7 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
         return {
           ...e,
           type: 'smoothstep',
+          pathOptions: e.stepPosition === undefined ? undefined : { stepPosition: e.stepPosition },
           animated: false,
           style: { stroke: hot ? WIRE_LIVE : WIRE_LOW, strokeWidth: 2 },
         };

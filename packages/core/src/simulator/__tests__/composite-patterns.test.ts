@@ -651,12 +651,10 @@ describe('P-empty-composite-passthrough-only — composite with a single passthr
     nodes: { p: Pass },
     connect: ({ inputs, outputs, nodes: { p } }) => [inputs.a.to(p.x), p.y.to(outputs.y)],
   });
-  // Newly-discovered audit finding — see #147. Today: invariants pass (the
-  // flat netlist is structurally well-formed), but the simulator returns 0
-  // instead of the input value — a behaviour-only silent bug specific to
-  // node-less passthrough composites. Single `it.fails(...)` pins both halves
-  // of the future-fix state.
-  it.fails('node-less passthrough composite propagates the signal — currently dropped, see #147', () => {
+  // #147: a node-less passthrough used to be classed as a primitive (no nodes,
+  // no eval), so it was never flattened and the signal was dropped. It is an
+  // empty composite now, and the wire through it is followed.
+  it('node-less passthrough composite propagates the signal (#147)', () => {
     assertFlatCircuitInvariants(elaborateBuilt(Wrap));
     const sim = simulate(Wrap);
     try {

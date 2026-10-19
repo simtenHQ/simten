@@ -1,4 +1,4 @@
-/** Reference solution for `latch`. Proven by `__tests__/levels.test.ts`. */
+/** Reference solution for `sr-latch`. Proven by `__tests__/levels.test.ts`. */
 
 import { circuit } from '@simten/core/circuit';
 import { Led, Nand, Switch } from '@simten/core/std';

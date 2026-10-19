@@ -108,6 +108,13 @@ const EXACT: Record<string, Classification> = {
 const IMPORT_PREFIXES = ['Pmux', 'Mem', 'Dlatch'] as const;
 
 /**
+ * Shape-named authoring primitives: stdlib parts whose port set varies with an
+ * argument, so they register per shape (`Splitter_4w`) the same way. Matched by
+ * `<prefix>_`, which keeps the fixed-shape `Splitter8to8` out.
+ */
+const STDLIB_SHAPE_PREFIXES = ['Splitter', 'Combiner'] as const;
+
+/**
  * Classify a component by name. Returns `undefined` for names that are not
  * importer-emitted primitives (e.g. an instantiated submodule / user circuit) —
  * callers treat those as semantic module instances, never as reconstruction.
@@ -115,6 +122,7 @@ const IMPORT_PREFIXES = ['Pmux', 'Mem', 'Dlatch'] as const;
 export function classify(name: string): Classification | undefined {
   const exact = EXACT[name];
   if (exact) return exact;
+  for (const p of STDLIB_SHAPE_PREFIXES) if (name.startsWith(`${p}_`)) return R;
   for (const p of IMPORT_PREFIXES) if (name.startsWith(p)) return S_IMP;
   return undefined;
 }
@@ -141,5 +149,5 @@ export function isKnownSerializablePrimitive(name: string): boolean {
  * undefined for everything else (emitted by their own name).
  */
 export function importFactoryName(name: string): string | undefined {
-  return IMPORT_PREFIXES.find((p) => name.startsWith(`${p}_`));
+  return [...STDLIB_SHAPE_PREFIXES, ...IMPORT_PREFIXES].find((p) => name.startsWith(`${p}_`));
 }

@@ -186,6 +186,23 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
   const i = (port: string) => wire(wires, port, 'input');
   const o = (port: string) => wire(wires, port, 'output');
 
+  // Bit splitter and combiner register one primitive per width
+  // (`Splitter_4w`), so they are matched by shape rather than in the switch.
+  const bits = /^(Splitter|Combiner)_(\d+)w$/.exec(primitiveType);
+  if (bits) {
+    const width = Number(bits[2]);
+    const lines =
+      bits[1] === 'Splitter'
+        ? Array.from(
+            { length: width },
+            (_, bit) => `assign ${o(`bit${bit}`)} = ${i('in')}[${bit}];`,
+          )
+        : [
+            `assign ${o('out')} = {${Array.from({ length: width }, (_, bit) => i(`bit${width - 1 - bit}`)).join(', ')}};`,
+          ];
+    return { lines, declarations: [] };
+  }
+
   switch (primitiveType) {
     // ── Logic Gates ──────────────────────────────────────────────────
     case 'And':
@@ -360,7 +377,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
         declarations: [],
       };
     }
-    case 'Splitter':
+    case 'NibbleSplitter':
       return {
         lines: [`assign ${o('out0')} = ${i('in')}[3:0];`, `assign ${o('out1')} = ${i('in')}[7:4];`],
         declarations: [],
