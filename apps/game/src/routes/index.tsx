@@ -98,12 +98,14 @@ function MapPage() {
       <HeaderBar>
         <span className="text-sm text-muted-foreground">Build a computer</span>
         <div className="ml-auto flex items-center gap-3">
-          {/* The tour needs a level page to walk round, so this opens one. */}
+          {/* The tour needs a level page to walk round, so this opens one. Not on
+              phones: level pages show the desktop-only notice below 768px (the
+              same breakpoint as `md`), so the tour has nothing to show there. */}
           <Link
             to="/$levelId"
             params={{ levelId: tourLevelId }}
             hash="tour"
-            className="text-sm text-muted-foreground no-underline hover:text-foreground"
+            className="hidden text-sm text-muted-foreground no-underline hover:text-foreground md:inline"
           >
             What is this?
           </Link>

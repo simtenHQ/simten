@@ -134,8 +134,12 @@ export type GradeFailure =
   | { kind: 'interface'; problems: string[] }
   /** Elaborated netlist contains primitives the level does not permit. */
   | { kind: 'forbidden'; used: string[]; allowed: string[] }
-  /** A truth-table row came out wrong. The first failing row, not all of them. */
-  | { kind: 'vector'; vector: Vector; actual: Record<string, number> };
+  /**
+   * A vector came out wrong: the first one, not all of them. `index` is its
+   * position in `level.vectors`. On a sequential level the same inputs can
+   * appear at several steps, so the inputs alone do not say which step failed.
+   */
+  | { kind: 'vector'; index: number; vector: Vector; actual: Record<string, number> };
 
 export type GradeResult =
   | { status: 'pass'; gates: number }

@@ -52,13 +52,18 @@ export function columnsFor(level: Level): { inputNames: string[]; outputNames: s
   return { inputNames: level.inputs, outputNames: level.outputs };
 }
 
+/** A step-number cell, ruled off like the value cells below it. */
+const STEP_CELL = 'w-7 border-l border-border py-0.5 text-center text-xs text-muted-foreground';
+
 export function TruthTable({ level, active = null, proven = 0, failed = null }: TruthTableProps) {
   const { inputNames, outputNames } = columnsFor(level);
 
   const cell = (i: number) => {
     const verdict = failed === i ? 'bg-red-500/15' : i < proven ? 'bg-emerald-500/15' : '';
     return [
-      'w-7 py-0.5 text-center transition-colors duration-200',
+      // A line before every column, so each case (or tick) reads as one unit
+      // and the names are ruled off from the values.
+      'w-7 border-l border-border py-0.5 text-center transition-colors duration-200',
       // The sweep's highlight wins while it is passing over a column, so the
       // eye follows the run rather than the accumulating result behind it.
       active === i ? 'bg-emerald-500/25' : verdict,
@@ -66,7 +71,7 @@ export function TruthTable({ level, active = null, proven = 0, failed = null }: 
   };
 
   return (
-    <table className="font-mono text-sm tabular-nums">
+    <table className="font-mono text-[13px] tabular-nums">
       <tbody>
         {/* Step numbers, on a sequential level only.
             Without them the columns read as an unordered set of cases, which is
@@ -80,7 +85,7 @@ export function TruthTable({ level, active = null, proven = 0, failed = null }: 
               // Position is the identity here: these are ordered steps, and two
               // of them can carry byte-identical inputs.
               // biome-ignore lint/suspicious/noArrayIndexKey: the index is the step
-              <td key={i} className="w-7 py-0.5 text-center text-xs text-muted-foreground">
+              <td key={i} className={STEP_CELL}>
                 {i + 1}
               </td>
             ))}

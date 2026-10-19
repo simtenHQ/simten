@@ -473,7 +473,7 @@ function PlayLevel({ level }: { level: Level }) {
             than occupying panel space for the rest of the level. */}
         {/* The tagline, not the brief. This truncates, and a truncated problem
             statement put a half-sentence of instructions in the first thing on
-            screen. The full brief is in the spec panel, under "The problem". */}
+            screen. The full brief is in the spec panel, under "Goal". */}
         <p className="hidden truncate text-xs text-muted-foreground lg:block" title={level.tagline}>
           {level.tagline}
         </p>
@@ -655,6 +655,8 @@ function PlayLevel({ level }: { level: Level }) {
                 result={result}
                 activeRow={victory.active}
                 provenRows={victory.proven}
+                // Grading, then the green sweep through the table on a pass.
+                checking={submitting || (result?.status === 'pass' && !victory.complete)}
               />
             </section>
           </ResizablePanel>
