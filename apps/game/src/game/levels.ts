@@ -1474,12 +1474,11 @@ export default circuit('LessThan4', {
     title: 'Arithmetic Logic Unit',
     tagline: 'One circuit that adds, subtracts, ANDs or ORs.',
     brief:
-      'Put the result of the operation `op1 op0` picks on `r3` to `r0`: 00 is a + b, 01 is a - b, 10 is a AND b, and 11 is a OR b, bit by bit',
+      'Put the result of the operation `op1 op0` picks on `r`: 00 is a + b, 01 is a - b, 10 is a AND b, and 11 is a OR b, bit by bit',
     target: 'Alu4',
-    inputs: ['op1', 'op0', 'a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
-    outputs: ['r3', 'r2', 'r1', 'r0'],
+    inputs: ['op1', 'op0', 'a', 'b'],
+    outputs: ['r'],
     allowed: ARITHMETIC_GATES,
-    numbers: { a: 'unsigned', b: 'unsigned', r: 'unsigned' },
     stub: `// Everything you need is below, finished: your multiplexers,
 // your adder and your subtractor.
 
@@ -1502,20 +1501,17 @@ export default circuit('Alu4', {
   nodes: {
     op1: Switch,
     op0: Switch,
-    a3: Switch,
-    a2: Switch,
-    a1: Switch,
-    a0: Switch,
-    b3: Switch,
-    b2: Switch,
-    b1: Switch,
-    b0: Switch,
-    r3: Led,
-    r2: Led,
-    r1: Led,
-    r0: Led,
+    a: Input({ width: 4 }),
+    aBits: Splitter({ width: 4 }),
+    b: Input({ width: 4 }),
+    bBits: Splitter({ width: 4 }),
+    r: HexDisplay({ width: 4 }),
+    rBits: Combiner({ width: 4 }),
   },
-  connect: ({ nodes: { op1, op0, a3, a2, a1, a0, b3, b2, b1, b0, r3, r2, r1, r0 } }) => [
+  connect: ({ nodes: { op1, op0, a, aBits, b, bBits, r, rBits } }) => [
+    a.out.to(aBits.in),
+    b.out.to(bBits.in),
+    rBits.out.to(r.in),
     //
   ],
 });
@@ -1523,70 +1519,22 @@ export default circuit('Alu4', {
     // Four per operation. 12 and 10, and 5 and 3, appear under every op, so a
     // circuit that ignores op, or swaps two of them, gets caught.
     vectors: [
-      {
-        inputs: { op1: 0, op0: 0, a3: 1, a2: 1, a1: 0, a0: 0, b3: 1, b2: 0, b1: 1, b0: 0 },
-        expect: { r3: 0, r2: 1, r1: 1, r0: 0 },
-      },
-      {
-        inputs: { op1: 0, op0: 0, a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 0, b1: 1, b0: 1 },
-        expect: { r3: 1, r2: 0, r1: 0, r0: 0 },
-      },
-      {
-        inputs: { op1: 0, op0: 0, a3: 1, a2: 1, a1: 1, a0: 1, b3: 0, b2: 0, b1: 0, b0: 1 },
-        expect: { r3: 0, r2: 0, r1: 0, r0: 0 },
-      },
-      {
-        inputs: { op1: 0, op0: 0, a3: 1, a2: 0, a1: 0, a0: 1, b3: 1, b2: 0, b1: 0, b0: 1 },
-        expect: { r3: 0, r2: 0, r1: 1, r0: 0 },
-      },
-      {
-        inputs: { op1: 0, op0: 1, a3: 1, a2: 1, a1: 0, a0: 0, b3: 1, b2: 0, b1: 1, b0: 0 },
-        expect: { r3: 0, r2: 0, r1: 1, r0: 0 },
-      },
-      {
-        inputs: { op1: 0, op0: 1, a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 0, b1: 1, b0: 1 },
-        expect: { r3: 0, r2: 0, r1: 1, r0: 0 },
-      },
-      {
-        inputs: { op1: 0, op0: 1, a3: 0, a2: 0, a1: 1, a0: 1, b3: 0, b2: 1, b1: 0, b0: 1 },
-        expect: { r3: 1, r2: 1, r1: 1, r0: 0 },
-      },
-      {
-        inputs: { op1: 0, op0: 1, a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 1 },
-        expect: { r3: 1, r2: 1, r1: 1, r0: 1 },
-      },
-      {
-        inputs: { op1: 1, op0: 0, a3: 1, a2: 1, a1: 0, a0: 0, b3: 1, b2: 0, b1: 1, b0: 0 },
-        expect: { r3: 1, r2: 0, r1: 0, r0: 0 },
-      },
-      {
-        inputs: { op1: 1, op0: 0, a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 0, b1: 1, b0: 1 },
-        expect: { r3: 0, r2: 0, r1: 0, r0: 1 },
-      },
-      {
-        inputs: { op1: 1, op0: 0, a3: 1, a2: 1, a1: 1, a0: 1, b3: 0, b2: 1, b1: 1, b0: 0 },
-        expect: { r3: 0, r2: 1, r1: 1, r0: 0 },
-      },
-      {
-        inputs: { op1: 1, op0: 0, a3: 1, a2: 0, a1: 0, a0: 1, b3: 0, b2: 1, b1: 1, b0: 0 },
-        expect: { r3: 0, r2: 0, r1: 0, r0: 0 },
-      },
-      {
-        inputs: { op1: 1, op0: 1, a3: 1, a2: 1, a1: 0, a0: 0, b3: 1, b2: 0, b1: 1, b0: 0 },
-        expect: { r3: 1, r2: 1, r1: 1, r0: 0 },
-      },
-      {
-        inputs: { op1: 1, op0: 1, a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 0, b1: 1, b0: 1 },
-        expect: { r3: 0, r2: 1, r1: 1, r0: 1 },
-      },
-      {
-        inputs: { op1: 1, op0: 1, a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 0 },
-        expect: { r3: 0, r2: 0, r1: 0, r0: 0 },
-      },
-      {
-        inputs: { op1: 1, op0: 1, a3: 1, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 1 },
-        expect: { r3: 1, r2: 0, r1: 0, r0: 1 },
-      },
+      { inputs: { op1: 0, op0: 0, a: 12, b: 10 }, expect: { r: 6 } },
+      { inputs: { op1: 0, op0: 0, a: 5, b: 3 }, expect: { r: 8 } },
+      { inputs: { op1: 0, op0: 0, a: 15, b: 1 }, expect: { r: 0 } },
+      { inputs: { op1: 0, op0: 0, a: 9, b: 9 }, expect: { r: 2 } },
+      { inputs: { op1: 0, op0: 1, a: 12, b: 10 }, expect: { r: 2 } },
+      { inputs: { op1: 0, op0: 1, a: 5, b: 3 }, expect: { r: 2 } },
+      { inputs: { op1: 0, op0: 1, a: 3, b: 5 }, expect: { r: 14 } },
+      { inputs: { op1: 0, op0: 1, a: 0, b: 1 }, expect: { r: 15 } },
+      { inputs: { op1: 1, op0: 0, a: 12, b: 10 }, expect: { r: 8 } },
+      { inputs: { op1: 1, op0: 0, a: 5, b: 3 }, expect: { r: 1 } },
+      { inputs: { op1: 1, op0: 0, a: 15, b: 6 }, expect: { r: 6 } },
+      { inputs: { op1: 1, op0: 0, a: 9, b: 6 }, expect: { r: 0 } },
+      { inputs: { op1: 1, op0: 1, a: 12, b: 10 }, expect: { r: 14 } },
+      { inputs: { op1: 1, op0: 1, a: 5, b: 3 }, expect: { r: 7 } },
+      { inputs: { op1: 1, op0: 1, a: 0, b: 0 }, expect: { r: 0 } },
+      { inputs: { op1: 1, op0: 1, a: 8, b: 1 }, expect: { r: 9 } },
     ],
     par: 86,
     outro: {
