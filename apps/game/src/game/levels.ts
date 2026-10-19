@@ -921,6 +921,56 @@ export default circuit('Mux4', {
       body: 'Three multiplexers in a tree, each layer halving the choices, so eight inputs would take three layers. The decoder works too, an AND per input and then an OR, but the tree is cheaper.',
     },
   },
+
+  {
+    id: 'parity',
+    title: 'Parity',
+    tagline: 'Light the led when an odd number of switches are on.',
+    brief: 'Light `odd` when one or three of the switches are on',
+    target: 'Parity4',
+    inputs: ['a', 'b', 'c', 'd'],
+    outputs: ['odd'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// This one has a short answer. It is not the first one
+// most people try.
+
+export default circuit('Parity4', {
+  nodes: {
+    a: Switch,
+    b: Switch,
+    c: Switch,
+    d: Switch,
+    odd: Led,
+  },
+  connect: ({ nodes: { a, b, c, d, odd } }) => [
+    //
+  ],
+});
+`,
+    vectors: [
+      { inputs: { a: 0, b: 0, c: 0, d: 0 }, expect: { odd: 0 } },
+      { inputs: { a: 0, b: 0, c: 0, d: 1 }, expect: { odd: 1 } },
+      { inputs: { a: 0, b: 0, c: 1, d: 0 }, expect: { odd: 1 } },
+      { inputs: { a: 0, b: 0, c: 1, d: 1 }, expect: { odd: 0 } },
+      { inputs: { a: 0, b: 1, c: 0, d: 0 }, expect: { odd: 1 } },
+      { inputs: { a: 0, b: 1, c: 0, d: 1 }, expect: { odd: 0 } },
+      { inputs: { a: 0, b: 1, c: 1, d: 0 }, expect: { odd: 0 } },
+      { inputs: { a: 0, b: 1, c: 1, d: 1 }, expect: { odd: 1 } },
+      { inputs: { a: 1, b: 0, c: 0, d: 0 }, expect: { odd: 1 } },
+      { inputs: { a: 1, b: 0, c: 0, d: 1 }, expect: { odd: 0 } },
+      { inputs: { a: 1, b: 0, c: 1, d: 0 }, expect: { odd: 0 } },
+      { inputs: { a: 1, b: 0, c: 1, d: 1 }, expect: { odd: 1 } },
+      { inputs: { a: 1, b: 1, c: 0, d: 0 }, expect: { odd: 0 } },
+      { inputs: { a: 1, b: 1, c: 0, d: 1 }, expect: { odd: 1 } },
+      { inputs: { a: 1, b: 1, c: 1, d: 0 }, expect: { odd: 1 } },
+      { inputs: { a: 1, b: 1, c: 1, d: 1 }, expect: { odd: 0 } },
+    ],
+    par: 3,
+    outro: {
+      headline: 'Odd one out',
+      body: 'XOR is on when an odd number of its inputs are, and chaining keeps that true. Send this bit along with your data and any single flipped bit shows up, which is why serial links and some memory carry one.',
+    },
+  },
 ];
 
 export const LEVELS_BY_ID = new Map(LEVELS.map((l) => [l.id, l]));

@@ -38,6 +38,7 @@ export const MAP_ROWS: string[][] = [
   ['wide-gates', 'toggle'],
   ['decoder', 'counter'],
   ['mux-4'],
+  ['parity'],
 ];
 
 /**
@@ -72,6 +73,7 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   'wide-gates': ['majority'],
   decoder: ['wide-gates'],
   'mux-4': ['decoder'],
+  parity: ['mux-4'],
 
   'full-adder': ['half-adder'],
   'd-latch': ['latch'],

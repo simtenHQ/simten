@@ -43,6 +43,7 @@ import nand from './nand.ts?raw';
 import norGate from './nor.ts?raw';
 import notGate from './not.ts?raw';
 import orGate from './or.ts?raw';
+import parity from './parity.ts?raw';
 import toggle from './toggle.ts?raw';
 import wideGates from './wide-gates.ts?raw';
 import xnorGate from './xnor.ts?raw';
@@ -68,4 +69,5 @@ export const SOLUTIONS: Record<string, string> = {
   'wide-gates': wideGates,
   decoder,
   'mux-4': mux4,
+  parity,
 };
