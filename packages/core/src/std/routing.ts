@@ -119,13 +119,21 @@ export const NibbleSplitter = circuit('NibbleSplitter', {
  * the editor sandbox rebuilds evals from their source, which drops closures.
  * The literal `8` fallback is only for a node somehow missing its args.
  */
-function withArgs(c: BuiltCircuit, args: Record<string, ArgumentValue>): BuiltCircuit {
+function withArgs<T extends BuiltCircuit>(c: T, args: Record<string, ArgumentValue>): T {
   (c as { _args?: Record<string, ArgumentValue> })._args = args;
   return c;
 }
 
+/**
+ * `bit0`..`bit{width-1}`, typed by their name pattern rather than as a plain
+ * string record. A string record would let `in`/`out` match it too, and a port
+ * that reads as both an input and an output types as `never` in `connect`.
+ */
 const bitPorts = (width: number) =>
-  Object.fromEntries(Array.from({ length: width }, (_, i) => [`bit${i}`, bit]));
+  Object.fromEntries(Array.from({ length: width }, (_, i) => [`bit${i}`, bit])) as Record<
+    `bit${number}`,
+    typeof bit
+  >;
 
 /**
  * Splits a bus into its bits. `bit0` is the LSB.
@@ -153,7 +161,7 @@ const bitPorts = (width: number) =>
  * })
  * ```
  */
-export function Splitter({ width = 8 }: { width?: number } = {}): BuiltCircuit {
+export function Splitter({ width = 8 }: { width?: number } = {}) {
   return withArgs(
     circuit(`Splitter_${width}w`, {
       inputs: { in: bus(width) },
@@ -180,7 +188,7 @@ export function Splitter({ width = 8 }: { width?: number } = {}): BuiltCircuit {
  *
  * Registers per width (`Combiner_4w`), for the same reason as `Splitter`.
  */
-export function Combiner({ width = 8 }: { width?: number } = {}): BuiltCircuit {
+export function Combiner({ width = 8 }: { width?: number } = {}) {
   return withArgs(
     circuit(`Combiner_${width}w`, {
       inputs: bitPorts(width),
