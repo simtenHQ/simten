@@ -49,6 +49,8 @@ import norGate from './nor.ts?raw';
 import notGate from './not.ts?raw';
 import orGate from './or.ts?raw';
 import parity from './parity.ts?raw';
+import register from './register.ts?raw';
+import registerFile from './register-file.ts?raw';
 import subtract from './subtract.ts?raw';
 import toggle from './toggle.ts?raw';
 import wideGates from './wide-gates.ts?raw';
@@ -82,4 +84,6 @@ export const SOLUTIONS: Record<string, string> = {
   equal,
   'less-than': lessThan,
   'alu-4': alu4,
+  register,
+  'register-file': registerFile,
 };

@@ -36,8 +36,8 @@ export const MAP_ROWS: string[][] = [
   ['majority', 'full-adder', 'd-latch'],
   ['wide-gates', 'adder-4', 'toggle'],
   ['equal', 'negate', 'counter'],
-  ['decoder', 'subtract'],
-  ['mux-4', 'less-than'],
+  ['decoder', 'subtract', 'register'],
+  ['mux-4', 'less-than', 'register-file'],
   ['parity'],
   ['alu-4'],
 ];
@@ -80,6 +80,8 @@ export const MAP_COLUMNS: Record<string, number> = {
   'd-latch': 1.5,
   toggle: 1.5,
   counter: 1.5,
+  register: 1.5,
+  'register-file': 1.5,
 
   // Over the tops of the two columns it needs.
   'alu-4': -1,
@@ -135,6 +137,8 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   // Where the branches rejoin. The AND is honest: a counter is memory holding
   // the number and logic working out the next one, so it needs both halves.
   counter: ['full-adder', 'toggle'],
+  register: ['counter'],
+  'register-file': ['register'],
 
   // Where logic and arithmetic meet. It needs both columns finished: by then
   // the player has every part an ALU is made of.

@@ -51,6 +51,12 @@ import type { Level } from './types';
 const ARITHMETIC_GATES = ['Nand', 'Not', 'And', 'Or', 'Nor', 'Xor', 'Xnor'];
 
 /**
+ * What the memory levels past the counter may use: every logic gate, and the
+ * flip-flop the toggle level handed over.
+ */
+const MEMORY_GATES = [...ARITHMETIC_GATES, 'DFlipFlop'];
+
+/**
  * Finished parts handed over in later stubs, written once so every stub that
  * hands one over hands over the same thing. Each is the reference answer to
  * the level that introduced it, rewritten with ports so it can be used as a
@@ -176,6 +182,37 @@ const SUBTRACT4 = `const Subtract4 = circuit('Subtract4', {
     ns1.out.to(outputs.d1),
     ns0.out.to(outputs.d0),
     add.cout.to(outputs.borrow),
+  ],
+});`;
+
+const REGISTER_BIT = `const RegisterBit = circuit('RegisterBit', {
+  inputs: { load: bit, d: bit },
+  outputs: { q: bit },
+  nodes: { ff: DFlipFlop(), x1: Xor, a1: And, x2: Xor },
+  connect: ({ inputs, outputs, nodes: { ff, x1, a1, x2 } }) => [
+    ff.q.to(x1.a, x2.a, outputs.q),
+    inputs.d.to(x1.b),
+    x1.out.to(a1.a),
+    inputs.load.to(a1.b),
+    a1.out.to(x2.b),
+    x2.out.to(ff.d),
+  ],
+});`;
+
+const REGISTER4 = `const Register4 = circuit('Register4', {
+  inputs: { load: bit, d3: bit, d2: bit, d1: bit, d0: bit },
+  outputs: { q3: bit, q2: bit, q1: bit, q0: bit },
+  nodes: { b3: RegisterBit, b2: RegisterBit, b1: RegisterBit, b0: RegisterBit },
+  connect: ({ inputs, outputs, nodes: { b3, b2, b1, b0 } }) => [
+    inputs.load.to(b3.load, b2.load, b1.load, b0.load),
+    inputs.d3.to(b3.d),
+    inputs.d2.to(b2.d),
+    inputs.d1.to(b1.d),
+    inputs.d0.to(b0.d),
+    b3.q.to(outputs.q3),
+    b2.q.to(outputs.q2),
+    b1.q.to(outputs.q1),
+    b0.q.to(outputs.q0),
   ],
 });`;
 
@@ -1586,6 +1623,161 @@ export default circuit('Alu4', {
     outro: {
       headline: 'An ALU',
       body: 'Every CPU has one of these. Add registers and a counter to step through a program and you have most of a computer.',
+    },
+  },
+
+  {
+    id: 'register',
+    title: 'Register',
+    tagline: 'Hold four bits until you are told to change them.',
+    brief:
+      'Show the stored number on `q3` to `q0`. On each tick, store `d3` to `d0` if `load` is on, and keep the old number if it is off',
+    target: 'Register4',
+    inputs: ['load', 'd3', 'd2', 'd1', 'd0'],
+    outputs: ['q3', 'q2', 'q1', 'q0'],
+    allowed: MEMORY_GATES,
+    numbers: { d: 'unsigned', q: 'unsigned' },
+    sequential: true,
+    stub: `// One flip-flop per bit. A flip-flop stores whatever is on
+// its d input every tick, so to keep a bit, feed it its own q.
+// To load, feed it the new bit instead. load picks which,
+// the same job your multiplexer did.
+
+export default circuit('Register4', {
+  nodes: {
+    load: Switch,
+    d3: Switch,
+    d2: Switch,
+    d1: Switch,
+    d0: Switch,
+    q3: Led,
+    q2: Led,
+    q1: Led,
+    q0: Led,
+  },
+  connect: ({ nodes: { load, d3, d2, d1, d0, q3, q2, q1, q0 } }) => [
+    //
+  ],
+});
+`,
+    // Ordered steps. Steps 2 and 10 carry the same inputs and expect different
+    // numbers, and so do 5 and 8: what comes out depends on what was stored.
+    vectors: [
+      { inputs: { load: 1, d3: 0, d2: 1, d1: 0, d0: 1 }, expect: { q3: 0, q2: 1, q1: 0, q0: 1 } },
+      { inputs: { load: 0, d3: 1, d2: 0, d1: 1, d0: 0 }, expect: { q3: 0, q2: 1, q1: 0, q0: 1 } },
+      { inputs: { load: 0, d3: 0, d2: 0, d1: 0, d0: 0 }, expect: { q3: 0, q2: 1, q1: 0, q0: 1 } },
+      { inputs: { load: 1, d3: 1, d2: 0, d1: 1, d0: 0 }, expect: { q3: 1, q2: 0, q1: 1, q0: 0 } },
+      { inputs: { load: 0, d3: 0, d2: 1, d1: 0, d0: 1 }, expect: { q3: 1, q2: 0, q1: 1, q0: 0 } },
+      { inputs: { load: 0, d3: 1, d2: 1, d1: 1, d0: 1 }, expect: { q3: 1, q2: 0, q1: 1, q0: 0 } },
+      { inputs: { load: 1, d3: 1, d2: 1, d1: 1, d0: 1 }, expect: { q3: 1, q2: 1, q1: 1, q0: 1 } },
+      { inputs: { load: 0, d3: 0, d2: 1, d1: 0, d0: 1 }, expect: { q3: 1, q2: 1, q1: 1, q0: 1 } },
+      { inputs: { load: 1, d3: 0, d2: 0, d1: 0, d0: 0 }, expect: { q3: 0, q2: 0, q1: 0, q0: 0 } },
+      { inputs: { load: 0, d3: 1, d2: 0, d1: 1, d0: 0 }, expect: { q3: 0, q2: 0, q1: 0, q0: 0 } },
+    ],
+    par: 16,
+    outro: {
+      headline: 'Memory you control',
+      body: 'Four flip-flops that only change when you say so. Every register in a CPU works like this, just wider.',
+    },
+  },
+
+  {
+    id: 'register-file',
+    title: 'Register File',
+    tagline: 'Two registers, and a choice of which to read and write.',
+    brief:
+      'When `write` is on, store `d3` to `d0` in the register `wsel` picks. Show the register `rsel` picks on `q3` to `q0`',
+    target: 'RegFile2',
+    inputs: ['write', 'wsel', 'rsel', 'd3', 'd2', 'd1', 'd0'],
+    outputs: ['q3', 'q2', 'q1', 'q0'],
+    allowed: MEMORY_GATES,
+    numbers: { d: 'unsigned', q: 'unsigned' },
+    sequential: true,
+    stub: `// Your register, finished, with ports.
+
+${REGISTER_BIT}
+
+${REGISTER4}
+
+// Two of them, numbered 0 and 1. Each needs its own load line,
+// on only when write is on and wsel names it. Then pick which
+// one reaches q3 to q0 with rsel.
+
+export default circuit('RegFile2', {
+  nodes: {
+    write: Switch,
+    wsel: Switch,
+    rsel: Switch,
+    d3: Switch,
+    d2: Switch,
+    d1: Switch,
+    d0: Switch,
+    q3: Led,
+    q2: Led,
+    q1: Led,
+    q0: Led,
+  },
+  connect: ({ nodes: { write, wsel, rsel, d3, d2, d1, d0, q3, q2, q1, q0 } }) => [
+    //
+  ],
+});
+`,
+    // Ordered steps. Steps 4, 6 and 12 carry the same inputs, reading register
+    // 0 each time, and expect 5, then 3, then 9 as it gets overwritten.
+    vectors: [
+      {
+        inputs: { write: 1, wsel: 0, rsel: 0, d3: 0, d2: 1, d1: 0, d0: 1 },
+        expect: { q3: 0, q2: 1, q1: 0, q0: 1 },
+      },
+      {
+        inputs: { write: 1, wsel: 1, rsel: 0, d3: 1, d2: 0, d1: 1, d0: 0 },
+        expect: { q3: 0, q2: 1, q1: 0, q0: 1 },
+      },
+      {
+        inputs: { write: 0, wsel: 0, rsel: 1, d3: 0, d2: 0, d1: 0, d0: 0 },
+        expect: { q3: 1, q2: 0, q1: 1, q0: 0 },
+      },
+      {
+        inputs: { write: 0, wsel: 0, rsel: 0, d3: 0, d2: 0, d1: 0, d0: 0 },
+        expect: { q3: 0, q2: 1, q1: 0, q0: 1 },
+      },
+      {
+        inputs: { write: 1, wsel: 0, rsel: 1, d3: 0, d2: 0, d1: 1, d0: 1 },
+        expect: { q3: 1, q2: 0, q1: 1, q0: 0 },
+      },
+      {
+        inputs: { write: 0, wsel: 0, rsel: 0, d3: 0, d2: 0, d1: 0, d0: 0 },
+        expect: { q3: 0, q2: 0, q1: 1, q0: 1 },
+      },
+      {
+        inputs: { write: 0, wsel: 1, rsel: 1, d3: 1, d2: 1, d1: 1, d0: 1 },
+        expect: { q3: 1, q2: 0, q1: 1, q0: 0 },
+      },
+      {
+        inputs: { write: 1, wsel: 1, rsel: 1, d3: 1, d2: 1, d1: 0, d0: 0 },
+        expect: { q3: 1, q2: 1, q1: 0, q0: 0 },
+      },
+      {
+        inputs: { write: 0, wsel: 0, rsel: 0, d3: 1, d2: 1, d1: 0, d0: 0 },
+        expect: { q3: 0, q2: 0, q1: 1, q0: 1 },
+      },
+      {
+        inputs: { write: 1, wsel: 0, rsel: 0, d3: 1, d2: 0, d1: 0, d0: 1 },
+        expect: { q3: 1, q2: 0, q1: 0, q0: 1 },
+      },
+      {
+        inputs: { write: 0, wsel: 0, rsel: 1, d3: 0, d2: 0, d1: 0, d0: 0 },
+        expect: { q3: 1, q2: 1, q1: 0, q0: 0 },
+      },
+      {
+        inputs: { write: 0, wsel: 0, rsel: 0, d3: 0, d2: 0, d1: 0, d0: 0 },
+        expect: { q3: 1, q2: 0, q1: 0, q0: 1 },
+      },
+    ],
+    par: 46,
+    outro: {
+      headline: 'A set of registers',
+      body: "Real CPUs have more: the 6502 has three and a RISC-V core has 32. With four, you'd pick which to write with your decoder and which to read with your four-way multiplexer.",
     },
   },
 ];
