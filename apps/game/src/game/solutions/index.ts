@@ -33,6 +33,7 @@ import andGate from './and.ts?raw';
 import counter from './counter.ts?raw';
 import dLatch from './d-latch.ts?raw';
 import decoder from './decoder.ts?raw';
+import equal from './equal.ts?raw';
 import fullAdder from './full-adder.ts?raw';
 import halfAdder from './half-adder.ts?raw';
 import latch from './latch.ts?raw';
@@ -76,4 +77,5 @@ export const SOLUTIONS: Record<string, string> = {
   'adder-4': adder4,
   negate,
   subtract,
+  equal,
 };
