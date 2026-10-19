@@ -37,6 +37,7 @@ import equal from './equal.ts?raw';
 import fullAdder from './full-adder.ts?raw';
 import halfAdder from './half-adder.ts?raw';
 import latch from './latch.ts?raw';
+import lessThan from './less-than.ts?raw';
 import majority from './majority.ts?raw';
 import makingAComponent from './making-a-component.ts?raw';
 import multiplexer from './multiplexer.ts?raw';
@@ -78,4 +79,5 @@ export const SOLUTIONS: Record<string, string> = {
   negate,
   subtract,
   equal,
+  'less-than': lessThan,
 };

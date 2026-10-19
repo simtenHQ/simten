@@ -123,6 +123,45 @@ const ADDER4 = `const Adder4 = circuit('Adder4', {
   ],
 });`;
 
+const SUBTRACT4 = `const Subtract4 = circuit('Subtract4', {
+  inputs: { a3: bit, a2: bit, a1: bit, a0: bit, b3: bit, b2: bit, b1: bit, b0: bit },
+  outputs: { d3: bit, d2: bit, d1: bit, d0: bit, borrow: bit },
+  nodes: {
+    na3: Not,
+    na2: Not,
+    na1: Not,
+    na0: Not,
+    add: Adder4,
+    ns3: Not,
+    ns2: Not,
+    ns1: Not,
+    ns0: Not,
+  },
+  connect: ({ inputs, outputs, nodes: { na3, na2, na1, na0, add, ns3, ns2, ns1, ns0 } }) => [
+    inputs.a3.to(na3.in),
+    inputs.a2.to(na2.in),
+    inputs.a1.to(na1.in),
+    inputs.a0.to(na0.in),
+    na3.out.to(add.a3),
+    na2.out.to(add.a2),
+    na1.out.to(add.a1),
+    na0.out.to(add.a0),
+    inputs.b3.to(add.b3),
+    inputs.b2.to(add.b2),
+    inputs.b1.to(add.b1),
+    inputs.b0.to(add.b0),
+    add.s3.to(ns3.in),
+    add.s2.to(ns2.in),
+    add.s1.to(ns1.in),
+    add.s0.to(ns0.in),
+    ns3.out.to(outputs.d3),
+    ns2.out.to(outputs.d2),
+    ns1.out.to(outputs.d1),
+    ns0.out.to(outputs.d0),
+    add.cout.to(outputs.borrow),
+  ],
+});`;
+
 export const LEVELS: Level[] = [
   {
     id: 'nand',
@@ -1337,6 +1376,67 @@ export default circuit('Equal4', {
     outro: {
       headline: 'Bit for bit',
       body: 'Most CPUs get this answer another way: they subtract, then check whether every bit of the result is 0. Same question, and it reuses the subtractor they already have.',
+    },
+  },
+
+  {
+    id: 'less-than',
+    title: 'Less Than',
+    tagline: 'Light the led when one number is smaller than another.',
+    brief: 'Light `lt` when `a3 a2 a1 a0` is smaller than `b3 b2 b1 b0`',
+    target: 'LessThan4',
+    inputs: ['a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
+    outputs: ['lt'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// Your subtractor, finished, with the parts it is made of.
+
+${HALF_ADDER}
+
+${FULL_ADDER}
+
+${ADDER4}
+
+${SUBTRACT4}
+
+// Both numbers run from 0 to 15 here, no negatives. You already
+// have something that knows when b is bigger than a.
+
+export default circuit('LessThan4', {
+  nodes: {
+    a3: Switch,
+    a2: Switch,
+    a1: Switch,
+    a0: Switch,
+    b3: Switch,
+    b2: Switch,
+    b1: Switch,
+    b0: Switch,
+    lt: Led,
+  },
+  connect: ({ nodes: { a3, a2, a1, a0, b3, b2, b1, b0, lt } }) => [
+    //
+  ],
+});
+`,
+    // Includes a equal to b, a one below b, and 0 and 15 at both ends.
+    vectors: [
+      { inputs: { a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 1, b1: 0, b0: 1 }, expect: { lt: 0 } },
+      { inputs: { a3: 0, a2: 1, a1: 0, a0: 0, b3: 0, b2: 1, b1: 0, b0: 1 }, expect: { lt: 1 } },
+      { inputs: { a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 1, b1: 0, b0: 0 }, expect: { lt: 0 } },
+      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 0 }, expect: { lt: 0 } },
+      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 1, b2: 1, b1: 1, b0: 1 }, expect: { lt: 1 } },
+      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 0, b2: 0, b1: 0, b0: 0 }, expect: { lt: 0 } },
+      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 1, b1: 1, b0: 1 }, expect: { lt: 0 } },
+      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 1 }, expect: { lt: 1 } },
+      { inputs: { a3: 1, a2: 1, a1: 1, a0: 0, b3: 1, b2: 1, b1: 1, b0: 1 }, expect: { lt: 1 } },
+      { inputs: { a3: 0, a2: 1, a1: 1, a0: 1, b3: 1, b2: 0, b1: 0, b0: 0 }, expect: { lt: 1 } },
+      { inputs: { a3: 1, a2: 0, a1: 0, a0: 0, b3: 0, b2: 1, b1: 1, b0: 1 }, expect: { lt: 0 } },
+      { inputs: { a3: 0, a2: 0, a1: 1, a0: 1, b3: 1, b2: 0, b1: 1, b0: 0 }, expect: { lt: 1 } },
+    ],
+    par: 25,
+    outro: {
+      headline: 'Comparison is subtraction',
+      body: 'A CPU compares two numbers by subtracting them and keeping only the flags, borrow among them. Par counts the whole subtractor. The difference bits go nowhere, so some of those gates are doing nothing.',
     },
   },
 ];

@@ -39,6 +39,7 @@ export const MAP_ROWS: string[][] = [
   ['decoder', 'negate', 'counter'],
   ['mux-4', 'subtract'],
   ['parity', 'equal'],
+  ['less-than'],
 ];
 
 /**
@@ -80,6 +81,7 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   negate: ['adder-4'],
   subtract: ['negate'],
   equal: ['subtract'],
+  'less-than': ['equal'],
   'd-latch': ['latch'],
   toggle: ['d-latch'],
 
