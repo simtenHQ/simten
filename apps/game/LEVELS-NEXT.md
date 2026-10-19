@@ -208,7 +208,7 @@ The CPU is built up the Processor band one kind of instruction at a time, the wa
 | `compute` Compute | the ALU path: registers into the ALU, `Choose4` picking n or its answer | `+ useAlu`, and ALU instructions write too | LOADs, then ADD/SUB/AND/OR | 157 |
 | `jump` Jump | the program counter's jump, and the comparison | `+ less → jump` | 4-bit Fibonacci: loops twice, wraps, falls through, stops on `JUMP 8` (16 steps) | 206 |
 
-Load Instruction needs `arithmetic-logic-unit` and `program-counter`, so all three lanes meet there. The level names avoid Turing Complete's (Registers, Instruction Decoder, Calculations, Conditions); the instruction set is our own, closer to RISC-V (compare two registers and branch to an address in the instruction).
+Load needs `arithmetic-logic-unit` and `program-counter`, so all three lanes meet there. The level names avoid Turing Complete's (Registers, Instruction Decoder, Calculations, Conditions); the instruction set is our own, closer to RISC-V (compare two registers and branch to an address in the instruction).
 
 ## Buses
 
