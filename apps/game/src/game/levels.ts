@@ -1670,12 +1670,11 @@ export default circuit('RegFile2', {
     id: 'program-counter',
     title: 'Program Counter',
     tagline: 'Count up, unless told to jump somewhere else.',
-    brief: 'Add 1 to `pc3 pc2 pc1 pc0` every tick. When `jump` is on, load `a3` to `a0` instead',
+    brief: 'Add 1 to `pc` every tick. When `jump` is on, load `a` instead',
     target: 'ProgramCounter4',
-    inputs: ['jump', 'a3', 'a2', 'a1', 'a0'],
-    outputs: ['pc3', 'pc2', 'pc1', 'pc0'],
+    inputs: ['jump', 'a'],
+    outputs: ['pc'],
     allowed: MEMORY_GATES,
-    numbers: { a: 'unsigned', pc: 'unsigned' },
     sequential: true,
     stub: `// Your counter, four bits wide, with a way to jump. Each
 // bit's next value is either the count plus one or the jump
@@ -1687,16 +1686,14 @@ export default circuit('RegFile2', {
 export default circuit('ProgramCounter4', {
   nodes: {
     jump: Switch,
-    a3: Switch,
-    a2: Switch,
-    a1: Switch,
-    a0: Switch,
-    pc3: Led,
-    pc2: Led,
-    pc1: Led,
-    pc0: Led,
+    a: Input({ width: 4 }),
+    aBits: Splitter({ width: 4 }),
+    pc: HexDisplay({ width: 4 }),
+    pcBits: Combiner({ width: 4 }),
   },
-  connect: ({ nodes: { jump, a3, a2, a1, a0, pc3, pc2, pc1, pc0 } }) => [
+  connect: ({ nodes: { jump, a, aBits, pc, pcBits } }) => [
+    a.out.to(aBits.in),
+    pcBits.out.to(pc.in),
     //
   ],
 });
@@ -1705,66 +1702,21 @@ export default circuit('ProgramCounter4', {
     // to 0, then jumps with counting between. Step 11 sets an address with
     // jump off, which has to be ignored.
     vectors: [
-      {
-        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
-        expect: { pc3: 0, pc2: 0, pc1: 0, pc0: 1 },
-      },
-      {
-        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
-        expect: { pc3: 0, pc2: 0, pc1: 1, pc0: 0 },
-      },
-      {
-        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
-        expect: { pc3: 0, pc2: 0, pc1: 1, pc0: 1 },
-      },
-      {
-        inputs: { jump: 1, a3: 1, a2: 1, a1: 0, a0: 0 },
-        expect: { pc3: 1, pc2: 1, pc1: 0, pc0: 0 },
-      },
-      {
-        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
-        expect: { pc3: 1, pc2: 1, pc1: 0, pc0: 1 },
-      },
-      {
-        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
-        expect: { pc3: 1, pc2: 1, pc1: 1, pc0: 0 },
-      },
-      {
-        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
-        expect: { pc3: 1, pc2: 1, pc1: 1, pc0: 1 },
-      },
-      {
-        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
-        expect: { pc3: 0, pc2: 0, pc1: 0, pc0: 0 },
-      },
-      {
-        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
-        expect: { pc3: 0, pc2: 0, pc1: 0, pc0: 1 },
-      },
-      {
-        inputs: { jump: 1, a3: 0, a2: 1, a1: 1, a0: 0 },
-        expect: { pc3: 0, pc2: 1, pc1: 1, pc0: 0 },
-      },
-      {
-        inputs: { jump: 0, a3: 1, a2: 0, a1: 0, a0: 1 },
-        expect: { pc3: 0, pc2: 1, pc1: 1, pc0: 1 },
-      },
-      {
-        inputs: { jump: 1, a3: 0, a2: 0, a1: 1, a0: 1 },
-        expect: { pc3: 0, pc2: 0, pc1: 1, pc0: 1 },
-      },
-      {
-        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
-        expect: { pc3: 0, pc2: 1, pc1: 0, pc0: 0 },
-      },
-      {
-        inputs: { jump: 1, a3: 1, a2: 0, a1: 1, a0: 0 },
-        expect: { pc3: 1, pc2: 0, pc1: 1, pc0: 0 },
-      },
-      {
-        inputs: { jump: 0, a3: 0, a2: 0, a1: 0, a0: 0 },
-        expect: { pc3: 1, pc2: 0, pc1: 1, pc0: 1 },
-      },
+      { inputs: { jump: 0, a: 0 }, expect: { pc: 1 } },
+      { inputs: { jump: 0, a: 0 }, expect: { pc: 2 } },
+      { inputs: { jump: 0, a: 0 }, expect: { pc: 3 } },
+      { inputs: { jump: 1, a: 12 }, expect: { pc: 12 } },
+      { inputs: { jump: 0, a: 0 }, expect: { pc: 13 } },
+      { inputs: { jump: 0, a: 0 }, expect: { pc: 14 } },
+      { inputs: { jump: 0, a: 0 }, expect: { pc: 15 } },
+      { inputs: { jump: 0, a: 0 }, expect: { pc: 0 } },
+      { inputs: { jump: 0, a: 0 }, expect: { pc: 1 } },
+      { inputs: { jump: 1, a: 6 }, expect: { pc: 6 } },
+      { inputs: { jump: 0, a: 9 }, expect: { pc: 7 } },
+      { inputs: { jump: 1, a: 3 }, expect: { pc: 3 } },
+      { inputs: { jump: 0, a: 0 }, expect: { pc: 4 } },
+      { inputs: { jump: 1, a: 10 }, expect: { pc: 10 } },
+      { inputs: { jump: 0, a: 0 }, expect: { pc: 11 } },
     ],
     par: 21,
     outro: {
