@@ -34,7 +34,7 @@ export const MAP_ROWS: string[][] = [
   // memory on the right. Rows are ranks, so a shorter branch simply stops and
   // `toggle` sits alone on the last one.
   ['multiplexer', 'half-adder', 'latch'],
-  ['full-adder', 'd-latch'],
+  ['majority', 'full-adder', 'd-latch'],
   ['toggle'],
   ['counter'],
 ];
@@ -67,6 +67,7 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   'half-adder': ['making-a-component'],
   latch: ['making-a-component'],
   multiplexer: ['making-a-component'],
+  majority: ['multiplexer'],
 
   'full-adder': ['half-adder'],
   'd-latch': ['latch'],

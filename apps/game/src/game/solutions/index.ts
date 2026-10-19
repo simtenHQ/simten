@@ -34,6 +34,7 @@ import dLatch from './d-latch.ts?raw';
 import fullAdder from './full-adder.ts?raw';
 import halfAdder from './half-adder.ts?raw';
 import latch from './latch.ts?raw';
+import majority from './majority.ts?raw';
 import makingAComponent from './making-a-component.ts?raw';
 import multiplexer from './multiplexer.ts?raw';
 import nand from './nand.ts?raw';
@@ -60,4 +61,5 @@ export const SOLUTIONS: Record<string, string> = {
   counter,
   'full-adder': fullAdder,
   multiplexer,
+  majority,
 };

@@ -708,6 +708,47 @@ export default circuit('Mux2', {
       body: 'Anything that picks between values is built from this, including the ALU this section ends on. Par is three. If you used four, XOR has a shorter way.',
     },
   },
+
+  {
+    id: 'majority',
+    title: 'Majority Vote',
+    tagline: 'Light the led when at least two of three switches are on.',
+    brief: 'Light `out` when two or more of `a`, `b` and `c` are on',
+    target: 'Majority3',
+    inputs: ['a', 'b', 'c'],
+    outputs: ['out'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// Nothing new here, just gates you already have. Work out
+// which switches can light the led between them.
+
+export default circuit('Majority3', {
+  nodes: {
+    a: Switch,
+    b: Switch,
+    c: Switch,
+    out: Led,
+  },
+  connect: ({ nodes: { a, b, c, out } }) => [
+    //
+  ],
+});
+`,
+    vectors: [
+      { inputs: { a: 0, b: 0, c: 0 }, expect: { out: 0 } },
+      { inputs: { a: 0, b: 0, c: 1 }, expect: { out: 0 } },
+      { inputs: { a: 0, b: 1, c: 0 }, expect: { out: 0 } },
+      { inputs: { a: 0, b: 1, c: 1 }, expect: { out: 1 } },
+      { inputs: { a: 1, b: 0, c: 0 }, expect: { out: 0 } },
+      { inputs: { a: 1, b: 0, c: 1 }, expect: { out: 1 } },
+      { inputs: { a: 1, b: 1, c: 0 }, expect: { out: 1 } },
+      { inputs: { a: 1, b: 1, c: 1 }, expect: { out: 1 } },
+    ],
+    par: 4,
+    outro: {
+      headline: 'Two out of three',
+      body: 'Some aircraft and spacecraft run three copies of the same computer and vote on every answer, so a single faulty unit gets outvoted. This is the circuit that counts the votes.',
+    },
+  },
 ];
 
 export const LEVELS_BY_ID = new Map(LEVELS.map((l) => [l.id, l]));
