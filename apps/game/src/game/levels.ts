@@ -1028,28 +1028,25 @@ export default circuit('Gates4', {
     id: 'equal',
     title: 'Equality',
     tagline: 'Light the led when two 4-bit numbers are the same.',
-    brief: 'Light `eq` when `a3 a2 a1 a0` and `b3 b2 b1 b0` are the same number',
+    brief: 'Light `eq` when `a` and `b` are the same number',
     target: 'Equal4',
-    inputs: ['a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
+    inputs: ['a', 'b'],
     outputs: ['eq'],
     allowed: ARITHMETIC_GATES,
-    numbers: { a: 'unsigned', b: 'unsigned' },
     stub: `// Two numbers are the same when every bit matches the bit
 // in the same place in the other one.
 
 export default circuit('Equal4', {
   nodes: {
-    a3: Switch,
-    a2: Switch,
-    a1: Switch,
-    a0: Switch,
-    b3: Switch,
-    b2: Switch,
-    b1: Switch,
-    b0: Switch,
+    a: Input({ width: 4 }),
+    aBits: Splitter({ width: 4 }),
+    b: Input({ width: 4 }),
+    bBits: Splitter({ width: 4 }),
     eq: Led,
   },
-  connect: ({ nodes: { a3, a2, a1, a0, b3, b2, b1, b0, eq } }) => [
+  connect: ({ nodes: { a, aBits, b, bBits, eq } }) => [
+    a.out.to(aBits.in),
+    b.out.to(bBits.in),
     //
   ],
 });
@@ -1057,18 +1054,18 @@ export default circuit('Equal4', {
     // Four equal pairs, then pairs that differ in exactly one bit, each
     // position twice, so a bit left out of the comparison gets caught.
     vectors: [
-      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 0 }, expect: { eq: 1 } },
-      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 1, b1: 1, b0: 1 }, expect: { eq: 1 } },
-      { inputs: { a3: 1, a2: 0, a1: 0, a0: 1, b3: 1, b2: 0, b1: 0, b0: 1 }, expect: { eq: 1 } },
-      { inputs: { a3: 0, a2: 1, a1: 1, a0: 0, b3: 0, b2: 1, b1: 1, b0: 0 }, expect: { eq: 1 } },
-      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 1 }, expect: { eq: 0 } },
-      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 1, b0: 0 }, expect: { eq: 0 } },
-      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 1, b1: 0, b0: 0 }, expect: { eq: 0 } },
-      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 1, b2: 0, b1: 0, b0: 0 }, expect: { eq: 0 } },
-      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 1, b1: 1, b0: 0 }, expect: { eq: 0 } },
-      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 1, b1: 0, b0: 1 }, expect: { eq: 0 } },
-      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 0, b1: 1, b0: 1 }, expect: { eq: 0 } },
-      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 0, b2: 1, b1: 1, b0: 1 }, expect: { eq: 0 } },
+      { inputs: { a: 0, b: 0 }, expect: { eq: 1 } },
+      { inputs: { a: 15, b: 15 }, expect: { eq: 1 } },
+      { inputs: { a: 9, b: 9 }, expect: { eq: 1 } },
+      { inputs: { a: 6, b: 6 }, expect: { eq: 1 } },
+      { inputs: { a: 0, b: 1 }, expect: { eq: 0 } },
+      { inputs: { a: 0, b: 2 }, expect: { eq: 0 } },
+      { inputs: { a: 0, b: 4 }, expect: { eq: 0 } },
+      { inputs: { a: 0, b: 8 }, expect: { eq: 0 } },
+      { inputs: { a: 15, b: 14 }, expect: { eq: 0 } },
+      { inputs: { a: 15, b: 13 }, expect: { eq: 0 } },
+      { inputs: { a: 15, b: 11 }, expect: { eq: 0 } },
+      { inputs: { a: 15, b: 7 }, expect: { eq: 0 } },
     ],
     par: 7,
     outro: {
