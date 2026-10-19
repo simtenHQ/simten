@@ -50,6 +50,27 @@ import type { Level } from './types';
  */
 const ARITHMETIC_GATES = ['Nand', 'Not', 'And', 'Or', 'Nor', 'Xor', 'Xnor'];
 
+/**
+ * Finished parts handed over in later stubs, written once so every stub that
+ * hands one over hands over the same thing. Each is the reference answer to
+ * the level that introduced it, rewritten with ports so it can be used as a
+ * component. The matching files in `solutions/` repeat them, because each
+ * solution has to run on its own.
+ */
+const MUX2 = `const Mux2 = circuit('Mux2', {
+  inputs: { a: bit, b: bit, sel: bit },
+  outputs: { out: bit },
+  nodes: { x1: Xor, a1: And, x2: Xor },
+  connect: ({ inputs, outputs, nodes: { x1, a1, x2 } }) => [
+    inputs.a.to(x1.a, x2.a),
+    inputs.b.to(x1.b),
+    inputs.sel.to(a1.b),
+    x1.out.to(a1.a),
+    a1.out.to(x2.b),
+    x2.out.to(outputs.out),
+  ],
+});`;
+
 export const LEVELS: Level[] = [
   {
     id: 'nand',
@@ -838,6 +859,66 @@ export default circuit('Decoder2', {
     outro: {
       headline: 'One line per number',
       body: 'Memory uses one of these to pick which cell to read, and a CPU uses one to pick a register. Par is one gate per output. If y1 and y2 cost you more, look at what y0 already knows.',
+    },
+  },
+
+  {
+    id: 'mux-4',
+    title: 'Four-Way Multiplexer',
+    tagline: 'Choose one of four signals with a 2-bit select.',
+    brief: 'Send whichever of `d0` to `d3` is numbered by `s1 s0` through to `out`',
+    target: 'Mux4',
+    inputs: ['d0', 'd1', 'd2', 'd3', 's1', 's0'],
+    outputs: ['out'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// Your multiplexer from earlier, finished, with ports so it
+// works as a part.
+
+${MUX2}
+
+// s1 s0 is a number from 0 to 3, like the decoder's input.
+// One Mux2 can narrow d0 and d1 down to one signal.
+
+export default circuit('Mux4', {
+  nodes: {
+    d0: Switch,
+    d1: Switch,
+    d2: Switch,
+    d3: Switch,
+    s1: Switch,
+    s0: Switch,
+    out: Led,
+  },
+  connect: ({ nodes: { d0, d1, d2, d3, s1, s0, out } }) => [
+    //
+  ],
+});
+`,
+    // 16 of the 64 combinations. For each select value: the chosen input on
+    // with the rest off, the reverse, and two mixed patterns. The first two
+    // mean a circuit that reads the wrong input fails whichever one it reads.
+    vectors: [
+      { inputs: { d0: 1, d1: 0, d2: 0, d3: 0, s1: 0, s0: 0 }, expect: { out: 1 } },
+      { inputs: { d0: 0, d1: 1, d2: 1, d3: 1, s1: 0, s0: 0 }, expect: { out: 0 } },
+      { inputs: { d0: 1, d1: 0, d2: 1, d3: 0, s1: 0, s0: 0 }, expect: { out: 1 } },
+      { inputs: { d0: 1, d1: 1, d2: 0, d3: 0, s1: 0, s0: 0 }, expect: { out: 1 } },
+      { inputs: { d0: 0, d1: 1, d2: 0, d3: 0, s1: 0, s0: 1 }, expect: { out: 1 } },
+      { inputs: { d0: 1, d1: 0, d2: 1, d3: 1, s1: 0, s0: 1 }, expect: { out: 0 } },
+      { inputs: { d0: 1, d1: 0, d2: 1, d3: 0, s1: 0, s0: 1 }, expect: { out: 0 } },
+      { inputs: { d0: 1, d1: 1, d2: 0, d3: 0, s1: 0, s0: 1 }, expect: { out: 1 } },
+      { inputs: { d0: 0, d1: 0, d2: 1, d3: 0, s1: 1, s0: 0 }, expect: { out: 1 } },
+      { inputs: { d0: 1, d1: 1, d2: 0, d3: 1, s1: 1, s0: 0 }, expect: { out: 0 } },
+      { inputs: { d0: 1, d1: 0, d2: 1, d3: 0, s1: 1, s0: 0 }, expect: { out: 1 } },
+      { inputs: { d0: 1, d1: 1, d2: 0, d3: 0, s1: 1, s0: 0 }, expect: { out: 0 } },
+      { inputs: { d0: 0, d1: 0, d2: 0, d3: 1, s1: 1, s0: 1 }, expect: { out: 1 } },
+      { inputs: { d0: 1, d1: 1, d2: 1, d3: 0, s1: 1, s0: 1 }, expect: { out: 0 } },
+      { inputs: { d0: 1, d1: 0, d2: 1, d3: 0, s1: 1, s0: 1 }, expect: { out: 0 } },
+      { inputs: { d0: 1, d1: 1, d2: 0, d3: 0, s1: 1, s0: 1 }, expect: { out: 0 } },
+    ],
+    par: 9,
+    outro: {
+      headline: 'Built from parts',
+      body: 'Three multiplexers in a tree, each layer halving the choices, so eight inputs would take three layers. The decoder works too, an AND per input and then an OR, but the tree is cheaper.',
     },
   },
 ];

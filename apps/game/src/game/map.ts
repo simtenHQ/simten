@@ -37,6 +37,7 @@ export const MAP_ROWS: string[][] = [
   ['majority', 'full-adder', 'd-latch'],
   ['wide-gates', 'toggle'],
   ['decoder', 'counter'],
+  ['mux-4'],
 ];
 
 /**
@@ -70,6 +71,7 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   majority: ['multiplexer'],
   'wide-gates': ['majority'],
   decoder: ['wide-gates'],
+  'mux-4': ['decoder'],
 
   'full-adder': ['half-adder'],
   'd-latch': ['latch'],
