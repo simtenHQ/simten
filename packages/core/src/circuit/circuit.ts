@@ -495,10 +495,21 @@ export function circuit(name: string, configOrFactory: any = {} as any): any {
   let implementation: Implementation;
   let timing: CircuitTiming;
 
+  // A circuit with inputs and outputs but neither nodes nor an eval has nothing
+  // that could ever drive its outputs: it is an empty composite, not an opaque
+  // primitive. A part declared for someone to fill in looks like this until they
+  // do. Inputs only (a display) or outputs only (a switch) still mean a
+  // primitive the simulator or the host drives.
+  const isEmptyBody =
+    !hasEval &&
+    !hasNodes &&
+    Object.keys(config.inputs ?? {}).length > 0 &&
+    Object.keys(config.outputs ?? {}).length > 0;
+
   if (hasEval && !hasNodes) {
     implementation = { kind: 'primitive' };
     timing = config.state != null ? 'sequential' : 'combinational';
-  } else if (hasNodes) {
+  } else if (hasNodes || isEmptyBody) {
     implementation = { kind: 'composite' };
     timing = detectSequential(nodes, config.state) ? 'sequential' : 'combinational';
   } else {
