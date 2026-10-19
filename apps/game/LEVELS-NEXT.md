@@ -6,39 +6,41 @@ This is the next section only. The longer arc (an 8-bit CPU, machine code, an as
 
 ## Where it goes on the map
 
-The map forks after `making-a-component` into arithmetic and memory. This section adds a third column, so no existing level gets new prerequisites and nobody's progress changes:
+The map forks after `making-a-component`. This section adds a logic column and an arithmetic column, so no existing level gets new prerequisites and nobody's progress changes. The new arithmetic branches off the full adder, so the fork is four columns wide:
 
 ```
-COMPONENTS             making-a-component
-                ┌──────────────┼──────────────┐
-COMBINATIONAL   │ ARITHMETIC   │ MEMORY        │
-  multiplexer   │ half-adder   │ latch         │
-  majority      │ full-adder   │ d-latch       │
-  wide-gates    │ adder-4      │ toggle        │
-  decoder       │ negate       │ counter       │
-  mux-4         │ subtract     │               │
-  parity        │ equal        │               │
-                │ less-than    │               │
-                └──────┬───────┘
-                     alu-4  (needs mux-4 and subtract)
+alu-4 (needs parity and less-than)
+parity       less-than
+mux-4        equal
+decoder      subtract
+wide-gates   negate                    counter
+majority     adder-4  <-.              |      ^
+multiplexer             full-adder ----'   toggle
+                        half-adder         d-latch
+                                           latch
 ```
 
-`alu-4` is the first level that needs two columns finished. That's the point where the separate pieces come together.
+`alu-4` is the first level that needs two columns finished. It requires the top of each (`parity` and `less-than`) and sits over them.
 
-`counter` stays where it is, needing `full-adder` and `toggle`. The new arithmetic levels open from `full-adder` alongside it, so they don't change what the counter needs.
+Why four columns: the full adder feeds both `adder-4` and `counter`. With either one directly above it, the other's wire runs through it and reads as a dependency that isn't there. Branching the new arithmetic off to the left leaves the square above the full adder empty for the counter's wire.
+
+`counter` keeps its requirements (`full-adder` and `toggle`).
 
 Map changes, all in `map.ts`:
 
-- `MAP_ROWS`: the fork rows get a third entry, for example `['multiplexer', 'half-adder', 'latch']`.
-- `MAP_REQUIRES`: `multiplexer` needs `making-a-component`, each combinational level needs the one before it, `adder-4` needs `full-adder`, and `alu-4` needs `mux-4` and `subtract`.
-- `MAP_SECTIONS`: the "Arithmetic and memory" band becomes "Logic, arithmetic and memory", since one band covers the fork.
-- Width: three 210px nodes plus gaps is about 720px. Fine on desktop; check that the map still pans comfortably on a phone.
+- `MAP_ROWS`: ranks only. `MAP_COLUMNS` pins each fork level to a column, so a row of two no longer re-centres and drifts off its branch.
+- `MAP_REQUIRES`: each new level needs the one below it in its column, `multiplexer` needs `making-a-component`, `adder-4` needs `full-adder`, and `alu-4` needs `parity` and `less-than`.
+- `MAP_SECTIONS`: the band is now "Logic, arithmetic and memory".
+- Width: four 210px nodes plus gaps is about 970px, and the bands are 1010px. Fine on desktop. Not yet checked on a phone.
 
 ## Conventions for every level
 
 - **Order:** appended to `LEVELS` after `counter`, combinational column first, then arithmetic, then `alu-4`. Array order sets the map numbers and the Next button, so appending keeps every existing level's number.
 - **Allowed:** `ARITHMETIC_GATES` (Nand, Not, And, Or, Nor, Xor, Xnor) unless a level says otherwise.
 - **Par:** taken from the reference solution. `levels.test.ts` already requires par to equal the reference's gate count, so it can't drift.
+  - Proven minimal by exhaustive search for the small levels: multiplexer 3, majority 4, wider gates 6, decoder 4, parity 3, negate 5. The rest are the reference's count and can be beaten: mux-4 9, adder-4 17, subtract 25, equal 7, less-than 25, alu-4 86.
+- **Target names** carry a size (`Mux2`, `Adder4`, `Alu4`), like `Xor2` and `Counter2`. The stdlib already has `Mux`, `Decoder` and `Subtractor`, and the grader also looks targets up among library circuits.
+- **Handed-over parts** are written once in `levels.ts` (`MUX2`, `MUX4`, `HALF_ADDER`, `FULL_ADDER`, `ADDER4`, `SUBTRACT4`) and interpolated into each stub that needs them.
 - **Vectors:** exhaustive when there are at most 16 combinations. Above that, a chosen set of at most 16 columns that covers the edge cases (listed per level). 16 columns is roughly the widest the spec table can show comfortably; the full adder has 8 today.
 - **Starter code:** gives the components from earlier levels finished, plus a comment explaining the one new idea. The player writes the target circuit.
 - **Reference solution:** one per level in `game/solutions/`, proven by the existing tests (it must pass; constant answers must fail).
@@ -85,7 +87,7 @@ Map changes, all in `map.ts`:
 - **New idea:** building a bigger multiplexer from smaller ones (a tree of three), or from the decoder plus AND/OR. Both work, and par rewards the cheaper.
 - **Interface:** inputs `d0`, `d1`, `d2`, `d3`, `s1`, `s0` → output `out`
 - **Starter:** the finished `Mux` from level 1.
-- **Vectors:** 16 of the 64. For each select value, four data patterns in which the selected input differs from all the others, so a circuit that picks the wrong input can't pass by luck.
+- **Vectors:** 16 of the 64. For each select value: the selected input on and the rest off, the reverse, and two mixed patterns. The first two catch a circuit that reads the wrong input, whichever one it reads.
 
 ### 6. `parity`: Parity
 *Light up when an odd number of switches are on.*
@@ -111,7 +113,7 @@ Map changes, all in `map.ts`:
 
 - **New idea:** two's complement. Flip every bit and add one. In 4 bits, 3 becomes 13, which is -3.
 - **Interface:** inputs `a3`–`a0` → outputs `n3`–`n0`
-- **Starter:** the finished `Adder4`, so the player only adds the NOT gates and the + 1.
+- **Starter:** nothing handed over. There is no constant 1 to add, and the gate-level answer is far smaller anyway: a bit flips exactly when some bit below it is on, so `n0 = a0` and the rest is XOR and OR. Par 5, proven minimal.
 - **Vectors:** all 16.
 - **Outro:** why this trick means a CPU needs no separate subtraction circuit.
 
@@ -120,9 +122,8 @@ Map changes, all in `map.ts`:
 
 - **New idea:** a − b is a + (−b), so the adder from level 7 does it, given an inverted `b` and a carry-in of 1.
 - **Interface:** inputs `a3`–`a0`, `b3`–`b0` → outputs `d3`–`d0`, `borrow`
-- **Starter:** `Adder4`, with a carry-in port added. The stub says so.
+- **Starter:** `Adder4` as built, no carry-in port. a - b is computed as NOT(NOT a + b), which needs no constant 1, and the adder's `cout` is then exactly the borrow (on when b > a). The stub explains both. Par 25 (4 + 17 + 4).
 - **Vectors:** 12, including a < b (borrow set), a = b (zero), and 0 − 1.
-- **Note:** `borrow` is the inverse of the adder's carry-out. The comment points that out rather than leaving it as a trap.
 
 ### 10. `equal`: Equality
 *Light up when two 4-bit numbers are the same.*
@@ -136,7 +137,7 @@ Map changes, all in `map.ts`:
 
 - **New idea:** a < b exactly when a − b borrows. The subtractor already answers it.
 - **Interface:** inputs `a3`–`a0`, `b3`–`b0` → output `lt`
-- **Starter:** the finished `Subtractor`.
+- **Starter:** the finished `Subtract4`. Par 25 counts the whole subtractor, including the NOTs on the difference bits that go nowhere, which the outro hints at.
 - **Vectors:** 12, including a = b, a = b − 1, 0 and 15 at both ends.
 - **Scope:** unsigned only. Signed comparison is a later level, once overflow has come up.
 
@@ -145,20 +146,18 @@ Map changes, all in `map.ts`:
 ### 12. `alu-4`: Arithmetic Logic Unit
 *One circuit that adds, subtracts, ANDs or ORs, chosen by an op code.*
 
-- **Requires:** `mux-4` and `subtract`.
+- **Requires:** `parity` and `less-than`, the tops of the two columns.
 - **New idea:** compute every result at once, then select one with the op code. That's the shape of every ALU, including the one in the 6502 post and the RV32I core.
 - **Interface:** inputs `op1`, `op0`, `a3`–`a0`, `b3`–`b0` → outputs `r3`–`r0`
   - `00` add, `01` subtract, `10` AND, `11` OR
-- **Starter:** the finished `Adder4`, `Subtractor` and `Mux4`. The player writes the bitwise AND/OR and the four multiplexers that pick each output bit.
+- **Starter:** the finished `Mux2`, `Mux4`, `Adder4` and `Subtract4`. Par 86. The player writes the bitwise AND/OR and the four multiplexers that pick each output bit.
 - **Vectors:** 16, four per operation.
 - **Size check:** this is the largest level in the section, but it's wiring parts the player has already built, not new logic.
 
-## Spec panel changes this needs
+## Spec panel changes
 
-All small:
-
-1. A decimal footnote under the table for the adder, negate, subtract and ALU levels (for example "5 + 3 = 8"), so long rows of bits are readable.
-2. Nothing else. The vector grader, the Feedback column, the tour and the map's `requires` support are unchanged.
+1. Levels can set `numbers`, naming bit groups to read as numbers (`a` gathers `a3 a2 a1 a0`), each `unsigned` or `signed`. Under the table, the panel reads the hovered column back, or the failed one after a bad submit: "a = 5, b = 3, s = 8", or "n = 13 (-3)" for a signed group. One line instead of a footnote listing every column, which wouldn't fit. Used on the decoder, mux-4 and the 4-bit levels.
+2. Nothing else. The grader, the Feedback column and the tour are unchanged.
 
 ## Open questions
 
