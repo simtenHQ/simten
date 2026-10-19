@@ -1,7 +1,7 @@
 /** Reference solution for `less-than`. Proven by `__tests__/levels.test.ts`. */
 
 import { bit, circuit } from '@simten/core/circuit';
-import { And, Led, Not, Or, Switch, Xor } from '@simten/core/std';
+import { And, Input, Led, Not, Or, Splitter, Xor } from '@simten/core/std';
 
 const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
@@ -95,26 +95,24 @@ const Subtract4 = circuit('Subtract4', {
 // a is less than b exactly when a - b has to borrow.
 export const LessThan4 = circuit('LessThan4', {
   nodes: {
-    a3: Switch,
-    a2: Switch,
-    a1: Switch,
-    a0: Switch,
-    b3: Switch,
-    b2: Switch,
-    b1: Switch,
-    b0: Switch,
+    a: Input({ width: 4 }),
+    aBits: Splitter({ width: 4 }),
+    b: Input({ width: 4 }),
+    bBits: Splitter({ width: 4 }),
     sub: Subtract4,
     lt: Led,
   },
-  connect: ({ nodes: { a3, a2, a1, a0, b3, b2, b1, b0, sub, lt } }) => [
-    a3.out.to(sub.a3),
-    a2.out.to(sub.a2),
-    a1.out.to(sub.a1),
-    a0.out.to(sub.a0),
-    b3.out.to(sub.b3),
-    b2.out.to(sub.b2),
-    b1.out.to(sub.b1),
-    b0.out.to(sub.b0),
+  connect: ({ nodes: { a, aBits, b, bBits, sub, lt } }) => [
+    a.out.to(aBits.in),
+    b.out.to(bBits.in),
+    aBits.bit3.to(sub.a3),
+    aBits.bit2.to(sub.a2),
+    aBits.bit1.to(sub.a1),
+    aBits.bit0.to(sub.a0),
+    bBits.bit3.to(sub.b3),
+    bBits.bit2.to(sub.b2),
+    bBits.bit1.to(sub.b1),
+    bBits.bit0.to(sub.b0),
     sub.borrow.to(lt.in),
   ],
 });

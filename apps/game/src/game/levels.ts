@@ -1414,12 +1414,11 @@ export default circuit('Subtract4', {
     id: 'less-than',
     title: 'Less Than',
     tagline: 'Light the led when one number is smaller than another.',
-    brief: 'Light `lt` when `a3 a2 a1 a0` is smaller than `b3 b2 b1 b0`',
+    brief: 'Light `lt` when `a` is smaller than `b`',
     target: 'LessThan4',
-    inputs: ['a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
+    inputs: ['a', 'b'],
     outputs: ['lt'],
     allowed: ARITHMETIC_GATES,
-    numbers: { a: 'unsigned', b: 'unsigned' },
     stub: `// Your subtractor, finished, with the parts it is made of.
 
 ${HALF_ADDER}
@@ -1435,35 +1434,33 @@ ${SUBTRACT4}
 
 export default circuit('LessThan4', {
   nodes: {
-    a3: Switch,
-    a2: Switch,
-    a1: Switch,
-    a0: Switch,
-    b3: Switch,
-    b2: Switch,
-    b1: Switch,
-    b0: Switch,
+    a: Input({ width: 4 }),
+    aBits: Splitter({ width: 4 }),
+    b: Input({ width: 4 }),
+    bBits: Splitter({ width: 4 }),
     lt: Led,
   },
-  connect: ({ nodes: { a3, a2, a1, a0, b3, b2, b1, b0, lt } }) => [
+  connect: ({ nodes: { a, aBits, b, bBits, lt } }) => [
+    a.out.to(aBits.in),
+    b.out.to(bBits.in),
     //
   ],
 });
 `,
     // Includes a equal to b, a one below b, and 0 and 15 at both ends.
     vectors: [
-      { inputs: { a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 1, b1: 0, b0: 1 }, expect: { lt: 0 } },
-      { inputs: { a3: 0, a2: 1, a1: 0, a0: 0, b3: 0, b2: 1, b1: 0, b0: 1 }, expect: { lt: 1 } },
-      { inputs: { a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 1, b1: 0, b0: 0 }, expect: { lt: 0 } },
-      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 0 }, expect: { lt: 0 } },
-      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 1, b2: 1, b1: 1, b0: 1 }, expect: { lt: 1 } },
-      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 0, b2: 0, b1: 0, b0: 0 }, expect: { lt: 0 } },
-      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 1, b1: 1, b0: 1 }, expect: { lt: 0 } },
-      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 1 }, expect: { lt: 1 } },
-      { inputs: { a3: 1, a2: 1, a1: 1, a0: 0, b3: 1, b2: 1, b1: 1, b0: 1 }, expect: { lt: 1 } },
-      { inputs: { a3: 0, a2: 1, a1: 1, a0: 1, b3: 1, b2: 0, b1: 0, b0: 0 }, expect: { lt: 1 } },
-      { inputs: { a3: 1, a2: 0, a1: 0, a0: 0, b3: 0, b2: 1, b1: 1, b0: 1 }, expect: { lt: 0 } },
-      { inputs: { a3: 0, a2: 0, a1: 1, a0: 1, b3: 1, b2: 0, b1: 1, b0: 0 }, expect: { lt: 1 } },
+      { inputs: { a: 5, b: 5 }, expect: { lt: 0 } },
+      { inputs: { a: 4, b: 5 }, expect: { lt: 1 } },
+      { inputs: { a: 5, b: 4 }, expect: { lt: 0 } },
+      { inputs: { a: 0, b: 0 }, expect: { lt: 0 } },
+      { inputs: { a: 0, b: 15 }, expect: { lt: 1 } },
+      { inputs: { a: 15, b: 0 }, expect: { lt: 0 } },
+      { inputs: { a: 15, b: 15 }, expect: { lt: 0 } },
+      { inputs: { a: 0, b: 1 }, expect: { lt: 1 } },
+      { inputs: { a: 14, b: 15 }, expect: { lt: 1 } },
+      { inputs: { a: 7, b: 8 }, expect: { lt: 1 } },
+      { inputs: { a: 8, b: 7 }, expect: { lt: 0 } },
+      { inputs: { a: 3, b: 10 }, expect: { lt: 1 } },
     ],
     par: 25,
     outro: {
