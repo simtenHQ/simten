@@ -46,6 +46,7 @@ import norGate from './nor.ts?raw';
 import notGate from './not.ts?raw';
 import orGate from './or.ts?raw';
 import parity from './parity.ts?raw';
+import subtract from './subtract.ts?raw';
 import toggle from './toggle.ts?raw';
 import wideGates from './wide-gates.ts?raw';
 import xnorGate from './xnor.ts?raw';
@@ -74,4 +75,5 @@ export const SOLUTIONS: Record<string, string> = {
   parity,
   'adder-4': adder4,
   negate,
+  subtract,
 };

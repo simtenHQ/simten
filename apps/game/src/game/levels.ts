@@ -99,6 +99,30 @@ const FULL_ADDER = `const FullAdder = circuit('FullAdder', {
   ],
 });`;
 
+const ADDER4 = `const Adder4 = circuit('Adder4', {
+  inputs: { a3: bit, a2: bit, a1: bit, a0: bit, b3: bit, b2: bit, b1: bit, b0: bit },
+  outputs: { s3: bit, s2: bit, s1: bit, s0: bit, cout: bit },
+  nodes: { add0: HalfAdder, add1: FullAdder, add2: FullAdder, add3: FullAdder },
+  connect: ({ inputs, outputs, nodes: { add0, add1, add2, add3 } }) => [
+    inputs.a0.to(add0.a),
+    inputs.b0.to(add0.b),
+    add0.sum.to(outputs.s0),
+    add0.carry.to(add1.cin),
+    inputs.a1.to(add1.a),
+    inputs.b1.to(add1.b),
+    add1.sum.to(outputs.s1),
+    add1.cout.to(add2.cin),
+    inputs.a2.to(add2.a),
+    inputs.b2.to(add2.b),
+    add2.sum.to(outputs.s2),
+    add2.cout.to(add3.cin),
+    inputs.a3.to(add3.a),
+    inputs.b3.to(add3.b),
+    add3.sum.to(outputs.s3),
+    add3.cout.to(outputs.cout),
+  ],
+});`;
+
 export const LEVELS: Level[] = [
   {
     id: 'nand',
@@ -1157,6 +1181,110 @@ export default circuit('Negate4', {
     outro: {
       headline: 'Minus, without a minus',
       body: 'Written this way, negatives add like any other number: 5 + 13 is 18, which wraps to 2, the same as 5 - 3. So subtracting needs no circuit of its own. The adder already does it.',
+    },
+  },
+
+  {
+    id: 'subtract',
+    title: 'Subtractor',
+    tagline: 'Take one 4-bit number away from another.',
+    brief: 'Put `a - b` on `d3` to `d0`, and light `borrow` when `b` is bigger than `a`',
+    target: 'Subtract4',
+    inputs: ['a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
+    outputs: ['d3', 'd2', 'd1', 'd0', 'borrow'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// Your 4-bit adder, finished, with the parts it is made of.
+
+${HALF_ADDER}
+
+${FULL_ADDER}
+
+${ADDER4}
+
+// a - b is a plus the negative of b. You could negate b and add,
+// but then cout would not tell you when b was the bigger one.
+// Flipping both ends works out better: NOT every bit of a, add
+// b, then NOT every bit of the sum. Try 5 - 3 on paper.
+//
+// Done that way, cout comes on exactly when b is bigger than a,
+// so it is your borrow with no gate needed.
+
+export default circuit('Subtract4', {
+  nodes: {
+    a3: Switch,
+    a2: Switch,
+    a1: Switch,
+    a0: Switch,
+    b3: Switch,
+    b2: Switch,
+    b1: Switch,
+    b0: Switch,
+    d3: Led,
+    d2: Led,
+    d1: Led,
+    d0: Led,
+    borrow: Led,
+  },
+  connect: ({ nodes: { a3, a2, a1, a0, b3, b2, b1, b0, d3, d2, d1, d0, borrow } }) => [
+    //
+  ],
+});
+`,
+    // Includes a below b (borrow set), a equal to b (zero), and 0 - 1.
+    vectors: [
+      {
+        inputs: { a3: 0, a2: 1, a1: 0, a0: 1, b3: 0, b2: 0, b1: 1, b0: 1 },
+        expect: { d3: 0, d2: 0, d1: 1, d0: 0, borrow: 0 },
+      },
+      {
+        inputs: { a3: 0, a2: 0, a1: 1, a0: 1, b3: 0, b2: 1, b1: 0, b0: 1 },
+        expect: { d3: 1, d2: 1, d1: 1, d0: 0, borrow: 1 },
+      },
+      {
+        inputs: { a3: 0, a2: 1, a1: 1, a0: 1, b3: 0, b2: 1, b1: 1, b0: 1 },
+        expect: { d3: 0, d2: 0, d1: 0, d0: 0, borrow: 0 },
+      },
+      {
+        inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 1 },
+        expect: { d3: 1, d2: 1, d1: 1, d0: 1, borrow: 1 },
+      },
+      {
+        inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 0 },
+        expect: { d3: 0, d2: 0, d1: 0, d0: 0, borrow: 0 },
+      },
+      {
+        inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 1, b1: 1, b0: 1 },
+        expect: { d3: 0, d2: 0, d1: 0, d0: 0, borrow: 0 },
+      },
+      {
+        inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 0, b2: 0, b1: 0, b0: 0 },
+        expect: { d3: 1, d2: 1, d1: 1, d0: 1, borrow: 0 },
+      },
+      {
+        inputs: { a3: 1, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 1 },
+        expect: { d3: 0, d2: 1, d1: 1, d0: 1, borrow: 0 },
+      },
+      {
+        inputs: { a3: 0, a2: 0, a1: 0, a0: 1, b3: 1, b2: 0, b1: 0, b0: 0 },
+        expect: { d3: 1, d2: 0, d1: 0, d0: 1, borrow: 1 },
+      },
+      {
+        inputs: { a3: 1, a2: 1, a1: 0, a0: 0, b3: 0, b2: 1, b1: 0, b0: 0 },
+        expect: { d3: 1, d2: 0, d1: 0, d0: 0, borrow: 0 },
+      },
+      {
+        inputs: { a3: 1, a2: 0, a1: 0, a0: 1, b3: 0, b2: 1, b1: 1, b0: 0 },
+        expect: { d3: 0, d2: 0, d1: 1, d0: 1, borrow: 0 },
+      },
+      {
+        inputs: { a3: 0, a2: 1, a1: 1, a0: 0, b3: 1, b2: 1, b1: 0, b0: 1 },
+        expect: { d3: 1, d2: 0, d1: 0, d0: 1, borrow: 1 },
+      },
+    ],
+    par: 25,
+    outro: {
+      headline: 'Two rows of NOTs',
+      body: 'The adder did the real work. CPUs go one better: a single adder with a control line that flips b and feeds in a carry of 1, so the same circuit adds or subtracts depending on the instruction.',
     },
   },
 ];
