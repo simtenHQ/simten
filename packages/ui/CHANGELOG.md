@@ -1,5 +1,16 @@
 # @simten/ui
 
+## 0.15.5
+
+### Patch Changes
+
+- bc4aa82: Stop the drill-down inspector flickering. Its backdrop, panel and each level now fade in with CSS, which runs once, instead of framer-motion animations that jumped back at the end of each fade; drilling into a nested component flashed twice. Escape now closes the inspector (or steps back a level) wherever focus is; it used to do nothing unless the backdrop happened to have focus.
+
+  `@simten/ui` no longer depends on framer-motion; nothing in it uses it any more.
+
+- Updated dependencies [71c8e4b]
+  - @simten/core@0.21.0
+
 ## 0.15.4
 
 ### Patch Changes
