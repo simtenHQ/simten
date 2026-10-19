@@ -932,6 +932,59 @@ export default circuit('Gates4', {
   },
 
   {
+    id: 'equal',
+    title: 'Equality',
+    tagline: 'Light the led when two 4-bit numbers are the same.',
+    brief: 'Light `eq` when `a3 a2 a1 a0` and `b3 b2 b1 b0` are the same number',
+    target: 'Equal4',
+    inputs: ['a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
+    outputs: ['eq'],
+    allowed: ARITHMETIC_GATES,
+    numbers: { a: 'unsigned', b: 'unsigned' },
+    stub: `// Two numbers are the same when every bit matches the bit
+// in the same place in the other one.
+
+export default circuit('Equal4', {
+  nodes: {
+    a3: Switch,
+    a2: Switch,
+    a1: Switch,
+    a0: Switch,
+    b3: Switch,
+    b2: Switch,
+    b1: Switch,
+    b0: Switch,
+    eq: Led,
+  },
+  connect: ({ nodes: { a3, a2, a1, a0, b3, b2, b1, b0, eq } }) => [
+    //
+  ],
+});
+`,
+    // Four equal pairs, then pairs that differ in exactly one bit, each
+    // position twice, so a bit left out of the comparison gets caught.
+    vectors: [
+      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 0 }, expect: { eq: 1 } },
+      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 1, b1: 1, b0: 1 }, expect: { eq: 1 } },
+      { inputs: { a3: 1, a2: 0, a1: 0, a0: 1, b3: 1, b2: 0, b1: 0, b0: 1 }, expect: { eq: 1 } },
+      { inputs: { a3: 0, a2: 1, a1: 1, a0: 0, b3: 0, b2: 1, b1: 1, b0: 0 }, expect: { eq: 1 } },
+      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 1 }, expect: { eq: 0 } },
+      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 1, b0: 0 }, expect: { eq: 0 } },
+      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 1, b1: 0, b0: 0 }, expect: { eq: 0 } },
+      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 1, b2: 0, b1: 0, b0: 0 }, expect: { eq: 0 } },
+      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 1, b1: 1, b0: 0 }, expect: { eq: 0 } },
+      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 1, b1: 0, b0: 1 }, expect: { eq: 0 } },
+      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 0, b1: 1, b0: 1 }, expect: { eq: 0 } },
+      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 0, b2: 1, b1: 1, b0: 1 }, expect: { eq: 0 } },
+    ],
+    par: 7,
+    outro: {
+      headline: 'Bit for bit',
+      body: 'Most CPUs get this from subtraction instead: subtract one number from the other and check that every bit of the result is 0.',
+    },
+  },
+
+  {
     id: 'decoder',
     title: 'Decoder',
     tagline: 'Turn a 2-bit number into one of four lines.',
@@ -1345,59 +1398,6 @@ export default circuit('Subtract4', {
     outro: {
       headline: 'Two rows of NOTs',
       body: 'Real CPUs use one adder for both: a control line flips b and feeds in a carry of 1 when the instruction is a subtract.',
-    },
-  },
-
-  {
-    id: 'equal',
-    title: 'Equality',
-    tagline: 'Light the led when two 4-bit numbers are the same.',
-    brief: 'Light `eq` when `a3 a2 a1 a0` and `b3 b2 b1 b0` are the same number',
-    target: 'Equal4',
-    inputs: ['a3', 'a2', 'a1', 'a0', 'b3', 'b2', 'b1', 'b0'],
-    outputs: ['eq'],
-    allowed: ARITHMETIC_GATES,
-    numbers: { a: 'unsigned', b: 'unsigned' },
-    stub: `// Two numbers are the same when every bit matches the bit
-// in the same place in the other one.
-
-export default circuit('Equal4', {
-  nodes: {
-    a3: Switch,
-    a2: Switch,
-    a1: Switch,
-    a0: Switch,
-    b3: Switch,
-    b2: Switch,
-    b1: Switch,
-    b0: Switch,
-    eq: Led,
-  },
-  connect: ({ nodes: { a3, a2, a1, a0, b3, b2, b1, b0, eq } }) => [
-    //
-  ],
-});
-`,
-    // Four equal pairs, then pairs that differ in exactly one bit, each
-    // position twice, so a bit left out of the comparison gets caught.
-    vectors: [
-      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 0 }, expect: { eq: 1 } },
-      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 1, b1: 1, b0: 1 }, expect: { eq: 1 } },
-      { inputs: { a3: 1, a2: 0, a1: 0, a0: 1, b3: 1, b2: 0, b1: 0, b0: 1 }, expect: { eq: 1 } },
-      { inputs: { a3: 0, a2: 1, a1: 1, a0: 0, b3: 0, b2: 1, b1: 1, b0: 0 }, expect: { eq: 1 } },
-      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 0, b0: 1 }, expect: { eq: 0 } },
-      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 0, b1: 1, b0: 0 }, expect: { eq: 0 } },
-      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 0, b2: 1, b1: 0, b0: 0 }, expect: { eq: 0 } },
-      { inputs: { a3: 0, a2: 0, a1: 0, a0: 0, b3: 1, b2: 0, b1: 0, b0: 0 }, expect: { eq: 0 } },
-      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 1, b1: 1, b0: 0 }, expect: { eq: 0 } },
-      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 1, b1: 0, b0: 1 }, expect: { eq: 0 } },
-      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 1, b2: 0, b1: 1, b0: 1 }, expect: { eq: 0 } },
-      { inputs: { a3: 1, a2: 1, a1: 1, a0: 1, b3: 0, b2: 1, b1: 1, b0: 1 }, expect: { eq: 0 } },
-    ],
-    par: 7,
-    outro: {
-      headline: 'Bit for bit',
-      body: 'Most CPUs do this by subtracting and checking that every bit of the result is 0.',
     },
   },
 

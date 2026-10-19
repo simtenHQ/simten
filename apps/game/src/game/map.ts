@@ -35,10 +35,10 @@ export const MAP_ROWS: string[][] = [
   ['multiplexer', 'half-adder', 'latch'],
   ['majority', 'full-adder', 'd-latch'],
   ['wide-gates', 'adder-4', 'toggle'],
-  ['decoder', 'negate', 'counter'],
-  ['mux-4', 'subtract'],
-  ['parity', 'equal'],
-  ['less-than'],
+  ['equal', 'negate', 'counter'],
+  ['decoder', 'subtract'],
+  ['mux-4', 'less-than'],
+  ['parity'],
   ['alu-4'],
 ];
 
@@ -63,6 +63,7 @@ export const MAP_COLUMNS: Record<string, number> = {
   multiplexer: -1.5,
   majority: -1.5,
   'wide-gates': -1.5,
+  equal: -1.5,
   decoder: -1.5,
   'mux-4': -1.5,
   parity: -1.5,
@@ -70,7 +71,6 @@ export const MAP_COLUMNS: Record<string, number> = {
   'adder-4': -0.5,
   negate: -0.5,
   subtract: -0.5,
-  equal: -0.5,
   'less-than': -0.5,
 
   'half-adder': 0.5,
@@ -116,7 +116,10 @@ export const MAP_REQUIRES: Record<string, string[]> = {
 
   majority: ['multiplexer'],
   'wide-gates': ['majority'],
-  decoder: ['wide-gates'],
+  // Equality is XNORs and the four-input AND from wider gates, no arithmetic,
+  // so it belongs here rather than with the adders.
+  equal: ['wide-gates'],
+  decoder: ['equal'],
   'mux-4': ['decoder'],
   parity: ['mux-4'],
 
@@ -124,8 +127,7 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   'adder-4': ['full-adder'],
   negate: ['adder-4'],
   subtract: ['negate'],
-  equal: ['subtract'],
-  'less-than': ['equal'],
+  'less-than': ['subtract'],
 
   'd-latch': ['latch'],
   toggle: ['d-latch'],

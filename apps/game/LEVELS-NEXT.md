@@ -10,12 +10,13 @@ The map forks after `making-a-component`. This section adds a logic column and a
 
 ```
 alu-4 (needs parity and less-than)
-parity       less-than
-mux-4        equal
+parity
+mux-4        less-than
 decoder      subtract
-wide-gates   negate                    counter
-majority     adder-4  <-.              |      ^
-multiplexer             full-adder ----'   toggle
+equal        negate                    counter
+wide-gates   adder-4  <-.              |      ^
+majority                full-adder ----'   toggle
+multiplexer
                         half-adder         d-latch
                                            latch
 ```
@@ -29,7 +30,7 @@ Why four columns: the full adder feeds both `adder-4` and `counter`. With either
 Map changes, all in `map.ts`:
 
 - `MAP_ROWS`: ranks only. `MAP_COLUMNS` pins each fork level to a column, so a row of two no longer re-centres and drifts off its branch.
-- `MAP_REQUIRES`: each new level needs the one below it in its column, `multiplexer` needs `making-a-component`, `adder-4` needs `full-adder`, and `alu-4` needs `parity` and `less-than`.
+- `MAP_REQUIRES`: each new level needs the one below it in its column (`equal` sits in the logic column after `wide-gates`, since it is XNORs plus a four-input AND and no arithmetic), `multiplexer` needs `making-a-component`, `adder-4` needs `full-adder`, and `alu-4` needs `parity` and `less-than`.
 - `MAP_SECTIONS`: the band is now "Logic, arithmetic and memory".
 - Width: four 210px nodes plus gaps is about 970px, and the bands are 1010px. Fine on desktop. Not yet checked on a phone.
 
@@ -73,7 +74,14 @@ Map changes, all in `map.ts`:
 - **Vectors:** all 16.
 - **Why here:** the decoder and the equality check both need a 4-input AND.
 
-### 4. `decoder`: Decoder
+### 4. `equal`: Equality
+*Light up when two 4-bit numbers are the same.*
+
+- **New idea:** compare bit by bit (XNOR), then require all bits to match (the 4-input AND from level 3).
+- **Interface:** inputs `a3`–`a0`, `b3`–`b0` → output `eq`
+- **Vectors:** 12: several equal pairs, and pairs differing in exactly one bit, each bit position at least once.
+
+### 5. `decoder`: Decoder
 *Turn a 2-bit number into one of four lines.*
 
 - **New idea:** one output per value. Exactly one of `y0` to `y3` is on, the one numbered by `a1 a0`.
@@ -81,7 +89,7 @@ Map changes, all in `map.ts`:
 - **Vectors:** all 4.
 - **Why here:** this is how memory picks a cell and how a CPU picks a register, later on.
 
-### 5. `mux-4`: Four-Way Multiplexer
+### 6. `mux-4`: Four-Way Multiplexer
 *Choose one of four signals with a 2-bit select.*
 
 - **New idea:** building a bigger multiplexer from smaller ones (a tree of three), or from the decoder plus AND/OR. Both work, and par rewards the cheaper.
@@ -89,7 +97,7 @@ Map changes, all in `map.ts`:
 - **Starter:** the finished `Mux` from level 1.
 - **Vectors:** 16 of the 64. For each select value: the selected input on and the rest off, the reverse, and two mixed patterns. The first two catch a circuit that reads the wrong input, whichever one it reads.
 
-### 6. `parity`: Parity
+### 7. `parity`: Parity
 *Light up when an odd number of switches are on.*
 
 - **New idea:** XOR as "odd number of ones". A puzzle with a short answer that most people won't spot straight away.
@@ -99,7 +107,7 @@ Map changes, all in `map.ts`:
 
 ## Arithmetic column (after `full-adder`)
 
-### 7. `adder-4`: 4-Bit Adder
+### 8. `adder-4`: 4-Bit Adder
 *Add two 4-bit numbers.*
 
 - **New idea:** chaining full adders, each carry feeding the next (ripple carry).
@@ -108,7 +116,7 @@ Map changes, all in `map.ts`:
 - **Vectors:** 12 of the 256: 0 + 0, 1 + 1, 5 + 3, 7 + 8, 15 + 1 (overflow), 15 + 15, and others that make the carry ripple through every bit.
 - **Spec display:** the table shows the bits. A footnote shows the same rows as decimal sums (5 + 3 = 8), so the player can see what the bits mean. That's a small addition to the spec panel.
 
-### 8. `negate`: Negative Numbers
+### 9. `negate`: Negative Numbers
 *Turn a number into its negative.*
 
 - **New idea:** two's complement. Flip every bit and add one. In 4 bits, 3 becomes 13, which is -3.
@@ -117,20 +125,13 @@ Map changes, all in `map.ts`:
 - **Vectors:** all 16.
 - **Outro:** why this trick means a CPU needs no separate subtraction circuit.
 
-### 9. `subtract`: Subtractor
+### 10. `subtract`: Subtractor
 *Compute a − b.*
 
 - **New idea:** a − b is a + (−b), so the adder from level 7 does it, given an inverted `b` and a carry-in of 1.
 - **Interface:** inputs `a3`–`a0`, `b3`–`b0` → outputs `d3`–`d0`, `borrow`
 - **Starter:** `Adder4` as built, no carry-in port. a - b is computed as NOT(NOT a + b), which needs no constant 1, and the adder's `cout` is then exactly the borrow (on when b > a). The stub explains both. Par 25 (4 + 17 + 4).
 - **Vectors:** 12, including a < b (borrow set), a = b (zero), and 0 − 1.
-
-### 10. `equal`: Equality
-*Light up when two 4-bit numbers are the same.*
-
-- **New idea:** compare bit by bit (XNOR), then require all bits to match (the 4-input AND from level 3).
-- **Interface:** inputs `a3`–`a0`, `b3`–`b0` → output `eq`
-- **Vectors:** 12: several equal pairs, and pairs differing in exactly one bit, each bit position at least once.
 
 ### 11. `less-than`: Less Than
 *Light up when a is smaller than b.*
