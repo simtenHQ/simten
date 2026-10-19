@@ -16,15 +16,15 @@ describe('given-preamble detection', () => {
       (l) => l.id,
     );
     expect(skipped).toEqual([
-      'full-adder',
       'mux-4',
+      'full-adder',
       'adder-4',
       'subtract',
       'less-than',
-      'alu-4',
       'register',
       'register-file',
       'program-counter',
+      'alu-4',
       'cpu-load',
       'cpu-alu',
       'cpu-jumps',

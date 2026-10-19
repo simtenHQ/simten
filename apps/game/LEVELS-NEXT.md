@@ -9,17 +9,28 @@ This is the next section only. The longer arc (an 8-bit CPU, machine code, an as
 The map forks after `making-a-component`. This section adds a logic column and an arithmetic column, so no existing level gets new prerequisites and nobody's progress changes. The new arithmetic branches off the full adder, so the fork is four columns wide:
 
 ```
-PROCESSOR    alu-4
+PROCESSOR    cpu-jumps
+             cpu-alu
+             cpu-load
+             alu-4
 
 LOGIC        ARITHMETIC                 MEMORY
-parity                                  program-counter
-equal        less-than                  register-file
-mux-4        subtract                   register
-decoder      negate                     counter
-wide-gates   adder-4                    toggle
-majority                   full-adder   d-latch
-multiplexer                half-adder   latch
+                                        program-counter
+parity       less-than                  register-file
+equal        subtract                   register
+mux-4        negate                     counter
+decoder      adder-4                    toggle
+wide-gates                 full-adder   d-latch
+majority                   half-adder   latch
+
+COMPONENTS   buses
+             multiplexer
+             making-a-component
 ```
+
+The multiplexer and buses sit on the trunk, before the fork, because every branch uses both: memory holds or loads with a multiplexer, and every branch has 4-bit levels. So no stub can hand over a part the player skipped.
+
+`LEVELS` runs in this order too (trunk, logic, arithmetic, memory, processor), so the Next button and the level numbers walk up each lane in turn.
 
 The fork is three lanes side by side, each labelled at its foot, and the ALU opens a new full-width "Processor" band above them. That band is where the registers and the CPU go later.
 
@@ -38,7 +49,7 @@ Map changes, all in `map.ts`:
 
 ## Conventions for every level
 
-- **Order:** appended to `LEVELS` after `counter`, combinational column first, then arithmetic, then `alu-4`. Array order sets the map numbers and the Next button, so appending keeps every existing level's number.
+- **Order:** `LEVELS` runs trunk, logic, arithmetic, memory, processor. Array order sets the map numbers and the Next button.
 - **Allowed:** `ARITHMETIC_GATES` (Nand, Not, And, Or, Nor, Xor, Xnor) unless a level says otherwise.
 - **Par:** taken from the reference solution. `levels.test.ts` already requires par to equal the reference's gate count, so it can't drift.
   - Proven minimal by exhaustive search for the small levels: multiplexer 3, majority 4, wider gates 6, decoder 4, parity 3, negate 5. The rest are the reference's count and can be beaten: mux-4 9, adder-4 17, subtract 25, equal 7, less-than 25, alu-4 86.

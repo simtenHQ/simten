@@ -830,6 +830,50 @@ export default circuit('Xor2', {
   },
 
   {
+    id: 'multiplexer',
+    title: 'Multiplexer',
+    tagline: 'Choose which of two signals gets through.',
+    brief: 'Send `a` to the led while `sel` is off, and `b` while it is on',
+    target: 'Mux2',
+    inputs: ['a', 'b', 'sel'],
+    outputs: ['out'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// sel decides which input reaches out: a when sel is 0,
+// b when sel is 1.
+//
+// One way in: give a and b an AND each, so each one only
+// gets through when sel lets it, then OR the two together.
+
+export default circuit('Mux2', {
+  nodes: {
+    a: Switch,
+    b: Switch,
+    sel: Switch,
+    out: Led,
+  },
+  connect: ({ nodes: { a, b, sel, out } }) => [
+    //
+  ],
+});
+`,
+    vectors: [
+      { inputs: { a: 0, b: 0, sel: 0 }, expect: { out: 0 } },
+      { inputs: { a: 0, b: 0, sel: 1 }, expect: { out: 0 } },
+      { inputs: { a: 0, b: 1, sel: 0 }, expect: { out: 0 } },
+      { inputs: { a: 0, b: 1, sel: 1 }, expect: { out: 1 } },
+      { inputs: { a: 1, b: 0, sel: 0 }, expect: { out: 1 } },
+      { inputs: { a: 1, b: 0, sel: 1 }, expect: { out: 0 } },
+      { inputs: { a: 1, b: 1, sel: 0 }, expect: { out: 1 } },
+      { inputs: { a: 1, b: 1, sel: 1 }, expect: { out: 1 } },
+    ],
+    par: 3,
+    outro: {
+      headline: 'A switch made of gates',
+      body: "You'll use this whenever a circuit has to choose between values. Par is three, so if you used four, try XOR.",
+    },
+  },
+
+  {
     id: 'buses',
     title: 'Buses',
     tagline: 'Carry a whole number on one wire.',
@@ -883,363 +927,6 @@ export default circuit('Invert4', {
     outro: {
       headline: 'Numbers on wires',
       body: 'From here on, numbers travel on one wire, and you split them wherever you need the bits. When you need the same wire four times, a node can be a list, like Array.from({ length: 4 }, () => Not), and connect can loop over it.',
-    },
-  },
-  {
-    id: 'half-adder',
-    title: 'Half Adder',
-    tagline: 'Add two bits, and keep what carries.',
-    brief: 'Add two bits i.e. sum is the bit you keep, carry is the one that spills over',
-    target: 'HalfAdder',
-    inputs: ['a', 'b'],
-    outputs: ['sum', 'carry'],
-    allowed: ARITHMETIC_GATES,
-    stub: `// Adding two bits gives 0, 1 or 2, and 2 does not fit in
-// one bit, so the answer needs two leds.
-//
-// You proved you could build these gates, so you have them
-// now.
-
-export default circuit('HalfAdder', {
-  nodes: {
-    a: Switch,
-    b: Switch,
-    sum: Led,
-    carry: Led,
-  },
-  connect: ({ nodes: { a, b, sum, carry } }) => [
-    //
-  ],
-});
-`,
-    vectors: [
-      { inputs: { a: 0, b: 0 }, expect: { sum: 0, carry: 0 } },
-      { inputs: { a: 0, b: 1 }, expect: { sum: 1, carry: 0 } },
-      { inputs: { a: 1, b: 0 }, expect: { sum: 1, carry: 0 } },
-      { inputs: { a: 1, b: 1 }, expect: { sum: 0, carry: 1 } },
-    ],
-    par: 2,
-    outro: {
-      headline: 'That is addition',
-      body: 'Sum is XOR, carry is AND. Half an adder, because it cannot take a carry coming in.',
-    },
-  },
-
-  {
-    id: 'full-adder',
-    title: 'Full Adder',
-    tagline: 'Add two bits and a carry coming in.',
-    brief: 'Use the `HalfAdder` from the last level to add three bits now',
-    target: 'FullAdder',
-    inputs: ['a', 'b', 'cin'],
-    outputs: ['sum', 'cout'],
-    allowed: ARITHMETIC_GATES,
-    stub: `// Completed HalfAdder for reuse below
-
-const HalfAdder = circuit('HalfAdder', {
-  inputs: { a: bit, b: bit },
-  outputs: { sum: bit, carry: bit },
-  nodes: { x1: Xor, a1: And },
-  connect: ({ inputs, outputs, nodes: { x1, a1 } }) => [
-    inputs.a.to(x1.a, a1.a),
-    inputs.b.to(x1.b, a1.b),
-    x1.out.to(outputs.sum),
-    a1.out.to(outputs.carry),
-  ],
-});
-
-// Add a and b with h1, then add cin to that with h2.
-// Either can carry, so cout is one gate away.
-
-export default circuit('FullAdder', {
-  nodes: {
-    a: Switch,
-    b: Switch,
-    cin: Switch,
-    h1: HalfAdder,
-    h2: HalfAdder,
-    sum: Led,
-    cout: Led,
-  },
-  connect: ({ nodes: { a, b, cin, h1, h2, sum, cout } }) => [
-    //
-  ],
-});
-`,
-    vectors: [
-      { inputs: { a: 0, b: 0, cin: 0 }, expect: { sum: 0, cout: 0 } },
-      { inputs: { a: 0, b: 0, cin: 1 }, expect: { sum: 1, cout: 0 } },
-      { inputs: { a: 0, b: 1, cin: 0 }, expect: { sum: 1, cout: 0 } },
-      { inputs: { a: 0, b: 1, cin: 1 }, expect: { sum: 0, cout: 1 } },
-      { inputs: { a: 1, b: 0, cin: 0 }, expect: { sum: 1, cout: 0 } },
-      { inputs: { a: 1, b: 0, cin: 1 }, expect: { sum: 0, cout: 1 } },
-      { inputs: { a: 1, b: 1, cin: 0 }, expect: { sum: 0, cout: 1 } },
-      { inputs: { a: 1, b: 1, cin: 1 }, expect: { sum: 1, cout: 1 } },
-    ],
-    par: 5,
-    outro: {
-      headline: 'Full adder',
-      body: 'Chain these end to end and you can add any width.',
-    },
-  },
-
-  {
-    id: 'latch',
-    title: 'SR Latch',
-    tagline: 'Remember a bit after the input goes away.',
-    brief:
-      'Make a latch i.e. `s` low turns the result on, `r` low turns it off, and both high holds whatever it was last told',
-    target: 'Latch1',
-    inputs: ['s', 'r'],
-    outputs: ['q'],
-    allowed: ['Nand'],
-    sequential: true,
-    stub: `// The led has to remember.
-//
-// Everything you have built answers only to its inputs. A
-// circuit that remembers has to answer to its own output too,
-// so the answer has to come back round and feed the thing
-// that produced it.
-//
-// Two gates. Both switches high means hold.
-//
-// Note: both switches low at once is the state to avoid. It
-// forces an answer the circuit cannot hold on to, which is
-// why nothing below asks for it.
-
-export default circuit('Latch1', {
-  nodes: {
-    s: Switch,
-    r: Switch,
-    q: Led,
-  },
-  connect: ({ nodes: { s, r, q } }) => [
-    //
-  ],
-});
-`,
-    // Ordered steps, not a truth table. Steps 2 and 4 carry the same inputs as
-    // each other and expect different answers, which is what proves no
-    // combinational circuit can pass this level. Step 1 sets deliberately, so
-    // the run does not depend on whatever state the circuit powers up in.
-    vectors: [
-      { inputs: { s: 0, r: 1 }, expect: { q: 1 } },
-      { inputs: { s: 1, r: 1 }, expect: { q: 1 } },
-      { inputs: { s: 1, r: 0 }, expect: { q: 0 } },
-      { inputs: { s: 1, r: 1 }, expect: { q: 0 } },
-    ],
-    par: 2,
-    outro: {
-      headline: 'It remembers',
-      body: "Two NANDs, each reading the other's output, and it holds a bit. Next you fix the state you were told to avoid.",
-    },
-  },
-
-  {
-    id: 'd-latch',
-    title: 'D Latch',
-    tagline: 'Store one bit, only while you allow it.',
-    brief:
-      'Make a d latch i.e. the result follows `d` while `en` is high, and holds when `en` is low',
-    target: 'DLatch1',
-    inputs: ['d', 'en'],
-    outputs: ['q'],
-    allowed: ['Nand'],
-    sequential: true,
-    stub: `// Keep your latch. Put a gate in front of each input.
-//
-// The pair you built holds when both its inputs are high. So
-// the job of the two new gates is: when \`en\` is low, force
-// both high no matter what \`d\` is, and when \`en\` is high,
-// send \`d\` to one side and its opposite to the other.
-//
-// A NAND already gives you the opposite of something for
-// free. Look at what the first new gate produces before you
-// reach for another one.
-
-export default circuit('DLatch1', {
-  nodes: {
-    d: Switch,
-    en: Switch,
-    n1: Nand,
-    n2: Nand,
-    n3: Nand,
-    n4: Nand,
-    q: Led,
-  },
-  connect: ({ nodes: { d, en, n1, n2, n3, n4, q } }) => [
-    //
-  ],
-});
-`,
-    // Steps 2 and 5 carry identical inputs and demand different answers,
-    // which is the proof no combinational circuit can pass, without a repeat
-    // like that, `XNOR(d, en)` satisfies the whole table with no memory at
-    // all. Step 1 stores deliberately, so the run does not depend on whatever
-    // state the circuit powers up in.
-    vectors: [
-      { inputs: { d: 1, en: 1 }, expect: { q: 1 } },
-      { inputs: { d: 0, en: 0 }, expect: { q: 1 } },
-      { inputs: { d: 0, en: 1 }, expect: { q: 0 } },
-      { inputs: { d: 1, en: 0 }, expect: { q: 0 } },
-      { inputs: { d: 0, en: 0 }, expect: { q: 0 } },
-    ],
-    par: 4,
-    outro: {
-      headline: 'One bit, on demand',
-      body: 'One input to store, one to decide when. You get a flip-flop next level.',
-    },
-  },
-
-  {
-    id: 'toggle',
-    title: 'Toggle',
-    tagline: 'Alternate the led between on and off, every tick.',
-    brief: 'Flip the led between on and off once per clock tick, with no switches at all',
-    target: 'Toggle1',
-    inputs: [],
-    outputs: ['q'],
-    allowed: ['Nand', 'DFlipFlop'],
-    sequential: true,
-    intro: {
-      headline: 'Sequential circuits',
-      body:
-        'Everything so far has been **combinational**: the output depends only on the inputs right now. Flip one, the output follows instantly.\n\n' +
-        "A flip-flop is **sequential**. It watches a clock, a signal ticking steadily on and off, and only looks at its input at the instant the clock goes from off to on. That instant is called a rising edge. In between, it ignores its input and holds the value it captured. That's memory: your circuit can now remember something.\n\n" +
-        "Simten runs on a single clock and wires it to every sequential component for you, so there's nothing to connect. The wire is real; it is just handled, the same way it is in real hardware design. Every flip-flop in your circuit ticks on the same edge, at the same moment.\n\n" +
-        'Use the clock controls at the bottom to step one cycle at a time and watch the output change only on the tick.',
-      link: {
-        label: 'Sequential logic',
-        href: 'https://en.wikipedia.org/wiki/Sequential_logic',
-      },
-    },
-    stub: `// A flip-flop is memory with a clock.
-//
-// Your latch followed \`d\` the whole time \`en\` was high. A D
-// flip-flop only looks at \`d\` on a clock edge, and holds it
-// steady until the next one, so what it stores this tick is
-// what \`d\` was last tick.
-//
-// Your latch could not do this. Wire its output back to its
-// own input and, while \`en\` was high, the loop would run as
-// fast as the gates allow. Looking once, on the edge, is what
-// turns that race into a single flip.
-//
-// \`dff.q\` is what it currently holds. \`dff.d\` is what it
-// will hold next. Give it the opposite of what it has and it
-// can never settle.
-//
-// One wire does it. Look at what else the flip-flop already
-// gives you before reaching for a gate.
-
-export default circuit('Toggle1', {
-  nodes: {
-    dff: DFlipFlop(),
-    q: Led,
-  },
-  connect: ({ nodes: { dff, q } }) => [
-    //
-  ],
-});
-`,
-    // No inputs at all, so every step drives nothing and only the clock moves.
-    // Identical inputs with alternating answers is exactly the memory proof the
-    // suite looks for, and here it is the entire level.
-    vectors: [
-      { inputs: {}, expect: { q: 1 } },
-      { inputs: {}, expect: { q: 0 } },
-      { inputs: {}, expect: { q: 1 } },
-      { inputs: {}, expect: { q: 0 } },
-    ],
-    par: 1,
-    outro: {
-      headline: 'It toggles',
-      body: 'One flip-flop and one wire. Add a second flip-flop and some logic and you can count, which is next.',
-    },
-  },
-  {
-    id: 'counter',
-    title: 'Counter',
-    tagline: 'Count 0, 1, 2, 3, and back to 0.',
-    brief: 'Count 0, 1, 2, 3 and wrap, reading `bit1` and `bit0` as a binary number',
-    target: 'Counter2',
-    inputs: [],
-    outputs: ['bit0', 'bit1'],
-    allowed: ['Nand', 'DFlipFlop'],
-    sequential: true,
-    stub: `// One clock drives every flip-flop, so bit1 cannot be clocked off
-// bit0. Both tick together, and the logic decides which one changes.
-// Work out what each \`d\` should be from what the two of them hold now.
-const Counter2 = circuit('Counter2', {
-  nodes: {
-    dff0: DFlipFlop(),
-    dff1: DFlipFlop(),
-    bit0: Led,
-    bit1: Led,
-  },
-  connect: ({ nodes: { dff0, dff1, bit0, bit1 } }) => [
-    dff0.q.to(bit0.in),
-    dff1.q.to(bit1.in),
-  ],
-});
-`,
-    vectors: [
-      { inputs: {}, expect: { bit0: 1, bit1: 0 } },
-      { inputs: {}, expect: { bit0: 0, bit1: 1 } },
-      { inputs: {}, expect: { bit0: 1, bit1: 1 } },
-      { inputs: {}, expect: { bit0: 0, bit1: 0 } },
-      { inputs: {}, expect: { bit0: 1, bit1: 0 } },
-    ],
-    par: 6,
-    outro: {
-      headline: 'It counts',
-      body: "Flip-flops hold the number and logic works out the next one. A CPU's program counter is the same thing, only wider.",
-    },
-  },
-
-  // The combinational column. Appended after the counter rather than slotted in
-  // beside the arithmetic levels, so every existing level keeps its number.
-  {
-    id: 'multiplexer',
-    title: 'Multiplexer',
-    tagline: 'Choose which of two signals gets through.',
-    brief: 'Send `a` to the led while `sel` is off, and `b` while it is on',
-    target: 'Mux2',
-    inputs: ['a', 'b', 'sel'],
-    outputs: ['out'],
-    allowed: ARITHMETIC_GATES,
-    stub: `// sel decides which input reaches out: a when sel is 0,
-// b when sel is 1.
-//
-// One way in: give a and b an AND each, so each one only
-// gets through when sel lets it, then OR the two together.
-
-export default circuit('Mux2', {
-  nodes: {
-    a: Switch,
-    b: Switch,
-    sel: Switch,
-    out: Led,
-  },
-  connect: ({ nodes: { a, b, sel, out } }) => [
-    //
-  ],
-});
-`,
-    vectors: [
-      { inputs: { a: 0, b: 0, sel: 0 }, expect: { out: 0 } },
-      { inputs: { a: 0, b: 0, sel: 1 }, expect: { out: 0 } },
-      { inputs: { a: 0, b: 1, sel: 0 }, expect: { out: 0 } },
-      { inputs: { a: 0, b: 1, sel: 1 }, expect: { out: 1 } },
-      { inputs: { a: 1, b: 0, sel: 0 }, expect: { out: 1 } },
-      { inputs: { a: 1, b: 0, sel: 1 }, expect: { out: 0 } },
-      { inputs: { a: 1, b: 1, sel: 0 }, expect: { out: 1 } },
-      { inputs: { a: 1, b: 1, sel: 1 }, expect: { out: 1 } },
-    ],
-    par: 3,
-    outro: {
-      headline: 'A switch made of gates',
-      body: "You'll use this whenever a circuit has to choose between values. Par is three, so if you used four, try XOR.",
     },
   },
 
@@ -1543,6 +1230,104 @@ export default circuit('Parity4', {
   },
 
   {
+    id: 'half-adder',
+    title: 'Half Adder',
+    tagline: 'Add two bits, and keep what carries.',
+    brief: 'Add two bits i.e. sum is the bit you keep, carry is the one that spills over',
+    target: 'HalfAdder',
+    inputs: ['a', 'b'],
+    outputs: ['sum', 'carry'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// Adding two bits gives 0, 1 or 2, and 2 does not fit in
+// one bit, so the answer needs two leds.
+//
+// You proved you could build these gates, so you have them
+// now.
+
+export default circuit('HalfAdder', {
+  nodes: {
+    a: Switch,
+    b: Switch,
+    sum: Led,
+    carry: Led,
+  },
+  connect: ({ nodes: { a, b, sum, carry } }) => [
+    //
+  ],
+});
+`,
+    vectors: [
+      { inputs: { a: 0, b: 0 }, expect: { sum: 0, carry: 0 } },
+      { inputs: { a: 0, b: 1 }, expect: { sum: 1, carry: 0 } },
+      { inputs: { a: 1, b: 0 }, expect: { sum: 1, carry: 0 } },
+      { inputs: { a: 1, b: 1 }, expect: { sum: 0, carry: 1 } },
+    ],
+    par: 2,
+    outro: {
+      headline: 'That is addition',
+      body: 'Sum is XOR, carry is AND. Half an adder, because it cannot take a carry coming in.',
+    },
+  },
+
+  {
+    id: 'full-adder',
+    title: 'Full Adder',
+    tagline: 'Add two bits and a carry coming in.',
+    brief: 'Use the `HalfAdder` from the last level to add three bits now',
+    target: 'FullAdder',
+    inputs: ['a', 'b', 'cin'],
+    outputs: ['sum', 'cout'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// Completed HalfAdder for reuse below
+
+const HalfAdder = circuit('HalfAdder', {
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
+  nodes: { x1: Xor, a1: And },
+  connect: ({ inputs, outputs, nodes: { x1, a1 } }) => [
+    inputs.a.to(x1.a, a1.a),
+    inputs.b.to(x1.b, a1.b),
+    x1.out.to(outputs.sum),
+    a1.out.to(outputs.carry),
+  ],
+});
+
+// Add a and b with h1, then add cin to that with h2.
+// Either can carry, so cout is one gate away.
+
+export default circuit('FullAdder', {
+  nodes: {
+    a: Switch,
+    b: Switch,
+    cin: Switch,
+    h1: HalfAdder,
+    h2: HalfAdder,
+    sum: Led,
+    cout: Led,
+  },
+  connect: ({ nodes: { a, b, cin, h1, h2, sum, cout } }) => [
+    //
+  ],
+});
+`,
+    vectors: [
+      { inputs: { a: 0, b: 0, cin: 0 }, expect: { sum: 0, cout: 0 } },
+      { inputs: { a: 0, b: 0, cin: 1 }, expect: { sum: 1, cout: 0 } },
+      { inputs: { a: 0, b: 1, cin: 0 }, expect: { sum: 1, cout: 0 } },
+      { inputs: { a: 0, b: 1, cin: 1 }, expect: { sum: 0, cout: 1 } },
+      { inputs: { a: 1, b: 0, cin: 0 }, expect: { sum: 1, cout: 0 } },
+      { inputs: { a: 1, b: 0, cin: 1 }, expect: { sum: 0, cout: 1 } },
+      { inputs: { a: 1, b: 1, cin: 0 }, expect: { sum: 0, cout: 1 } },
+      { inputs: { a: 1, b: 1, cin: 1 }, expect: { sum: 1, cout: 1 } },
+    ],
+    par: 5,
+    outro: {
+      headline: 'Full adder',
+      body: 'Chain these end to end and you can add any width.',
+    },
+  },
+
+  {
     id: 'adder-4',
     title: '4-Bit Adder',
     tagline: 'Add two 4-bit numbers.',
@@ -1789,80 +1574,217 @@ export default circuit('LessThan4', {
   },
 
   {
-    id: 'alu-4',
-    title: 'Arithmetic Logic Unit',
-    tagline: 'One circuit that adds, subtracts, ANDs or ORs.',
+    id: 'latch',
+    title: 'SR Latch',
+    tagline: 'Remember a bit after the input goes away.',
     brief:
-      'Put the result of the operation `op1 op0` picks on `r`: 00 is a + b, 01 is a - b, 10 is a AND b, and 11 is a OR b, bit by bit',
-    target: 'Alu4',
-    inputs: ['op1', 'op0', 'a', 'b'],
-    outputs: ['r'],
-    allowed: ARITHMETIC_GATES,
-    stub: `// Your multiplexers, adder and subtractor, finished, below.
-
-// #region Your parts, finished (click the arrow to read them)
-${MUX2}
-
-${MUX4}
-
-${HALF_ADDER}
-
-${FULL_ADDER}
-
-${INVERT4}
-
-${ADDER4}
-
-${SUBTRACT4}
-// #endregion
-
-// Work out all four answers at once, whatever op says, then let
-// op1 op0 pick one.
+      'Make a latch i.e. `s` low turns the result on, `r` low turns it off, and both high holds whatever it was last told',
+    target: 'Latch1',
+    inputs: ['s', 'r'],
+    outputs: ['q'],
+    allowed: ['Nand'],
+    sequential: true,
+    stub: `// The led has to remember.
 //
-// Adder4 and Subtract4 take whole numbers. For AND, OR and the
-// picking, build your own parts: a circuit() that ANDs two 4-bit
-// numbers bit by bit, one that ORs them, and one that picks one of
-// four numbers (a Mux4 for each bit). Their ports can carry
-// numbers, like inputs: { a: bus(4), b: bus(4) }. Then the ALU
-// is five parts.
+// Everything you have built answers only to its inputs. A
+// circuit that remembers has to answer to its own output too,
+// so the answer has to come back round and feed the thing
+// that produced it.
+//
+// Two gates. Both switches high means hold.
+//
+// Note: both switches low at once is the state to avoid. It
+// forces an answer the circuit cannot hold on to, which is
+// why nothing below asks for it.
 
-export default circuit('Alu4', {
+export default circuit('Latch1', {
   nodes: {
-    op1: Switch,
-    op0: Switch,
-    a: Input({ width: 4 }),
-    b: Input({ width: 4 }),
-    r: HexDisplay({ width: 4 }),
+    s: Switch,
+    r: Switch,
+    q: Led,
   },
-  connect: ({ nodes: { op1, op0, a, b, r } }) => [
+  connect: ({ nodes: { s, r, q } }) => [
     //
   ],
 });
 `,
-    // Four per operation. 12 and 10, and 5 and 3, appear under every op, so a
-    // circuit that ignores op, or swaps two of them, gets caught.
+    // Ordered steps, not a truth table. Steps 2 and 4 carry the same inputs as
+    // each other and expect different answers, which is what proves no
+    // combinational circuit can pass this level. Step 1 sets deliberately, so
+    // the run does not depend on whatever state the circuit powers up in.
     vectors: [
-      { inputs: { op1: 0, op0: 0, a: 12, b: 10 }, expect: { r: 6 } },
-      { inputs: { op1: 0, op0: 0, a: 5, b: 3 }, expect: { r: 8 } },
-      { inputs: { op1: 0, op0: 0, a: 15, b: 1 }, expect: { r: 0 } },
-      { inputs: { op1: 0, op0: 0, a: 9, b: 9 }, expect: { r: 2 } },
-      { inputs: { op1: 0, op0: 1, a: 12, b: 10 }, expect: { r: 2 } },
-      { inputs: { op1: 0, op0: 1, a: 5, b: 3 }, expect: { r: 2 } },
-      { inputs: { op1: 0, op0: 1, a: 3, b: 5 }, expect: { r: 14 } },
-      { inputs: { op1: 0, op0: 1, a: 0, b: 1 }, expect: { r: 15 } },
-      { inputs: { op1: 1, op0: 0, a: 12, b: 10 }, expect: { r: 8 } },
-      { inputs: { op1: 1, op0: 0, a: 5, b: 3 }, expect: { r: 1 } },
-      { inputs: { op1: 1, op0: 0, a: 15, b: 6 }, expect: { r: 6 } },
-      { inputs: { op1: 1, op0: 0, a: 9, b: 6 }, expect: { r: 0 } },
-      { inputs: { op1: 1, op0: 1, a: 12, b: 10 }, expect: { r: 14 } },
-      { inputs: { op1: 1, op0: 1, a: 5, b: 3 }, expect: { r: 7 } },
-      { inputs: { op1: 1, op0: 1, a: 0, b: 0 }, expect: { r: 0 } },
-      { inputs: { op1: 1, op0: 1, a: 8, b: 1 }, expect: { r: 9 } },
+      { inputs: { s: 0, r: 1 }, expect: { q: 1 } },
+      { inputs: { s: 1, r: 1 }, expect: { q: 1 } },
+      { inputs: { s: 1, r: 0 }, expect: { q: 0 } },
+      { inputs: { s: 1, r: 1 }, expect: { q: 0 } },
     ],
-    par: 86,
+    par: 2,
     outro: {
-      headline: 'An ALU',
-      body: 'Every CPU has one of these. Add registers and a counter to step through a program and you have most of a computer.',
+      headline: 'It remembers',
+      body: "Two NANDs, each reading the other's output, and it holds a bit. Next you fix the state you were told to avoid.",
+    },
+  },
+
+  {
+    id: 'd-latch',
+    title: 'D Latch',
+    tagline: 'Store one bit, only while you allow it.',
+    brief:
+      'Make a d latch i.e. the result follows `d` while `en` is high, and holds when `en` is low',
+    target: 'DLatch1',
+    inputs: ['d', 'en'],
+    outputs: ['q'],
+    allowed: ['Nand'],
+    sequential: true,
+    stub: `// Keep your latch. Put a gate in front of each input.
+//
+// The pair you built holds when both its inputs are high. So
+// the job of the two new gates is: when \`en\` is low, force
+// both high no matter what \`d\` is, and when \`en\` is high,
+// send \`d\` to one side and its opposite to the other.
+//
+// A NAND already gives you the opposite of something for
+// free. Look at what the first new gate produces before you
+// reach for another one.
+
+export default circuit('DLatch1', {
+  nodes: {
+    d: Switch,
+    en: Switch,
+    n1: Nand,
+    n2: Nand,
+    n3: Nand,
+    n4: Nand,
+    q: Led,
+  },
+  connect: ({ nodes: { d, en, n1, n2, n3, n4, q } }) => [
+    //
+  ],
+});
+`,
+    // Steps 2 and 5 carry identical inputs and demand different answers,
+    // which is the proof no combinational circuit can pass, without a repeat
+    // like that, `XNOR(d, en)` satisfies the whole table with no memory at
+    // all. Step 1 stores deliberately, so the run does not depend on whatever
+    // state the circuit powers up in.
+    vectors: [
+      { inputs: { d: 1, en: 1 }, expect: { q: 1 } },
+      { inputs: { d: 0, en: 0 }, expect: { q: 1 } },
+      { inputs: { d: 0, en: 1 }, expect: { q: 0 } },
+      { inputs: { d: 1, en: 0 }, expect: { q: 0 } },
+      { inputs: { d: 0, en: 0 }, expect: { q: 0 } },
+    ],
+    par: 4,
+    outro: {
+      headline: 'One bit, on demand',
+      body: 'One input to store, one to decide when. You get a flip-flop next level.',
+    },
+  },
+
+  {
+    id: 'toggle',
+    title: 'Toggle',
+    tagline: 'Alternate the led between on and off, every tick.',
+    brief: 'Flip the led between on and off once per clock tick, with no switches at all',
+    target: 'Toggle1',
+    inputs: [],
+    outputs: ['q'],
+    allowed: ['Nand', 'DFlipFlop'],
+    sequential: true,
+    intro: {
+      headline: 'Sequential circuits',
+      body:
+        'Everything so far has been **combinational**: the output depends only on the inputs right now. Flip one, the output follows instantly.\n\n' +
+        "A flip-flop is **sequential**. It watches a clock, a signal ticking steadily on and off, and only looks at its input at the instant the clock goes from off to on. That instant is called a rising edge. In between, it ignores its input and holds the value it captured. That's memory: your circuit can now remember something.\n\n" +
+        "Simten runs on a single clock and wires it to every sequential component for you, so there's nothing to connect. The wire is real; it is just handled, the same way it is in real hardware design. Every flip-flop in your circuit ticks on the same edge, at the same moment.\n\n" +
+        'Use the clock controls at the bottom to step one cycle at a time and watch the output change only on the tick.',
+      link: {
+        label: 'Sequential logic',
+        href: 'https://en.wikipedia.org/wiki/Sequential_logic',
+      },
+    },
+    stub: `// A flip-flop is memory with a clock.
+//
+// Your latch followed \`d\` the whole time \`en\` was high. A D
+// flip-flop only looks at \`d\` on a clock edge, and holds it
+// steady until the next one, so what it stores this tick is
+// what \`d\` was last tick.
+//
+// Your latch could not do this. Wire its output back to its
+// own input and, while \`en\` was high, the loop would run as
+// fast as the gates allow. Looking once, on the edge, is what
+// turns that race into a single flip.
+//
+// \`dff.q\` is what it currently holds. \`dff.d\` is what it
+// will hold next. Give it the opposite of what it has and it
+// can never settle.
+//
+// One wire does it. Look at what else the flip-flop already
+// gives you before reaching for a gate.
+
+export default circuit('Toggle1', {
+  nodes: {
+    dff: DFlipFlop(),
+    q: Led,
+  },
+  connect: ({ nodes: { dff, q } }) => [
+    //
+  ],
+});
+`,
+    // No inputs at all, so every step drives nothing and only the clock moves.
+    // Identical inputs with alternating answers is exactly the memory proof the
+    // suite looks for, and here it is the entire level.
+    vectors: [
+      { inputs: {}, expect: { q: 1 } },
+      { inputs: {}, expect: { q: 0 } },
+      { inputs: {}, expect: { q: 1 } },
+      { inputs: {}, expect: { q: 0 } },
+    ],
+    par: 1,
+    outro: {
+      headline: 'It toggles',
+      body: 'One flip-flop and one wire. Add a second flip-flop and some logic and you can count, which is next.',
+    },
+  },
+
+  {
+    id: 'counter',
+    title: 'Counter',
+    tagline: 'Count 0, 1, 2, 3, and back to 0.',
+    brief: 'Count 0, 1, 2, 3 and wrap, reading `bit1` and `bit0` as a binary number',
+    target: 'Counter2',
+    inputs: [],
+    outputs: ['bit0', 'bit1'],
+    allowed: ['Nand', 'DFlipFlop'],
+    sequential: true,
+    stub: `// One clock drives every flip-flop, so bit1 cannot be clocked off
+// bit0. Both tick together, and the logic decides which one changes.
+// Work out what each \`d\` should be from what the two of them hold now.
+const Counter2 = circuit('Counter2', {
+  nodes: {
+    dff0: DFlipFlop(),
+    dff1: DFlipFlop(),
+    bit0: Led,
+    bit1: Led,
+  },
+  connect: ({ nodes: { dff0, dff1, bit0, bit1 } }) => [
+    dff0.q.to(bit0.in),
+    dff1.q.to(bit1.in),
+  ],
+});
+`,
+    vectors: [
+      { inputs: {}, expect: { bit0: 1, bit1: 0 } },
+      { inputs: {}, expect: { bit0: 0, bit1: 1 } },
+      { inputs: {}, expect: { bit0: 1, bit1: 1 } },
+      { inputs: {}, expect: { bit0: 0, bit1: 0 } },
+      { inputs: {}, expect: { bit0: 1, bit1: 0 } },
+    ],
+    par: 6,
+    outro: {
+      headline: 'It counts',
+      body: "Flip-flops hold the number and logic works out the next one. A CPU's program counter is the same thing, only wider.",
     },
   },
 
@@ -1994,6 +1916,7 @@ export default circuit('RegFile2', {
       body: "Real CPUs read two registers at once and write one, the same as this, just with more of them: the 6502 has three and a RISC-V core has 32. With four, you'd pick which to write with your decoder and which to read with your four-way multiplexer.",
     },
   },
+
   {
     id: 'program-counter',
     title: 'Program Counter',
@@ -2060,6 +1983,84 @@ export default circuit('ProgramCounter4', {
     outro: {
       headline: 'Where the program is',
       body: 'A CPU keeps the address of its next instruction in one of these. Counting moves on to the next instruction, and loading is how a jump or a loop works.',
+    },
+  },
+
+  {
+    id: 'alu-4',
+    title: 'Arithmetic Logic Unit',
+    tagline: 'One circuit that adds, subtracts, ANDs or ORs.',
+    brief:
+      'Put the result of the operation `op1 op0` picks on `r`: 00 is a + b, 01 is a - b, 10 is a AND b, and 11 is a OR b, bit by bit',
+    target: 'Alu4',
+    inputs: ['op1', 'op0', 'a', 'b'],
+    outputs: ['r'],
+    allowed: ARITHMETIC_GATES,
+    stub: `// Your multiplexers, adder and subtractor, finished, below.
+
+// #region Your parts, finished (click the arrow to read them)
+${MUX2}
+
+${MUX4}
+
+${HALF_ADDER}
+
+${FULL_ADDER}
+
+${INVERT4}
+
+${ADDER4}
+
+${SUBTRACT4}
+// #endregion
+
+// Work out all four answers at once, whatever op says, then let
+// op1 op0 pick one.
+//
+// Adder4 and Subtract4 take whole numbers. For AND, OR and the
+// picking, build your own parts: a circuit() that ANDs two 4-bit
+// numbers bit by bit, one that ORs them, and one that picks one of
+// four numbers (a Mux4 for each bit). Their ports can carry
+// numbers, like inputs: { a: bus(4), b: bus(4) }. Then the ALU
+// is five parts.
+
+export default circuit('Alu4', {
+  nodes: {
+    op1: Switch,
+    op0: Switch,
+    a: Input({ width: 4 }),
+    b: Input({ width: 4 }),
+    r: HexDisplay({ width: 4 }),
+  },
+  connect: ({ nodes: { op1, op0, a, b, r } }) => [
+    //
+  ],
+});
+`,
+    // Four per operation. 12 and 10, and 5 and 3, appear under every op, so a
+    // circuit that ignores op, or swaps two of them, gets caught.
+    vectors: [
+      { inputs: { op1: 0, op0: 0, a: 12, b: 10 }, expect: { r: 6 } },
+      { inputs: { op1: 0, op0: 0, a: 5, b: 3 }, expect: { r: 8 } },
+      { inputs: { op1: 0, op0: 0, a: 15, b: 1 }, expect: { r: 0 } },
+      { inputs: { op1: 0, op0: 0, a: 9, b: 9 }, expect: { r: 2 } },
+      { inputs: { op1: 0, op0: 1, a: 12, b: 10 }, expect: { r: 2 } },
+      { inputs: { op1: 0, op0: 1, a: 5, b: 3 }, expect: { r: 2 } },
+      { inputs: { op1: 0, op0: 1, a: 3, b: 5 }, expect: { r: 14 } },
+      { inputs: { op1: 0, op0: 1, a: 0, b: 1 }, expect: { r: 15 } },
+      { inputs: { op1: 1, op0: 0, a: 12, b: 10 }, expect: { r: 8 } },
+      { inputs: { op1: 1, op0: 0, a: 5, b: 3 }, expect: { r: 1 } },
+      { inputs: { op1: 1, op0: 0, a: 15, b: 6 }, expect: { r: 6 } },
+      { inputs: { op1: 1, op0: 0, a: 9, b: 6 }, expect: { r: 0 } },
+      { inputs: { op1: 1, op0: 1, a: 12, b: 10 }, expect: { r: 14 } },
+      { inputs: { op1: 1, op0: 1, a: 5, b: 3 }, expect: { r: 7 } },
+      { inputs: { op1: 1, op0: 1, a: 0, b: 0 }, expect: { r: 0 } },
+      { inputs: { op1: 1, op0: 1, a: 8, b: 1 }, expect: { r: 9 } },
+    ],
+    par: 86,
+    outro: {
+      headline: 'An ALU',
+      body: 'Every CPU has one of these. Add registers and a counter to step through a program and you have most of a computer.',
     },
   },
 

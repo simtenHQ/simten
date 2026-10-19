@@ -30,16 +30,17 @@ export const MAP_ROWS: string[][] = [
   ['xor'],
   ['xnor'],
   ['making-a-component'],
+  ['multiplexer'],
   ['buses'],
   // The fork. Rows past here are ranks only; `MAP_COLUMNS` says which column
   // each level sits in.
-  ['multiplexer', 'half-adder', 'latch'],
-  ['majority', 'full-adder', 'd-latch'],
-  ['wide-gates', 'adder-4', 'toggle'],
-  ['decoder', 'negate', 'counter'],
-  ['mux-4', 'subtract', 'register'],
-  ['equal', 'less-than', 'register-file'],
-  ['parity', 'program-counter'],
+  ['majority', 'half-adder', 'latch'],
+  ['wide-gates', 'full-adder', 'd-latch'],
+  ['decoder', 'adder-4', 'toggle'],
+  ['mux-4', 'negate', 'counter'],
+  ['equal', 'subtract', 'register'],
+  ['parity', 'less-than', 'register-file'],
+  ['program-counter'],
   ['alu-4'],
   ['cpu-load'],
   ['cpu-alu'],
@@ -64,7 +65,6 @@ export const MAP_ROWS: string[][] = [
  * Rows without an entry here are centred, which is the whole trunk.
  */
 export const MAP_COLUMNS: Record<string, number> = {
-  multiplexer: -1.5,
   majority: -1.5,
   'wide-gates': -1.5,
   decoder: -1.5,
@@ -118,16 +118,16 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   xnor: ['xor'],
   'making-a-component': ['xnor'],
 
-  // The fork. Every branch needs every gate, so it splits after the last one:
-  // nothing downstream can reach for a gate the player skipped.
-  // Numbers on wires come before the fork: every branch has 4-bit levels.
-  buses: ['making-a-component'],
+  // Every branch needs every gate, the multiplexer and numbers on wires, so the
+  // fork comes after all three: nothing downstream can hand over a part the
+  // player skipped. Memory uses the multiplexer to hold or load, and every
+  // branch has 4-bit levels.
+  multiplexer: ['making-a-component'],
+  buses: ['multiplexer'],
 
-  multiplexer: ['buses'],
+  majority: ['buses'],
   'half-adder': ['buses'],
   latch: ['buses'],
-
-  majority: ['multiplexer'],
   'wide-gates': ['majority'],
   // Single switches first, then numbers on buses. The decoder and the
   // four-way multiplexer sit together: both pick one of four with two bits.
@@ -200,11 +200,11 @@ export const MAP_SECTIONS: MapSection[] = [
   // The fork's branches run side by side, so they get a lane each rather than
   // one band across all three. It was one band, and seventeen levels under a
   // single label read as one undivided slab.
-  { label: 'Logic', startRow: 9, columns: [-1.5, -1.5] },
-  { label: 'Arithmetic', startRow: 9, columns: [-0.5, 0.5] },
-  { label: 'Memory', startRow: 9, columns: [1.5, 1.5] },
+  { label: 'Logic', startRow: 10, columns: [-1.5, -1.5] },
+  { label: 'Arithmetic', startRow: 10, columns: [-0.5, 0.5] },
+  { label: 'Memory', startRow: 10, columns: [1.5, 1.5] },
   // Where the lanes come back together. The ALU now; registers and a CPU later.
-  { label: 'Processor', startRow: 16 },
+  { label: 'Processor', startRow: 17 },
 ];
 
 /**
