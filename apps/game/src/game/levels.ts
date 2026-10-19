@@ -1548,12 +1548,11 @@ export default circuit('Alu4', {
     title: 'Register',
     tagline: 'Hold four bits until you are told to change them.',
     brief:
-      'Show the stored number on `q3` to `q0`. On each tick, store `d3` to `d0` if `load` is on, and keep the old number if it is off',
+      'Show the stored number on `q`. On each tick, store `d` if `load` is on, and keep the old number if it is off',
     target: 'Register4',
-    inputs: ['load', 'd3', 'd2', 'd1', 'd0'],
-    outputs: ['q3', 'q2', 'q1', 'q0'],
+    inputs: ['load', 'd'],
+    outputs: ['q'],
     allowed: MEMORY_GATES,
-    numbers: { d: 'unsigned', q: 'unsigned' },
     sequential: true,
     stub: `// One flip-flop per bit. A flip-flop stores whatever is on
 // its d input every tick, so to keep a bit, feed it its own q.
@@ -1563,16 +1562,14 @@ export default circuit('Alu4', {
 export default circuit('Register4', {
   nodes: {
     load: Switch,
-    d3: Switch,
-    d2: Switch,
-    d1: Switch,
-    d0: Switch,
-    q3: Led,
-    q2: Led,
-    q1: Led,
-    q0: Led,
+    d: Input({ width: 4 }),
+    dBits: Splitter({ width: 4 }),
+    q: HexDisplay({ width: 4 }),
+    qBits: Combiner({ width: 4 }),
   },
-  connect: ({ nodes: { load, d3, d2, d1, d0, q3, q2, q1, q0 } }) => [
+  connect: ({ nodes: { load, d, dBits, q, qBits } }) => [
+    d.out.to(dBits.in),
+    qBits.out.to(q.in),
     //
   ],
 });
@@ -1580,16 +1577,16 @@ export default circuit('Register4', {
     // Ordered steps. Steps 2 and 10 carry the same inputs and expect different
     // numbers, and so do 5 and 8: what comes out depends on what was stored.
     vectors: [
-      { inputs: { load: 1, d3: 0, d2: 1, d1: 0, d0: 1 }, expect: { q3: 0, q2: 1, q1: 0, q0: 1 } },
-      { inputs: { load: 0, d3: 1, d2: 0, d1: 1, d0: 0 }, expect: { q3: 0, q2: 1, q1: 0, q0: 1 } },
-      { inputs: { load: 0, d3: 0, d2: 0, d1: 0, d0: 0 }, expect: { q3: 0, q2: 1, q1: 0, q0: 1 } },
-      { inputs: { load: 1, d3: 1, d2: 0, d1: 1, d0: 0 }, expect: { q3: 1, q2: 0, q1: 1, q0: 0 } },
-      { inputs: { load: 0, d3: 0, d2: 1, d1: 0, d0: 1 }, expect: { q3: 1, q2: 0, q1: 1, q0: 0 } },
-      { inputs: { load: 0, d3: 1, d2: 1, d1: 1, d0: 1 }, expect: { q3: 1, q2: 0, q1: 1, q0: 0 } },
-      { inputs: { load: 1, d3: 1, d2: 1, d1: 1, d0: 1 }, expect: { q3: 1, q2: 1, q1: 1, q0: 1 } },
-      { inputs: { load: 0, d3: 0, d2: 1, d1: 0, d0: 1 }, expect: { q3: 1, q2: 1, q1: 1, q0: 1 } },
-      { inputs: { load: 1, d3: 0, d2: 0, d1: 0, d0: 0 }, expect: { q3: 0, q2: 0, q1: 0, q0: 0 } },
-      { inputs: { load: 0, d3: 1, d2: 0, d1: 1, d0: 0 }, expect: { q3: 0, q2: 0, q1: 0, q0: 0 } },
+      { inputs: { load: 1, d: 5 }, expect: { q: 5 } },
+      { inputs: { load: 0, d: 10 }, expect: { q: 5 } },
+      { inputs: { load: 0, d: 0 }, expect: { q: 5 } },
+      { inputs: { load: 1, d: 10 }, expect: { q: 10 } },
+      { inputs: { load: 0, d: 5 }, expect: { q: 10 } },
+      { inputs: { load: 0, d: 15 }, expect: { q: 10 } },
+      { inputs: { load: 1, d: 15 }, expect: { q: 15 } },
+      { inputs: { load: 0, d: 5 }, expect: { q: 15 } },
+      { inputs: { load: 1, d: 0 }, expect: { q: 0 } },
+      { inputs: { load: 0, d: 10 }, expect: { q: 0 } },
     ],
     par: 16,
     outro: {

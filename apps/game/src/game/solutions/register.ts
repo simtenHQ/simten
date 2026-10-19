@@ -1,7 +1,16 @@
 /** Reference solution for `register`. Proven by `__tests__/levels.test.ts`. */
 
 import { bit, circuit } from '@simten/core/circuit';
-import { And, DFlipFlop, Led, Switch, Xor } from '@simten/core/std';
+import {
+  And,
+  Combiner,
+  DFlipFlop,
+  HexDisplay,
+  Input,
+  Splitter,
+  Switch,
+  Xor,
+} from '@simten/core/std';
 
 // One bit: the flip-flop's next value is d when load is on and its own q when
 // it is off, which is a multiplexer: q XOR (load AND (q XOR d)).
@@ -22,28 +31,26 @@ const RegisterBit = circuit('RegisterBit', {
 export const Register4 = circuit('Register4', {
   nodes: {
     load: Switch,
-    d3: Switch,
-    d2: Switch,
-    d1: Switch,
-    d0: Switch,
+    d: Input({ width: 4 }),
+    dBits: Splitter({ width: 4 }),
     b3: RegisterBit,
     b2: RegisterBit,
     b1: RegisterBit,
     b0: RegisterBit,
-    q3: Led,
-    q2: Led,
-    q1: Led,
-    q0: Led,
+    q: HexDisplay({ width: 4 }),
+    qBits: Combiner({ width: 4 }),
   },
-  connect: ({ nodes: { load, d3, d2, d1, d0, b3, b2, b1, b0, q3, q2, q1, q0 } }) => [
+  connect: ({ nodes: { load, d, dBits, b3, b2, b1, b0, q, qBits } }) => [
+    d.out.to(dBits.in),
+    qBits.out.to(q.in),
     load.out.to(b3.load, b2.load, b1.load, b0.load),
-    d3.out.to(b3.d),
-    d2.out.to(b2.d),
-    d1.out.to(b1.d),
-    d0.out.to(b0.d),
-    b3.q.to(q3.in),
-    b2.q.to(q2.in),
-    b1.q.to(q1.in),
-    b0.q.to(q0.in),
+    dBits.bit3.to(b3.d),
+    dBits.bit2.to(b2.d),
+    dBits.bit1.to(b1.d),
+    dBits.bit0.to(b0.d),
+    b3.q.to(qBits.bit3),
+    b2.q.to(qBits.bit2),
+    b1.q.to(qBits.bit1),
+    b0.q.to(qBits.bit0),
   ],
 });
