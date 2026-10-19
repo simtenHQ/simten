@@ -133,7 +133,7 @@ export async function grade(
 
     // ── 4. the truth table ──
     await runtime.select(target, all);
-    for (const vector of level.vectors) {
+    for (const [index, vector] of level.vectors.entries()) {
       const ports = await runtime.evaluate(vector.inputs, level.outputs);
       const actual: Record<string, number> = {};
       let wrong = false;
@@ -153,7 +153,7 @@ export async function grade(
         actual[port] = got;
         if (got !== want) wrong = true;
       }
-      if (wrong) return fail({ kind: 'vector', vector, actual });
+      if (wrong) return fail({ kind: 'vector', index, vector, actual });
     }
 
     return { status: 'pass', gates: countGates(flat, level.allowed) };

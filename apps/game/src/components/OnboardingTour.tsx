@@ -35,15 +35,19 @@ type Button = 'next' | 'previous' | 'close';
 const STEPS: TourStep[] = [
   {
     target: 'editor',
-    title: 'Write your code here',
+    title: 'Code editor',
+    // driver.js renders descriptions as HTML.
     description:
-      'Your circuit is TypeScript. The comments tell you what to do on each level, and the circuit on the right redraws as you type.',
+      '<p>Your circuit is TypeScript, written with <code>circuit()</code>:</p>' +
+      '<ul><li><code>nodes</code> lists the parts: switches, gates, LEDs</li>' +
+      '<li><code>connect</code> wires them, like <code>a.out.to(n1.a)</code></li></ul>' +
+      '<p>The circuit on the right redraws as you type.</p>',
     side: 'right',
     align: 'start',
   },
   {
     target: 'canvas',
-    title: 'Your circuit draws itself',
+    title: 'Circuit canvas',
     description:
       'Every wire you write shows up here. Click a switch to try your circuit before you submit it.',
     side: 'left',
@@ -51,16 +55,17 @@ const STEPS: TourStep[] = [
   },
   {
     target: 'spec',
-    title: 'The spec',
+    title: 'Spec',
     description:
-      'The truth table says what your circuit must output for every input. Allowed gates lists what you can use on this level.',
+      'What your circuit has to do: the outputs it must give for each input, or for each step on levels with memory. Allowed gates lists what you can build with.',
     side: 'top',
     align: 'start',
   },
   {
     target: 'submit',
-    title: 'Submit when you are done',
-    description: 'Press Submit to check your circuit against every row of the truth table.',
+    title: 'Submit',
+    description:
+      'Press Submit to check your circuit against the spec. Feedback, at the bottom right, says what happened.',
     side: 'bottom',
     align: 'end',
   },
