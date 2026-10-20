@@ -112,10 +112,15 @@ function LevelMapNode({ data }: NodeProps<LevelNode>) {
         `pointer-events-auto` is load-bearing. A node that is neither draggable
         nor selectable gets `pointer-events: none` from React Flow, so the pane
         underneath swallows every click and the links silently do nothing.
-        `nopan` stops a click on a card from being read as a drag of the canvas.
+
+        No `nopan` here: the cards cover so much of the map that a drag starting
+        on one has to pan it, or the map only moves when you grab the gaps.
+        Clicks still work because d3-zoom only swallows the click that ends a
+        real pan (see `paneClickDistance`), and its mousedown handler blocks the
+        browser's native link drag, which would otherwise steal the gesture.
       */}
       <div
-        className={`nopan pointer-events-auto relative flex items-center rounded-lg border px-4 py-3 transition-colors ${
+        className={`pointer-events-auto relative flex items-center rounded-lg border px-4 py-3 transition-colors ${
           STATE_STYLES[data.state]
         }`}
         style={{ width: NODE_WIDTH }}
@@ -151,12 +156,13 @@ function LevelMapNode({ data }: NodeProps<LevelNode>) {
 
               `contents` keeps the button boxless, so the badge's own absolute
               positioning still resolves against the card rather than nesting a
-              second offset inside a wrapper.
+              second offset inside a wrapper. `nopan` keeps the double-click
+              that opens the inspector from also zooming the map.
             */}
             {data.state === 'solved' && (
               <button
                 type="button"
-                className="contents"
+                className="nopan contents"
                 aria-label={`Look inside ${data.title}`}
                 onDoubleClick={() => data.onExpand?.(data.levelId)}
               >
@@ -331,6 +337,10 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
       nodesDraggable={false}
       nodesConnectable={false}
       elementsSelectable={false}
+      // d3-zoom treats any movement between mousedown and mouseup as a pan and
+      // swallows the click that follows. At its default of 0, a pixel of hand
+      // tremor while clicking a level would silently eat the navigation.
+      paneClickDistance={4}
       minZoom={0.4}
       maxZoom={1.4}
       proOptions={{ hideAttribution: true }}
