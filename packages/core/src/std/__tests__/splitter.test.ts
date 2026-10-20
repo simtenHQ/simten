@@ -84,6 +84,59 @@ describe('Splitter and Combiner', () => {
     expect(split.lines).toContain('assign b3 = x[3];');
   });
 
+  // Type-level: these only need to compile. Each `@ts-expect-error` line must
+  // be rejected, so a port that doesn't exist at this width is an editor error,
+  // and the real ones are concrete keys the editor can autocomplete.
+  it('types exactly the ports its width has', () => {
+    const s4 = Splitter({ width: 4 });
+    const c4 = Combiner({ width: 4 });
+    const s8 = Splitter();
+    const ok: (keyof typeof s4.outputs)[] = ['bit0', 'bit1', 'bit2', 'bit3'];
+    // @ts-expect-error a 4-bit Splitter has no bit4
+    const s4Bad: keyof typeof s4.outputs = 'bit4';
+    // @ts-expect-error a 4-bit Combiner has no bit4
+    const c4Bad: keyof typeof c4.inputs = 'bit4';
+    // No width means 8 bits.
+    const s8Last: keyof typeof s8.outputs = 'bit7';
+    // @ts-expect-error the default 8-bit Splitter has no bit8
+    const s8Bad: keyof typeof s8.outputs = 'bit8';
+
+    const Typed = circuit('SplitterTypes', {
+      inputs: { x: bus(4) },
+      outputs: { y: bus(4) },
+      nodes: { s: Splitter({ width: 4 }), c: Combiner({ width: 4 }) },
+      connect: ({ inputs, outputs, nodes: { s, c } }) => [
+        inputs.x.to(s.in),
+        s.bit0.to(c.bit0),
+        s.bit1.to(c.bit1),
+        s.bit2.to(c.bit2),
+        s.bit3.to(c.bit3),
+        c.out.to(outputs.y),
+      ],
+    });
+    // The port really isn't there, so this one also fails when it runs.
+    expect(() =>
+      circuit('SplitterTypesBad', {
+        inputs: { x: bus(4) },
+        nodes: { s: Splitter({ width: 4 }), c: Combiner({ width: 4 }) },
+        connect: ({ inputs, nodes: { s, c } }) => [
+          inputs.x.to(s.in),
+          // @ts-expect-error a 4-bit Splitter has no bit4 to read from
+          s.bit4.to(c.bit0),
+        ],
+      }),
+    ).toThrow();
+    expect([ok, s4Bad, c4Bad, s8Last, s8Bad, Typed.circuit.name]).toBeDefined();
+  });
+
+  it('accepts any bitN when the width is not a literal', () => {
+    const width: number = 6;
+    const s = Splitter({ width });
+    // Not knowable at compile time, so the type can't be narrower.
+    const key: keyof typeof s.outputs = 'bit5';
+    expect(key).toBe('bit5');
+  });
+
   it('writes back to source as the factory call', () => {
     const source = circuitToSource(Mixed);
     expect(source).toContain('Splitter({ width: 4 })');

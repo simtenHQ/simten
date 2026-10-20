@@ -4,7 +4,8 @@
 
 import { bit, bus } from '../circuit/bit-bus.js';
 import { circuit } from '../circuit/circuit.js';
-import type { ArgumentValue, BuiltCircuit } from '../circuit/types.js';
+import type { ArgumentValue, BuiltCircuit, PortMap } from '../circuit/types.js';
+import type { BitType, BusType } from '../types/circuit.js';
 
 /**
  * Multiplexer — sel=0 picks in0, sel=1 picks in1. The fundamental
@@ -123,22 +124,44 @@ function withArgs<T extends BuiltCircuit>(c: T, args: Record<string, ArgumentVal
   return c;
 }
 
-/**
- * `bit0`..`bit{width-1}`, typed by their name pattern rather than as a plain
- * string record. A string record would let `in`/`out` match it too, and a port
- * that reads as both an input and an output types as `never` in `connect`.
- */
-const bitPorts = (width: number) =>
-  Object.fromEntries(Array.from({ length: width }, (_, i) => [`bit${i}`, bit])) as Record<
-    `bit${number}`,
-    typeof bit
-  >;
+// These types ship in the editor's type bundle (dist/bundle.d.ts, size-capped
+// in dts-bundle.test.ts), so their notes are `//` comments, which declaration
+// emit drops, rather than JSDoc, which it keeps.
+
+// `0 | 1 | … | N-1` for a literal width `N`. A width only known at runtime
+// (`number`), or one past any real bus width, widens to `number` rather than
+// recursing forever.
+type BitIndex<N extends number, A extends number[] = []> = number extends N
+  ? number
+  : A['length'] extends N
+    ? A[number]
+    : A['length'] extends 64
+      ? number
+      : BitIndex<N, [...A, A['length']]>;
+
+// `bit0`..`bit{width-1}` as concrete keys, so `Splitter({ width: 4 })` offers
+// exactly `bit0`..`bit3` in the editor and `bit4` is a type error. A width that
+// isn't a literal falls back to the `bit${number}` pattern. Never a plain string
+// record: that would let `in`/`out` match too, and a port that reads as both an
+// input and an output types as `never` in `connect`.
+//
+// The return shapes are declared rather than inferred: `circuit()` can't infer
+// port maps through a still-generic `W`, and falls back to an untyped `PortMap`
+// that loses every port name.
+type BitPorts<W extends number> = Record<`bit${BitIndex<W>}`, BitType>;
+
+const bitPorts = (width: number): PortMap =>
+  Object.fromEntries(Array.from({ length: width }, (_, i) => [`bit${i}`, bit]));
 
 /**
  * Splits a bus into its bits, `bit0` (LSB) to `bit{width-1}`.
  * e.g. `Splitter({ width: 4 })`. The inverse of `Combiner`.
  */
-export function Splitter({ width = 8 }: { width?: number } = {}) {
+export function Splitter<W extends number = 8>({
+  width = 8 as W,
+}: {
+  width?: W;
+} = {}): BuiltCircuit<{ in: BusType }, BitPorts<W>> {
   // Its set of ports changes with `width`, so each width registers as its own
   // primitive (`Splitter_4w`, `Splitter_8w`): the simulator compiles one
   // evaluator per primitive name with that primitive's port list baked in. Same
@@ -157,14 +180,18 @@ export function Splitter({ width = 8 }: { width?: number } = {}) {
       },
     }),
     { width },
-  );
+  ) as BuiltCircuit<{ in: BusType }, BitPorts<W>>;
 }
 
 /**
  * Combines `bit0` (LSB) to `bit{width-1}` into a bus.
  * e.g. `Combiner({ width: 4 })`. The inverse of `Splitter`.
  */
-export function Combiner({ width = 8 }: { width?: number } = {}) {
+export function Combiner<W extends number = 8>({
+  width = 8 as W,
+}: {
+  width?: W;
+} = {}): BuiltCircuit<BitPorts<W>, { out: BusType }> {
   // Registers per width (`Combiner_4w`), for the same reason as `Splitter`.
   return withArgs(
     circuit(`Combiner_${width}w`, {
@@ -179,29 +206,12 @@ export function Combiner({ width = 8 }: { width?: number } = {}) {
       },
     }),
     { width },
-  );
+  ) as BuiltCircuit<BitPorts<W>, { out: BusType }>;
 }
 
 /**
- * Splits 8-bit bus into 8 individual bits. `bit0` is the LSB; `bit7` is
- * the MSB. The inverse of `Combiner8to8`.
- *
- * **Input:** `in` — `bus(8)`
- * **Outputs:** `bit0`..`bit7` — `bit`
- *
- * **Example:** route specific bit positions onto LEDs
- * ```ts
- * circuit('ByteToLeds', {
- *   inputs:  { value: bus(8) },
- *   outputs: { led0: bit, led7: bit },
- *   nodes:   { s: Splitter8to8 },
- *   connect: ({ inputs, outputs, nodes: { s } }) => [
- *     inputs.value.to(s.in),
- *     s.bit0.to(outputs.led0),
- *     s.bit7.to(outputs.led7),
- *   ],
- * })
- * ```
+ * Splits 8-bit bus into 8 individual bits, `bit0` (LSB) to `bit7`.
+ * Same as `Splitter({ width: 8 })`, which is preferred.
  */
 export const Splitter8to8 = circuit('Splitter8to8', {
   inputs: { in: bus(8) },
@@ -233,27 +243,8 @@ export const Splitter8to8 = circuit('Splitter8to8', {
 });
 
 /**
- * Combines 8 bits into an 8-bit bus. `bit0` becomes the LSB; `bit7`
- * becomes the MSB. The inverse of `Splitter8to8`.
- *
- * **Inputs:** `bit0`..`bit7` — `bit`
- * **Output:** `out` — `bus(8)`
- *
- * **Example:** assemble a byte from 8 switches
- * ```ts
- * circuit('Pack', {
- *   inputs:  { s0: bit, s1: bit, s2: bit, s3: bit, s4: bit, s5: bit, s6: bit, s7: bit },
- *   outputs: { byte: bus(8) },
- *   nodes:   { c: Combiner8to8 },
- *   connect: ({ inputs, outputs, nodes: { c } }) => [
- *     inputs.s0.to(c.bit0), inputs.s1.to(c.bit1),
- *     inputs.s2.to(c.bit2), inputs.s3.to(c.bit3),
- *     inputs.s4.to(c.bit4), inputs.s5.to(c.bit5),
- *     inputs.s6.to(c.bit6), inputs.s7.to(c.bit7),
- *     c.out.to(outputs.byte),
- *   ],
- * })
- * ```
+ * Combines 8 bits into an 8-bit bus, `bit0` (LSB) to `bit7`.
+ * Same as `Combiner({ width: 8 })`, which is preferred.
  */
 export const Combiner8to8 = circuit('Combiner8to8', {
   inputs: {
