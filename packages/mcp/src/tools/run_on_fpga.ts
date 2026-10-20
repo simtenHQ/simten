@@ -60,6 +60,7 @@ interface RunArgs {
   timeout_ms?: number;
   match?: string;
   no_flash?: boolean;
+  wifi_host?: string;
   full_rebuild?: boolean;
 }
 
@@ -72,6 +73,7 @@ async function invokeCli(
   if (args.timeout_ms !== undefined) cliArgs.push(`--timeout=${args.timeout_ms}`);
   if (args.match) cliArgs.push(`--match=${args.match}`);
   if (args.no_flash) cliArgs.push('--no-flash');
+  if (args.wifi_host) cliArgs.push(`--wifi=${args.wifi_host}`);
   if (args.full_rebuild) cliArgs.push('--full-rebuild');
 
   return new Promise((res) => {
@@ -117,6 +119,12 @@ export function registerRunOnFpgaTool(server: McpServer): void {
         .boolean()
         .optional()
         .describe('Build only, skip flashing (rarely useful from MCP).'),
+      wifi_host: z
+        .string()
+        .optional()
+        .describe(
+          "Flash over Wi-Fi via the board's ESP32 at this host/IP (needs esp32ecp5 uftpd on the ESP32) instead of USB-JTAG. UART capture still uses USB.",
+        ),
       full_rebuild: z
         .boolean()
         .optional()

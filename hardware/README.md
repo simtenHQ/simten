@@ -45,11 +45,36 @@ The pipeline:
    `(verilog, top, lpf, device)` hash; reuses prior bitstream when only firmware changed
    (uses `ecpbram` to swap the IMEM init image into the cached `.bit`).
 3. **Flash** — `openFPGALoader -b ulx3s`. Kills any running `picocom` first to release
-   `/dev/cu.usbserial-*`.
+   `/dev/cu.usbserial-*`. With `--wifi=<host>` the bitstream goes over Wi-Fi to the
+   board's ESP32 instead (see below).
 4. **UART capture** (when project declares `uart`) — opens the port, reads bytes until
    `match` regex hits or `timeout_ms` elapses. Returns a structured `RunResult` JSON.
 
 `--full-rebuild` skips the bitstream cache; `--no-flash` builds only.
+
+### Flashing over Wi-Fi
+
+The onboard FT231X bit-bangs JTAG, so USB flashing is capped at roughly 450 kbit/s
+whatever `--freq` you ask for. The ESP32 on the ULX3S is wired to the FPGA's JTAG pins
+and drives them from hardware SPI at 20 MHz, so it is quicker even over Wi-Fi. Measured on
+a ULX3S 85F with compressed bitstreams:
+
+| Design   | USB   | Wi-Fi |
+|----------|-------|-------|
+| snake    | 5.3s  | 1.7s  |
+| breakout | 5.5s  | 1.7s  |
+| cpu      | 8.0s  | 2.0s  |
+
+The ESP32 needs MicroPython plus [esp32ecp5](https://github.com/emard/esp32ecp5), with
+`uftpd` started from `main.py` and the board joined to your network. Then:
+
+```bash
+pnpm fpga:run --project=snake --wifi=192.168.0.62
+```
+
+The pipeline uploads to uftpd's `fpga` target, which streams straight into the FPGA's
+SRAM. UART capture still uses the USB cable. uftpd has no authentication, so anyone on
+the same network can reflash the board.
 
 ## Adding a project
 

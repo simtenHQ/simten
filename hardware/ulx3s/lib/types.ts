@@ -105,6 +105,7 @@ export interface SynthStageResult {
 export interface FlashStageResult {
   flashed: boolean;
   flash_duration_ms: number;
+  via: 'usb' | 'wifi';
 }
 
 export interface RunStageResult {
@@ -145,6 +146,8 @@ export interface PipelineOptions {
   firmwareSourcePath?: string;
   firmwareLanguage?: string;
   flash: boolean;
+  /** Flash over Wi-Fi via the onboard ESP32 at this host instead of USB-JTAG. */
+  wifiHost?: string;
   fullRebuild?: boolean;
   verbose?: boolean;
 }

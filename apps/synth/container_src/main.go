@@ -790,9 +790,10 @@ func buildHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Run ecppack
+	// Run ecppack. --compress drops the empty config frames: a typical design
+	// shrinks 4-6x, and SRAM load time over the ULX3S FT231X scales with size.
 	bitPath := filepath.Join(dir, "output.bit")
-	ecpCmd := exec.Command("ecppack", "--input", configPath, "--bit", bitPath)
+	ecpCmd := exec.Command("ecppack", "--compress", "--input", configPath, "--bit", bitPath)
 	ecpCmd.Dir = dir
 	ecpOut, ecpErr := ecpCmd.CombinedOutput()
 	fullLog.Write(ecpOut)

@@ -35,6 +35,7 @@ interface Args {
   timeoutMs?: number;
   match?: string;
   noFlash: boolean;
+  wifiHost?: string;
   fullRebuild: boolean;
   verbose: boolean;
   help: boolean;
@@ -58,6 +59,7 @@ function parseArgs(argv: string[]): Args {
     else if (arg.startsWith('firmware=')) out.firmware = arg.slice('firmware='.length);
     else if (arg.startsWith('timeout=')) out.timeoutMs = parseInt(arg.slice('timeout='.length), 10);
     else if (arg.startsWith('match=')) out.match = arg.slice('match='.length);
+    else if (arg.startsWith('wifi=')) out.wifiHost = arg.slice('wifi='.length);
   }
   return out;
 }
@@ -74,6 +76,7 @@ function usage(known: Record<string, Project>): string {
     '  --timeout=<ms>        UART capture timeout (default: project default or 5000)',
     '  --match=<regex>       regex to match against UART output; early-exit on hit',
     '  --no-flash            build only, skip flashing',
+    '  --wifi=<host>         flash over Wi-Fi via the onboard ESP32 (esp32ecp5 uftpd) instead of USB',
     '  --full-rebuild        skip ecpbram cache, force synth + PnR',
     '  --verbose             echo tool stdout (yosys, nextpnr) — default quiet',
     '  --help                show this',
@@ -99,7 +102,7 @@ function killPicocomIfRunning(): { killed: boolean; pids: number[] } {
     }
   }
   // Small grace period for the port to release (synchronous busy-wait is OK
-  // here — we're about to spawn a ~30s openFPGALoader anyway).
+  // here — we're about to spawn a multi-second openFPGALoader anyway).
   const end = Date.now() + 600;
   while (Date.now() < end) {
     const check = spawnSync('pgrep', user ? ['-u', user, 'picocom'] : ['picocom']);
@@ -188,6 +191,7 @@ async function main() {
     firmwareSourcePath,
     firmwareLanguage: firmwareSourcePath?.endsWith('.rs') ? 'rust' : 'c',
     flash: !args.noFlash,
+    wifiHost: args.wifiHost,
     fullRebuild: args.fullRebuild,
     verbose: args.verbose,
   });
