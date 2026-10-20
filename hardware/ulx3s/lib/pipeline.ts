@@ -19,6 +19,7 @@ import type {
   StageError,
   SynthStageResult,
 } from './types.js';
+import { flashOverWifi } from './wifi-flash.js';
 
 export const HARDWARE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
@@ -33,6 +34,14 @@ function suggestForSynthError(msg: string): string | undefined {
 function suggestForFlashError(stderr: string): string | undefined {
   if (/unable to open|resource busy/i.test(stderr)) return 'picocom still running?';
   if (/no supported device/i.test(stderr)) return 'FPGA not detected — check USB cable / power';
+  return undefined;
+}
+
+function suggestForWifiFlashError(msg: string): string | undefined {
+  if (/econnrefused|ehostunreach|etimedout|enotfound|timed out/i.test(msg)) {
+    return 'ESP32 unreachable — check it is on Wi-Fi and running uftpd (esp32ecp5)';
+  }
+  if (/550/.test(msg)) return 'ESP32 streamed the bitstream but the FPGA did not configure';
   return undefined;
 }
 
@@ -206,7 +215,29 @@ export async function runPipeline(opts: PipelineOptions): Promise<PipelineResult
 
   // ── Stage: flash (optional) ───────────────────────────────────────────────
   let flash: FlashStageResult | undefined;
-  if (opts.flash) {
+  if (opts.flash && opts.wifiHost) {
+    const started = Date.now();
+    try {
+      await flashOverWifi(bitstream, { host: opts.wifiHost });
+    } catch (e) {
+      const msg = (e as Error).message;
+      return {
+        ok: false,
+        stage: 'flash',
+        compile,
+        synth,
+        warnings,
+        bitstream,
+        error: {
+          stage: 'flash',
+          message: `Wi-Fi flash to ${opts.wifiHost} failed: ${msg}`,
+          stderr_tail: msg.slice(-1500),
+          suggestion: suggestForWifiFlashError(msg),
+        },
+      };
+    }
+    flash = { flashed: true, flash_duration_ms: Date.now() - started, via: 'wifi' };
+  } else if (opts.flash) {
     const started = Date.now();
     const proc = spawnSync('openFPGALoader', ['-b', 'ulx3s', bitPath], {
       encoding: 'utf8',
@@ -229,7 +260,7 @@ export async function runPipeline(opts: PipelineOptions): Promise<PipelineResult
         },
       };
     }
-    flash = { flashed: true, flash_duration_ms: duration };
+    flash = { flashed: true, flash_duration_ms: duration, via: 'usb' };
   }
 
   return {
