@@ -661,7 +661,11 @@ export default circuit('And2', {
     inputs: ['a', 'b'],
     outputs: ['result'],
     allowed: ['Nand', 'Not', 'And'],
-    stub: `export default circuit('Or1', {
+    stub: `// From here on, you add the gates yourself. Do it the same way you
+// added Not last level: put each gate in nodes, then add its name
+// to the destructuring in connect.
+
+export default circuit('Or1', {
   nodes: {
     a: Switch,
     b: Switch,
@@ -728,7 +732,9 @@ export default circuit('And2', {
     inputs: ['a', 'b'],
     outputs: ['result'],
     allowed: ['Nand', 'Not', 'And', 'Or', 'Nor'],
-    stub: `export default circuit('Xor1', {
+    stub: `// No new tricks, but this one takes some thought.
+
+export default circuit('Xor1', {
   nodes: {
     a: Switch,
     b: Switch,
