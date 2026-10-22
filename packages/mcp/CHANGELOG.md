@@ -1,5 +1,16 @@
 # @simten/mcp
 
+## 0.10.0
+
+### Minor Changes
+
+- 0b41a64: `run_on_fpga` takes an optional `wifi_host` to flash over Wi-Fi through the ULX3S's onboard ESP32 instead of USB-JTAG. With a compressed bitstream a load takes about 2s, against 5-8s over USB.
+
+### Patch Changes
+
+- Updated dependencies [c8a9c97]
+  - @simten/core@0.22.1
+
 ## 0.9.5
 
 ### Patch Changes
