@@ -732,7 +732,9 @@ export default circuit('Or1', {
     inputs: ['a', 'b'],
     outputs: ['result'],
     allowed: ['Nand', 'Not', 'And', 'Or', 'Nor'],
-    stub: `export default circuit('Xor1', {
+    stub: `// No new tricks, but this one takes some thought.
+
+export default circuit('Xor1', {
   nodes: {
     a: Switch,
     b: Switch,
