@@ -2,7 +2,7 @@
 
 Thanks for taking the time. This doc covers setup, workflow, and what we expect from PRs.
 
-If anything here is unclear or wrong, open an issue — fixing this doc is a great first contribution.
+If anything here is unclear or wrong, open an issue. Fixing this doc is a great first contribution.
 
 ## Quick start
 
@@ -15,20 +15,29 @@ pnpm install
 pnpm dev:all     # web app on :3001 + sandbox on :3002
 ```
 
-Open <http://localhost:3001>. The editor, simulator, blog, learn pages, and chat sidebar all work end-to-end. You're done.
+Open <http://localhost:3001>. The editor, simulator, docs, blog and learn pages all work end-to-end. You're done.
+
+To work on the game (play.simten.dev) instead, run the sandbox and the game side by side:
+
+```bash
+pnpm dev:sandbox   # :3002, runs player code
+pnpm dev:game      # :3003
+```
+
+Open <http://localhost:3003>. Both apps run player code in the sandbox iframe, so it needs to be up for levels to grade.
 
 ## Setup tiers
 
 What you need depends on what you're working on.
 
-### Tier 1 — UI, circuits, docs, blog, learn pages, simulator (~90% of contributions)
+### Tier 1: UI, game, circuits, docs, blog, learn pages, simulator (most contributions)
 
 - Node 20+
 - pnpm 8+
 
-That's it. The simulator runs entirely in the browser; nothing extra to install.
+That's it. The simulator runs entirely in the browser, so there's nothing extra to install.
 
-### Tier 2 — Verilog / FPGA toolchain (`apps/compiler`, `apps/synth`, `apps/verifier`)
+### Tier 2: Verilog / FPGA toolchain (`apps/compiler`, `apps/synth`, `apps/verifier`)
 
 Add **Docker**. Then:
 
@@ -40,20 +49,20 @@ pnpm --filter @simten/verifier dev     # iverilog cross-validation
 
 The `@simten/web` app falls back to `localhost:55001` for Verilog export when there's no production binding, so running the compiler container locally is enough to test the flow end-to-end.
 
-### Tier 3 — FPGA hardware flow (`hardware/ulx3s/`)
+### Tier 3: FPGA hardware flow (`hardware/ulx3s/`)
 
-Add a ULX3S board, [openFPGALoader](https://github.com/trabucayre/openFPGALoader) (or fujprog), and the relevant USB driver. See `hardware/ulx3s/README.md`. This is genuinely niche — you only need this if you're working on the bitstream / on-chip CPU path.
+Add a ULX3S board, [openFPGALoader](https://github.com/trabucayre/openFPGALoader) (or fujprog), and the relevant USB driver. See `hardware/ulx3s/README.md`. You only need this if you're working on the bitstream or the on-chip CPU path.
 
 ## Project structure
 
 ```
 apps/
-  web/               ← main React app (editor, blog, learn, chat) — `@simten/web`
-  game/              ← play.simten.dev, the level campaign — `@simten/game`
+  web/               ← main React app (editor, docs, blog, learn), `@simten/web`
+  game/              ← play.simten.dev, the level campaign, `@simten/game`
   sandbox/           ← isolated iframe that runs user circuit code
-  compiler/          ← Cloudflare Container — RISC-V cross-compiler
-  synth/             ← Cloudflare Container — Yosys synthesis
-  verifier/          ← Cloudflare Container — iverilog cross-validation
+  compiler/          ← Cloudflare Container: RISC-V cross-compiler
+  synth/             ← Cloudflare Container: Yosys synthesis
+  verifier/          ← Cloudflare Container: iverilog cross-validation
 packages/
   core/              ← circuit IR, simulator, stdlib, Verilog exporter
   ui/                ← React components (canvas, editor, waveform)
@@ -73,21 +82,21 @@ We use trunk-based development with PRs:
 3. Push the branch: `git push -u origin feat/your-thing`
 4. Open a PR against `main`
 5. CI runs Biome, tests, and the workspace build automatically
-6. After review, merge — the CI deploy workflow will ship to production
+6. After review, merge. The CI deploy workflow ships it to production
 
 ### Before opening a PR
 
 ```bash
 pnpm lint                          # Biome lint + format check (first CI gate)
-pnpm test                          # core unit tests (~480 tests, ~2s)
-pnpm -r exec tsc --noEmit          # type-check across the workspace
+pnpm test                          # every package's tests, plus the export and synth-limit checks
+pnpm typecheck                     # type-check across the workspace
 ```
 
 If `pnpm lint` complains, `pnpm lint:fix` fixes most of it, formatting included.
 
 ### Code style
 
-We use [Biome](https://biomejs.dev/) for both linting and formatting. `biome.json` at the repo root is the entire config. Don't match style by eye — run the formatter.
+We use [Biome](https://biomejs.dev/) for both linting and formatting. `biome.json` at the repo root is the entire config. Don't match style by eye, run the formatter.
 
 ```bash
 pnpm lint          # check (this is what CI runs)
@@ -123,13 +132,38 @@ fix(ci): build workspace packages before web app
 docs(hardware): cover CPU project, FPGA workflow, and the UART skid race
 ```
 
-The subject should describe the *outcome*, not the change. "Fix bug" — bad. "Drop duplicate pnpm version" — good.
+The subject should describe the *outcome*, not the change. "Fix bug" is bad. "Drop duplicate pnpm version" is good.
+
+## The sandbox
+
+Circuit code is arbitrary TypeScript, so neither the web app nor the game ever runs it directly. Every surface that runs user code (the editor, the game, `<circuit-embed>`) sends it to `apps/sandbox`, a hidden iframe on its own origin, which runs it in a Web Worker and sends back plain JSON. Because it's a different origin, user code can't read the main site's cookies, storage or DOM.
+
+- **Where it runs:** `localhost:3002` in dev, `sandbox.simten.dev` in production. Set `VITE_SANDBOX_ORIGIN` to point at a different one, e.g. a staging sandbox.
+- **If it isn't running:** nothing compiles or grades. The app waits about 10 seconds for the iframe to say it's ready, then gives up. If circuits silently never simulate, check that `pnpm dev:sandbox` (or `pnpm dev:all`) is up.
+- **What code sees:** the sandbox strips `import` lines and provides the stdlib as globals. That's why game stubs and solutions can keep real imports for `tsc` and still run.
+- **Deploying:** the production web app and game load the deployed sandbox. Changes to `@simten/core` or the sandbox itself only show up on simten.dev and play.simten.dev after `pnpm deploy:sandbox`.
+
+The full threat model (worker isolation, timeouts, what crosses the boundary) is in [`apps/web/content/docs/security.mdx`](apps/web/content/docs/security.mdx), also published at simten.dev/docs.
+
+## Working on the game
+
+Levels live in `apps/game/src/game/`:
+
+- `levels.ts` holds every level: its brief, the starting code (`stub`), the parts it allows, the test vectors and `par`.
+- `solutions/<level-id>.ts` is a reference answer for each level, registered in `solutions/index.ts`. They're real TypeScript, so a typo fails `tsc`.
+- `map.ts` places the level on the campaign map.
+
+`pnpm --filter @simten/game test` checks that every reference solution passes its level and that the solutions match `LEVELS` one to one, so a new level needs all three.
+
+Players' code is saved per level in their browser, and a saved draft takes priority over the stub. Changing a stub only reaches new players, or anyone who presses Reset. Existing progress isn't affected.
+
+`apps/game/LEVELS-NEXT.md` sketches where the campaign could go next.
 
 ## Larger features
 
 For anything bigger than a bug fix or small feature, **open an issue first**. We'll discuss the approach before you write code. This saves both of us from a PR that goes nowhere because the design wasn't aligned.
 
-If you're not sure whether something is "big enough" to warrant an issue first, it probably isn't — just open the PR.
+If you're not sure whether something is "big enough" to warrant an issue first, it probably isn't, so just open the PR.
 
 ## Asking questions
 
@@ -198,7 +232,7 @@ tar -xzf /tmp/simten-core-*.tgz -O package/package.json | jq .exports
 
 If you're reviewing a PR from an external fork:
 
-- **Don't `pnpm install` blindly.** A malicious `package.json` can run `postinstall` scripts on your machine. Read the diff — particularly any new `scripts` or `dependencies` — before installing.
+- **Don't `pnpm install` blindly.** A malicious `package.json` can run `postinstall` scripts on your machine. Read the diff, particularly any new `scripts` or `dependencies`, before installing.
 - **For unknown contributors**, prefer reviewing in [Codespaces](https://github.com/features/codespaces) or a devcontainer rather than your laptop. (Devcontainer config is on the roadmap; until it lands, a fresh shell with no sensitive paths mounted is the manual workaround.)
 - **`pnpm install --ignore-scripts`** is a useful intermediate option when reading the diff for new lifecycle scripts isn't enough.
 
