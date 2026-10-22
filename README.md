@@ -20,27 +20,20 @@ Simulate them in the browser, export Verilog, run the result on an FPGA.
 ## Why
 
 Learning digital logic usually means choosing between visual simulators that stop
-scaling after a few dozen gates, and Verilog, which wants a whole toolchain before
-it shows you anything.
+scaling after a few dozen gates, and Verilog, which needs a whole toolchain before it
+shows you anything.
 
-Simten circuits are TypeScript. Autocomplete, type errors on mismatched ports and
-rename-refactoring all work the way they do in the rest of your editor, and you can
-drive a circuit with any npm package: `fast-check` for property tests, `pcap-parser`
-to replay real packets through an Ethernet parser.
-
-`circuit()` builds an intermediate representation rather than running anything.
-Everything else reads that IR: the simulator, the canvas, the Verilog exporter,
-snapshot and restore. Only primitives contain behaviour. Composites are pure
-structure and expand into primitives when elaborated, so any component can be
-opened up and shown as what it is made of.
+Simten circuits are TypeScript, so autocomplete, type errors on misnamed ports and
+refactoring all just work, and you can test a circuit with any npm package. Every
+component can be opened up on the canvas to show what it's made of.
 
 ## Try it
 
 - [simten.dev/circuit](https://simten.dev/circuit) is the editor: type on the left, watch the circuit build itself on the right.
-- [play.simten.dev](https://play.simten.dev) is a ten-level campaign that starts with one wire and ends at a full adder, with every gate built out of NAND.
+- [play.simten.dev](https://play.simten.dev) is a puzzle campaign that starts with a single NAND gate and ends with a 4-bit CPU built from everything you made along the way: gates, adders, latches, registers and an ALU.
 - `pnpm add @simten/core` if you would rather start in your own project.
 
-## Your first circuit
+## Example
 
 ```typescript
 import { circuit, bit } from '@simten/core/circuit'
@@ -59,8 +52,14 @@ const HalfAdder = circuit('HalfAdder', {
 })
 ```
 
-Drop it into a React app with `<CircuitEmbed circuit={HalfAdder} />` from
-`@simten/embed`, which wires switches to the inputs and LEDs to the outputs for you.
+- `inputs` / `outputs`: the circuit's pins, typed by width (`bit`, or `bus(8)` for 8 bits)
+- `nodes`: the parts inside it
+- `connect`: the wires, written `source.to(destination)`. It's typed from everything above,
+  so pins autocomplete and a typo like `xor1.c` is a type error
+
+To show it on a web page, render `<CircuitEmbed circuit={HalfAdder} />` from
+`@simten/embed` in a React app. It draws the circuit with a clickable switch for each
+input and a light for each output, so visitors can try it.
 
 ## AI assist (optional)
 
@@ -75,25 +74,17 @@ claude mcp add --scope user simten npx @simten/mcp
 
 ![Claude generates a half-adder circuit and runs it live in the browser](claude-demo.gif)
 
-The server runs on your machine, so no AI calls touch Simten's infrastructure and
-none of this is on unless you set it up. Testbenches run locally under the same
-trust model as `npm test`, with no sandbox, so circuits you did not write belong in
-the web editor instead, where they run in an isolated worker. See
+The server runs on your machine, so nothing goes through Simten's servers, and it's
+off unless you install it. When it runs a circuit's tests, they run on your machine
+with the same access as `npm test`, so only use it on circuits you trust. For anything
+else, use the web editor, which runs code in an isolated sandbox. See
 [`packages/mcp/README.md`](packages/mcp/README.md).
 
 ## FPGA
 
-Exported Verilog goes through Yosys and nextpnr onto a ULX3S 85F (Lattice ECP5).
-The RV32I core there runs C and Rust firmware over UART, and an HDMI Snake runs as
-pure RTL with no firmware at all.
-
-```bash
-pnpm fpga:run --project=cpu \
-  --firmware=hardware/ulx3s/projects/cpu/firmware/hello.rs \
-  --match='Hello, World!'
-```
-
-Details in [`hardware/README.md`](hardware/README.md).
+Circuits export to Verilog, so they run on real hardware too. A RISC-V CPU running C
+and Rust programs and an HDMI Snake both run on a ULX3S FPGA board today. Setup and
+the build/flash workflow are in the [hardware docs](https://simten.dev/docs/hardware).
 
 ## Repo layout
 

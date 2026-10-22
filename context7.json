@@ -6,7 +6,7 @@
   "description": "TypeScript HDL: design digital circuits with type-checked ports, simulate them in the browser or Node, verify them with property-based tests, and export Verilog for FPGAs.",
   "folders": ["apps/web/content/docs", "packages/core", "packages/mcp", "packages/embed"],
   "excludeFolders": ["**/__tests__", "**/__fixtures__", "**/dist", "node_modules"],
-  "excludeFiles": ["HANDOFF.md", "TERMS.md", "PRIVACY.md", "SECURITY.md", "CHANGELOG.md"],
+  "excludeFiles": ["TERMS.md", "PRIVACY.md", "SECURITY.md", "CHANGELOG.md"],
   "rules": [
     "Import circuit, bit and bus from '@simten/core/circuit', and standard components from '@simten/core/std'.",
     "Export the top-level circuit from each module.",
