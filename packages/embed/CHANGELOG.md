@@ -1,5 +1,15 @@
 # @simten/embed
 
+## 0.5.6
+
+### Patch Changes
+
+- 31b7d6e: `useCircuitCompiler` compiles the first source immediately instead of after `debounceMs`. Later edits are still debounced.
+- Updated dependencies [afe7b5d]
+- Updated dependencies [f706719]
+- Updated dependencies [665fd13]
+  - @simten/ui@0.16.0
+
 ## 0.5.5
 
 ### Patch Changes
