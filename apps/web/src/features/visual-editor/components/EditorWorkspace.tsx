@@ -176,10 +176,7 @@ export function EditorWorkspace({
     slot: 'editor-main',
   });
 
-  // Track whether the editor source is effectively empty so we only show the
-  // "Load an example" picker when the user has actually cleared their code,
-  // not during the boot window between mount and first compile.
-  const [codeEmpty, setCodeEmpty] = useState((initialSource ?? '').trim() === '');
+  const codeEmpty = code.trim() === '';
   // Don't render the picker during the boot window; the resizable panels and
   // Monaco haven't laid out yet so the picker would render at near-zero width
   // (squished column on the left).
@@ -638,21 +635,11 @@ export function EditorWorkspace({
                     <SimtenCodeEditor
                       ref={editorRef}
                       value={code}
-                      onChange={(value) => {
-                        const v = value ?? '';
-                        setCode(v);
-                        setCodeEmpty(v.trim() === '');
-                      }}
+                      onChange={(value) => setCode(value ?? '')}
                       theme={resolvedTheme === 'dark' ? SIMTEN_DARK : SIMTEN_LIGHT}
                       diagnostics={compiler.diagnostics}
                       beforeMount={(m) => registerSimtenThemes(m, { lightBackground: '#faf9f4' })}
-                      options={{
-                        lineNumbers: 'on',
-                        wordWrap: 'on',
-                        tabSize: 2,
-                        'semanticHighlighting.enabled': true,
-                        fixedOverflowWidgets: true,
-                      }}
+                      options={{ 'semanticHighlighting.enabled': true }}
                     />
                   </div>
                   {compiler.diagnostics.length > 0 && (

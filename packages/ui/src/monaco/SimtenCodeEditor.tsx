@@ -29,6 +29,9 @@ const DEFAULT_OPTIONS: editor.IStandaloneEditorConstructionOptions = {
   fontSize: 13,
   automaticLayout: true,
   scrollBeyondLastLine: false,
+  wordWrap: 'on',
+  tabSize: 2,
+  fixedOverflowWidgets: true,
 };
 
 /**
