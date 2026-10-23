@@ -32,6 +32,7 @@ const DEFAULT_OPTIONS: editor.IStandaloneEditorConstructionOptions = {
   wordWrap: 'on',
   tabSize: 2,
   fixedOverflowWidgets: true,
+  parameterHints: { enabled: false },
 };
 
 /**
