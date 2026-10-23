@@ -20,6 +20,7 @@ import { LevelDrilldown } from '../components/LevelDrilldown';
 import { LevelMap } from '../components/LevelMap';
 import ThemeToggle from '../components/ThemeToggle';
 import { LEVELS, LEVELS_BY_ID } from '../game/levels';
+import { isAutomated } from '../game/newcomer';
 import { type Drafts, isOnboarded, readDrafts, readProgress } from '../game/storage';
 
 export const Route = createFileRoute('/')({
@@ -67,7 +68,10 @@ function MapPage() {
   const isDesktop = useIsDesktop();
   const navigate = useNavigate();
   useEffect(() => {
-    if (!isDesktop || isOnboarded()) return;
+    // Normally the inline script in `__root.tsx` has already done this before
+    // the map loaded. This catches what it cannot, such as client-side
+    // navigation back to `/`.
+    if (!isDesktop || isOnboarded() || isAutomated()) return;
     const progress = readProgress();
     const first = LEVELS.find((l) => !(l.id in progress)) ?? LEVELS[0];
     void navigate({ to: '/$levelId', params: { levelId: first.id }, replace: true });

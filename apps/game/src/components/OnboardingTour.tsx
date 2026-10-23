@@ -71,6 +71,12 @@ const STEPS: TourStep[] = [
   },
 ];
 
+/** driver.js and its stylesheet, fetched on first use. */
+const loadDriver = () =>
+  Promise.all([import('driver.js'), import('driver.js/dist/driver.css')]).then(([m]) => m.driver);
+
+const pause = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
 /**
  * Runs the tour when `ready` (no dialog open that it would land on) and the
  * player has not been onboarded. Each increment of `replays` runs it again
@@ -95,13 +101,11 @@ export function useOnboardingTour(ready: boolean, replays: number): boolean {
       welcomeRoot = null;
     };
 
-    // A beat after readiness, so a dialog that just closed has finished
-    // animating out and Monaco has laid itself out to its final size.
-    const timer = window.setTimeout(async () => {
-      const [{ driver }] = await Promise.all([
-        import('driver.js'),
-        import('driver.js/dist/driver.css'),
-      ]);
+    // A beat after readiness: long enough for the page's fade-in (150ms) or a
+    // dialog's close (200ms) to finish, so the first card does not land on
+    // something still moving. The download runs alongside the pause rather
+    // than after it.
+    void Promise.all([loadDriver(), pause(200)]).then(([driver]) => {
       if (cancelled) return;
 
       const welcome = {
@@ -177,11 +181,10 @@ export function useOnboardingTour(ready: boolean, replays: number): boolean {
       });
       destroy = () => tour.destroy();
       tour.drive();
-    }, 350);
+    });
 
     return () => {
       cancelled = true;
-      window.clearTimeout(timer);
       destroy?.();
       unmountWelcome();
       setActive(false);
