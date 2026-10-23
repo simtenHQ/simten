@@ -1,7 +1,7 @@
 import { type ReactNode, useSyncExternalStore } from 'react';
 
 /** Tailwind's `md`, the breakpoint `DesktopOnly` switches on. */
-const DESKTOP_QUERY = '(min-width: 768px)';
+export const DESKTOP_QUERY = '(min-width: 768px)';
 
 function subscribe(onChange: () => void): () => void {
   const list = window.matchMedia(DESKTOP_QUERY);

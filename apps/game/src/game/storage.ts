@@ -17,7 +17,7 @@
  * theme preference, which is written by an inline script in `__root.tsx`.
  */
 
-const VERSION = 1;
+export const VERSION = 1;
 
 interface Envelope<T> {
   version: number;
@@ -63,7 +63,7 @@ export function writeStored<T>(key: string, data: T): void {
  * The welcome dialog's flag, from before the page tour replaced it. Read only,
  * so players who dismissed that dialog are not toured; see `isOnboarded`.
  */
-const LEGACY_INTRO_SEEN_KEY = 'simten:game:intro-seen';
+export const LEGACY_INTRO_SEEN_KEY = 'simten:game:intro-seen';
 
 /**
  * Whether the player has finished or closed the page tour, whose opening card
