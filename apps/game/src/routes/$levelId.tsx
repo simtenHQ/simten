@@ -1,13 +1,5 @@
 /**
- * A level.
- *
- * Laid out like simten.dev/circuit on purpose: full viewport, its own top bar,
- * resizable panels, because it is the same product and should not read as a
- * different site. Three panels rather than the editor's two: the brief, the
- * code, and the circuit that code describes.
- *
- * That third panel is the point of the game being code-first. You write a
- * netlist and watch it become hardware you can click.
+ * A level: brief, code and circuit side by side, laid out like simten.dev/circuit.
  */
 
 import { elaborate } from '@simten/core';
@@ -58,44 +50,24 @@ import type { GradeResult, Level } from '../game/types';
 import { useVictoryRun } from '../game/useVictoryRun';
 import { SITE_URL } from './__root';
 
-/**
- * How long typing pauses before the draft is stored.
- *
- * Writing on every keystroke means a JSON parse, a spread and a serialise per
- * character, for a record that only matters when the tab goes away. Long enough
- * to coalesce a burst of typing, short enough that no realistic pause loses
- * work, and the pending write is flushed on unmount regardless, so leaving the
- * page mid-keystroke is safe.
- */
+/** Pause after typing before the draft is saved. Flushed on unmount anyway. */
 const DRAFT_DEBOUNCE_MS = 400;
 
-/**
- * Height of the clock bar, in pixels.
- *
- * Shared rather than expressed twice, because the spec sheet is lifted by
- * exactly this much when the bar is showing. Two independent values would drift
- * and leave either a seam or an overlap, and the overlap is invisible until you
- * try to click something.
- */
 const CLOCK_BAR_PX = 40;
 
-/** Why the panels clip with an inline style: see the panel layout below. */
+/** Inline because react-resizable-panels sets `overflow: auto` inline. See the layout. */
 const CLIP = { overflow: 'hidden' } as const;
 
-/**
- * The longest the editor and canvas stay hidden waiting for each other. Past
- * this, whatever is ready shows, so a slow CDN or a stuck sandbox costs a
- * moment of pop-in rather than a blank page.
- */
+/** After this, show whatever has loaded rather than keep waiting. */
 const REVEAL_TIMEOUT_MS = 2500;
 
+const fadeIn = (shown: boolean) =>
+  `transition-opacity duration-150 ${shown ? 'opacity-100' : 'opacity-0'}`;
+
 /**
- * Calls `done` once Monaco has painted the code in colour.
- *
- * Monaco draws the text before its TypeScript tokenizer has loaded, so for a
- * frame or two every line is plain `mtk1`. Revealing on mount showed exactly
- * that: white code that turned colourful a moment later. Every stub opens with
- * a comment, so a token in any other class means the colours have arrived.
+ * Calls `done` once Monaco has painted in colour. Before the tokenizer loads,
+ * every token is `mtk1`; every stub opens with a comment, so any other class
+ * means the colours are in.
  */
 function onFirstColour(dom: HTMLElement | null, done: () => void): () => void {
   if (!dom) {
@@ -121,27 +93,12 @@ export const Route = createFileRoute('/$levelId')({
   loader: ({ params }) => {
     const level = LEVELS_BY_ID.get(params.levelId);
     if (!level) throw notFound();
-    // Arriving from the map, this starts Monaco downloading while the level's
-    // own code is still loading, rather than after it has rendered.
+    // Start Monaco downloading before the editor renders.
     preloadMonaco();
     return { level };
   },
-  /**
-   * Per-level metadata, overriding the root's site-wide set.
-   *
-   * Every page used to ship the root's title, description and `og:url`, so the
-   * eleven URLs were eleven duplicates as far as a crawler is concerned, and
-   * sending someone a level produced a card naming the site and linking to its
-   * front page rather than the level. The tagline is already a one-line
-   * description written for a human, which is exactly what this needs.
-   *
-   * `noindex` because the campaign is an order, not a menu. A search result for
-   * "XNOR" dropped someone into level 7 with six gates they had never built and
-   * no way to know that was the problem. The map is the front door, so it is
-   * the page that should rank. `follow` keeps the crawler walking these links,
-   * and the tags above still make a shared link render properly: they are read
-   * by the site unfurling it, not by the index.
-   */
+  // Per-level title and share card. `noindex` because levels only make sense
+  // in order; the map is the page that should rank.
   head: ({ loaderData }) => {
     const level = loaderData?.level;
     if (!level) return {};
@@ -158,13 +115,8 @@ export const Route = createFileRoute('/$levelId')({
         { name: 'twitter:title', content: title },
         { name: 'twitter:description', content: level.tagline },
       ],
-      // No canonical: it picks which of several addresses for one page should
-      // be indexed, which contradicts the `noindex` above. Google's guidance
-      // is not to send both.
-      //
-      // Monaco and the TypeScript worker come from jsDelivr. Opening the
-      // connection now takes the DNS and TLS handshake off the editor's path.
-      // Both modes, because Monaco loads classic scripts and modules from it.
+      // No canonical: it contradicts `noindex`.
+      // Monaco loads from jsDelivr as both classic scripts and modules.
       links: [
         { rel: 'preconnect', href: 'https://cdn.jsdelivr.net' },
         { rel: 'preconnect', href: 'https://cdn.jsdelivr.net', crossOrigin: 'anonymous' },
@@ -176,27 +128,9 @@ export const Route = createFileRoute('/$levelId')({
 });
 
 /**
- * Remount the level on every id change.
- *
- * TanStack reuses one component instance across `$levelId`, and almost all of
- * this screen's state is seeded from the level; `useState(level.stub)` runs
- * its initialiser only on mount. Without the key, clicking "Next" swapped the
- * title, brief and truth table while leaving the previous level's solution in
- * the editor, its circuit on the canvas, and its SOLVED verdict in the panel.
- *
- * A key is the right tool here rather than an effect that resets four pieces of
- * state: every one of them is derived from the level, so the whole component
- * should simply start again.
- */
-/**
- * The line the player's own work starts on, when the stub hands them a
- * finished component to build with, otherwise `null`.
- *
- * The full adder is given a half adder, and landing on that makes the level
- * look like it opens with someone else's code. But most stubs open with
- * comments that *are* the instructions, and scrolling past those would hide the
- * hint. So this keys off structure (is there a circuit defined above the
- * target?) rather than a flag somebody has to remember to set.
+ * The line the player's own work starts on, or `null` to open at the top.
+ * Skips past given parts (the full adder's half adder) but not past
+ * instructions in comments.
  */
 export function givenPreambleEnd(lines: string[]): number | null {
   const target = lines.findIndex((l) => l.startsWith('export default circuit('));
@@ -213,25 +147,17 @@ export function givenPreambleEnd(lines: string[]): number | null {
 
 function PlayLevelRoute() {
   const { level } = Route.useLoaderData();
-  // Mounted only once the client says this is a desktop, so a phone never
-  // boots Monaco or the sandbox for an editor it cannot show. The CSS gate
-  // still decides visibility, so desktop does not flash the notice first.
+  // Phones never mount the editor. The CSS gate handles what is visible.
   const isDesktop = useIsDesktop();
   return (
     <DesktopOnly fallback={<MobileNotice />}>
+      {/* Keyed so each level starts fresh; TanStack otherwise reuses the instance. */}
       {isDesktop ? <PlayLevel key={level.id} level={level} /> : null}
     </DesktopOnly>
   );
 }
 
-/**
- * What a crash looks like, instead of the router's default.
- *
- * TanStack's `CatchBoundary` renders "Something went wrong! Show Error", which
- * is what Google ended up indexing as the description of `/first-wire`. This
- * at least names the page and offers a way out; drafts live in localStorage,
- * so a reload costs the player nothing.
- */
+/** Replaces TanStack's "Something went wrong!", which Google indexed. */
 function LevelError() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center gap-4 px-6 text-center">
@@ -261,29 +187,11 @@ function LevelError() {
 function PlayLevel({ level }: { level: Level }) {
   const sandbox = useSandboxContext();
 
-  /**
-   * Open on the player's own work, falling back to the stub.
-   *
-   * Read in the initialiser rather than an effect, which is normally the wrong
-   * shape in a server-rendered app. It is safe here for a specific reason:
-   * Monaco renders a placeholder on the server and never puts `source` in the
-   * markup, so the server and client agree on the DOM whatever this returns.
-   * Seeding after mount would instead hand the editor the stub first and swap
-   * it, which flashes and, worse, makes the first change event carry the stub.
-   *
-   * The route remounts per level via `key`, so this runs again on every
-   * navigation rather than sticking on the level it first mounted with.
-   */
+  // Safe to read storage during render: Monaco never server-renders `source`.
   const [source, setSource] = useState(() => readDrafts()[level.id] ?? level.stub);
   const [result, setResult] = useState<GradeResult | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [specOpen, setSpecOpen] = useState(true);
-  /**
-   * The spec is a panel under the editor and canvas, not a sheet over them, so
-   * it never hides the bottom of either. `specOpen` drives it from the header
-   * button and from Submit; dragging the panel shut reports back through
-   * `onResize`, so the button's label stays true.
-   */
   const specPanel = usePanelRef();
   useEffect(() => {
     const panel = specPanel.current;
@@ -291,39 +199,18 @@ function PlayLevel({ level }: { level: Level }) {
     if (specOpen && panel.isCollapsed()) panel.expand();
     if (!specOpen && !panel.isCollapsed()) panel.collapse();
   }, [specOpen, specPanel]);
-  // Closing the completion dialog must not immediately reopen it, but a fresh
-  // submit should bring it back.
   const [completeDismissed, setCompleteDismissed] = useState(false);
 
-  /**
-   * The level's one-time explainer, opened after mount.
-   *
-   * Read in an effect rather than an initialiser for the reason the map route
-   * documents for its own storage-derived state: reading during render would
-   * either mismatch hydration or flash the dialog at someone who has already
-   * dismissed it.
-   */
+  // Opened in an effect, not during render, to avoid a hydration mismatch.
   const [introOpen, setIntroOpen] = useState(false);
 
-  /**
-   * The tour, which is also the game's front door: a level is a shareable URL,
-   * so a newcomer can land on any of them, and every level page has the same
-   * layout to walk round. "What is this?" bumps `tourReplays` to run it again,
-   * and arriving on `#tour` (the map's "What is this?") does the same.
-   */
+  // Bumped by "What is this?" and by arriving on `#tour` to replay the tour.
   const [tourReplays, setTourReplays] = useState(0);
 
-  /**
-   * The editor and canvas appear together, once, rather than in four steps.
-   *
-   * Left alone they each arrive on their own schedule: "Loading…" where the
-   * editor goes, then plain white code, then the colours, while the canvas
-   * draws its switches before the first simulation and restyles them after.
-   * Both stay transparent until the editor has painted in colour and the
-   * simulation has produced its first values, then fade in at once. The tour
-   * waits for this too, so it never lands on a half-built page.
-   */
+  // The editor and canvas each stay hidden until finished (coloured code, first
+  // simulated values), then fade in. These only ever go false → true.
   const [editorReady, setEditorReady] = useState(false);
+  const [canvasReady, setCanvasReady] = useState(false);
   const [timedOut, setTimedOut] = useState(false);
   useEffect(() => {
     const timer = window.setTimeout(() => setTimedOut(true), REVEAL_TIMEOUT_MS);
@@ -336,14 +223,12 @@ function PlayLevel({ level }: { level: Level }) {
     window.history.replaceState(null, '', window.location.pathname + window.location.search);
     setTourReplays((n) => n + 1);
   }, []);
-  // Set once below, after the preview it depends on. Held in state rather
-  // than derived so it latches: a later edit that breaks the circuit must not
-  // fade the page back out.
-  const [revealed, setRevealed] = useState(false);
+  const editorShown = editorReady || timedOut;
+  const canvasShown = canvasReady || timedOut;
+  const revealed = editorShown && canvasShown;
   const touring = useOnboardingTour(revealed && !introOpen, tourReplays);
 
-  // The level's own explainer waits for the tour, so a newcomer reads what
-  // Simten is before what this level is about, and nothing stacks.
+  // The level intro waits until the tour is over.
   useEffect(() => {
     if (!revealed || touring || !isOnboarded()) return;
     if (level.intro && !readSeenIntros().includes(level.id)) setIntroOpen(true);
@@ -354,14 +239,8 @@ function PlayLevel({ level }: { level: Level }) {
     setIntroOpen(false);
   }, [level.id]);
 
-  /**
-   * Store the draft, a beat after typing stops.
-   *
-   * Driven from the editor's change event rather than an effect watching
-   * `source`: an effect also fires on mount, which would write the stub over a
-   * real draft in the moment between seeding and reading it. Only an edit is a
-   * reason to save.
-   */
+  // Saved from the change event, not an effect on `source`, so mounting never
+  // writes the stub over a real draft.
   const pendingDraft = useRef<string | null>(null);
   const draftTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -378,8 +257,7 @@ function PlayLevel({ level }: { level: Level }) {
     [level.id],
   );
 
-  // Leaving the page mid-debounce must not cost the last few keystrokes, and
-  // clicking "Map" straight after typing is the obvious way to hit that.
+  // Flush a pending draft on leave, e.g. clicking "Map" straight after typing.
   useEffect(
     () => () => {
       if (!draftTimer.current) return;
@@ -389,72 +267,31 @@ function PlayLevel({ level }: { level: Level }) {
     [level.id],
   );
 
-  // Preview the circuit the source describes. Pinned to the level's target by
-  // name; the default picks the last circuit defined, which would follow a
-  // player's helper instead of their answer. Same reason the grader does it.
+  // Preview the level's target circuit, not a helper defined after it. Falls
+  // back to the last circuit so a misnamed target still draws.
   const select = useCallback(
     (circuits: { name: string }[]) =>
-      // Fall back to the last circuit defined when nothing carries the target
-      // name. Only grading depends on the name; taking away the diagram as
-      // well turned a rule into a punishment, with no explanation until Submit.
       circuits.find((c) => c.name === level.target) ?? circuits[circuits.length - 1],
     [level.target],
   );
 
-  // autoHarness wraps top-level ports in Switch/Led nodes, so the preview is
-  // playable (click a switch, watch the LED) before ever pressing Submit.
-  // Without it there is nothing to click and nothing to see: the canvas
-  // projection only walks `circuit.nodes`, so a level's inputs and outputs are
-  // not drawn at all and a one-gate answer renders as a gate with no wires.
-  //
-  // It is not a commitment. `autoHarness` returns the circuit untouched when it
-  // declares no top-level ports (auto-harness.ts:23), so a level that wants the
-  // raw internals shown just authors a self-contained circuit, with no flag to flip.
-  //
-  // The trade it does make: a circuit WITH ports renders as one `dut` box, so
-  // the player's own gates sit one level down. The canvas already supports
-  // getting there; the node reads "double-click to inspect".
+  // autoHarness adds clickable switches and LEDs for the circuit's ports.
   const preview = useCompiledCircuit(source, {
     slot: 'preview',
     select: select as never,
     autoHarness: true,
   });
 
-  // The canvas is ready once the first simulation has run, or once compiling
-  // has failed, since an error is a finished answer too.
-  const canvasReady = (preview.portValues?.size ?? 0) > 0 || preview.compileError !== null;
+  // A compile error counts as finished too.
+  const simulated = (preview.portValues?.size ?? 0) > 0 || preview.compileError !== null;
   useEffect(() => {
-    if ((editorReady && canvasReady) || timedOut) setRevealed(true);
-  }, [editorReady, canvasReady, timedOut]);
-  const fade = `transition-opacity duration-150 ${revealed ? 'opacity-100' : 'opacity-0'}`;
+    if (simulated) setCanvasReady(true);
+  }, [simulated]);
 
-  // On a solve, drive the player's own circuit through the truth table so the
-  // switches flip and the LED lights. The proof is the machine running.
   const victory = useVictoryRun(level.vectors, preview.setNodeValue, preview.tick);
 
-  /**
-   * Gates in the preview that this level forbids.
-   *
-   * The editor filter only removes the type declarations, so a disallowed gate
-   * is a red squiggle and nothing more; the sandbox still executes it, and the
-   * canvas happily drew a component the level bans. That left the diagram
-   * looking like the authority while Submit disagreed.
-   *
-   * Checked here rather than in the sandbox, which has no business knowing a
-   * level's rules: this is the grader's own function run against the preview,
-   * so the canvas and the verdict cannot give different answers.
-   */
-  /**
-   * The last circuit that used only permitted gates.
-   *
-   * While a forbidden gate is present the canvas shows this instead of the
-   * current netlist, so a banned gate simply never appears: no banner, no
-   * fanfare. The editor already squiggles it; the diagram just declines to
-   * pretend it is real, and stops updating until the gate is gone.
-   *
-   * A ref rather than state: it is a cache of a render output, and setting
-   * state from render to track it would just loop.
-   */
+  // The sandbox runs banned gates anyway, so the canvas keeps showing the last
+  // circuit without one. Same check as the grader, so the two never disagree.
   const lastPermitted = useRef<{
     circuit: typeof preview.circuit;
     library: typeof preview.componentLibrary;
@@ -468,8 +305,7 @@ function PlayLevel({ level }: { level: Level }) {
         level.allowed,
       );
     } catch {
-      // Mid-keystroke the netlist is often unelaboratable. That is the compile
-      // error's story to tell, not this one's.
+      // Half-typed netlists often fail to elaborate; the compile error covers it.
       return [];
     }
   }, [preview.circuit, preview.componentLibrary, level.allowed]);
@@ -477,9 +313,7 @@ function PlayLevel({ level }: { level: Level }) {
   if (forbidden.length === 0 && preview.circuit) {
     lastPermitted.current = { circuit: preview.circuit, library: preview.componentLibrary };
   }
-  // Forbidden with a good circuit behind it → keep showing that one. Forbidden
-  // with nothing behind it (a draft that arrived already broken) → show
-  // nothing, because the only alternative is drawing the banned gate.
+  // With no earlier good circuit, show nothing rather than the banned gate.
   const shown = forbidden.length > 0 ? lastPermitted.current : null;
   const canvasCircuit = shown ? shown.circuit : forbidden.length > 0 ? null : preview.circuit;
   const canvasLibrary = shown
@@ -494,12 +328,9 @@ function PlayLevel({ level }: { level: Level }) {
       const verdict = await grade(sandboxRuntime(sandbox), level, source);
       setResult(verdict);
       setCompleteDismissed(false);
-      // Submit is a request for a verdict, so show it; hidden, the spec panel
-      // swallowed both the failure message and the whole victory run.
+      // The verdict shows in the spec panel.
       setSpecOpen(true);
       if (verdict.status === 'pass') {
-        // The score, not the source. Nothing reads a passing snapshot yet, and
-        // the map only needs to know this level is done and what it cost.
         writeProgress(level.id, { gates: verdict.gates });
         victory.start();
       } else victory.reset();
@@ -508,7 +339,6 @@ function PlayLevel({ level }: { level: Level }) {
     }
   }, [sandbox, level, source, victory]);
 
-  /** Back to the level as it was handed over. The draft goes with it. */
   const onReset = useCallback(() => {
     if (draftTimer.current) {
       clearTimeout(draftTimer.current);
@@ -521,20 +351,10 @@ function PlayLevel({ level }: { level: Level }) {
     victory.reset();
   }, [level.id, level.stub, victory]);
 
-  // Surfaced as a Monaco squiggle rather than a panel note: the problem is on
-  // a specific line, and that is where someone is looking.
   const diagnostics = useMemo(() => nameDiagnostics(source, level.target), [source, level.target]);
 
-  /**
-   * Teach the editor only what this level permits, so a component you have not
-   * earned yet does not autocomplete and does not compile. The rule stops being
-   * something you discover by breaking it.
-   *
-   * `permittedFor` comes from the grader rather than a second list here: those are
-   * the pieces that carry no logic and never count toward par, which is exactly
-   * why they are absent from `allowed`. Filtering on `allowed` alone would leave
-   * every level unable to declare a `Switch`.
-   */
+  // Autocomplete only what this level allows. `permittedFor` adds the parts
+  // that are always free, like `Switch`.
   const intellisense = useMemo(
     () => ({
       globals: false,
@@ -553,11 +373,7 @@ function PlayLevel({ level }: { level: Level }) {
       <HeaderBar linkHome>
         <div className="h-5 w-px bg-border" />
         <span className="shrink-0 text-sm font-semibold text-foreground/80">{level.title}</span>
-        {/* The brief is read once and then ignored, so it belongs here rather
-            than occupying panel space for the rest of the level. */}
-        {/* The tagline, not the brief. This truncates, and a truncated problem
-            statement put a half-sentence of instructions in the first thing on
-            screen. The full brief is in the spec panel, under "Goal". */}
+        {/* The tagline, since this truncates. The full brief is in the spec panel. */}
         <p className="hidden truncate text-xs text-muted-foreground lg:block" title={level.tagline}>
           {level.tagline}
         </p>
@@ -579,8 +395,6 @@ function PlayLevel({ level }: { level: Level }) {
           >
             What is this?
           </button>
-          {/* The wordmark also goes back, but that is a convention rather than
-              a signpost, and this one says where it leads. */}
           <Link
             to="/"
             title="Back to the map"
@@ -590,10 +404,7 @@ function PlayLevel({ level }: { level: Level }) {
             <Network className="h-3.5 w-3.5 -rotate-90" />
             Map
           </Link>
-          {/* Drafts persist, so the stub is otherwise gone for good, and a
-              player who deletes half of a given preamble has no way back to a
-              level that compiles. Monaco keeps its undo stack across this, so
-              a misclick is one ⌘Z rather than a lost solution. */}
+          {/* Monaco keeps its undo stack, so a misclick is one ⌘Z. */}
           <button
             type="button"
             onClick={onReset}
@@ -606,9 +417,7 @@ function PlayLevel({ level }: { level: Level }) {
           <button
             type="button"
             onClick={() => setSpecOpen((v) => !v)}
-            // A floor wide enough for the longer of its two labels. Without it
-            // the button resizes as the word changes and shoves everything to
-            // its right along, which makes a toggle look like a layout bug.
+            // Fixed width so the label change doesn't shift the buttons beside it.
             className="min-w-[5.5rem] whitespace-nowrap rounded-md border border-border px-3 py-1.5 text-xs font-medium"
           >
             {specOpen ? 'Hide spec' : 'Show spec'}
@@ -628,28 +437,20 @@ function PlayLevel({ level }: { level: Level }) {
       </HeaderBar>
 
       <div className="min-h-0 flex-1">
-        {/*
-          Every panel here clips with `style`, not a class. react-resizable-
-          panels wraps each panel's content in a div whose inline style says
-          `overflow: auto`, which a class cannot beat. Left scrollable, that div
-          flashed scrollbars whenever a pane shrank: Monaco and the canvas
-          relayout a frame after their box changes size, and for that frame
-          they overflow it.
-        */}
+        {/* Panels clip via `style={CLIP}`: the library's inline `overflow: auto`
+            flashed scrollbars while Monaco and the canvas caught up on resize. */}
         <ResizablePanelGroup orientation="vertical">
           <ResizablePanel minSize="120px" style={CLIP}>
             <ResizablePanelGroup>
               <ResizablePanel defaultSize={45} minSize={20} className="flex flex-col" style={CLIP}>
-                <div data-tour="editor" className={`min-h-0 flex-1 ${fade}`}>
+                <div data-tour="editor" className={`min-h-0 flex-1 ${fadeIn(editorShown)}`}>
                   <SimtenCodeEditor
                     value={source}
                     onChange={(v) => {
                       const next = v ?? '';
                       setSource(next);
                       saveDraft(next);
-                      // A verdict describes the source that produced it, so an
-                      // edit retires both the verdict and any victory run still
-                      // sweeping.
+                      // An edit invalidates the verdict.
                       if (result) {
                         setResult(null);
                         victory.reset();
@@ -665,15 +466,9 @@ function PlayLevel({ level }: { level: Level }) {
                       const reveal = () => {
                         if (at !== null) ed.revealLineNearTop(at, 0);
                       };
-                      // Stubs keep the parts they hand over in one `#region`.
-                      // Fold it, so the level opens on what the player writes;
-                      // the arrow beside it expands the parts to read. Monaco
-                      // works out the regions after mount, so folding straight
-                      // away finds none: wait for the first decorations pass,
-                      // which is when the fold markers exist.
+                      // Fold the given parts (`#region`). Monaco finds regions
+                      // after mount, so wait for the first decorations pass.
                       const fold = ed.getAction('editor.foldAllMarkerRegions');
-                      // With its parts folded a stub is short, and its top is
-                      // the explanation: open there rather than scrolling past.
                       const folds = ed.getModel()?.getValue().includes('// #region') ?? false;
                       if (!fold || !folds) {
                         reveal();
@@ -701,38 +496,23 @@ function PlayLevel({ level }: { level: Level }) {
                     }}
                   />
                 </div>
-                {/* Diagnostics live under the editor, never over the canvas; a
-              parse error mid-keystroke must not blank the diagram. A forbidden
-              gate is the same class of message, so it lands here too: the
-              canvas keeps showing the last circuit that compiled, which is
-              what you want while you are still typing. */}
+                {/* Errors go here, not over the canvas, so the diagram survives typos. */}
                 {preview.compileError && <ErrorDisplay error={preview.compileError} />}
               </ResizablePanel>
 
               <ResizableHandle withHandle />
 
               <ResizablePanel defaultSize={55} minSize={20} style={CLIP}>
-                <div data-tour="canvas" className={`h-full ${fade}`}>
+                <div data-tour="canvas" className={`h-full ${fadeIn(canvasShown)}`}>
                   <CircuitCanvas
                     circuit={canvasCircuit}
                     componentLibrary={canvasLibrary ?? undefined}
                     portValues={preview.portValues}
                     showControls
-                    // The diagram has to answer "what is this port called", because
-                    // the code demands the exact name and nothing else on screen
-                    // supplies it. Unlabelled circles leave a beginner guessing at
-                    // `.out` and `.in` with the answer sitting right in front of
-                    // them. Always on here rather than a toggle: levels are three to
-                    // six nodes, so there is no clutter to trade against, and someone
-                    // stuck on a port name will not go hunting for a display option.
+                    // The code needs exact port names; this is where players find them.
                     showPortLabels
-                    // Re-lay out on every change. The default only re-runs the
-                    // layout when nodes appear or disappear, so adding the last
-                    // wire, which changes no nodes, left the lamp where it had
-                    // been while unconnected.
+                    // The default only re-lays out when nodes change, not wires.
                     autoLayout
-                    // The harness switches are clickable, so the player can drive
-                    // their own circuit and see it light up before submitting.
                     onToggleNode={preview.toggleNode}
                     onSetNodeValue={preview.setNodeValue}
                     renderEmptyState={() => (
@@ -754,11 +534,9 @@ function PlayLevel({ level }: { level: Level }) {
             minSize="96px"
             maxSize="50%"
             collapsible
-            // Keeps its height when the window resizes; the editor and canvas
-            // take the difference.
             groupResizeBehavior="preserve-pixel-size"
+            // Dragging it shut keeps the header button's label in sync.
             onResize={(size) => setSpecOpen(size.inPixels > 0)}
-            // The spec scrolls itself; this would add a second scrollbar.
             style={CLIP}
           >
             <section aria-label="Level spec" className="h-full bg-background">
@@ -767,7 +545,6 @@ function PlayLevel({ level }: { level: Level }) {
                 result={result}
                 activeRow={victory.active}
                 provenRows={victory.proven}
-                // Grading, then the green sweep through the table on a pass.
                 checking={submitting || (result?.status === 'pass' && !victory.complete)}
               />
             </section>
@@ -775,21 +552,8 @@ function PlayLevel({ level }: { level: Level }) {
         </ResizablePanelGroup>
       </div>
 
-      {/*
-        A clock, when the player's circuit has one.
-
-        Gated on `preview.isSequential` rather than `level.sequential`, the same
-        way `/circuit` does it: the question is whether the circuit on screen
-        has state, not whether the level expects one. A player reaching for a
-        flip-flop early gets the controls, and a sequential level opened on a
-        blank stub does not get an inert row of buttons.
-
-        It sits at the foot of the page, under the spec panel.
-
-        Without any of this the Toggle level has nothing to interact with at
-        all. It declares no inputs, so there is not one switch to click, and the
-        circuit could only be observed by solving it.
-      */}
+      {/* Keyed off the circuit on screen, not the level, so an early flip-flop
+          gets controls and a blank sequential stub doesn't. */}
       {preview.isSequential && (
         <div
           className="flex shrink-0 items-center border-t border-border bg-card/95 px-3"
@@ -820,8 +584,7 @@ function PlayLevel({ level }: { level: Level }) {
 
       {result?.status === 'pass' && (
         <LevelComplete
-          // Held back until the victory run has finished demonstrating the
-          // circuit: the run is the proof, this is the receipt.
+          // Waits for the victory run to finish.
           open={victory.complete && !completeDismissed}
           onOpenChange={(o) => setCompleteDismissed(!o)}
           level={level}
