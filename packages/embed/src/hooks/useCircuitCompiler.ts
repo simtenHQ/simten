@@ -145,9 +145,17 @@ export function useCircuitCompiler(
 
   const compile = useCallback(() => run(false), [run]);
 
+  // Debounce edits, not the first compile: there's no typing to wait out yet.
+  const compiledOnce = useRef(false);
   useEffect(() => {
     if (!autoCompile || !source.trim()) return;
-    const timer = setTimeout(() => void run(false), debounceMs);
+    const timer = setTimeout(
+      () => {
+        compiledOnce.current = true;
+        void run(false);
+      },
+      compiledOnce.current ? debounceMs : 0,
+    );
     return () => clearTimeout(timer);
   }, [source, autoCompile, debounceMs, run]);
 
