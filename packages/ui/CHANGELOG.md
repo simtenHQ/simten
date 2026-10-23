@@ -1,5 +1,16 @@
 # @simten/ui
 
+## 0.16.0
+
+### Minor Changes
+
+- 665fd13: Add `preloadMonaco()` to `@simten/ui/monaco`, to start downloading Monaco before an editor mounts.
+
+### Patch Changes
+
+- afe7b5d: `SimtenCodeEditor` now defaults to `wordWrap: 'on'`, `tabSize: 2` and `fixedOverflowWidgets: true`.
+- f706719: `SimtenCodeEditor` no longer pops up parameter hints automatically, so the signature box stops covering completions inside calls like `.to(...)`. Cmd/Ctrl+Shift+Space still shows them.
+
 ## 0.15.6
 
 ### Patch Changes
