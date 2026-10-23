@@ -169,7 +169,7 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 	defer cancel()
 
 	compileCmd := exec.CommandContext(ctx, "iverilog", "-o", simPath, dutPath, tbPath)
-	compileOut, compileErr := compileCmd.CombinedOutput()
+	compileOut, compileErr := cappedCombinedOutput(compileCmd)
 
 	if compileErr != nil {
 		writeJSON(w, http.StatusOK, VerifyResponse{
@@ -188,7 +188,7 @@ func verifyHandler(w http.ResponseWriter, r *http.Request) {
 	// Run vvp from the temp dir so any $dumpfile path the testbench emits
 	// (e.g. "verify.vcd") lands inside `dir` where we can read it back.
 	simCmd.Dir = dir
-	simOut, simErr := simCmd.CombinedOutput()
+	simOut, simErr := cappedCombinedOutput(simCmd)
 	simOutput := string(simOut)
 
 	if simErr != nil {
