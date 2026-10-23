@@ -565,7 +565,7 @@ func synthHandler(w http.ResponseWriter, r *http.Request) {
 
 	cmd := exec.CommandContext(ctx, "yosys", "-p", script)
 	cmd.Dir = dir // so $readmemh relative paths resolve correctly
-	out, err := cmd.CombinedOutput()
+	out, err := cappedCombinedOutput(cmd)
 	yosysLog := string(out)
 
 	if ctx.Err() == context.DeadlineExceeded {
@@ -768,7 +768,7 @@ func buildHandler(w http.ResponseWriter, r *http.Request) {
 
 	cmd := exec.CommandContext(ctx, "nextpnr-ecp5", args...)
 	cmd.Dir = dir
-	out, err := cmd.CombinedOutput()
+	out, err := cappedCombinedOutput(cmd)
 	fullLog.Write(out)
 	nextpnrLog := fullLog.String()
 
@@ -795,7 +795,7 @@ func buildHandler(w http.ResponseWriter, r *http.Request) {
 	bitPath := filepath.Join(dir, "output.bit")
 	ecpCmd := exec.Command("ecppack", "--compress", "--input", configPath, "--bit", bitPath)
 	ecpCmd.Dir = dir
-	ecpOut, ecpErr := ecpCmd.CombinedOutput()
+	ecpOut, ecpErr := cappedCombinedOutput(ecpCmd)
 	fullLog.Write(ecpOut)
 	combinedLog := fullLog.String()
 

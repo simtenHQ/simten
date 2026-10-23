@@ -162,7 +162,7 @@ func buildCrt0(ctx context.Context, dir string) (string, error) {
 		"-o", crt0Obj,
 		crt0Asm,
 	)
-	out, err := cmd.CombinedOutput()
+	out, err := cappedCombinedOutput(cmd)
 	if err != nil {
 		return "", fmt.Errorf("failed to assemble crt0.S: %s", string(out))
 	}
@@ -234,7 +234,7 @@ func compileGCC(w http.ResponseWriter, source string, lang string, ls string, di
 	}
 
 	compileCmd := exec.CommandContext(ctx, compiler, args...)
-	compileOut, compileErr := compileCmd.CombinedOutput()
+	compileOut, compileErr := cappedCombinedOutput(compileCmd)
 
 	if compileCmd.ProcessState != nil && !compileCmd.ProcessState.Success() {
 		writeJSON(w, http.StatusOK, CompileResponse{
@@ -321,7 +321,7 @@ func compileRust(w http.ResponseWriter, source string, ls string, disassemble bo
 		"-o", elfFile,
 		srcFile,
 	)
-	compileOut, compileErr := compileCmd.CombinedOutput()
+	compileOut, compileErr := cappedCombinedOutput(compileCmd)
 
 	if compileCmd.ProcessState != nil && !compileCmd.ProcessState.Success() {
 		writeJSON(w, http.StatusOK, CompileResponse{
@@ -373,7 +373,7 @@ func extractBinary(ctx context.Context, elfFile, binFile string) ([]byte, error)
 		"-O", "binary",
 		elfFile, binFile,
 	)
-	objcopyOut, objcopyErr := objcopyCmd.CombinedOutput()
+	objcopyOut, objcopyErr := cappedCombinedOutput(objcopyCmd)
 
 	if objcopyErr != nil {
 		return nil, fmt.Errorf("objcopy failed: %s", string(objcopyOut))
@@ -430,7 +430,7 @@ func compileASM(w http.ResponseWriter, source string, disassemble bool) {
 		"-o", objFile,
 		srcFile,
 	)
-	asmOut, asmErr := asmCmd.CombinedOutput()
+	asmOut, asmErr := cappedCombinedOutput(asmCmd)
 
 	if asmErr != nil {
 		writeJSON(w, http.StatusOK, CompileResponse{
@@ -445,7 +445,7 @@ func compileASM(w http.ResponseWriter, source string, disassemble bool) {
 		"-O", "binary",
 		objFile, binFile,
 	)
-	objcopyOut, objcopyErr := objcopyCmd.CombinedOutput()
+	objcopyOut, objcopyErr := cappedCombinedOutput(objcopyCmd)
 
 	if objcopyErr != nil {
 		writeJSON(w, http.StatusOK, CompileResponse{
