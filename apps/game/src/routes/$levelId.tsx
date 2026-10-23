@@ -16,6 +16,7 @@ import { CircuitCanvas } from '@simten/ui/canvas';
 import { ClockControls, DEFAULT_SPEED } from '@simten/ui/editor/components';
 import {
   buildGlobalsFor,
+  preloadMonaco,
   registerSimtenThemes,
   SIMTEN_DARK,
   SimtenCodeEditor,
@@ -81,11 +82,48 @@ const CLOCK_BAR_PX = 40;
 /** Why the panels clip with an inline style: see the panel layout below. */
 const CLIP = { overflow: 'hidden' } as const;
 
+/**
+ * The longest the editor and canvas stay hidden waiting for each other. Past
+ * this, whatever is ready shows, so a slow CDN or a stuck sandbox costs a
+ * moment of pop-in rather than a blank page.
+ */
+const REVEAL_TIMEOUT_MS = 2500;
+
+/**
+ * Calls `done` once Monaco has painted the code in colour.
+ *
+ * Monaco draws the text before its TypeScript tokenizer has loaded, so for a
+ * frame or two every line is plain `mtk1`. Revealing on mount showed exactly
+ * that: white code that turned colourful a moment later. Every stub opens with
+ * a comment, so a token in any other class means the colours have arrived.
+ */
+function onFirstColour(dom: HTMLElement | null, done: () => void): () => void {
+  if (!dom) {
+    done();
+    return () => {};
+  }
+  const coloured = () => dom.querySelector('.view-lines span[class^="mtk"]:not(.mtk1)') !== null;
+  if (coloured()) {
+    done();
+    return () => {};
+  }
+  const observer = new MutationObserver(() => {
+    if (!coloured()) return;
+    observer.disconnect();
+    done();
+  });
+  observer.observe(dom, { childList: true, subtree: true, attributes: true });
+  return () => observer.disconnect();
+}
+
 export const Route = createFileRoute('/$levelId')({
   staticData: { skipDefaultChrome: true },
   loader: ({ params }) => {
     const level = LEVELS_BY_ID.get(params.levelId);
     if (!level) throw notFound();
+    // Arriving from the map, this starts Monaco downloading while the level's
+    // own code is still loading, rather than after it has rendered.
+    preloadMonaco();
     return { level };
   },
   /**
@@ -123,6 +161,14 @@ export const Route = createFileRoute('/$levelId')({
       // No canonical: it picks which of several addresses for one page should
       // be indexed, which contradicts the `noindex` above. Google's guidance
       // is not to send both.
+      //
+      // Monaco and the TypeScript worker come from jsDelivr. Opening the
+      // connection now takes the DNS and TLS handshake off the editor's path.
+      // Both modes, because Monaco loads classic scripts and modules from it.
+      links: [
+        { rel: 'preconnect', href: 'https://cdn.jsdelivr.net' },
+        { rel: 'preconnect', href: 'https://cdn.jsdelivr.net', crossOrigin: 'anonymous' },
+      ],
     };
   },
   component: PlayLevelRoute,
@@ -266,19 +312,42 @@ function PlayLevel({ level }: { level: Level }) {
    * and arriving on `#tour` (the map's "What is this?") does the same.
    */
   const [tourReplays, setTourReplays] = useState(0);
+
+  /**
+   * The editor and canvas appear together, once, rather than in four steps.
+   *
+   * Left alone they each arrive on their own schedule: "Loading…" where the
+   * editor goes, then plain white code, then the colours, while the canvas
+   * draws its switches before the first simulation and restyles them after.
+   * Both stay transparent until the editor has painted in colour and the
+   * simulation has produced its first values, then fade in at once. The tour
+   * waits for this too, so it never lands on a half-built page.
+   */
+  const [editorReady, setEditorReady] = useState(false);
+  const [timedOut, setTimedOut] = useState(false);
+  useEffect(() => {
+    const timer = window.setTimeout(() => setTimedOut(true), REVEAL_TIMEOUT_MS);
+    return () => window.clearTimeout(timer);
+  }, []);
+  const stopWatchingColour = useRef<() => void>(() => {});
+  useEffect(() => () => stopWatchingColour.current(), []);
   useEffect(() => {
     if (window.location.hash !== '#tour') return;
     window.history.replaceState(null, '', window.location.pathname + window.location.search);
     setTourReplays((n) => n + 1);
   }, []);
-  const touring = useOnboardingTour(!introOpen, tourReplays);
+  // Set once below, after the preview it depends on. Held in state rather
+  // than derived so it latches: a later edit that breaks the circuit must not
+  // fade the page back out.
+  const [revealed, setRevealed] = useState(false);
+  const touring = useOnboardingTour(revealed && !introOpen, tourReplays);
 
   // The level's own explainer waits for the tour, so a newcomer reads what
   // Simten is before what this level is about, and nothing stacks.
   useEffect(() => {
-    if (touring || !isOnboarded()) return;
+    if (!revealed || touring || !isOnboarded()) return;
     if (level.intro && !readSeenIntros().includes(level.id)) setIntroOpen(true);
-  }, [level.id, level.intro, touring]);
+  }, [level.id, level.intro, revealed, touring]);
 
   const dismissIntro = useCallback(() => {
     markIntroSeen(level.id);
@@ -350,6 +419,14 @@ function PlayLevel({ level }: { level: Level }) {
     select: select as never,
     autoHarness: true,
   });
+
+  // The canvas is ready once the first simulation has run, or once compiling
+  // has failed, since an error is a finished answer too.
+  const canvasReady = (preview.portValues?.size ?? 0) > 0 || preview.compileError !== null;
+  useEffect(() => {
+    if ((editorReady && canvasReady) || timedOut) setRevealed(true);
+  }, [editorReady, canvasReady, timedOut]);
+  const fade = `transition-opacity duration-150 ${revealed ? 'opacity-100' : 'opacity-0'}`;
 
   // On a solve, drive the player's own circuit through the truth table so the
   // switches flip and the LED lights. The proof is the machine running.
@@ -563,7 +640,7 @@ function PlayLevel({ level }: { level: Level }) {
           <ResizablePanel minSize="120px" style={CLIP}>
             <ResizablePanelGroup>
               <ResizablePanel defaultSize={45} minSize={20} className="flex flex-col" style={CLIP}>
-                <div data-tour="editor" className="min-h-0 flex-1">
+                <div data-tour="editor" className={`min-h-0 flex-1 ${fade}`}>
                   <SimtenCodeEditor
                     value={source}
                     onChange={(v) => {
@@ -581,6 +658,9 @@ function PlayLevel({ level }: { level: Level }) {
                     diagnostics={diagnostics}
                     intellisense={intellisense}
                     onMount={(ed) => {
+                      stopWatchingColour.current = onFirstColour(ed.getDomNode(), () =>
+                        setEditorReady(true),
+                      );
                       const at = givenPreambleEnd(ed.getModel()?.getLinesContent() ?? []);
                       const reveal = () => {
                         if (at !== null) ed.revealLineNearTop(at, 0);
@@ -632,7 +712,7 @@ function PlayLevel({ level }: { level: Level }) {
               <ResizableHandle withHandle />
 
               <ResizablePanel defaultSize={55} minSize={20} style={CLIP}>
-                <div data-tour="canvas" className="h-full">
+                <div data-tour="canvas" className={`h-full ${fade}`}>
                   <CircuitCanvas
                     circuit={canvasCircuit}
                     componentLibrary={canvasLibrary ?? undefined}

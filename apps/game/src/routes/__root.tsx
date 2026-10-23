@@ -3,6 +3,7 @@ import { TanStackDevtools } from '@tanstack/react-devtools';
 import { createRootRoute, HeadContent, Scripts, useMatches } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
 import Header from '../components/Header';
+import { NEWCOMER_REDIRECT_SCRIPT } from '../game/newcomer';
 
 import appCss from '../styles.css?url';
 
@@ -76,7 +77,11 @@ function RootDocument({ children }: { children: React.ReactNode }) {
     // Dark by default, matching simten.dev/circuit.
     <html lang="en" className="dark" suppressHydrationWarning>
       <head>
-        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+        {/* Ahead of HeadContent, so a redirect fires before the stylesheet or
+            any preload is requested. */}
+        <script
+          dangerouslySetInnerHTML={{ __html: NEWCOMER_REDIRECT_SCRIPT + THEME_INIT_SCRIPT }}
+        />
         <HeadContent />
       </head>
       <body className="font-sans antialiased">

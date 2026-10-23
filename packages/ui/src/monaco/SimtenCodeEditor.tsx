@@ -6,7 +6,7 @@
  * instance and just want it configured.
  */
 
-import Editor, { type EditorProps, type Monaco, type OnMount } from '@monaco-editor/react';
+import Editor, { type EditorProps, loader, type Monaco, type OnMount } from '@monaco-editor/react';
 import type { editor } from 'monaco-editor';
 import { type Ref, useCallback, useEffect, useImperativeHandle, useState } from 'react';
 import { type IntellisenseOptions, setupSimtenIntellisense } from './setup';
@@ -73,6 +73,21 @@ export interface SimtenCodeEditorProps
   diagnostics?: SimtenDiagnostic[];
   /** React 19 imperative handle. */
   ref?: Ref<SimtenCodeEditorHandle>;
+}
+
+/**
+ * Start downloading Monaco before an editor mounts.
+ *
+ * The editor only asks for Monaco once it renders, so the download (most of a
+ * megabyte from the CDN) starts last. Call this as soon as you know an editor
+ * is coming. It goes through this package's own copy of the loader, which the
+ * editor shares, so Monaco is still fetched once. Repeat calls are free.
+ */
+export function preloadMonaco(): void {
+  if (typeof window === 'undefined') return;
+  loader.init().catch(() => {
+    // The editor's own init reports a failed load; nothing to add here.
+  });
 }
 
 function severityOf(monaco: Monaco, s: SimtenDiagnostic['severity']): number {

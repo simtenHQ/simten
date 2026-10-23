@@ -19,6 +19,7 @@
 
 export { buildGlobalsFor, knownGlobalNames } from './globals-subset';
 export {
+  preloadMonaco,
   SimtenCodeEditor,
   type SimtenCodeEditorHandle,
   type SimtenCodeEditorProps,
