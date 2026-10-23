@@ -486,14 +486,6 @@ function PlayLevel({ level }: { level: Level }) {
                     }}
                     beforeMount={registerSimtenThemes}
                     theme={SIMTEN_DARK}
-                    options={{
-                      minimap: { enabled: false },
-                      fontSize: 13,
-                      scrollBeyondLastLine: false,
-                      wordWrap: 'on',
-                      tabSize: 2,
-                      fixedOverflowWidgets: true,
-                    }}
                   />
                 </div>
                 {/* Errors go here, not over the canvas, so the diagram survives typos. */}
