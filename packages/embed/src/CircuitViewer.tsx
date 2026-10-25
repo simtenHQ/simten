@@ -61,7 +61,7 @@ export interface CircuitViewerProps<C extends BuiltCircuit = BuiltCircuit> {
   theme?: 'light' | 'dark';
   /** Focus on specific node(s) */
   focus?: string | string[];
-  /** Show port labels on nodes */
+  /** Show port labels on nodes. @default true */
   showPortLabels?: boolean;
   /** Callback when a port is clicked */
   onPortClick?: (nodeLabel: string, portName: string, portType: 'input' | 'output') => void;

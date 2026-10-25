@@ -11,12 +11,14 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
+  useStore,
   useUpdateNodeInternals,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
 import type { Circuit, CircuitLibrary, FlatPortValueMap, FlatSequentialState } from '@simten/core';
 import React, {
+  type CSSProperties,
   type ReactNode,
   useCallback,
   useLayoutEffect,
@@ -125,6 +127,11 @@ export interface CircuitCanvasProps {
   nodeTypes?: NodeTypes;
   edgeTypes?: EdgeTypes;
   showControls?: boolean;
+  /**
+   * Name each pin on the node. Hidden while zoomed out too far to read, and on
+   * the harness switches and LEDs, which are named after the port they drive.
+   * @default true
+   */
   showPortLabels?: boolean;
   onPortClick?: (nodeLabel: string, portName: string, portType: 'input' | 'output') => void;
   glowUnconnected?: boolean;
@@ -158,6 +165,9 @@ function getDefaultLibrary(): CircuitLibrary {
   return _defaultLibrary;
 }
 
+/** Below this zoom an 11px pin label is too small to read, so the canvas drops them. */
+const PIN_LABEL_MIN_ZOOM = 0.35;
+
 function CircuitCanvasInner({
   circuit,
   componentLibrary,
@@ -178,7 +188,7 @@ function CircuitCanvasInner({
   nodeTypes: nodeTypesOverride,
   edgeTypes: edgeTypesOverride,
   showControls = true,
-  showPortLabels,
+  showPortLabels = true,
   onPortClick: onPortClickProp,
   glowUnconnected,
   theme: themeProp,
@@ -188,6 +198,8 @@ function CircuitCanvasInner({
   const detectedTheme = useDetectTheme();
   const theme = themeProp ?? detectedTheme;
   const isMobile = useIsMobile();
+  // A boolean, so zooming only re-renders the canvas when it crosses the line.
+  const pinLabelsReadable = useStore((s) => s.transform[2] >= PIN_LABEL_MIN_ZOOM);
   const resolvedNodeTypes = nodeTypesOverride ?? NODE_TYPES;
   const resolvedEdgeTypes = edgeTypesOverride ?? EDGE_TYPES;
   const library = componentLibrary ?? getDefaultLibrary();
@@ -487,7 +499,9 @@ function CircuitCanvasInner({
     <div
       data-embed-theme={theme}
       className={`bg-[var(--embed-bg-primary)] overflow-hidden relative ${className ?? ''}`}
-      style={{ height }}
+      style={
+        { height, '--simten-pin-labels': pinLabelsReadable ? 'block' : 'none' } as CSSProperties
+      }
       aria-label="Circuit diagram"
     >
       <ReactFlow
