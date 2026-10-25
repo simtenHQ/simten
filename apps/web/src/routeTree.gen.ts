@@ -9,50 +9,40 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as TermsRouteImport } from './routes/terms'
-import { Route as PrivacyRouteImport } from './routes/privacy'
-import { Route as CircuitRouteImport } from './routes/circuit'
-import { Route as BlogRouteImport } from './routes/blog'
 import { Route as IndexRouteImport } from './routes/index'
-import { Route as LearnIndexRouteImport } from './routes/learn/index'
-import { Route as CpuIndexRouteImport } from './routes/cpu/index'
-import { Route as BlogIndexRouteImport } from './routes/blog/index'
-import { Route as LearnRegistersRouteImport } from './routes/learn/registers'
-import { Route as LearnAddersRouteImport } from './routes/learn/adders'
-import { Route as LearnAbstractionRouteImport } from './routes/learn/abstraction'
-import { Route as DocsSplatRouteImport } from './routes/docs/$'
-import { Route as CpuRv32iRouteImport } from './routes/cpu/rv32i'
-import { Route as CircuitEncodedRouteImport } from './routes/circuit_.$encoded'
-import { Route as BlogSynthInHardwareRouteImport } from './routes/blog/synth-in-hardware'
-import { Route as BlogSortingNetworksRouteImport } from './routes/blog/sorting-networks'
-import { Route as BlogSnakeInHardwareRouteImport } from './routes/blog/snake-in-hardware'
-import { Route as BlogRv32iCpuRouteImport } from './routes/blog/rv32i-cpu'
-import { Route as BlogPongInHardwareRouteImport } from './routes/blog/pong-in-hardware'
-import { Route as BlogHowTpusWorkRouteImport } from './routes/blog/how-tpus-work'
-import { Route as BlogHowNetworkSwitchesWorkRouteImport } from './routes/blog/how-network-switches-work'
-import { Route as BlogFromNandTo6502RouteImport } from './routes/blog/from-nand-to-6502'
-import { Route as BlogCrc32InHardwareRouteImport } from './routes/blog/crc32-in-hardware'
-import { Route as BlogComputingTrigInHardwareRouteImport } from './routes/blog/computing-trig-in-hardware'
-import { Route as BlogChacha20InHardwareRouteImport } from './routes/blog/chacha20-in-hardware'
-import { Route as BlogBreakoutInHardwareRouteImport } from './routes/blog/breakout-in-hardware'
-import { Route as BlogAesInHardwareRouteImport } from './routes/blog/aes-in-hardware'
-import { Route as BlogSplatRouteImport } from './routes/blog/$'
+import { Route as BlogRouteImport } from './routes/blog'
+import { Route as CircuitRouteImport } from './routes/circuit'
+import { Route as PrivacyRouteImport } from './routes/privacy'
+import { Route as TermsRouteImport } from './routes/terms'
 import { Route as ApiSearchRouteImport } from './routes/api/search'
+import { Route as BlogIndexRouteImport } from './routes/blog/index'
+import { Route as BlogSplatRouteImport } from './routes/blog/$'
+import { Route as BlogAesInHardwareRouteImport } from './routes/blog/aes-in-hardware'
+import { Route as BlogBreakoutInHardwareRouteImport } from './routes/blog/breakout-in-hardware'
+import { Route as BlogChacha20InHardwareRouteImport } from './routes/blog/chacha20-in-hardware'
+import { Route as BlogComputingTrigInHardwareRouteImport } from './routes/blog/computing-trig-in-hardware'
+import { Route as BlogCrc32InHardwareRouteImport } from './routes/blog/crc32-in-hardware'
+import { Route as BlogFromNandTo6502RouteImport } from './routes/blog/from-nand-to-6502'
+import { Route as BlogHowNetworkSwitchesWorkRouteImport } from './routes/blog/how-network-switches-work'
+import { Route as BlogHowTpusWorkRouteImport } from './routes/blog/how-tpus-work'
+import { Route as BlogPongInHardwareRouteImport } from './routes/blog/pong-in-hardware'
+import { Route as BlogRv32iCpuRouteImport } from './routes/blog/rv32i-cpu'
+import { Route as BlogSnakeInHardwareRouteImport } from './routes/blog/snake-in-hardware'
+import { Route as BlogSortingNetworksRouteImport } from './routes/blog/sorting-networks'
+import { Route as BlogSynthInHardwareRouteImport } from './routes/blog/synth-in-hardware'
+import { Route as CircuitEncodedRouteImport } from './routes/circuit_.$encoded'
+import { Route as CpuIndexRouteImport } from './routes/cpu/index'
+import { Route as CpuRv32iRouteImport } from './routes/cpu/rv32i'
+import { Route as DocsSplatRouteImport } from './routes/docs/$'
+import { Route as LearnIndexRouteImport } from './routes/learn/index'
+import { Route as LearnAbstractionRouteImport } from './routes/learn/abstraction'
+import { Route as LearnAddersRouteImport } from './routes/learn/adders'
+import { Route as LearnRegistersRouteImport } from './routes/learn/registers'
 import { Route as CircuitSHashRouteImport } from './routes/circuit_.s.$hash'
 
-const TermsRoute = TermsRouteImport.update({
-  id: '/terms',
-  path: '/terms',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const PrivacyRoute = PrivacyRouteImport.update({
-  id: '/privacy',
-  path: '/privacy',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CircuitRoute = CircuitRouteImport.update({
-  id: '/circuit',
-  path: '/circuit',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogRoute = BlogRouteImport.update({
@@ -60,19 +50,24 @@ const BlogRoute = BlogRouteImport.update({
   path: '/blog',
   getParentRoute: () => rootRouteImport,
 } as any)
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const CircuitRoute = CircuitRouteImport.update({
+  id: '/circuit',
+  path: '/circuit',
   getParentRoute: () => rootRouteImport,
 } as any)
-const LearnIndexRoute = LearnIndexRouteImport.update({
-  id: '/learn/',
-  path: '/learn/',
+const PrivacyRoute = PrivacyRouteImport.update({
+  id: '/privacy',
+  path: '/privacy',
   getParentRoute: () => rootRouteImport,
 } as any)
-const CpuIndexRoute = CpuIndexRouteImport.update({
-  id: '/cpu/',
-  path: '/cpu/',
+const TermsRoute = TermsRouteImport.update({
+  id: '/terms',
+  path: '/terms',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiSearchRoute = ApiSearchRouteImport.update({
+  id: '/api/search',
+  path: '/api/search',
   getParentRoute: () => rootRouteImport,
 } as any)
 const BlogIndexRoute = BlogIndexRouteImport.update({
@@ -80,80 +75,24 @@ const BlogIndexRoute = BlogIndexRouteImport.update({
   path: '/',
   getParentRoute: () => BlogRoute,
 } as any)
-const LearnRegistersRoute = LearnRegistersRouteImport.update({
-  id: '/learn/registers',
-  path: '/learn/registers',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LearnAddersRoute = LearnAddersRouteImport.update({
-  id: '/learn/adders',
-  path: '/learn/adders',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const LearnAbstractionRoute = LearnAbstractionRouteImport.update({
-  id: '/learn/abstraction',
-  path: '/learn/abstraction',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const DocsSplatRoute = DocsSplatRouteImport.update({
-  id: '/docs/$',
-  path: '/docs/$',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CpuRv32iRoute = CpuRv32iRouteImport.update({
-  id: '/cpu/rv32i',
-  path: '/cpu/rv32i',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const CircuitEncodedRoute = CircuitEncodedRouteImport.update({
-  id: '/circuit_/$encoded',
-  path: '/circuit/$encoded',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const BlogSynthInHardwareRoute = BlogSynthInHardwareRouteImport.update({
-  id: '/synth-in-hardware',
-  path: '/synth-in-hardware',
+const BlogSplatRoute = BlogSplatRouteImport.update({
+  id: '/$',
+  path: '/$',
   getParentRoute: () => BlogRoute,
 } as any)
-const BlogSortingNetworksRoute = BlogSortingNetworksRouteImport.update({
-  id: '/sorting-networks',
-  path: '/sorting-networks',
+const BlogAesInHardwareRoute = BlogAesInHardwareRouteImport.update({
+  id: '/aes-in-hardware',
+  path: '/aes-in-hardware',
   getParentRoute: () => BlogRoute,
 } as any)
-const BlogSnakeInHardwareRoute = BlogSnakeInHardwareRouteImport.update({
-  id: '/snake-in-hardware',
-  path: '/snake-in-hardware',
+const BlogBreakoutInHardwareRoute = BlogBreakoutInHardwareRouteImport.update({
+  id: '/breakout-in-hardware',
+  path: '/breakout-in-hardware',
   getParentRoute: () => BlogRoute,
 } as any)
-const BlogRv32iCpuRoute = BlogRv32iCpuRouteImport.update({
-  id: '/rv32i-cpu',
-  path: '/rv32i-cpu',
-  getParentRoute: () => BlogRoute,
-} as any)
-const BlogPongInHardwareRoute = BlogPongInHardwareRouteImport.update({
-  id: '/pong-in-hardware',
-  path: '/pong-in-hardware',
-  getParentRoute: () => BlogRoute,
-} as any)
-const BlogHowTpusWorkRoute = BlogHowTpusWorkRouteImport.update({
-  id: '/how-tpus-work',
-  path: '/how-tpus-work',
-  getParentRoute: () => BlogRoute,
-} as any)
-const BlogHowNetworkSwitchesWorkRoute =
-  BlogHowNetworkSwitchesWorkRouteImport.update({
-    id: '/how-network-switches-work',
-    path: '/how-network-switches-work',
-    getParentRoute: () => BlogRoute,
-  } as any)
-const BlogFromNandTo6502Route = BlogFromNandTo6502RouteImport.update({
-  id: '/from-nand-to-6502',
-  path: '/from-nand-to-6502',
-  getParentRoute: () => BlogRoute,
-} as any)
-const BlogCrc32InHardwareRoute = BlogCrc32InHardwareRouteImport.update({
-  id: '/crc32-in-hardware',
-  path: '/crc32-in-hardware',
+const BlogChacha20InHardwareRoute = BlogChacha20InHardwareRouteImport.update({
+  id: '/chacha20-in-hardware',
+  path: '/chacha20-in-hardware',
   getParentRoute: () => BlogRoute,
 } as any)
 const BlogComputingTrigInHardwareRoute =
@@ -162,29 +101,90 @@ const BlogComputingTrigInHardwareRoute =
     path: '/computing-trig-in-hardware',
     getParentRoute: () => BlogRoute,
   } as any)
-const BlogChacha20InHardwareRoute = BlogChacha20InHardwareRouteImport.update({
-  id: '/chacha20-in-hardware',
-  path: '/chacha20-in-hardware',
+const BlogCrc32InHardwareRoute = BlogCrc32InHardwareRouteImport.update({
+  id: '/crc32-in-hardware',
+  path: '/crc32-in-hardware',
   getParentRoute: () => BlogRoute,
 } as any)
-const BlogBreakoutInHardwareRoute = BlogBreakoutInHardwareRouteImport.update({
-  id: '/breakout-in-hardware',
-  path: '/breakout-in-hardware',
+const BlogFromNandTo6502Route = BlogFromNandTo6502RouteImport.update({
+  id: '/from-nand-to-6502',
+  path: '/from-nand-to-6502',
   getParentRoute: () => BlogRoute,
 } as any)
-const BlogAesInHardwareRoute = BlogAesInHardwareRouteImport.update({
-  id: '/aes-in-hardware',
-  path: '/aes-in-hardware',
+const BlogHowNetworkSwitchesWorkRoute =
+  BlogHowNetworkSwitchesWorkRouteImport.update({
+    id: '/how-network-switches-work',
+    path: '/how-network-switches-work',
+    getParentRoute: () => BlogRoute,
+  } as any)
+const BlogHowTpusWorkRoute = BlogHowTpusWorkRouteImport.update({
+  id: '/how-tpus-work',
+  path: '/how-tpus-work',
   getParentRoute: () => BlogRoute,
 } as any)
-const BlogSplatRoute = BlogSplatRouteImport.update({
-  id: '/$',
-  path: '/$',
+const BlogPongInHardwareRoute = BlogPongInHardwareRouteImport.update({
+  id: '/pong-in-hardware',
+  path: '/pong-in-hardware',
   getParentRoute: () => BlogRoute,
 } as any)
-const ApiSearchRoute = ApiSearchRouteImport.update({
-  id: '/api/search',
-  path: '/api/search',
+const BlogRv32iCpuRoute = BlogRv32iCpuRouteImport.update({
+  id: '/rv32i-cpu',
+  path: '/rv32i-cpu',
+  getParentRoute: () => BlogRoute,
+} as any)
+const BlogSnakeInHardwareRoute = BlogSnakeInHardwareRouteImport.update({
+  id: '/snake-in-hardware',
+  path: '/snake-in-hardware',
+  getParentRoute: () => BlogRoute,
+} as any)
+const BlogSortingNetworksRoute = BlogSortingNetworksRouteImport.update({
+  id: '/sorting-networks',
+  path: '/sorting-networks',
+  getParentRoute: () => BlogRoute,
+} as any)
+const BlogSynthInHardwareRoute = BlogSynthInHardwareRouteImport.update({
+  id: '/synth-in-hardware',
+  path: '/synth-in-hardware',
+  getParentRoute: () => BlogRoute,
+} as any)
+const CircuitEncodedRoute = CircuitEncodedRouteImport.update({
+  id: '/circuit_/$encoded',
+  path: '/circuit/$encoded',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CpuIndexRoute = CpuIndexRouteImport.update({
+  id: '/cpu/',
+  path: '/cpu/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CpuRv32iRoute = CpuRv32iRouteImport.update({
+  id: '/cpu/rv32i',
+  path: '/cpu/rv32i',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const DocsSplatRoute = DocsSplatRouteImport.update({
+  id: '/docs/$',
+  path: '/docs/$',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LearnIndexRoute = LearnIndexRouteImport.update({
+  id: '/learn/',
+  path: '/learn/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LearnAbstractionRoute = LearnAbstractionRouteImport.update({
+  id: '/learn/abstraction',
+  path: '/learn/abstraction',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LearnAddersRoute = LearnAddersRouteImport.update({
+  id: '/learn/adders',
+  path: '/learn/adders',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LearnRegistersRoute = LearnRegistersRouteImport.update({
+  id: '/learn/registers',
+  path: '/learn/registers',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CircuitSHashRoute = CircuitSHashRouteImport.update({
@@ -407,25 +407,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/terms': {
-      id: '/terms'
-      path: '/terms'
-      fullPath: '/terms'
-      preLoaderRoute: typeof TermsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/privacy': {
-      id: '/privacy'
-      path: '/privacy'
-      fullPath: '/privacy'
-      preLoaderRoute: typeof PrivacyRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/circuit': {
-      id: '/circuit'
-      path: '/circuit'
-      fullPath: '/circuit'
-      preLoaderRoute: typeof CircuitRouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog': {
@@ -435,25 +421,32 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/circuit': {
+      id: '/circuit'
+      path: '/circuit'
+      fullPath: '/circuit'
+      preLoaderRoute: typeof CircuitRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/learn/': {
-      id: '/learn/'
-      path: '/learn'
-      fullPath: '/learn/'
-      preLoaderRoute: typeof LearnIndexRouteImport
+    '/privacy': {
+      id: '/privacy'
+      path: '/privacy'
+      fullPath: '/privacy'
+      preLoaderRoute: typeof PrivacyRouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/cpu/': {
-      id: '/cpu/'
-      path: '/cpu'
-      fullPath: '/cpu/'
-      preLoaderRoute: typeof CpuIndexRouteImport
+    '/terms': {
+      id: '/terms'
+      path: '/terms'
+      fullPath: '/terms'
+      preLoaderRoute: typeof TermsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/search': {
+      id: '/api/search'
+      path: '/api/search'
+      fullPath: '/api/search'
+      preLoaderRoute: typeof ApiSearchRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/blog/': {
@@ -463,130 +456,11 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogIndexRouteImport
       parentRoute: typeof BlogRoute
     }
-    '/learn/registers': {
-      id: '/learn/registers'
-      path: '/learn/registers'
-      fullPath: '/learn/registers'
-      preLoaderRoute: typeof LearnRegistersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/learn/adders': {
-      id: '/learn/adders'
-      path: '/learn/adders'
-      fullPath: '/learn/adders'
-      preLoaderRoute: typeof LearnAddersRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/learn/abstraction': {
-      id: '/learn/abstraction'
-      path: '/learn/abstraction'
-      fullPath: '/learn/abstraction'
-      preLoaderRoute: typeof LearnAbstractionRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/docs/$': {
-      id: '/docs/$'
-      path: '/docs/$'
-      fullPath: '/docs/$'
-      preLoaderRoute: typeof DocsSplatRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/cpu/rv32i': {
-      id: '/cpu/rv32i'
-      path: '/cpu/rv32i'
-      fullPath: '/cpu/rv32i'
-      preLoaderRoute: typeof CpuRv32iRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/circuit_/$encoded': {
-      id: '/circuit_/$encoded'
-      path: '/circuit/$encoded'
-      fullPath: '/circuit/$encoded'
-      preLoaderRoute: typeof CircuitEncodedRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/blog/synth-in-hardware': {
-      id: '/blog/synth-in-hardware'
-      path: '/synth-in-hardware'
-      fullPath: '/blog/synth-in-hardware'
-      preLoaderRoute: typeof BlogSynthInHardwareRouteImport
-      parentRoute: typeof BlogRoute
-    }
-    '/blog/sorting-networks': {
-      id: '/blog/sorting-networks'
-      path: '/sorting-networks'
-      fullPath: '/blog/sorting-networks'
-      preLoaderRoute: typeof BlogSortingNetworksRouteImport
-      parentRoute: typeof BlogRoute
-    }
-    '/blog/snake-in-hardware': {
-      id: '/blog/snake-in-hardware'
-      path: '/snake-in-hardware'
-      fullPath: '/blog/snake-in-hardware'
-      preLoaderRoute: typeof BlogSnakeInHardwareRouteImport
-      parentRoute: typeof BlogRoute
-    }
-    '/blog/rv32i-cpu': {
-      id: '/blog/rv32i-cpu'
-      path: '/rv32i-cpu'
-      fullPath: '/blog/rv32i-cpu'
-      preLoaderRoute: typeof BlogRv32iCpuRouteImport
-      parentRoute: typeof BlogRoute
-    }
-    '/blog/pong-in-hardware': {
-      id: '/blog/pong-in-hardware'
-      path: '/pong-in-hardware'
-      fullPath: '/blog/pong-in-hardware'
-      preLoaderRoute: typeof BlogPongInHardwareRouteImport
-      parentRoute: typeof BlogRoute
-    }
-    '/blog/how-tpus-work': {
-      id: '/blog/how-tpus-work'
-      path: '/how-tpus-work'
-      fullPath: '/blog/how-tpus-work'
-      preLoaderRoute: typeof BlogHowTpusWorkRouteImport
-      parentRoute: typeof BlogRoute
-    }
-    '/blog/how-network-switches-work': {
-      id: '/blog/how-network-switches-work'
-      path: '/how-network-switches-work'
-      fullPath: '/blog/how-network-switches-work'
-      preLoaderRoute: typeof BlogHowNetworkSwitchesWorkRouteImport
-      parentRoute: typeof BlogRoute
-    }
-    '/blog/from-nand-to-6502': {
-      id: '/blog/from-nand-to-6502'
-      path: '/from-nand-to-6502'
-      fullPath: '/blog/from-nand-to-6502'
-      preLoaderRoute: typeof BlogFromNandTo6502RouteImport
-      parentRoute: typeof BlogRoute
-    }
-    '/blog/crc32-in-hardware': {
-      id: '/blog/crc32-in-hardware'
-      path: '/crc32-in-hardware'
-      fullPath: '/blog/crc32-in-hardware'
-      preLoaderRoute: typeof BlogCrc32InHardwareRouteImport
-      parentRoute: typeof BlogRoute
-    }
-    '/blog/computing-trig-in-hardware': {
-      id: '/blog/computing-trig-in-hardware'
-      path: '/computing-trig-in-hardware'
-      fullPath: '/blog/computing-trig-in-hardware'
-      preLoaderRoute: typeof BlogComputingTrigInHardwareRouteImport
-      parentRoute: typeof BlogRoute
-    }
-    '/blog/chacha20-in-hardware': {
-      id: '/blog/chacha20-in-hardware'
-      path: '/chacha20-in-hardware'
-      fullPath: '/blog/chacha20-in-hardware'
-      preLoaderRoute: typeof BlogChacha20InHardwareRouteImport
-      parentRoute: typeof BlogRoute
-    }
-    '/blog/breakout-in-hardware': {
-      id: '/blog/breakout-in-hardware'
-      path: '/breakout-in-hardware'
-      fullPath: '/blog/breakout-in-hardware'
-      preLoaderRoute: typeof BlogBreakoutInHardwareRouteImport
+    '/blog/$': {
+      id: '/blog/$'
+      path: '/$'
+      fullPath: '/blog/$'
+      preLoaderRoute: typeof BlogSplatRouteImport
       parentRoute: typeof BlogRoute
     }
     '/blog/aes-in-hardware': {
@@ -596,18 +470,144 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof BlogAesInHardwareRouteImport
       parentRoute: typeof BlogRoute
     }
-    '/blog/$': {
-      id: '/blog/$'
-      path: '/$'
-      fullPath: '/blog/$'
-      preLoaderRoute: typeof BlogSplatRouteImport
+    '/blog/breakout-in-hardware': {
+      id: '/blog/breakout-in-hardware'
+      path: '/breakout-in-hardware'
+      fullPath: '/blog/breakout-in-hardware'
+      preLoaderRoute: typeof BlogBreakoutInHardwareRouteImport
       parentRoute: typeof BlogRoute
     }
-    '/api/search': {
-      id: '/api/search'
-      path: '/api/search'
-      fullPath: '/api/search'
-      preLoaderRoute: typeof ApiSearchRouteImport
+    '/blog/chacha20-in-hardware': {
+      id: '/blog/chacha20-in-hardware'
+      path: '/chacha20-in-hardware'
+      fullPath: '/blog/chacha20-in-hardware'
+      preLoaderRoute: typeof BlogChacha20InHardwareRouteImport
+      parentRoute: typeof BlogRoute
+    }
+    '/blog/computing-trig-in-hardware': {
+      id: '/blog/computing-trig-in-hardware'
+      path: '/computing-trig-in-hardware'
+      fullPath: '/blog/computing-trig-in-hardware'
+      preLoaderRoute: typeof BlogComputingTrigInHardwareRouteImport
+      parentRoute: typeof BlogRoute
+    }
+    '/blog/crc32-in-hardware': {
+      id: '/blog/crc32-in-hardware'
+      path: '/crc32-in-hardware'
+      fullPath: '/blog/crc32-in-hardware'
+      preLoaderRoute: typeof BlogCrc32InHardwareRouteImport
+      parentRoute: typeof BlogRoute
+    }
+    '/blog/from-nand-to-6502': {
+      id: '/blog/from-nand-to-6502'
+      path: '/from-nand-to-6502'
+      fullPath: '/blog/from-nand-to-6502'
+      preLoaderRoute: typeof BlogFromNandTo6502RouteImport
+      parentRoute: typeof BlogRoute
+    }
+    '/blog/how-network-switches-work': {
+      id: '/blog/how-network-switches-work'
+      path: '/how-network-switches-work'
+      fullPath: '/blog/how-network-switches-work'
+      preLoaderRoute: typeof BlogHowNetworkSwitchesWorkRouteImport
+      parentRoute: typeof BlogRoute
+    }
+    '/blog/how-tpus-work': {
+      id: '/blog/how-tpus-work'
+      path: '/how-tpus-work'
+      fullPath: '/blog/how-tpus-work'
+      preLoaderRoute: typeof BlogHowTpusWorkRouteImport
+      parentRoute: typeof BlogRoute
+    }
+    '/blog/pong-in-hardware': {
+      id: '/blog/pong-in-hardware'
+      path: '/pong-in-hardware'
+      fullPath: '/blog/pong-in-hardware'
+      preLoaderRoute: typeof BlogPongInHardwareRouteImport
+      parentRoute: typeof BlogRoute
+    }
+    '/blog/rv32i-cpu': {
+      id: '/blog/rv32i-cpu'
+      path: '/rv32i-cpu'
+      fullPath: '/blog/rv32i-cpu'
+      preLoaderRoute: typeof BlogRv32iCpuRouteImport
+      parentRoute: typeof BlogRoute
+    }
+    '/blog/snake-in-hardware': {
+      id: '/blog/snake-in-hardware'
+      path: '/snake-in-hardware'
+      fullPath: '/blog/snake-in-hardware'
+      preLoaderRoute: typeof BlogSnakeInHardwareRouteImport
+      parentRoute: typeof BlogRoute
+    }
+    '/blog/sorting-networks': {
+      id: '/blog/sorting-networks'
+      path: '/sorting-networks'
+      fullPath: '/blog/sorting-networks'
+      preLoaderRoute: typeof BlogSortingNetworksRouteImport
+      parentRoute: typeof BlogRoute
+    }
+    '/blog/synth-in-hardware': {
+      id: '/blog/synth-in-hardware'
+      path: '/synth-in-hardware'
+      fullPath: '/blog/synth-in-hardware'
+      preLoaderRoute: typeof BlogSynthInHardwareRouteImport
+      parentRoute: typeof BlogRoute
+    }
+    '/circuit_/$encoded': {
+      id: '/circuit_/$encoded'
+      path: '/circuit/$encoded'
+      fullPath: '/circuit/$encoded'
+      preLoaderRoute: typeof CircuitEncodedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cpu/': {
+      id: '/cpu/'
+      path: '/cpu'
+      fullPath: '/cpu/'
+      preLoaderRoute: typeof CpuIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/cpu/rv32i': {
+      id: '/cpu/rv32i'
+      path: '/cpu/rv32i'
+      fullPath: '/cpu/rv32i'
+      preLoaderRoute: typeof CpuRv32iRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/docs/$': {
+      id: '/docs/$'
+      path: '/docs/$'
+      fullPath: '/docs/$'
+      preLoaderRoute: typeof DocsSplatRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learn/': {
+      id: '/learn/'
+      path: '/learn'
+      fullPath: '/learn/'
+      preLoaderRoute: typeof LearnIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learn/abstraction': {
+      id: '/learn/abstraction'
+      path: '/learn/abstraction'
+      fullPath: '/learn/abstraction'
+      preLoaderRoute: typeof LearnAbstractionRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learn/adders': {
+      id: '/learn/adders'
+      path: '/learn/adders'
+      fullPath: '/learn/adders'
+      preLoaderRoute: typeof LearnAddersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/learn/registers': {
+      id: '/learn/registers'
+      path: '/learn/registers'
+      fullPath: '/learn/registers'
+      preLoaderRoute: typeof LearnRegistersRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/circuit_/s/$hash': {

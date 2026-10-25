@@ -32,11 +32,11 @@ export function registerSimulateTool(server: McpServer): void {
         // be accepted here and reached `topLevelInputs` uncoerced, which
         // propagate.ts reads raw when building onTick's inputs — so a `true`
         // landed in sequential state verbatim.
-        .record(z.number())
+        .record(z.string(), z.number())
         .optional()
         .describe('Initial input values as { portName: value }. Bits are 0 or 1.'),
       memoryData: z
-        .record(z.record(z.number()))
+        .record(z.string(), z.record(z.string(), z.number()))
         .optional()
         .describe(
           'Pre-load memory into sequential nodes. Keys are substring patterns matched against node IDs (e.g. "imem" matches any node containing "imem"). Values are { address: data } maps. Architecture-agnostic — works with any ROM/RAM primitive.',

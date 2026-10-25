@@ -61,11 +61,11 @@ export function registerShowTools(server: McpServer): void {
         ),
       close: z.boolean().optional().describe('Close the live preview and stop the server.'),
       inputs: z
-        .record(z.union([z.number(), z.boolean()]))
+        .record(z.string(), z.union([z.number(), z.boolean()]))
         .optional()
         .describe('Initial input values as { portName: value }'),
       memoryData: z
-        .record(z.record(z.number()))
+        .record(z.string(), z.record(z.string(), z.number()))
         .optional()
         .describe(
           'Pre-load memory into sequential nodes. Keys are glob patterns matched against node IDs (e.g. "imem" matches any node containing "imem", "cpu0*imem" targets cpu0\'s imem only). Values are { address: data } maps. Architecture-agnostic.',
