@@ -1,5 +1,4 @@
 apps/game/src/routes/$levelId.tsx PlayLevel
-apps/sandbox/src/worker.ts handleRequest
 apps/web/src/api/synth.ts handleVerilogImport
 apps/web/src/features/blog/building-a-cpu/CCodeEditor.tsx highlightC
 apps/web/src/features/blog/computing-trig-in-hardware/CORDICDemo.tsx getDisplayValue

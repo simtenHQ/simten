@@ -449,116 +449,127 @@ function restore(snapshotId: number, slotId: string = DEFAULT_SLOT): SandboxResu
   };
 }
 
+type Req<T extends SandboxRequest['type']> = Extract<SandboxRequest, { type: T }>;
+
+function tick(req: Req<'tick'>): SandboxResult {
+  const slot = requireSlot(req.slot);
+  const sim = slot.simulator;
+  if (req.inputs) applyInputs(sim, req.inputs);
+  const result = sim.tick();
+  return {
+    type: 'ticked',
+    portValues: portValues(result.portValues),
+    cycle: sim.getMetrics().totalTicks,
+    peripheralState: peripheralState(slot),
+    snapshotId: req.snapshot ? takeSnapshot(slot) : undefined,
+  };
+}
+
+// N ticks in one round trip; returns only the final state.
+function tickN(req: Req<'tick-n'>): SandboxResult {
+  const slot = requireSlot(req.slot);
+  const sim = slot.simulator;
+  if (req.inputs) applyInputs(sim, req.inputs);
+  let last: ReturnType<Simulator['tick']> | null = null;
+  const count = Math.max(0, req.n | 0);
+  for (let i = 0; i < count; i++) last = sim.tick();
+  return {
+    type: 'ticked-n',
+    portValues: portValues(last ? last.portValues : sim.getPortValues()),
+    cycle: sim.getMetrics().totalTicks,
+    peripheralState: peripheralState(slot),
+    snapshotId: req.snapshot ? takeSnapshot(slot) : undefined,
+  };
+}
+
+// Tick `count` times and return one port's value after every tick (audio).
+// Inputs are applied once and held for the whole run.
+function renderSamples(req: Req<'render-samples'>): SandboxResult {
+  const sim = requireSlot(req.slot).simulator;
+  if (req.inputs) applyInputs(sim, req.inputs);
+  const n = Math.max(0, req.count | 0);
+  const samples: number[] = new Array(n).fill(0);
+  for (let i = 0; i < n; i++) samples[i] = asNumber(sim.tick().portValues.get(req.portKey));
+  return { type: 'rendered-samples', samples, cycle: sim.getMetrics().totalTicks };
+}
+
+// Drive `addrNodeId` through 0..count-1 and sample `valuePortKey` after each
+// combinational settle, without advancing the clock (debug-port reads).
+function scanPort(req: Req<'scan-port'>): SandboxResult {
+  const sim = requireSlot(req.slot).simulator;
+  const n = Math.max(0, req.count | 0);
+  const values: number[] = new Array(n).fill(0);
+  for (let i = 0; i < n; i++) {
+    sim.setNode(req.addrNodeId, i);
+    sim.runCombinational();
+    values[i] = asNumber(sim.getPortValues().get(req.valuePortKey));
+  }
+  return { type: 'scanned-port', values };
+}
+
+function reset(req: Req<'reset'>): SandboxResult {
+  const slot = requireSlot(req.slot);
+  slot.simulator.reset();
+  // Reset starts over, so history goes too.
+  slot.snapshots.clear();
+  return {
+    type: 'reset',
+    portValues: portValues(slot.simulator.getPortValues()),
+    peripheralState: peripheralState(slot),
+  };
+}
+
+function setNode(req: Req<'set-node'>): SandboxResult {
+  const slot = requireSlot(req.slot);
+  // Map values load ROM/RAM contents.
+  slot.simulator.setNode(req.nodeId, req.value as BitValue | BusValue);
+  slot.simulator.runCombinational();
+  return {
+    type: 'node-set',
+    portValues: portValues(slot.simulator.getPortValues()),
+    peripheralState: peripheralState(slot),
+    snapshotId: req.snapshot ? takeSnapshot(slot) : undefined,
+  };
+}
+
+// Drop every snapshot with id <= keepAfterId. A slot that was never compiled
+// has nothing to prune.
+function pruneSnapshots(req: Req<'prune-snapshots'>): SandboxResult {
+  const snapshots = slots.get(req.slot ?? DEFAULT_SLOT)?.snapshots;
+  if (snapshots) {
+    for (const key of [...snapshots.keys()]) {
+      if (key <= req.keepAfterId) snapshots.delete(key);
+    }
+  }
+  return { type: 'pruned' };
+}
+
 async function handle(req: SandboxRequest): Promise<SandboxResult> {
   switch (req.type) {
     case 'compile':
       return compile(req.source, req.slot);
-
     case 'compile-ir':
       return compileIR(req);
-
     case 'simulate':
       return simulate(req);
-
-    case 'tick': {
-      const slot = requireSlot(req.slot);
-      const sim = slot.simulator;
-      if (req.inputs) applyInputs(sim, req.inputs);
-      const result = sim.tick();
-      return {
-        type: 'ticked',
-        portValues: portValues(result.portValues),
-        cycle: sim.getMetrics().totalTicks,
-        peripheralState: peripheralState(slot),
-        snapshotId: req.snapshot ? takeSnapshot(slot) : undefined,
-      };
-    }
-
-    // N ticks in one round trip; returns only the final state.
-    case 'tick-n': {
-      const slot = requireSlot(req.slot);
-      const sim = slot.simulator;
-      if (req.inputs) applyInputs(sim, req.inputs);
-      let last: ReturnType<Simulator['tick']> | null = null;
-      const count = Math.max(0, req.n | 0);
-      for (let i = 0; i < count; i++) last = sim.tick();
-      return {
-        type: 'ticked-n',
-        portValues: portValues(last ? last.portValues : sim.getPortValues()),
-        cycle: sim.getMetrics().totalTicks,
-        peripheralState: peripheralState(slot),
-        snapshotId: req.snapshot ? takeSnapshot(slot) : undefined,
-      };
-    }
-
-    // Tick `count` times and return one port's value after every tick (audio).
-    // Inputs are applied once and held for the whole run.
-    case 'render-samples': {
-      const sim = requireSlot(req.slot).simulator;
-      if (req.inputs) applyInputs(sim, req.inputs);
-      const n = Math.max(0, req.count | 0);
-      const samples: number[] = new Array(n).fill(0);
-      for (let i = 0; i < n; i++) samples[i] = asNumber(sim.tick().portValues.get(req.portKey));
-      return { type: 'rendered-samples', samples, cycle: sim.getMetrics().totalTicks };
-    }
-
-    // Drive `addrNodeId` through 0..count-1 and sample `valuePortKey` after each
-    // combinational settle, without advancing the clock (debug-port reads).
-    case 'scan-port': {
-      const sim = requireSlot(req.slot).simulator;
-      const n = Math.max(0, req.count | 0);
-      const values: number[] = new Array(n).fill(0);
-      for (let i = 0; i < n; i++) {
-        sim.setNode(req.addrNodeId, i);
-        sim.runCombinational();
-        values[i] = asNumber(sim.getPortValues().get(req.valuePortKey));
-      }
-      return { type: 'scanned-port', values };
-    }
-
-    case 'reset': {
-      const slot = requireSlot(req.slot);
-      slot.simulator.reset();
-      // Reset starts over, so history goes too.
-      slot.snapshots.clear();
-      return {
-        type: 'reset',
-        portValues: portValues(slot.simulator.getPortValues()),
-        peripheralState: peripheralState(slot),
-      };
-    }
-
-    case 'set-node': {
-      const slot = requireSlot(req.slot);
-      // Map values load ROM/RAM contents.
-      slot.simulator.setNode(req.nodeId, req.value as BitValue | BusValue);
-      slot.simulator.runCombinational();
-      return {
-        type: 'node-set',
-        portValues: portValues(slot.simulator.getPortValues()),
-        peripheralState: peripheralState(slot),
-        snapshotId: req.snapshot ? takeSnapshot(slot) : undefined,
-      };
-    }
-
+    case 'tick':
+      return tick(req);
+    case 'tick-n':
+      return tickN(req);
+    case 'render-samples':
+      return renderSamples(req);
+    case 'scan-port':
+      return scanPort(req);
+    case 'reset':
+      return reset(req);
+    case 'set-node':
+      return setNode(req);
     case 'snapshot':
       return { type: 'snapshotted', snapshotId: takeSnapshot(requireSlot(req.slot)) };
-
     case 'restore':
       return restore(req.snapshotId, req.slot);
-
-    // Drop every snapshot with id <= keepAfterId. A slot that was never
-    // compiled has nothing to prune.
-    case 'prune-snapshots': {
-      const snapshots = slots.get(req.slot ?? DEFAULT_SLOT)?.snapshots;
-      if (snapshots) {
-        for (const key of [...snapshots.keys()]) {
-          if (key <= req.keepAfterId) snapshots.delete(key);
-        }
-      }
-      return { type: 'pruned' };
-    }
-
+    case 'prune-snapshots':
+      return pruneSnapshots(req);
     case 'dispose':
       slots.delete(req.slot);
       return { type: 'disposed' };
