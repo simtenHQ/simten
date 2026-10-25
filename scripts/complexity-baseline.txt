@@ -53,7 +53,6 @@ packages/mcp/src/server/ws-server.ts (anonymous)
 packages/mcp/src/tools/show.ts (anonymous)
 packages/ui/src/canvas/CircuitCanvas.tsx (anonymous)
 packages/ui/src/canvas/projection.ts projectCircuitToNodes
-packages/ui/src/editor/lib/utils/circuit-flattener.ts expandCompositeNode
 packages/ui/src/waveform/WaveformViewer.tsx WaveformViewer
 packages/ui/src/waveform/WaveformViewer.tsx parseVCD
 scripts/check-exports.ts checkPackage
