@@ -27,7 +27,7 @@ import { describe, expect, it, vi } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import type { SinkPortRef } from '../../circuit/types.js';
 import { simulate } from '../../sim/simulate.js';
-import { Adder, And, Constant, DFlipFlop, Not, Or, Register, Xor } from '../../std/index.js';
+import { Adder, Constant, Not, Register } from '../../std/index.js';
 import { assertFlatCircuitInvariants, elaborateBuilt } from './_invariants.js';
 
 // ╔════════════════════════════════════════════════════════════════════════╗

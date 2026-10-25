@@ -10,7 +10,7 @@ export interface Program {
   sourcePath: string;
 }
 
-export const PROGRAMS: Program[] = [
+const PROGRAMS: Program[] = [
   {
     id: 'simple',
     name: 'Hello, world',

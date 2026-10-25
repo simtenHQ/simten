@@ -21,7 +21,7 @@ import { basename, resolve } from 'node:path';
 export type PackageManager = 'npm' | 'pnpm' | 'yarn' | 'bun';
 
 /** Which testbench/circuit extension a project must use to load as ESM. */
-export type CircuitExt = '.ts' | '.mts';
+type CircuitExt = '.ts' | '.mts';
 
 /** Detect the package manager from a lockfile; default npm (ships with Node). */
 export function detectPackageManager(root: string): PackageManager {

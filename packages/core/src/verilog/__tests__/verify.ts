@@ -29,7 +29,7 @@
  * When unset, `hasVerifier()` returns false and tests should skip.
  */
 
-export interface VerifyResult {
+interface VerifyResult {
   testCase: number;
   cycle: number;
   outputs: Record<string, number>;
@@ -50,7 +50,7 @@ export function hasVerifier(): boolean {
 }
 
 /** Resolved verifier endpoint or null when unset. */
-export function verifierUrl(): string | null {
+function verifierUrl(): string | null {
   if (typeof process === 'undefined') return null;
   return process.env?.VERIFIER_URL ?? null;
 }

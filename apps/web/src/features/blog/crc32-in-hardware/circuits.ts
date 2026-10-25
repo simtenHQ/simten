@@ -14,7 +14,7 @@ import type { BlogCircuit } from '../types';
 // (taps at positions 0 and 3). Cycles through 15 distinct states.
 // ff0 starts at 1 (via initial nodeArg) so the LFSR is in a non-zero
 // state from the first tick rather than being stuck at all-zeros.
-export const LFSR4 = circuit('LFSR4', {
+const LFSR4 = circuit('LFSR4', {
   nodes: {
     ff0: DFlipFlop({ value: 1 }),
     ff1: DFlipFlop(),
@@ -48,7 +48,7 @@ export const LFSR4 = circuit('LFSR4', {
 // Processes one byte of input against a running CRC-32 accumulator.
 // Uses the Ethernet/ZIP/NVMe reflected polynomial 0xEDB88320.
 // This is the pure combinational logic of one CRC-32 byte step.
-export const CRC32Step = circuit('CRC32Step', {
+const CRC32Step = circuit('CRC32Step', {
   inputs: { crc: bus(8), data: bus(8) },
   outputs: { crc_lo: bus(8), crc_hi: bus(8), crc_b2: bus(8), crc_b3: bus(8) },
   meta: { description: 'Process one byte through CRC-32 (Ethernet polynomial 0xEDB88320)' },

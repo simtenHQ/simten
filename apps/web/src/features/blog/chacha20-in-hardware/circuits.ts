@@ -20,7 +20,7 @@ import type { BlogCircuit } from '../types';
 
 // ── Rotation sub-circuits ──
 
-export const RotateLeft16 = circuit('RotateLeft16', {
+const RotateLeft16 = circuit('RotateLeft16', {
   inputs: { x: bus(32) },
   outputs: { out: bus(32) },
   nodes: {
@@ -38,7 +38,7 @@ export const RotateLeft16 = circuit('RotateLeft16', {
   ],
 });
 
-export const RotateLeft12 = circuit('RotateLeft12', {
+const RotateLeft12 = circuit('RotateLeft12', {
   inputs: { x: bus(32) },
   outputs: { out: bus(32) },
   nodes: {
@@ -58,7 +58,7 @@ export const RotateLeft12 = circuit('RotateLeft12', {
   ],
 });
 
-export const RotateLeft8 = circuit('RotateLeft8', {
+const RotateLeft8 = circuit('RotateLeft8', {
   inputs: { x: bus(32) },
   outputs: { out: bus(32) },
   nodes: {
@@ -78,7 +78,7 @@ export const RotateLeft8 = circuit('RotateLeft8', {
   ],
 });
 
-export const RotateLeft7 = circuit('RotateLeft7', {
+const RotateLeft7 = circuit('RotateLeft7', {
   inputs: { x: bus(32) },
   outputs: { out: bus(32) },
   nodes: {
@@ -100,7 +100,7 @@ export const RotateLeft7 = circuit('RotateLeft7', {
 
 // ── Quarter-round ──
 
-export const ChaCha20QuarterRound = circuit('ChaCha20QuarterRound', {
+const ChaCha20QuarterRound = circuit('ChaCha20QuarterRound', {
   inputs: { a: bus(32), b: bus(32), c: bus(32), d: bus(32) },
   outputs: { a_out: bus(32), b_out: bus(32), c_out: bus(32), d_out: bus(32) },
   nodes: {
@@ -145,7 +145,7 @@ export const ChaCha20QuarterRound = circuit('ChaCha20QuarterRound', {
 
 // ── Self-contained demo circuits ──
 
-export const ARXDemo = circuit('ARXDemo', {
+const ARXDemo = circuit('ARXDemo', {
   nodes: {
     a: Input({ value: 100, width: 32 }),
     b: Input({ value: 42, width: 32 }),
@@ -164,7 +164,7 @@ export const ARXDemo = circuit('ARXDemo', {
   ],
 });
 
-export const RotateDemo = circuit('RotateDemo', {
+const RotateDemo = circuit('RotateDemo', {
   nodes: {
     val: Input({ value: 1, width: 32 }),
     rot16: RotateLeft16,
@@ -179,7 +179,7 @@ export const RotateDemo = circuit('RotateDemo', {
   ],
 });
 
-export const ARXStep = circuit('ARXStep', {
+const ARXStep = circuit('ARXStep', {
   nodes: {
     a: Input({ value: 100, width: 32 }),
     b: Input({ value: 42, width: 32 }),
@@ -202,7 +202,7 @@ export const ARXStep = circuit('ARXStep', {
   ],
 });
 
-export const ChaCha20Demo = circuit('ChaCha20Demo', {
+const ChaCha20Demo = circuit('ChaCha20Demo', {
   nodes: {
     in_a: Input({ value: 0x11111111, width: 32 }),
     in_b: Input({ value: 0x01020304, width: 32 }),

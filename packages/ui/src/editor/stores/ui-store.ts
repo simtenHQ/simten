@@ -32,7 +32,7 @@ interface UIActions {
   setPan: (x: number, y: number) => void;
 }
 
-export interface UIStore extends UIState, UIActions {}
+interface UIStore extends UIState, UIActions {}
 
 const initialState: UIState = {
   drag: null,

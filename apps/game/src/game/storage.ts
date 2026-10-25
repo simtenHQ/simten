@@ -87,7 +87,7 @@ export function markOnboarded(): void {
  * per level and per concept: a band that introduces something the player has
  * never met (a clock, say) says so once and then stops.
  */
-export const LEVEL_INTROS_KEY = 'simten:game:level-intros-seen';
+const LEVEL_INTROS_KEY = 'simten:game:level-intros-seen';
 
 /** Every level's editor contents, whether or not it has ever passed. */
 export const DRAFTS_KEY = 'simten:game:drafts';

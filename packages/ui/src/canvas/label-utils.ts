@@ -3,7 +3,7 @@ import type { Circuit } from '@simten/core';
 /**
  * Extract clean label from node ID (removes timestamps and prefixes).
  */
-export function extractCleanLabel(nodeId: string): string {
+function extractCleanLabel(nodeId: string): string {
   if (nodeId.includes('.')) {
     return extractCleanLabel(nodeId.split('.').pop() || nodeId);
   }

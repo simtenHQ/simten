@@ -53,6 +53,7 @@
         "noNonNullAssertion": "warn"
       },
       "correctness": {
+        "noUnusedImports": "error",
         "useExhaustiveDependencies": "warn",
         "useHookAtTopLevel": "warn",
         "noVoidTypeReturn": "warn"

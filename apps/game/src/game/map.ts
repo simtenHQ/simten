@@ -166,7 +166,7 @@ export const MAP_REQUIRES: Record<string, string[]> = {
   jump: ['compute'],
 };
 
-export interface MapSection {
+interface MapSection {
   label: string;
   /** Index into `MAP_ROWS` where this band begins, counting from the bottom. */
   startRow: number;
@@ -190,7 +190,7 @@ export interface MapSection {
  * runs up to the next band that starts higher, so lanes that open on the same
  * row sit side by side.
  */
-export const MAP_SECTIONS: MapSection[] = [
+const MAP_SECTIONS: MapSection[] = [
   // One band from the first wire to the last gate. It was two: a short
   // "First circuits" and then "Every gate from one", which split a single
   // idea in half and put a rule across the map two levels in, before the
@@ -219,7 +219,7 @@ const COLUMN_GAP = 44;
 const ROW_GAP = 150;
 
 /** How a node is drawn. `locked` is unused until progress is persisted. */
-export type LevelNodeState = 'solved' | 'available' | 'locked';
+type LevelNodeState = 'solved' | 'available' | 'locked';
 
 export interface LevelNodeData extends Record<string, unknown> {
   levelId: string;
@@ -263,7 +263,7 @@ export interface MapSectionNode {
 }
 
 /** Width of a full band. Wide enough to read as an area, not a caption. */
-export const SECTION_WIDTH = 1010;
+const SECTION_WIDTH = 1010;
 
 /** How far a lane reaches past the cards in its columns, either side. */
 const LANE_PAD = 12;

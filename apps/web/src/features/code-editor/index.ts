@@ -6,5 +6,4 @@
  * app-styled error panel.
  */
 
-export type { CompilationError } from './ErrorDisplay';
 export { ErrorDisplay } from './ErrorDisplay';

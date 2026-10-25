@@ -23,8 +23,8 @@
  * and serializer stay total while that migration is in flight.
  */
 
-export type ComponentKind = 'reconstruction' | 'semantic';
-export type ComponentHome = 'stdlib' | 'import';
+type ComponentKind = 'reconstruction' | 'semantic';
+type ComponentHome = 'stdlib' | 'import';
 
 export interface Classification {
   kind: ComponentKind;

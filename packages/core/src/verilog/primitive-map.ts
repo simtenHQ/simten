@@ -19,8 +19,8 @@ import type { ArgumentValue } from '../types/circuit.js';
 /**
  * Sentinel emitted in place of logic when a primitive has no Verilog mapping.
  *
- * Kept as a constant because three places depend on the exact text: the emit
- * site below, `isBasePrimitive`, and the exporter, which scans for it to report
+ * Kept as a constant because two places depend on the exact text: the emit
+ * site below and the exporter, which scans for it to report
  * `ExportResult.unsupported`. A silent divergence here would mean broken Verilog
  * exporting as if it were clean.
  */
@@ -102,7 +102,7 @@ export interface PrimitiveContext {
  * Keys are sorted for determinism. Pass the full `ctx` so we can reach
  * the sidecar collector and the optional threshold override.
  */
-export function emitMemoryInit(regName: string, init: StateInit, ctx?: PrimitiveContext): string[] {
+function emitMemoryInit(regName: string, init: StateInit, ctx?: PrimitiveContext): string[] {
   if (init.data.size === 0) return [];
   const w = init.width;
   const hexWidth = Math.max(1, Math.ceil(w / 4));
@@ -1022,29 +1022,4 @@ export function isSequentialPrimitive(primitiveType: string): boolean {
     'RV32I_InstrMem',
     'RV32I_DataMem',
   ].includes(primitiveType);
-}
-
-/**
- * Check if a primitive type is a base primitive — one that the Verilog
- * exporter handles natively. Derived from the emitPrimitive switch statement.
- * Primitives NOT handled here must have reference circuits to be exportable.
- *
- * This avoids a hardcoded list — if a new case is added to emitPrimitive,
- * it automatically becomes a base primitive.
- */
-export function isBasePrimitive(primitiveType: string): boolean {
-  // Test by calling emitPrimitive with dummy wires — if it returns
-  // a WARNING comment, it's not a base primitive.
-  // NOTE: This now also checks eval-synth fallback via the default case.
-  const dummyWires: PrimitiveWires = { inputs: new Map(), outputs: new Map() };
-  const result = emitPrimitive({
-    nodeId: '__test__',
-    primitiveType,
-    args: {},
-    wires: dummyWires,
-    clockName: 'clk',
-    resetName: 'rst_n',
-    target: 'simulation',
-  });
-  return !result.lines.some((l) => l.includes(UNSUPPORTED_MARKER));
 }

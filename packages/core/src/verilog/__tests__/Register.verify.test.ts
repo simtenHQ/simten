@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { createSimulatorFromCircuit } from '../../simulator/index.js';
 import { Register } from '../../std/index.js';
-import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
+import type { CircuitLibrary } from '../../types/circuit.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { hasVerifier, verifyVerilog } from './verify.js';

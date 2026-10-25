@@ -6,14 +6,9 @@
  */
 
 import { randomUUID } from 'node:crypto';
-import type {
-  CircuitState,
-  StudioServer,
-  TestResultsPayload,
-  TracesPayload,
-} from '../server/ws-server.js';
+import type { StudioServer } from '../server/ws-server.js';
 
-export type { CircuitState, StudioServer, TestResultsPayload, TracesPayload };
+export type { StudioServer };
 
 // Module-level singleton
 let studioServer: StudioServer | null = null;

@@ -13,7 +13,6 @@
 
 import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
-import { resolve } from 'node:path';
 import { WebSocket, WebSocketServer } from 'ws';
 import {
   isCompileRequest,
@@ -21,14 +20,12 @@ import {
   publicDirExists,
   serveStatic,
 } from '../lib/serve-static.js';
-import type { CircuitState, RenderResult, TestResultsPayload, TracesPayload } from './types.js';
-
-export type { CircuitState, TestResultsPayload, TracesPayload };
+import type { RenderResult, TestResultsPayload, TracesPayload } from './types.js';
 
 /** JSON-serializable memory data: { nodePattern: { address: value } } */
-export type MemoryDataPayload = Record<string, Record<string, number>>;
+type MemoryDataPayload = Record<string, Record<string, number>>;
 
-export interface Session {
+interface Session {
   id: string;
   ws: WebSocket;
   page: string;

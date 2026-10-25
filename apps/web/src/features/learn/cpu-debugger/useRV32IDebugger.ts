@@ -53,7 +53,7 @@ export interface PipelineStages {
 }
 
 /** Parse objdump -d output into structured lines */
-export function parseDisassembly(text: string): DisasmLine[] {
+function parseDisassembly(text: string): DisasmLine[] {
   const lines: DisasmLine[] = [];
   for (const raw of text.split('\n')) {
     // Label line: "00000000 <main>:"

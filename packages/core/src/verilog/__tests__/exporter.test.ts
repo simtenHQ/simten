@@ -5,20 +5,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { bit, bus, circuit, mem } from '../../circuit/index.js';
-import {
-  Adder,
-  And,
-  DFlipFlop,
-  DualPortRAM,
-  Not,
-  Or,
-  RAM,
-  Register,
-  ROM,
-  RV32I_InstrMem,
-  Xor,
-} from '../../std/index.js';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { And, DFlipFlop, Or, RAM, Register, ROM, Xor } from '../../std/index.js';
 import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
 import { exportVerilog } from '../exporter.js';
 

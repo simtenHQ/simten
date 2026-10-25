@@ -14,7 +14,7 @@ import type { BuiltCircuit } from '@simten/core/circuit';
 import { buildFromIR } from '@simten/core/circuit';
 import { SandboxProvider, useSandboxContext } from '@simten/ui/sandbox';
 import { useEffect, useId, useState } from 'react';
-import { CircuitEmbed, type CircuitEmbedProps } from '../CircuitEmbed';
+import { CircuitEmbed } from '../CircuitEmbed';
 import { ErrorDisplay } from '../components/ErrorDisplay';
 
 export interface WebComponentEmbedProps {

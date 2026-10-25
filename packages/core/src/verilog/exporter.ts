@@ -350,9 +350,9 @@ function emitFlatModule(
     };
 
     const result = emitPrimitive(ctx);
-    // Record gaps as they happen rather than probing afterwards: `isBasePrimitive`
-    // tests emitPrimitive with empty wires and no args, which can differ from what
-    // a real node produces. Here the node is the one actually being emitted.
+    // Record gaps as they happen rather than probing emitPrimitive afterwards
+    // with empty wires and no args, which can differ from what a real node
+    // produces. Here the node is the one actually being emitted.
     if (result.lines.some((l) => l.includes(UNSUPPORTED_MARKER))) {
       const ids = unsupported[node.primitiveType] ?? [];
       ids.push(node.id);

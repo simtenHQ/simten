@@ -21,17 +21,7 @@ import type {
 
 // Re-export the types that simulator consumers typically need alongside the
 // engine interface, so they can import everything from one place.
-export type {
-  ArgumentValue,
-  BitValue,
-  BusValue,
-  CircuitLibrary,
-  ClockInstance,
-  PortDescriptor,
-  PortInstance,
-  PortPath,
-  PortType,
-} from './circuit.js';
+export type { BitValue, BusValue, CircuitLibrary } from './circuit.js';
 // Re-export TOP_LEVEL_NODE so consumers can import it from either file.
 export { TOP_LEVEL_NODE } from './circuit.js';
 
@@ -133,13 +123,6 @@ export type PrimitiveState = BitValue | BusValue | Map<number, number> | string 
  * Clock edge detection result.
  */
 export type ClockEdge = 'rising' | 'falling' | 'none';
-
-/**
- * Clock edge information for state updates.
- */
-export interface ClockEdges {
-  [clockName: string]: ClockEdge;
-}
 
 /**
  * Sequential state for flat circuits.

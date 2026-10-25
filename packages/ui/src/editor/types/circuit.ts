@@ -11,7 +11,7 @@
  * handful of types that exist for the editor UI and have no core equivalent.
  */
 
-import type { BitValue, BusValue, Circuit, ClockState, PortPath, StateValue } from '@simten/core';
+import type { PortPath } from '@simten/core';
 
 // ── Re-exported from core: the IR proper ────────────────────────────────────
 
@@ -23,28 +23,17 @@ export type {
   BusValue,
   Circuit,
   CircuitMetadata,
-  // Core's name for what the editor has always called `ComponentKind`. Same
-  // union — aliased rather than redefined so the two cannot drift apart.
-  CircuitTiming as ComponentKind,
   ClockDescriptor,
   ClockInstance,
   ClockState,
-  CompositeImpl,
   Connection,
   Implementation,
-  IntrinsicImpl,
-  MemoryType,
-  MemoryValue,
   Node,
   PortDescriptor,
-  PortInstance,
   PortPath,
   PortType,
-  PrimitiveImpl,
   StateBlock,
-  StateType,
   StateValue,
-  TestCase,
 } from '@simten/core';
 
 export {
@@ -59,7 +48,7 @@ export {
 
 // ── Editor-only: no core equivalent ─────────────────────────────────────────
 
-export type ParameterType = 'int' | 'string' | 'bool';
+type ParameterType = 'int' | 'string' | 'bool';
 
 export interface Parameter {
   name: string;
@@ -68,12 +57,7 @@ export interface Parameter {
   options?: (number | string | boolean)[];
 }
 
-export interface CircuitFile {
-  version: string;
-  circuit: Circuit;
-}
-
-export type ValidationErrorType =
+type ValidationErrorType =
   | 'type_mismatch'
   | 'multiple_drivers'
   | 'combinational_loop'
@@ -93,21 +77,4 @@ export interface ValidationError {
   };
   message: string;
   suggestions?: string[];
-}
-
-export interface SimulationState {
-  /** Current port values. */
-  portValues: Map<string, BitValue | BusValue>;
-
-  /** Current state values. */
-  stateValues: Map<string, StateValue>;
-
-  /** Clock states. */
-  clockStates: Map<string, ClockState>;
-
-  /** Simulation cycle counter. */
-  cycle: number;
-
-  /** Evaluation order (topologically sorted node IDs). */
-  evaluationOrder: string[];
 }

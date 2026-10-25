@@ -2,7 +2,7 @@ import defaultMdxComponents from 'fumadocs-ui/mdx';
 import type { MDXComponents } from 'mdx/types';
 import { McpInstall } from './McpInstall';
 
-export function getMDXComponents(components?: MDXComponents) {
+function getMDXComponents(components?: MDXComponents) {
   return {
     ...defaultMdxComponents,
     McpInstall,

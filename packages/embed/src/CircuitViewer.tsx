@@ -27,7 +27,7 @@ import { useCircuitSimulator } from './hooks/useCircuitSimulator';
  * names ∪ output names ∪ `'dut'`. CircuitLayout<HarnessedCircuit<C>>
  * resolves to exactly that key set.
  */
-export type HarnessedCircuit<C extends BuiltCircuit> =
+type HarnessedCircuit<C extends BuiltCircuit> =
   C extends BuiltCircuit<infer Ins, infer Outs, any>
     ? BuiltCircuit<
         Ins,

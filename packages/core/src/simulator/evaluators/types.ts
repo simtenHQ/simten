@@ -55,10 +55,3 @@ export function writeOutput(ctx: EvalContext, outputIndex: number, value: number
   ctx.values.values[idx] = value;
   ctx.values.initialized[idx] = 1;
 }
-
-/**
- * Create a bitmask for the given width. Handles width=32 where (1 << 32) === 0 in JS.
- */
-export function bitMask(width: number): number {
-  return width >= 32 ? 0xffffffff : (1 << width) - 1;
-}

@@ -8,7 +8,7 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import type { PortMap } from '../../circuit/types.js';
-import { And, DFlipFlop, Led, Not, Or, Register, Switch, Xor } from '../../std/index.js';
+import { And, DFlipFlop, Register, Xor } from '../../std/index.js';
 import type { SimulationHandle } from '../simulate.js';
 import { simulate } from '../simulate.js';
 
