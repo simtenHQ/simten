@@ -35,6 +35,5 @@ export {
   portPathKey,
 } from './circuit';
 export * from './testing';
-export * from './ui';
 export * from './ui-model';
 export * from './visual';

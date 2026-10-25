@@ -9,4 +9,3 @@ export { useCircuitPreviewStore } from './circuit-preview-store';
 
 export type { CircuitStore } from './circuit-store';
 export { useCircuitStore } from './circuit-store';
-export { useUIStore } from './ui-store';
