@@ -120,6 +120,13 @@ jobs:
         # drift checks, which have their own steps above.
         run: pnpm -r test
 
+      - name: Simulator fingerprints
+        # Hash of the full simulator state after N ticks of each bundled
+        # example, against packages/core/bench/baseline.json. A change means
+        # simulation results changed; if that's intended, rerun
+        # `pnpm bench --update` and say why in the PR. Speed isn't checked here.
+        run: pnpm bench --check
+
       - name: FPGA netlist byte-identity guard
         # Locks the synthesized RV32I_CPU_Core netlist (the flat IR fed to the
         # Verilog exporter — pre-codegen, so stable against exporter/toolchain

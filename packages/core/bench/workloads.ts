@@ -1,0 +1,58 @@
+import { compileSource } from '../src/api/compile-source.js';
+import { EXAMPLES } from '../src/examples/catalog.js';
+import { createSimulator, elaborate } from '../src/simulator/index.js';
+import type { SimulatorEngine } from '../src/types/simulator.js';
+
+export interface Workload {
+  id: string;
+  /** Ticks per timed run, and the point the fingerprint is taken at. */
+  ticks: number;
+  /** Drive every top-level input with fresh pseudo-random values before each tick. */
+  randomInputs: boolean;
+}
+
+// The bundled examples are what people run in the editor, and the browser
+// bench uses the same ones.
+export const WORKLOADS: Workload[] = [
+  { id: 'rule30', ticks: 60_000, randomInputs: false },
+  { id: 'hack-alu', ticks: 90_000, randomInputs: true },
+  { id: 'snake', ticks: 15_000, randomInputs: false },
+  { id: 'rv32i-computer', ticks: 8_000, randomInputs: false },
+  { id: '6502-computer', ticks: 15_000, randomInputs: false },
+];
+
+export interface Loaded {
+  engine: SimulatorEngine;
+  /** Applies the next set of inputs (if any) and ticks once. */
+  step(): void;
+}
+
+export function load(workload: Workload): Loaded {
+  const example = EXAMPLES.find((e) => e.id === workload.id);
+  if (!example) throw new Error(`no example '${workload.id}'`);
+  const compiled = compileSource(example.code);
+  if (compiled.error) throw new Error(`${workload.id}: ${compiled.error}`);
+  const top = compiled.circuits[compiled.circuits.length - 1];
+  const engine = createSimulator(elaborate(top, compiled.library), {
+    componentLibrary: compiled.library,
+  });
+
+  if (!workload.randomInputs) return { engine, step: () => engine.tick() };
+
+  const inputs = top.inputs.map((p) => ({
+    name: p.name,
+    mask: p.portType.kind === 'bus' ? 2 ** p.portType.width - 1 : 1,
+  }));
+  let seed = 1;
+  const next = () => {
+    seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0;
+    return seed;
+  };
+  return {
+    engine,
+    step: () => {
+      for (const { name, mask } of inputs) engine.setNode(name, next() & mask);
+      engine.tick();
+    },
+  };
+}
