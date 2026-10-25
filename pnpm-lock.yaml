@@ -169,6 +169,9 @@ importers:
         specifier: workspace:*
         version: link:../../packages/core
     devDependencies:
+      '@simten/ui':
+        specifier: workspace:*
+        version: link:../../packages/ui
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
