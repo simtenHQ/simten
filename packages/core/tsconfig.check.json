@@ -1,4 +1,4 @@
-// Typecheck-only config: the same sources as the build, PLUS tests and fixtures.
+// Typecheck-only config: the same sources as the build, PLUS tests, fixtures and bench.
 //
 // tsconfig.json excludes those because `tsc -b` would otherwise emit them into
 // dist. Vitest does not typecheck — it strips types with esbuild — so without
@@ -11,8 +11,9 @@
     "composite": false,
     "declaration": false,
     "declarationMap": false,
-    "noEmit": true
+    "noEmit": true,
+    "rootDir": "."
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "bench/**/*.ts"],
   "exclude": ["dist", "node_modules"]
 }
