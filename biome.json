@@ -62,6 +62,12 @@
       },
       "nursery": {
         "noFloatingPromises": "warn"
+      },
+      "complexity": {
+        "noExcessiveCognitiveComplexity": {
+          "level": "warn",
+          "options": { "maxAllowedComplexity": 25 }
+        }
       }
     }
   },
@@ -98,6 +104,9 @@
           },
           "suspicious": {
             "noExplicitAny": "off"
+          },
+          "complexity": {
+            "noExcessiveCognitiveComplexity": "off"
           }
         }
       }
