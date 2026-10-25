@@ -105,7 +105,7 @@ Fully closing this would require moving the persistent sim into the worker so `t
 
 ### postMessage boundary
 
-All communication between the main app and the sandbox crosses a `postMessage` boundary using structured-clone-safe data. User lambdas (`eval:`, `onTick:`) cross as **source strings** (`fn.toString()`) and are reconstructed via `new Function()` on the sandbox side, so closure variables don't survive the round-trip. The `compile` response returns plain IR (`Circuit[]`, `libraryCircuits`, `evalSources`); the main frame reconstructs the runtime circuit from those parts. The iframe-main hang consequence of this design is covered in the Known Limitation section above.
+All communication between the main app and the sandbox crosses a `postMessage` boundary using structured-clone-safe data, with message types shared by both sides (`@simten/ui/sandbox/protocol`). User lambdas (`eval:`, `onTick:`) go from the sandbox's worker to its main thread as **source strings** (`fn.toString()`) and are rebuilt there with `new Function()`, so closure variables don't survive the trip. The main app only ever receives data: the circuit IR, port values and peripheral state. It never receives or runs user code. The iframe-main hang consequence of this design is covered in the Known Limitation section above.
 
 ### npm imports
 

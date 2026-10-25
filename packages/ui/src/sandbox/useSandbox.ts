@@ -6,19 +6,17 @@
  * `@simten/embed`, which composes this transport with circuit-level concerns.
  * See `apps/web/content/docs/architecture.mdx` → "Runtime topology".
  *
- * Creates and manages a hidden iframe at SANDBOX_ORIGIN with
- * sandbox="allow-scripts". All circuit compilation and simulation
- * runs inside the sandbox — never in the main frame.
+ * Creates and manages a hidden iframe at SANDBOX_ORIGIN. All circuit
+ * compilation and simulation runs inside the sandbox, never in the main frame.
+ * Message types are in ./protocol.ts, shared with the sandbox.
  *
- * Security guarantees:
- *   - Separate origin → browser enforces isolation (no access to
- *     main-frame cookies, localStorage, or DOM)
- *   - sandbox="allow-scripts" blocks ALL network at the browser
- *     kernel level (no fetch, XHR, WebSocket possible)
- *   - postMessage boundary: only plain JSON crosses. No functions,
- *     no Maps, no class instances.
- *   - Infinite loops: 5s timeout kills and recreates the iframe;
- *     main UI is unaffected.
+ * Security (details in apps/web/content/docs/security.mdx):
+ *   - Separate origin: no access to the main frame's cookies, storage or DOM.
+ *   - Network is limited by the sandbox's CSP (apps/sandbox/public/_headers),
+ *     which allows only esm.sh, for npm imports.
+ *   - Only structured-clone data crosses postMessage; the page never receives
+ *     user code.
+ *   - Compiles run in the sandbox's worker under a 5s timeout.
  *
  * Usage:
  *   const sandbox = useSandbox();
@@ -27,8 +25,22 @@
  */
 
 import type { Circuit } from '@simten/core';
-import type { RLEValue } from '@simten/core/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import type {
+  CompileIRResult,
+  CompileResult,
+  EvalSource,
+  ResetResult,
+  RestoreResult,
+  SandboxError,
+  SandboxRequest,
+  SandboxResult,
+  SetNodeResult,
+  SimSlot,
+  SimulateResult,
+  SnapshotResult,
+  TickResult,
+} from './protocol.js';
 
 // ============================================================================
 // Config
@@ -58,96 +70,21 @@ export const SANDBOX_UNAVAILABLE_ERROR =
 // Types
 // ============================================================================
 
-/**
- * State of nodes on a peripheral's bus — exposed across the sandbox boundary
- * so the UI can render displays, consoles, NIC FIFOs, etc.
- *
- * Values are whatever the simulator stores for each node: number | boolean |
- * Map<number, number> | string. The sandbox only snapshots state for nodes
- * tagged (via circuit `meta.synthesizable: false`) or wired directly to such
- * a node — the sim analog of memory-mapped I/O.
- */
-export type PeripheralState = Record<string, unknown>;
-
 /** Whether the sandbox iframe has completed its handshake, or given up. */
 export type SandboxStatus = 'loading' | 'ready' | 'unavailable';
-
-export interface CompileResult {
-  circuits: Circuit[];
-  libraryCircuits: Circuit[];
-  portValues: Record<string, number>;
-  peripheralState?: PeripheralState;
-}
-
-export interface TickResult {
-  portValues: Record<string, number>;
-  cycle: number;
-  peripheralState?: PeripheralState;
-  /** Snapshot id returned when the tick was requested with `{ snapshot: true }`. */
-  snapshotId?: number;
-}
-
-export interface SimulateResult {
-  circuitName: string;
-  signals: Record<string, RLEValue[]>;
-  vcd: string;
-  ticks: number;
-  steadyStateAt?: number;
-}
-
-export interface ResetResult {
-  portValues: Record<string, number>;
-  peripheralState?: PeripheralState;
-}
-
-export interface SetNodeResult {
-  portValues: Record<string, number>;
-  peripheralState?: PeripheralState;
-  /** Snapshot id returned when `{ snapshot: true }` was passed. */
-  snapshotId?: number;
-}
-
-export interface SnapshotResult {
-  /** Undefined for combinational-only circuits (nothing to snapshot). */
-  snapshotId?: number;
-}
-
-export interface RestoreResult {
-  portValues: Record<string, number>;
-  cycle: number;
-  peripheralState?: PeripheralState;
-}
-
-export interface SandboxError {
-  type: 'error';
-  error: string;
-}
-
-export type SandboxResult =
-  | ({ type: 'compiled' } & CompileResult)
-  | ({ type: 'compiled-ir' } & {
-      portValues: Record<string, number>;
-      peripheralState?: PeripheralState;
-      snapshotId?: number;
-    })
-  | ({ type: 'ticked' } & TickResult)
-  | ({ type: 'ticked-n' } & TickResult)
-  | ({ type: 'scanned-port' } & { values: number[] })
-  | ({ type: 'rendered-samples' } & { samples: number[]; cycle: number })
-  | ({ type: 'simulated' } & SimulateResult)
-  | ({ type: 'reset' } & ResetResult)
-  | ({ type: 'set-node' } & SetNodeResult)
-  | ({ type: 'snapshot' } & SnapshotResult)
-  | ({ type: 'restored' } & RestoreResult)
-  | ({ type: 'pruned' } & {})
-  | ({ type: 'disposed' } & {})
-  | ({ type: 'error' } & SandboxError);
 
 // ============================================================================
 // Sandbox manager (singleton per hook instance)
 // ============================================================================
 
 type PendingResolve = (result: SandboxResult) => void;
+
+/** A request without its id; `send` assigns one. */
+type RequestBody = SandboxRequest extends infer R
+  ? R extends SandboxRequest
+    ? Omit<R, 'id'>
+    : never
+  : never;
 
 interface SandboxState {
   iframe: HTMLIFrameElement | null;
@@ -236,25 +173,6 @@ function normalizePortValues(data: unknown): void {
 // Hook
 // ============================================================================
 
-export interface CompileIRResult {
-  portValues: Record<string, number>;
-  peripheralState?: PeripheralState;
-  /** Snapshot of the initial state, returned when `{ snapshot: true }` was requested. */
-  snapshotId?: number;
-}
-
-/** Serialized eval entry used to transfer eval functions to the sandbox */
-export interface EvalSource {
-  evalSource: string;
-  onTickSource?: string;
-  inputNames: string[];
-  outputNames: string[];
-  stateKeys?: string[];
-}
-
-/** Slot IDs are arbitrary strings — use any unique identifier per simulation context. */
-export type SimSlot = string;
-
 export interface SandboxHandle {
   compile(source: string, slot?: SimSlot): Promise<CompileResult | SandboxError>;
   /**
@@ -264,8 +182,8 @@ export interface SandboxHandle {
    * Pass `{ snapshot: true }` to capture the initial state for time-travel.
    */
   compileIR(
-    circuit: any,
-    libraryCircuits: any[],
+    circuit: Circuit,
+    libraryCircuits: Circuit[],
     slot: SimSlot,
     options?: { evalSources?: Record<string, EvalSource>; snapshot?: boolean },
   ): Promise<CompileIRResult | SandboxError>;
@@ -480,7 +398,7 @@ export function useSandbox(): SandboxHandle {
   // no response at all is an iframe that never loads, and that is covered by the
   // ready-handshake timeout rather than by timing out each request.
   const send = useCallback(
-    <T extends SandboxResult>(message: object): Promise<T | SandboxError> => {
+    <T extends SandboxResult>(message: RequestBody): Promise<T | SandboxError> => {
       return new Promise((resolve) => {
         const state = stateRef.current;
 
@@ -535,8 +453,8 @@ export function useSandbox(): SandboxHandle {
 
   const compileIR = useCallback(
     async (
-      circuit: any,
-      libraryCircuits: any[],
+      circuit: Circuit,
+      libraryCircuits: Circuit[],
       slot: SimSlot,
       options?: { evalSources?: Record<string, EvalSource>; snapshot?: boolean },
     ): Promise<CompileIRResult | SandboxError> => {
@@ -691,7 +609,7 @@ export function useSandbox(): SandboxHandle {
       slot: SimSlot = 'default',
       options?: { snapshot?: boolean },
     ): Promise<SetNodeResult | SandboxError> => {
-      const result = await send<{ type: 'set-node' } & SetNodeResult>({
+      const result = await send<{ type: 'node-set' } & SetNodeResult>({
         type: 'set-node',
         nodeId,
         value,
@@ -699,7 +617,7 @@ export function useSandbox(): SandboxHandle {
         snapshot: options?.snapshot,
       });
       if ('error' in result) return result as SandboxError;
-      const r = result as { type: 'set-node' } & SetNodeResult;
+      const r = result as { type: 'node-set' } & SetNodeResult;
       return {
         portValues: r.portValues,
         peripheralState: r.peripheralState,
@@ -711,9 +629,12 @@ export function useSandbox(): SandboxHandle {
 
   const snapshot = useCallback(
     async (slot: SimSlot = 'default'): Promise<SnapshotResult | SandboxError> => {
-      const result = await send<{ type: 'snapshot' } & SnapshotResult>({ type: 'snapshot', slot });
+      const result = await send<{ type: 'snapshotted' } & SnapshotResult>({
+        type: 'snapshot',
+        slot,
+      });
       if ('error' in result) return result as SandboxError;
-      const r = result as { type: 'snapshot' } & SnapshotResult;
+      const r = result as { type: 'snapshotted' } & SnapshotResult;
       return { snapshotId: r.snapshotId };
     },
     [send],

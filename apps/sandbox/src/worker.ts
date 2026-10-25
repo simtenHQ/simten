@@ -34,6 +34,7 @@ import {
   getAllCircuitEvals,
   stripTypes,
 } from '@simten/core/circuit';
+import type { EvalSource, WorkerRequest, WorkerResponse } from '@simten/ui/sandbox/protocol';
 import {
   containsDynamicImport,
   extractAndRewriteImports,
@@ -45,17 +46,8 @@ import {
  * be sent to the iframe main thread and reconstructed there. This bridges the
  * closure boundary that postMessage can't cross directly.
  */
-function extractEvalSources(): Record<
-  string,
-  {
-    evalSource: string;
-    onTickSource?: string;
-    inputNames: string[];
-    outputNames: string[];
-    stateKeys?: string[];
-  }
-> {
-  const sources: Record<string, ReturnType<typeof extractEvalSources>[string]> = {};
+function extractEvalSources(): Record<string, EvalSource> {
+  const sources: Record<string, EvalSource> = {};
   const registry = getAllCircuitEvals();
   for (const [name, entry] of registry) {
     sources[name] = {
@@ -69,18 +61,11 @@ function extractEvalSources(): Record<
   return sources;
 }
 
-type WorkerRequest =
-  | { id: string; type: 'compile'; source: string }
-  | {
-      id: string;
-      type: 'simulate';
-      source: string;
-      ticks: number;
-      inputs?: Record<string, number | boolean>;
-      memoryData?: Record<string, Record<string, number>>;
-    };
+function reply(msg: WorkerResponse) {
+  self.postMessage(msg);
+}
 
-function circuitToSerializable(c: Circuit): object {
+function circuitToSerializable(c: Circuit): Circuit {
   return JSON.parse(JSON.stringify(c));
 }
 
@@ -94,7 +79,7 @@ async function handleRequest(req: WorkerRequest): Promise<void> {
       // bypasses our esm.sh allowlist (connect-src doesn't govern import()).
       // See containsDynamicImport in rewrite-imports.ts for full rationale.
       if (containsDynamicImport(js)) {
-        self.postMessage({
+        reply({
           id: req.id,
           type: 'error',
           error:
@@ -127,7 +112,7 @@ async function handleRequest(req: WorkerRequest): Promise<void> {
       }
 
       if (result.error) {
-        self.postMessage({ id: req.id, type: 'error', error: result.error });
+        reply({ id: req.id, type: 'error', error: result.error });
         return;
       }
       // A source that defines nothing but exports a component (`export default
@@ -136,7 +121,7 @@ async function handleRequest(req: WorkerRequest): Promise<void> {
       const renderable =
         result.circuits.length > 0 ? result.circuits : (result.exportedCircuits ?? []);
       if (renderable.length === 0) {
-        self.postMessage({
+        reply({
           id: req.id,
           type: 'error',
           error:
@@ -156,15 +141,15 @@ async function handleRequest(req: WorkerRequest): Promise<void> {
       // can't handle — those are resolved via esm.sh only in the worker).
       const evalSources = extractEvalSources();
 
-      self.postMessage({
+      reply({
         id: req.id,
-        type: 'compiled-ir',
+        type: 'compiled',
         circuits: renderable.map(circuitToSerializable),
         libraryCircuits: libraryCircuits.map(circuitToSerializable),
         evalSources,
       });
     } catch (e) {
-      self.postMessage({
+      reply({
         id: req.id,
         type: 'error',
         error: e instanceof Error ? e.message : String(e),
@@ -190,16 +175,18 @@ async function handleRequest(req: WorkerRequest): Promise<void> {
       const simResult = simulateCircuit({
         source: req.source,
         ticks: req.ticks,
-        inputs: req.inputs,
+        inputs:
+          req.inputs &&
+          Object.fromEntries(Object.entries(req.inputs).map(([k, v]) => [k, Number(v)])),
         memoryData,
       });
 
       if ('error' in simResult) {
-        self.postMessage({ id: req.id, type: 'error', error: simResult.error });
+        reply({ id: req.id, type: 'error', error: simResult.error });
         return;
       }
 
-      self.postMessage({
+      reply({
         id: req.id,
         type: 'simulated',
         circuitName: simResult.circuit,
@@ -209,7 +196,7 @@ async function handleRequest(req: WorkerRequest): Promise<void> {
         steadyStateAt: simResult.steadyStateAt,
       });
     } catch (e) {
-      self.postMessage({
+      reply({
         id: req.id,
         type: 'error',
         error: e instanceof Error ? e.message : String(e),
@@ -221,7 +208,7 @@ async function handleRequest(req: WorkerRequest): Promise<void> {
 self.onmessage = (event: MessageEvent) => {
   const req = event.data as WorkerRequest;
   handleRequest(req).catch((e) => {
-    self.postMessage({
+    reply({
       id: req.id,
       type: 'error',
       error: e instanceof Error ? e.message : String(e),
