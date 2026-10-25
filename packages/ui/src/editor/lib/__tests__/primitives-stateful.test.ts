@@ -10,7 +10,7 @@
  */
 
 import * as fc from 'fast-check';
-import { describe as _describe, expect, it } from 'vitest';
+import { describe as _describe, it } from 'vitest';
 
 const PRIMITIVE_EVALUATORS: any = {};
 const describe = _describe.skip;

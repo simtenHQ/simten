@@ -365,36 +365,6 @@ export function generateSequentialTestbench(
 // ────────────────────────────────────────────────────────────────────────
 
 /**
- * Sweep an address input across 0..count-1, sampling a value port at
- * each setting. Used for debug-scan readouts: RV32I regfile read via
- * debug_addr → debug_value, ROM content dump, framebuffer readback,
- * cache contents, or any indexed-readout pattern.
- *
- * Produces `count` vectors starting at `startCycle`, one per address.
- * Each vector sets `addrNode` to the current index and includes an
- * `expect` keyed by `valueNode` so the generator emits a RESULT line.
- * The `expect` value itself is a placeholder — the test compares the
- * parsed RESULT against whatever the JS simulator produced for the
- * same sequence (co-sim pattern), not against these placeholder values.
- */
-export function sweepPort(
-  addrNode: string,
-  valueNode: string,
-  count: number,
-  startCycle: number,
-): SequentialTestVector[] {
-  const vectors: SequentialTestVector[] = [];
-  for (let i = 0; i < count; i++) {
-    vectors.push({
-      cycle: startCycle + i,
-      setInputs: { [addrNode]: i },
-      expect: { [valueNode]: 0 },
-    });
-  }
-  return vectors;
-}
-
-/**
  * Generate exhaustive test vectors for small combinational circuits.
  * Tests all input combinations if total input bits <= maxBits.
  */

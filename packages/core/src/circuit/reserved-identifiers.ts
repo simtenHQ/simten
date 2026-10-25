@@ -13,7 +13,7 @@
  * applies to circuit names alone.
  */
 
-export const RESERVED_IDENTIFIERS: ReadonlySet<string> = new Set([
+const RESERVED_IDENTIFIERS: ReadonlySet<string> = new Set([
   // JS reserved words (illegal as a binding name)
   'break',
   'case',

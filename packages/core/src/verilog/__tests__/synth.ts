@@ -27,7 +27,7 @@ import type { ExportResult } from '../types.js';
 
 export type SynthTarget = 'generic' | 'ice40' | 'ecp5';
 
-export interface SynthStats {
+interface SynthStats {
   cells: number;
   wires: number;
   cellBreakdown: Record<string, number>;
@@ -47,7 +47,7 @@ export function hasSynth(): boolean {
 }
 
 /** Resolved synth endpoint or null when unset. */
-export function synthUrl(): string | null {
+function synthUrl(): string | null {
   if (typeof process === 'undefined') return null;
   return process.env?.SYNTH_URL ?? null;
 }

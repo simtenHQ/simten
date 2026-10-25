@@ -96,7 +96,7 @@ export interface CircuitShape {
 /** Resolve a port-map value (PortType or legacy `number` bus-width shorthand)
  *  to a concrete PortType. Single source of truth for port-map normalization;
  *  also re-used by circuit.ts for the public `circuit()` signature. */
-export type NormalizePort<T> = T extends number ? BusType : T extends PortType ? T : PortType;
+type NormalizePort<T> = T extends number ? BusType : T extends PortType ? T : PortType;
 export type NormalizePorts<M> = { [K in keyof M]: NormalizePort<M[K]> };
 
 type SourceRefs<M> = { readonly [K in keyof M]: SourcePortRef<NormalizePort<M[K]>> };
@@ -168,7 +168,7 @@ export type PortValues<M> = {
  * matches at one bit and diverges above it, so requiring a number on `bus`
  * ports is what keeps that unreachable.
  */
-export type PortOutputValues<M> = {
+type PortOutputValues<M> = {
   [K in keyof M]: M[K] extends BitType ? number | boolean : number;
 };
 
@@ -195,7 +195,7 @@ export type PortOutputValues<M> = {
  * the declarative forms have already been resolved. circuit() converts this
  * into that. Pairs with `StateFieldType` in ./bit-bus.ts.
  */
-export type StateFieldValue =
+type StateFieldValue =
   | number
   | Map<number, number>
   | string
@@ -224,16 +224,16 @@ export type StateShape = Record<string, StateFieldValue>;
  * ROM costs nothing per tick. Indexed reads return 0 for unset addresses
  * rather than `undefined`, matching the Proxy's `?? 0`.
  */
-export type MemoryAccess = Map<number, number> & Record<number, number>;
+type MemoryAccess = Map<number, number> & Record<number, number>;
 
-export type ResolvedStateValue<T> = T extends import('./bit-bus.js').RegState
+type ResolvedStateValue<T> = T extends import('./bit-bus.js').RegState
   ? number
   : T extends import('./bit-bus.js').MemState
     ? MemoryAccess
     : T;
 
 /** State shape as seen by `eval` / `onTick`, with declarations resolved. */
-export type ResolvedState<S> = { [K in keyof S]: ResolvedStateValue<S[K]> };
+type ResolvedState<S> = { [K in keyof S]: ResolvedStateValue<S[K]> };
 
 /**
  * What `onTick` may RETURN — deliberately looser than what it receives.
@@ -243,13 +243,13 @@ export type ResolvedState<S> = { [K in keyof S]: ResolvedStateValue<S[K]> };
  * produces. `MemoryAccess` is assignable to `Map`, so handing back the received
  * value works too.
  */
-export type ResolvedStateReturnValue<T> = T extends import('./bit-bus.js').RegState
+type ResolvedStateReturnValue<T> = T extends import('./bit-bus.js').RegState
   ? number
   : T extends import('./bit-bus.js').MemState
     ? Map<number, number>
     : T;
 
-export type ResolvedStateReturn<S> = { [K in keyof S]: ResolvedStateReturnValue<S[K]> };
+type ResolvedStateReturn<S> = { [K in keyof S]: ResolvedStateReturnValue<S[K]> };
 
 // ============================================================================
 // Component metadata

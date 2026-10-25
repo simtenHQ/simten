@@ -29,12 +29,6 @@ export interface SynthValidation {
   errors: string[];
 }
 
-/** Combined parsed + validated AST ready for transpilation */
-export interface SynthResult {
-  ast: ParsedEval;
-  validation: SynthValidation;
-}
-
 // ============================================================================
 // Parser
 // ============================================================================

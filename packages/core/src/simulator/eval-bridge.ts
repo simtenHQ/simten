@@ -281,7 +281,7 @@ export function getOnTickFunction(name: string): OnTickEntry | undefined {
   return onTickEntry;
 }
 
-// Keep for backwards compat — simulate.ts still calls these
+// Keep for backwards compat — simulate.ts still calls this
 export function registerEvalFunction(
   name: string,
   inputNames: string[],
@@ -294,17 +294,4 @@ export function registerEvalFunction(
   while (EVALUATORS.length <= idx) EVALUATORS.push(null);
   EVALUATORS[idx] = generateEvalWrapper(inputNames, outputNames, evalFn, stateKeys);
   return idx;
-}
-
-export function registerOnTickFunction(
-  name: string,
-  fn: (inputsAndState: Record<string, any>) => Record<string, any>,
-  initialState?: Record<string, any>,
-): void {
-  if (onTickRegistry.has(name)) return;
-  onTickRegistry.set(name, {
-    inputNames: [],
-    stateKeys: initialState ? Object.keys(initialState) : [],
-    fn,
-  });
 }

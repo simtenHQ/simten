@@ -38,8 +38,8 @@ import {
 } from '@simten/core/std';
 
 export const SAMPLE_RATE = 22050;
-export const TABLE_BITS = 12;
-export const TABLE_SIZE = 1 << TABLE_BITS;
+const TABLE_BITS = 12;
+const TABLE_SIZE = 1 << TABLE_BITS;
 
 /** Envelope full-scale. The decay step is an input, so its rate is a knob. */
 const ENV_FULL = 32767;
@@ -69,7 +69,7 @@ function bandLimited(harmonics: number, oddOnly = false): number[] {
 
 /** Order matters: the index is what the `wave` input selects. */
 export const WAVES = ['sine', 'triangle', 'square', 'saw'] as const;
-export type WaveName = (typeof WAVES)[number];
+type WaveName = (typeof WAVES)[number];
 
 const GENERATORS: Record<WaveName, () => number[]> = {
   sine: () => bandLimited(1),

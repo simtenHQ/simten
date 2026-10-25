@@ -10,7 +10,7 @@
 import type { Circuit } from '@simten/core';
 import type { SandboxHandle, SimSlot } from '@simten/ui/sandbox';
 
-export interface CompiledSource {
+interface CompiledSource {
   /** Circuits the source defines. */
   circuits: Circuit[];
   /** Everything else the source pulled in, stdlib included. */

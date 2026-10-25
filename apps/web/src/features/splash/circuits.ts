@@ -19,7 +19,7 @@ export interface CircuitDefinition {
 
 // ── Gate Circuits (built from NAND only) ──
 
-export const NotGate = circuit('NotGate', {
+const NotGate = circuit('NotGate', {
   inputs: { a: bit },
   outputs: { out: bit },
   nodes: { nand1: Nand },
@@ -29,7 +29,7 @@ export const NotGate = circuit('NotGate', {
   ],
 });
 
-export const AndGate = circuit('AndGate', {
+const AndGate = circuit('AndGate', {
   inputs: { a: bit, b: bit },
   outputs: { out: bit },
   nodes: { nand1: Nand, nand2: Nand },
@@ -41,7 +41,7 @@ export const AndGate = circuit('AndGate', {
   ],
 });
 
-export const OrGate = circuit('OrGate', {
+const OrGate = circuit('OrGate', {
   inputs: { a: bit, b: bit },
   outputs: { out: bit },
   nodes: { not_a: Nand, not_b: Nand, or_out: Nand },
@@ -54,7 +54,7 @@ export const OrGate = circuit('OrGate', {
   ],
 });
 
-export const XorGate = circuit('XorGate', {
+const XorGate = circuit('XorGate', {
   inputs: { a: bit, b: bit },
   outputs: { out: bit },
   nodes: { nand1: Nand, nand2: Nand, nand3: Nand, nand4: Nand },
@@ -96,7 +96,7 @@ export const FullAdder = circuit('FullAdder', {
   ],
 });
 
-export const MuxGate = circuit('MuxGate', {
+const MuxGate = circuit('MuxGate', {
   inputs: { a: bit, b: bit, sel: bit },
   outputs: { out: bit },
   nodes: { not_sel: Not, and_a: And, and_b: And, or_out: Or },
@@ -266,5 +266,3 @@ export const CIRCUITS: Record<string, CircuitDefinition> = {
     circuit: DelayLine,
   },
 };
-
-export const CIRCUIT_KEYS = Object.keys(CIRCUITS) as (keyof typeof CIRCUITS)[];

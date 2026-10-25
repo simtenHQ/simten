@@ -16,7 +16,7 @@ import { extname, join, normalize, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 /** Bundled editor assets. dist/lib/serve-static.js -> dist/public */
-export const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
+const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
 
 /** True when the editor build has been bundled into the package. */
 export function publicDirExists(): boolean {

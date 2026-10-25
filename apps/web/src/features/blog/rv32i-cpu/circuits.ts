@@ -20,7 +20,7 @@ import type { BlogCircuit } from '../types';
 
 // ── Circuit Definitions ──
 
-export const ProgramCounter = circuit('ProgramCounter', {
+const ProgramCounter = circuit('ProgramCounter', {
   inputs: { stall: bit },
   outputs: { pc_out: bus(32) },
   nodes: {
@@ -38,7 +38,7 @@ export const ProgramCounter = circuit('ProgramCounter', {
   ],
 });
 
-export const PCWithMux = circuit('PCWithMux', {
+const PCWithMux = circuit('PCWithMux', {
   inputs: {
     stall: bit,
     branch_taken: bit,
@@ -70,7 +70,7 @@ export const PCWithMux = circuit('PCWithMux', {
   ],
 });
 
-export const PipelineReg = circuit('PipelineReg', {
+const PipelineReg = circuit('PipelineReg', {
   inputs: { data_in: bus(8), flush: bit },
   outputs: { data_out: bus(8) },
   nodes: {
@@ -89,7 +89,7 @@ export const PipelineReg = circuit('PipelineReg', {
   ],
 });
 
-export const ForwardingMux = circuit('ForwardingMux', {
+const ForwardingMux = circuit('ForwardingMux', {
   inputs: { reg_val: bus(32), ex_val: bus(32), mem_val: bus(32), sel: bus(2) },
   outputs: { out: bus(32) },
   nodes: {
@@ -110,7 +110,7 @@ export const ForwardingMux = circuit('ForwardingMux', {
   ],
 });
 
-export const SimpleALU = circuit('SimpleALU', {
+const SimpleALU = circuit('SimpleALU', {
   inputs: { a: bus(8), b: bus(8), op: bus(2) },
   outputs: { result: bus(8) },
   nodes: {

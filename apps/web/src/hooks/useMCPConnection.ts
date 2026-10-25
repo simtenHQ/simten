@@ -22,7 +22,7 @@ export type ConnectionStatus =
   | 'reconnecting'
   | 'disconnected';
 
-export interface MCPMessage {
+interface MCPMessage {
   type: string;
   [key: string]: unknown;
 }

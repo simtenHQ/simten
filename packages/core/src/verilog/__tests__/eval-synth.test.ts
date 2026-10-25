@@ -7,7 +7,6 @@
 import { describe, expect, it } from 'vitest';
 import { getCircuitEval } from '../../circuit/eval-registry.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import { Adder, And, Xor } from '../../std/index.js';
 import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
 import {
   checkSynthesizable,

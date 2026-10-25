@@ -1,5 +1,5 @@
-export const SITE_URL = 'https://simten.dev';
-export const SITE_NAME = 'Simten';
+const SITE_URL = 'https://simten.dev';
+const SITE_NAME = 'Simten';
 
 type Meta = { title?: string } & Record<string, string>;
 
@@ -44,7 +44,7 @@ export function pageHead(seo: PageSeo) {
   };
 }
 
-export function jsonLdScript(data: Record<string, unknown>) {
+function jsonLdScript(data: Record<string, unknown>) {
   return {
     type: 'application/ld+json',
     children: JSON.stringify(data),
@@ -65,7 +65,7 @@ export function softwareApplicationLd() {
   });
 }
 
-export function blogPostingLd(args: {
+function blogPostingLd(args: {
   title: string;
   description: string;
   path: string;
