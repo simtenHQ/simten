@@ -30,12 +30,12 @@ import {
   SimtenCodeEditor,
   type SimtenCodeEditorHandle,
 } from '@simten/ui/monaco';
+import { Button } from '@simten/ui/primitives/button';
+import { TooltipProvider } from '@simten/ui/primitives/tooltip';
 import { Download, Loader2, Share2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SiteHeader } from '@/components/SiteHeader';
 import { useTheme } from '@/components/ThemeProvider';
-import { Button } from '@/components/ui/button';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { ErrorDisplay } from '@/features/code-editor';
 
 /** Check if a circuit name is an auto-generated harness (autoHarness appends 'Demo') */

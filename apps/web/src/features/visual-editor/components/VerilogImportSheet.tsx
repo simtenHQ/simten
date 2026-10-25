@@ -20,6 +20,7 @@
 
 'use client';
 
+import { Button } from '@simten/ui/primitives/button';
 import {
   Sheet,
   SheetClose,
@@ -30,7 +31,6 @@ import {
 } from '@simten/ui/primitives/sheet';
 import { FileInput, Loader2, X } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Button } from '@/components/ui/button';
 import {
   classifyFile,
   detectTopCandidates,

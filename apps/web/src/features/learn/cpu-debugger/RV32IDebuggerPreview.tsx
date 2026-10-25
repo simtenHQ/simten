@@ -15,9 +15,14 @@
 
 'use client';
 
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@simten/ui/primitives/tooltip';
 import { useEffect, useRef, useState } from 'react';
 import { HighlightedCode } from '@/components/HighlightedCode';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
 const PIPELINE_COLORS = {
   IF: 'bg-purple-100 text-purple-800 border-purple-300 dark:bg-purple-500/20 dark:text-purple-300 dark:border-purple-500/40',
