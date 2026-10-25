@@ -9,10 +9,7 @@ export type { BaseNodeProps, PortConfig } from './BaseNode';
 // Base
 export { BaseNode } from './BaseNode';
 export { CompositeBadge } from './CompositeBadge';
-export { ConsoleNode } from './ConsoleNode';
-// Lightweight embed variants (legacy aliases)
-export { EmbedConsoleNode } from './EmbedConsoleNode';
-export { EmbedScreenNode } from './EmbedScreenNode';
+export { ConsoleNode, UartTxNode } from './ConsoleNode';
 export { EthFrameInputNode } from './EthFrameInputNode';
 // Input nodes
 export { InputNode } from './InputNode';
@@ -29,4 +26,3 @@ export { RegisterNode } from './RegisterNode';
 export { ROMNode } from './ROMNode';
 export { RV32IInstrMemNode } from './RV32IInstrMemNode';
 export { ScreenNode } from './ScreenNode';
-export { UartTxNode } from './UartTxNode';
