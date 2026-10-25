@@ -165,6 +165,9 @@ export {
   createNumericSequentialState,
   toFlatSequentialState,
 } from './compile-circuit.js';
+// Recompiles a component's evaluator from its current registry entry. Running
+// simulators dispatch through a shared table, so this changes them too.
+export { ensureEvaluatorRegistered } from './eval-bridge.js';
 export { NumericEventQueue } from './numeric-event-queue.js';
 export type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 export { PRIMITIVE_INDEX_TO_NAME, PRIMITIVE_TYPE_INDICES } from './numeric-types.js';

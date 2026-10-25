@@ -40,11 +40,11 @@ The iframe spawns a Web Worker for all user code execution. Workers get their ow
 ```
 simten.dev (main app)               ← never runs user code
 └── sandbox.simten.dev (iframe, origin boundary)
-    ├── iframe-main thread
-    │   └── new Function(evalSource)  ← user lambdas (eval:/onTick:)
-    │       invoked from sim.tick(); not killable, see Known Limitation below
+    ├── iframe-main thread          ← relay + watchdog, runs no user code
     └── worker.ts (Web Worker, separate thread)
-        └── new Function(userCode)    ← compile/simulate
+        ├── new Function(userCode)  ← compile/simulate
+        ├── eval:/onTick: lambdas   ← called from sim.tick()
+        └── every simulator, snapshot and slot
             killable via worker.terminate() on 5s timeout
 ```
 
@@ -77,35 +77,24 @@ This CSP is set both in the dev server (`apps/sandbox/vite.config.ts`) and in pr
 
 ### Timeout and recovery
 
-The sandbox sets a 5-second timeout per request. If the worker doesn't respond:
+The iframe's main thread gives every request 5 seconds of worker time. If the worker doesn't answer:
 
 1. `worker.terminate()` kills the hung thread
 2. A fresh worker is spawned immediately
-3. Any requests pending against the old worker are resolved with `'Worker restarted'` so the caller can retry
+3. Each simulation is recompiled from its last successful compile and starts again at cycle 0
+4. The stuck request gets a timeout error; anything queued behind it gets `'Worker restarted'`
 
-The main app never hangs. The sandbox recovers transparently.
+The main app never hangs.
 
-### Why the simulator is split across two threads
+### `eval:` and `onTick:` lambdas
 
-The same engine runs in two places **inside the sandbox iframe**: an ephemeral instance in the **Web Worker** during `compile` and headless `simulate`, and a persistent instance on the **iframe's own main thread** that drives the live canvas (`tick`, `setNode`, `snapshot`, `restore`).
+Circuit components can attach user lambdas via `eval:` and `onTick:`, which the simulator calls on every evaluation and tick. All simulation runs in the worker, so these lambdas run there too, inside the same terminate envelope as compile and simulate. **The parent app (`simten.dev`) never executes user code at all.**
 
-**The parent app (`simten.dev`) never executes user code at all**; it lives behind the origin boundary. Everything below is about the split *inside* the sandbox iframe.
-
-The split between worker and iframe-main is not about one being safer than the other; they share origin and CSP. It's about **runaway recovery**. `worker.terminate()` is the only way out of a `while(true){}` in user code. If the canvas sim shared the worker thread, every bad loop would wipe switch positions, cycle count, and snapshots. Keeping the persistent sim on iframe-main makes a runaway in compile/simulate cost the user 5 seconds and an error toast, not their session.
-
-This is structural crash isolation: it falls out of *where* code runs, not from careful error handling. The cost is one extra postMessage hop per tick, well under the frame budget.
-
-### Known limitation: `eval:` and `onTick:` lambdas
-
-Circuit components can attach user lambdas via `eval:` and `onTick:`. These are reconstructed via `new Function()` on the iframe's main thread (because the persistent sim that invokes them lives there) and called during `sim.tick()`. A pathological lambda (for instance `eval: () => { while(1); }`) can therefore hang the iframe's main thread, *outside* the worker terminate envelope that protects compile/simulate.
-
-The security boundary still holds: the origin boundary blocks access to `simten.dev` cookies/storage, the CSP blocks data egress, and the hung thread has no path to the parent app. The impact is the user's *own* iframe hanging until they refresh: a self-DoS, not a confidentiality or integrity breach. Same risk class as any website running an infinite loop on itself.
-
-Fully closing this would require moving the persistent sim into the worker so `terminate()` covers eval invocations too. The blocker is canvas-state recovery on terminate (snapshot-before-execute / restore-on-terminate), tracked as issue #51. See `apps/sandbox/src/main.ts` header for the in-code note.
+A pathological lambda (for instance `eval: () => { while(1); }`) blocks only the worker. The watchdog on the iframe's main thread kills it after 5 seconds, and the simulation restarts at cycle 0. What the worker held is gone: cycle count, switch positions and time-travel history. Memory loaded at runtime, such as a program written into ROM or RAM, is cleared too. Snapshot ids from before the restart no longer restore. If a circuit hangs again while it's being recompiled, that simulation is dropped.
 
 ### postMessage boundary
 
-All communication between the main app and the sandbox crosses a `postMessage` boundary using structured-clone-safe data, with message types shared by both sides (`@simten/ui/sandbox/protocol`). User lambdas (`eval:`, `onTick:`) go from the sandbox's worker to its main thread as **source strings** (`fn.toString()`) and are rebuilt there with `new Function()`, so closure variables don't survive the trip. The main app only ever receives data: the circuit IR, port values and peripheral state. It never receives or runs user code. The iframe-main hang consequence of this design is covered in the Known Limitation section above.
+All communication between the main app and the sandbox crosses a `postMessage` boundary using structured-clone-safe data, with message types shared by both sides (`@simten/ui/sandbox/protocol`). Inside the sandbox, the iframe's main thread passes these messages to the worker and back unchanged. The main app only ever receives data: the circuit IR, port values and peripheral state. It never receives or runs user code. One exception runs the other way: `<circuit-embed>` sends its own components' lambdas to the sandbox as **source strings** (`fn.toString()`), and the worker rebuilds them with `new Function()`, so closure variables don't survive the trip.
 
 ### npm imports
 
@@ -135,9 +124,8 @@ This all happens inside the sandbox worker. The main frame never touches the npm
 | Access `simten.dev` cookies / localStorage | Blocked: origin isolation |
 | Access `simten.dev` DOM | Blocked: origin isolation |
 | `window` object from user code | Blocked: runs in Worker (no `window`) |
-| `localStorage` from user code | Worker code can't reach `localStorage` at all (not defined in Workers); iframe-main eval code sees `sandbox.simten.dev`'s storage, not `simten.dev`'s; the origin boundary blocks the cross-origin read |
-| Infinite loop in compile / simulate (worker) | Blocked: Worker on separate OS thread, killed after 5s via `worker.terminate()` |
-| Infinite loop in an `eval:` / `onTick:` lambda (iframe-main) | **Not blocked**: hangs the user's own iframe until they refresh. Self-DoS only; no data egress (CSP holds), no parent-app reach (origin boundary holds). See Known Limitation above. |
+| `localStorage` from user code | Blocked: user code runs only in the Worker, where `localStorage` isn't defined |
+| Infinite loop in compile / simulate / an `eval:` or `onTick:` lambda | Blocked: Worker on separate OS thread, killed after 5s via `worker.terminate()`; the simulation restarts at cycle 0 |
 | HTTP requests to arbitrary hosts | Blocked: `connect-src` CSP on sandbox server |
 | Source code exfiltration via `fetch` | Blocked: `connect-src` CSP on sandbox server |
 | `new Function()` in main frame | Blocked: enforced by automated invariant tests (see below) |

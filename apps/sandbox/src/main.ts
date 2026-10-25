@@ -1,904 +1,207 @@
 /**
- * Sandbox iframe main thread — IFRAME side of the bridge.
+ * Sandbox iframe main thread: relay and watchdog.
  *
- * The host-side counterpart lives at `packages/ui/src/sandbox/useSandbox.ts`.
- * This file runs *inside* the cross-origin iframe; it receives postMessage
- * commands from the host and drives `@simten/core/simulator` (which runs in
- * the worker for compile/simulate, on iframe-main for tick/reset/set-node).
- * See `apps/web/content/docs/architecture.mdx` → "Runtime topology".
+ * The page side is `packages/ui/src/sandbox/useSandbox.ts`; message types are
+ * in `@simten/ui/sandbox/protocol`. Runs in a hidden cross-origin iframe
+ * (sandbox.simten.dev), so user code can't reach the page's cookies, storage
+ * or DOM. See `apps/web/content/docs/security.mdx`.
  *
- * Runs inside a hidden iframe with sandbox="allow-scripts allow-same-origin".
- * Origin isolation (sandbox.simten.dev vs simten.dev) prevents access to the
- * main app's cookies, localStorage, and DOM.
+ * All user code, every simulator and all simulation state live in the worker
+ * (`worker.ts`). This thread runs no user code: it forwards page requests to
+ * the worker and responses back to the page, so it can't hang.
  *
- * compile / simulate → delegated to a Web Worker (separate thread).
- *   An infinite loop in the worker blocks only that thread. The iframe's
- *   event loop stays live so it can fire the 5s timeout and terminate() the
- *   worker, then spawn a fresh one.
- *
- * tick / reset / set-node → run directly on the main thread (no user code,
- *   just advancing the already-compiled simulator — safe and fast).
- *
- *   ⚠ Known gap (tracked separately): when a circuit uses `eval:` / `onTick:`
- *   lambdas, registerCircuitEval() reconstructs them via new Function() and
- *   the simulator invokes them during tick — on THIS thread, not the worker.
- *   A user lambda containing `while(1){}` will hang iframe-main and escape
- *   the 5s WORKER_TIMEOUT_MS / terminate() recovery. The fix requires either
- *   moving sim+tick into the worker (blocked on canvas-state recovery, #51)
- *   or routing each eval invocation through the worker per-tick. Until then,
- *   the threat model for eval/onTick lambdas is "trusted code" — not the same
- *   guarantee as the rest of the sandbox.
- *
- * Security guarantees:
- *   IN:  arbitrary untrusted TypeScript string
- *   OUT: plain JSON only — no functions, no Maps, no class instances
- *
- * Why the persistent sim lives HERE and not in the worker:
- *   The worker is killable (terminate() is the only recovery from a runaway
- *   `while(true){}` in user code). If the canvas sim shared that thread,
- *   every bad loop would wipe switch positions, cycle count, and snapshots.
- *   Keeping it on iframe-main — which never runs user code and so can't
- *   hang — makes runaway recovery free: a bad loop costs 5 seconds and an
- *   error toast, not the session. This is structural crash isolation, not
- *   a security distinction (both threads share the same origin + CSP).
- *
- * ⚠ Do NOT move the persistent sim into the worker without first solving
- *   canvas-state recovery (snapshot-before-execute / restore-on-terminate).
- *   See issue #51.
- *
- * Snapshots live inside the slot (don't cross postMessage) to avoid
- * serialization cost per tick — see SlotState.snapshots.
+ * Watchdog: when the oldest outstanding request has had the worker for 5s,
+ * the worker is terminated and a new one started. Each slot is recompiled from
+ * the last successful compile/compile-ir request seen for it, at cycle 0. The
+ * stuck request gets a timeout error and the others get "Worker restarted".
+ * Snapshots don't survive. A slot whose recompile hangs too is dropped.
  */
 
-import type { BitValue, BusValue, Circuit, CircuitLibrary, SimulatorSnapshot } from '@simten/core';
-import { createSimulator, elaborate } from '@simten/core';
-import { getAllCircuitEvals, registerCircuitEval } from '@simten/core/circuit';
-import type { EnvironmentalStateValue } from '@simten/core/simulator';
 import type {
-  EvalSource,
   SandboxRequest,
-  SandboxResult,
+  SandboxResponse,
+  SimSlot,
   WorkerRequest,
   WorkerResponse,
 } from '@simten/ui/sandbox/protocol';
 
-/**
- * Stdlib component names, captured before any user code runs.
- *
- * Evals arrive here as source *text* and are rebuilt with `new Function`, which
- * keeps the body but not the closure. That is fine for user circuits, whose
- * evals are self-contained, and wrong for the stdlib: `Adder` is written
- * `({ a, b, carry_in, width: w = width }) => …`, where the default reads the
- * factory's `width`. Rebuilt from text, `width` is a free variable and the
- * evaluator throws "width is not defined" the moment it runs.
- *
- * Importing `@simten/core` above already registered the real ones, closures and
- * all, so the rebuilt copies are never needed — they used to be discarded by a
- * first-write-wins guard inside `registerCircuitEval`, until that guard was
- * removed so the editor could redefine a primitive. Skipping stdlib names here
- * keeps both: the stdlib stays intact, and a user circuit still replaces its own
- * previous definition.
- */
-const STDLIB_EVAL_NAMES: ReadonlySet<string> = new Set(getAllCircuitEvals().keys());
+const TIMEOUT_MS = 5000;
+const TIMED_OUT_ERROR = 'Execution timed out. The simulation was restarted from cycle 0.';
+const RESTARTED_ERROR = 'Worker restarted';
+const DEFAULT_SLOT = 'default';
 
-// ============================================================================
-// Worker management
-// ============================================================================
+type CompileRequest = Extract<SandboxRequest, { type: 'compile' | 'compile-ir' }>;
 
-const WORKER_TIMEOUT_MS = 5000;
+/** Bumped per worker; the worker uses it to keep snapshot ids unique across restarts. */
+let generation = 0;
+let worker = startWorker();
 
-let worker = createWorker();
-const pendingWorker = new Map<string, (result: WorkerResponse) => void>();
+/** Page requests sent to the current worker, oldest first. */
+const inFlight = new Map<string, SandboxRequest>();
+let watchdog: ReturnType<typeof setTimeout> | undefined;
 
-function createWorker(): Worker {
-  const w = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
-  w.onmessage = (e: MessageEvent) => {
-    const { id } = e.data as WorkerResponse;
-    const resolve = pendingWorker.get(id);
-    if (resolve) {
-      pendingWorker.delete(id);
-      resolve(e.data);
-    }
-  };
-  w.onerror = (e) => {
-    console.error('[sandbox worker error]', e);
-  };
+/** Last successful compile per slot, replayed into a new worker. */
+const lastCompile = new Map<SimSlot, CompileRequest>();
+
+/** Replay requests waiting on the new worker, by id. */
+const replays = new Map<string, (res: WorkerResponse) => void>();
+let replayCounter = 0;
+
+/** Page requests that arrive during a restart; sent once replay is done. */
+let held: SandboxRequest[] | null = null;
+
+function startWorker(): Worker {
+  const w = new Worker(new URL('./worker.ts', import.meta.url), {
+    type: 'module',
+    name: String(generation++),
+  });
+  w.onmessage = (e: MessageEvent) => onWorkerMessage(e.data as WorkerResponse);
+  w.onerror = (e) => console.error('[sandbox worker error]', e);
   return w;
 }
 
-function delegateToWorker(msg: WorkerRequest): Promise<WorkerResponse> {
+// ============================================================================
+// Page ↔ worker
+// ============================================================================
+
+// Parent origin is pinned on the first inbound message. Until then only the
+// benign `ready` signal goes out, with a wildcard.
+let parentOrigin: string | null = null;
+
+function respond(response: SandboxResponse) {
+  if (!parentOrigin) return;
+  parent.postMessage(response, parentOrigin);
+}
+
+function send(req: SandboxRequest) {
+  if (held) {
+    held.push(req);
+    return;
+  }
+  inFlight.set(req.id, req);
+  if (inFlight.size === 1) armWatchdog();
+  const msg: WorkerRequest = req;
+  worker.postMessage(msg);
+}
+
+function onWorkerMessage(res: WorkerResponse) {
+  const replay = replays.get(res.id);
+  if (replay) {
+    replays.delete(res.id);
+    replay(res);
+    return;
+  }
+
+  const req = inFlight.get(res.id);
+  if (!req) return;
+  const wasOldest = inFlight.keys().next().value === res.id;
+  inFlight.delete(res.id);
+  if (wasOldest) armWatchdog();
+
+  if (
+    (res.type === 'compiled' || res.type === 'compiled-ir') &&
+    (req.type === 'compile' || req.type === 'compile-ir')
+  ) {
+    const slot = req.slot ?? DEFAULT_SLOT;
+    // Re-insert so the map stays in compile order.
+    lastCompile.delete(slot);
+    lastCompile.set(slot, req);
+  } else if (res.type === 'disposed' && req.type === 'dispose') {
+    lastCompile.delete(req.slot);
+  }
+  respond(res);
+}
+
+// ============================================================================
+// Watchdog
+// ============================================================================
+
+/** (Re)start the clock for whichever request is now oldest. */
+function armWatchdog() {
+  clearTimeout(watchdog);
+  watchdog = inFlight.size > 0 ? setTimeout(onTimeout, TIMEOUT_MS) : undefined;
+}
+
+function onTimeout() {
+  watchdog = undefined;
+  const stuck = inFlight.keys().next().value;
+  const failed = [...inFlight.keys()];
+  inFlight.clear();
+  for (const id of failed) {
+    respond({ id, type: 'error', error: id === stuck ? TIMED_OUT_ERROR : RESTARTED_ERROR });
+  }
+  void restart();
+}
+
+async function restart() {
+  held = [];
+  for (;;) {
+    worker.terminate();
+    worker = startWorker();
+    if (await replayCompiles()) break;
+  }
+  const waiting = held;
+  held = null;
+  for (const req of waiting) send(req);
+}
+
+/**
+ * Recompile every slot in the new worker. Source compiles go first, since a
+ * compile-ir can use the library and evals a source compile registered.
+ * Returns false if one hung: that slot is dropped and the caller starts over
+ * with a fresh worker, because the hung one is still busy.
+ */
+async function replayCompiles(): Promise<boolean> {
+  const ordered = [...lastCompile.values()].sort(
+    (a, b) => Number(a.type === 'compile-ir') - Number(b.type === 'compile-ir'),
+  );
+  for (const req of ordered) {
+    const slot = req.slot ?? DEFAULT_SLOT;
+    const res = await replay(req);
+    if (res === 'timeout') {
+      lastCompile.delete(slot);
+      return false;
+    }
+    if (res.type === 'error') lastCompile.delete(slot);
+  }
+  return true;
+}
+
+function replay(req: CompileRequest): Promise<WorkerResponse | 'timeout'> {
   return new Promise((resolve) => {
+    const id = `replay-${++replayCounter}`;
     const timer = setTimeout(() => {
-      worker.terminate();
-      worker = createWorker();
-      // Fail ALL requests pending against the dead worker — not just this one.
-      // Distinguish the guilty request (caused the hang) from collateral ones
-      // (were queued behind it and lost when the worker was terminated).
-      // Callers can use this to retry collaterally-killed requests without
-      // retrying the code that actually caused the infinite loop.
-      const drained = new Map(pendingWorker);
-      pendingWorker.clear();
-      for (const [id, cb] of drained) {
-        cb({
-          id,
-          type: 'error',
-          error: id === msg.id ? 'Execution timed out' : 'Worker restarted',
-        });
-      }
-    }, WORKER_TIMEOUT_MS);
-
-    pendingWorker.set(msg.id, (result) => {
+      replays.delete(id);
+      resolve('timeout');
+    }, TIMEOUT_MS);
+    replays.set(id, (res) => {
       clearTimeout(timer);
-      resolve(result);
+      resolve(res);
     });
-
+    const msg: WorkerRequest = { ...req, id };
     worker.postMessage(msg);
   });
 }
 
 // ============================================================================
-// Active simulation state (held between ticks)
-// ============================================================================
-
-// Each slot has its own simulator + library + source — fully independent.
-// Slot IDs are supplied by the client. Legacy clients (no slot) use 'default'.
-/**
- * A full time-travel snapshot is (simulator engine state) + (environmental
- * state). The engine captures sequential registers + port values, but
- * combinational primitives driven by `node.arguments` (Switch, Button, Input —
- * anything with metadata.interactiveArg) are NOT part of engine state. They
- * live as arguments on the circuit's nodes, which the engine doesn't touch on
- * snapshot/restore. The host expects rewind to restore what the user saw —
- * including switch positions — so we must capture and restore both halves.
- * See packages/core/src/simulator/environmental-state.ts.
- */
-interface FullSnapshot {
-  sim: SimulatorSnapshot;
-  env: Map<string, EnvironmentalStateValue>;
-}
-
-type SlotLibrary = CircuitLibrary & { addCircuit(c: Circuit): void };
-
-function newLibrary(): SlotLibrary {
-  const circuits = new Map<string, Circuit>();
-  return {
-    resolveCircuit: (name) => circuits.get(name),
-    getAllPrimitiveNames: () =>
-      [...circuits.values()]
-        .filter((c) => c.implementation?.kind === 'primitive')
-        .map((c) => c.name),
-    addCircuit: (c) => {
-      circuits.set(c.name, c);
-    },
-  };
-}
-
-interface SlotState {
-  simulator: ReturnType<typeof createSimulator> | null;
-  library: SlotLibrary | null;
-  source: string;
-  /**
-   * The elaborated flat circuit. Kept so we can capture/restore environmental
-   * state (node.arguments for Switch/Button/Input) on snapshot/restore —
-   * environmental-state.ts walks these nodes to find interactive args.
-   */
-  flatCircuit: {
-    nodes: Array<{ id: string; primitiveType: string; arguments: Record<string, unknown> }>;
-  } | null;
-  /**
-   * Set of nodeIds whose simulation state is exposed across the sandbox
-   * boundary every tick. A node qualifies if it has at least one direct
-   * connection to a node whose component is tagged `meta.synthesizable: false`
-   * (i.e. a peripheral). This models memory-mapped I/O: a RAM wired to a
-   * Screen shares its bus with the display controller, so its contents are
-   * observable. Registers/FSMs with no peripheral connection stay internal.
-   * Computed once at compile time; iterated each tick.
-   */
-  peripheralBusNodes: Set<string>;
-  /**
-   * Saved simulator snapshots for time-travel. Keyed by an auto-incrementing
-   * ID handed back to the host; the host stores only the IDs and passes them
-   * back to restore. Kept inside the sandbox so snapshots never need to cross
-   * the postMessage boundary (saves ~all serialization cost per tick).
-   * Pruned by the host via 'prune-snapshots' when its cap is reached.
-   */
-  snapshots: Map<number, FullSnapshot>;
-  nextSnapshotId: number;
-}
-
-const slots = new Map<string, SlotState>();
-const DEFAULT_SLOT = 'default';
-
-function getSlot(id: string): SlotState {
-  let s = slots.get(id);
-  if (!s) {
-    s = {
-      simulator: null,
-      library: null,
-      source: '',
-      flatCircuit: null,
-      peripheralBusNodes: new Set(),
-      snapshots: new Map(),
-      nextSnapshotId: 1,
-    };
-    slots.set(id, s);
-  }
-  return s;
-}
-
-/**
- * Take a full snapshot of the slot: simulator engine state (sequential regs +
- * port values) plus environmental state (Switch/Button/Input `node.arguments`
- * for any primitive tagged `metadata.interactiveArg`). Returns the generated
- * ID. No-op + undefined for circuits with no snapshotable state (purely
- * combinational with no interactive nodes — sim.snapshot() throws and env
- * capture is harmlessly empty).
- */
-function takeSnapshot(slot: SlotState): number | undefined {
-  if (!slot.simulator) return undefined;
-  try {
-    const sim = slot.simulator.snapshot();
-    // Walk the FlatCircuit for interactive args. We can't use core's
-    // captureEnvironmentalState directly: it reads `node.componentRef` on a
-    // pre-elaboration Circuit, but post-elaboration FlatNode has `primitiveType`.
-    const env = new Map<string, EnvironmentalStateValue>();
-    if (slot.flatCircuit && slot.library) {
-      for (const node of slot.flatCircuit.nodes) {
-        const def = slot.library.resolveCircuit(node.primitiveType);
-        const interactiveArg = (def as { metadata?: { interactiveArg?: string } } | undefined)
-          ?.metadata?.interactiveArg;
-        if (!interactiveArg) continue;
-        env.set(node.id, node.arguments[interactiveArg] as EnvironmentalStateValue);
-      }
-    }
-    const id = slot.nextSnapshotId++;
-    slot.snapshots.set(id, { sim, env });
-    return id;
-  } catch {
-    // Combinational-only + no interactive: nothing to snapshot.
-    return undefined;
-  }
-}
-
-/**
- * One-shot scan over a flat circuit's connections to find every node that's
- * on the bus of a peripheral (a component with `meta.synthesizable === false`).
- *
- * Runs once per compile — the result is cached on the slot and iterated each
- * tick when snapshotting peripheral state. O(connections); for any realistic
- * circuit this is microseconds.
- */
-function computePeripheralBusNodes(
-  flatCircuit: {
-    nodes: { id: string; primitiveType: string }[];
-    connections: { source: { nodeId: string }; target: { nodeId: string } }[];
-  },
-  library: { resolveCircuit(name: string): Circuit | undefined },
-): Set<string> {
-  const isPeripheral = (primitiveType: string): boolean => {
-    const def = library.resolveCircuit(primitiveType);
-    return def?.metadata?.synthesizable === false;
-  };
-
-  // Index primitive types by nodeId (O(N))
-  const typeByNode = new Map<string, string>();
-  for (const node of flatCircuit.nodes) typeByNode.set(node.id, node.primitiveType);
-
-  // A node qualifies if any of its connections touches a peripheral node.
-  const exposed = new Set<string>();
-  for (const conn of flatCircuit.connections) {
-    const srcType = typeByNode.get(conn.source.nodeId);
-    const tgtType = typeByNode.get(conn.target.nodeId);
-    const srcPeri = srcType && isPeripheral(srcType);
-    const tgtPeri = tgtType && isPeripheral(tgtType);
-    if (srcPeri) exposed.add(conn.target.nodeId);
-    if (tgtPeri) exposed.add(conn.source.nodeId);
-    // Also expose peripheral nodes themselves — their own state is the
-    // primary thing we want to display (Console text, UART_TX buffer, etc.)
-    if (srcPeri) exposed.add(conn.source.nodeId);
-    if (tgtPeri) exposed.add(conn.target.nodeId);
-  }
-  return exposed;
-}
-
-/**
- * Snapshot the current state of every peripheral-bus node for the given slot.
- * Runs each tick; cost is O(P) where P ≈ 1-5 for a typical demo.
- */
-function snapshotPeripheralState(slot: SlotState): Record<string, unknown> | undefined {
-  if (!slot.simulator || slot.peripheralBusNodes.size === 0) return undefined;
-  const seqState = slot.simulator.getState();
-  if (!seqState) return undefined;
-  const out: Record<string, unknown> = {};
-  for (const nodeId of slot.peripheralBusNodes) {
-    const v = seqState.currentState.get(nodeId);
-    if (v !== undefined) out[nodeId] = v;
-  }
-  return out;
-}
-
-// ============================================================================
-// Helpers
-// ============================================================================
-
-function portValuesToObject(
-  values: ReadonlyMap<string, BitValue | BusValue>,
-): Record<string, number> {
-  return Object.fromEntries(values);
-}
-
-function applyInputs(
-  simulator: ReturnType<typeof createSimulator>,
-  inputs: Record<string, number | boolean>,
-) {
-  for (const [name, value] of Object.entries(inputs)) {
-    simulator.setNode(name, value as BitValue | BusValue);
-  }
-}
-
-// Parent origin is pinned on the first inbound message (see dispatcher below).
-// Until then, we only send the benign `ready` signal with wildcard; all
-// request/response traffic goes to the captured origin.
-let parentOrigin: string | null = null;
-
-function respond(id: string, payload: SandboxResult) {
-  if (!parentOrigin) return;
-  parent.postMessage({ id, ...payload }, parentOrigin);
-}
-
-function respondError(id: string, error: string) {
-  respond(id, { type: 'error', error });
-}
-
-// ============================================================================
-// Message handlers
-// ============================================================================
-
-async function handleCompile(id: string, source: string, slotId: string = DEFAULT_SLOT) {
-  // Worker compiles source (handles imports via esm.sh) → returns Circuit IR + eval sources
-  const workerResult = await delegateToWorker({ id, type: 'compile', source });
-  if (workerResult.type !== 'compiled') {
-    respondError(
-      id,
-      workerResult.type === 'error' ? workerResult.error : 'Unexpected worker response',
-    );
-    return;
-  }
-  const { circuits, libraryCircuits, evalSources } = workerResult;
-
-  if (circuits.length === 0) {
-    respondError(
-      id,
-      "Nothing to show. Define a circuit with circuit('Name', { ... }), or export a component to look at.",
-    );
-    return;
-  }
-
-  try {
-    // Register evals on iframe main thread by reconstructing them from source strings.
-    // This avoids re-executing the module (which may contain npm imports that only
-    // the worker can load via esm.sh) on the main thread.
-    for (const [name, info] of Object.entries(evalSources)) {
-      if (STDLIB_EVAL_NAMES.has(name)) continue;
-      try {
-        const evalFn = new Function('return (' + info.evalSource + ')')() as (
-          inputs: Record<string, any>,
-        ) => Record<string, any>;
-        const onTickFn = info.onTickSource
-          ? (new Function('return (' + info.onTickSource + ')')() as (
-              inputs: Record<string, any>,
-            ) => Record<string, any>)
-          : undefined;
-        registerCircuitEval(name, {
-          inputNames: info.inputNames,
-          outputNames: info.outputNames,
-          evalFn,
-          onTickFn,
-          stateKeys: info.stateKeys,
-        });
-      } catch (e) {
-        console.warn(`[sandbox] Failed to register eval for '${name}':`, e);
-      }
-    }
-
-    const library = newLibrary();
-    for (const c of [...circuits, ...libraryCircuits]) {
-      library.addCircuit(c);
-    }
-
-    const target = circuits[circuits.length - 1];
-    const flatCircuit = elaborate(target, library);
-    const sim = createSimulator(flatCircuit, { componentLibrary: library });
-
-    const slot = getSlot(slotId);
-    slot.simulator = sim;
-    slot.library = library;
-    slot.source = source;
-    slot.flatCircuit = flatCircuit;
-    slot.peripheralBusNodes = computePeripheralBusNodes(flatCircuit, library);
-    // Recompile is a fresh timeline — prior snapshots refer to the old sim.
-    slot.snapshots.clear();
-
-    const portValues = portValuesToObject(sim.getPortValues());
-
-    respond(id, {
-      type: 'compiled',
-      circuits,
-      libraryCircuits,
-      portValues,
-      peripheralState: snapshotPeripheralState(slot),
-    });
-  } catch (e) {
-    respondError(id, e instanceof Error ? e.message : String(e));
-  }
-}
-
-function handleTick(
-  id: string,
-  inputs?: Record<string, number | boolean>,
-  slotId: string = DEFAULT_SLOT,
-  snapshot?: boolean,
-) {
-  const slot = slots.get(slotId);
-  const sim = slot?.simulator;
-  if (!sim || !slot) {
-    respondError(id, `No circuit compiled for slot '${slotId}'. Call compile first.`);
-    return;
-  }
-  try {
-    if (inputs) applyInputs(sim, inputs);
-    const result = sim.tick();
-    const snapshotId = snapshot ? takeSnapshot(slot) : undefined;
-    respond(id, {
-      type: 'ticked',
-      portValues: portValuesToObject(result.portValues),
-      cycle: sim.getMetrics().totalTicks,
-      peripheralState: snapshotPeripheralState(slot),
-      snapshotId,
-    });
-  } catch (e) {
-    respondError(id, e instanceof Error ? e.message : String(e));
-  }
-}
-
-// Batched debug-port scan. Drives `addrNodeId` through 0..count-1, samples
-// `valuePortKey` after each combinational re-eval, returns the array.
-// Used by JTAG-style register scanners (RV32I debugger) — one round-trip
-// per frame instead of one per register.
-//
-// This doesn't advance the clock — reads are purely combinational, mirroring
-// how real debug hardware observes architectural state while the core is
-// halted (and how it can interleave with normal execution in a properly
-// dual-ported regfile).
-function handleScanPort(
-  id: string,
-  addrNodeId: string,
-  valuePortKey: string,
-  count: number,
-  slotId: string = DEFAULT_SLOT,
-) {
-  const slot = slots.get(slotId);
-  const sim = slot?.simulator;
-  if (!sim || !slot) {
-    respondError(id, `No circuit compiled for slot '${slotId}'.`);
-    return;
-  }
-  try {
-    const n = Math.max(0, count | 0);
-    const values: number[] = new Array(n).fill(0);
-    for (let i = 0; i < n; i++) {
-      sim.setNode(addrNodeId, i);
-      sim.runCombinational();
-      const v = sim.getPortValues().get(valuePortKey);
-      values[i] = typeof v === 'number' ? v : v ? 1 : 0;
-    }
-    respond(id, { type: 'scanned-port', values });
-  } catch (e) {
-    respondError(id, e instanceof Error ? e.message : String(e));
-  }
-}
-
-// Advance the simulator by N cycles in one round-trip. Returns only the final
-// port values and one peripheral-state snapshot. Used by demos that need high
-// tick rates (raster frames) — one postMessage instead of N.
-/**
- * Tick `count` times, returning the value of one port after every tick.
- *
- * `tick-n` returns only the final state, which is all a canvas needs. Audio
- * needs every intermediate value — a second of sound is 22,050 of them — and
- * asking for them one `tick` at a time would be 22,050 postMessage round trips.
- *
- * `inputs` are applied once, before the run, and held for its duration. The
- * caller sequences anything that has to change mid-phrase by splitting it into
- * several calls, which keeps this generic: it knows nothing about audio.
- */
-function handleRenderSamples(
-  id: string,
-  portKey: string,
-  count: number,
-  inputs?: Record<string, number | boolean>,
-  slotId: string = DEFAULT_SLOT,
-) {
-  const slot = slots.get(slotId);
-  const sim = slot?.simulator;
-  if (!sim || !slot) {
-    respondError(id, `No circuit compiled for slot '${slotId}'. Call compile first.`);
-    return;
-  }
-  try {
-    if (inputs) applyInputs(sim, inputs);
-    const n = Math.max(0, count | 0);
-    const samples: number[] = new Array(n).fill(0);
-    for (let i = 0; i < n; i++) {
-      const result = sim.tick();
-      const v = result.portValues.get(portKey);
-      samples[i] = typeof v === 'number' ? v : v ? 1 : 0;
-    }
-    respond(id, {
-      type: 'rendered-samples',
-      samples,
-      cycle: sim.getMetrics().totalTicks,
-    });
-  } catch (e) {
-    respondError(id, e instanceof Error ? e.message : String(e));
-  }
-}
-
-function handleTickN(
-  id: string,
-  n: number,
-  inputs?: Record<string, number | boolean>,
-  slotId: string = DEFAULT_SLOT,
-  snapshot?: boolean,
-) {
-  const slot = slots.get(slotId);
-  const sim = slot?.simulator;
-  if (!sim || !slot) {
-    respondError(id, `No circuit compiled for slot '${slotId}'. Call compile first.`);
-    return;
-  }
-  try {
-    if (inputs) applyInputs(sim, inputs);
-    let last: ReturnType<typeof sim.tick> | null = null;
-    const count = Math.max(0, n | 0);
-    for (let i = 0; i < count; i++) last = sim.tick();
-    const snapshotId = snapshot ? takeSnapshot(slot) : undefined;
-    respond(id, {
-      type: 'ticked-n',
-      portValues: last
-        ? portValuesToObject(last.portValues)
-        : portValuesToObject(sim.getPortValues()),
-      cycle: sim.getMetrics().totalTicks,
-      peripheralState: snapshotPeripheralState(slot),
-      snapshotId,
-    });
-  } catch (e) {
-    respondError(id, e instanceof Error ? e.message : String(e));
-  }
-}
-
-async function handleSimulate(
-  id: string,
-  ticks: number,
-  source?: string,
-  inputs?: Record<string, number | boolean>,
-  memoryData?: Record<string, Record<string, number>>,
-  slotId: string = DEFAULT_SLOT,
-) {
-  const sourceToUse = source ?? slots.get(slotId)?.source ?? '';
-  if (!sourceToUse) {
-    respondError(id, 'No circuit compiled. Provide source or call compile first.');
-    return;
-  }
-
-  // Worker runs the full simulation (may run user eval: functions)
-  const result = await delegateToWorker({
-    id,
-    type: 'simulate',
-    source: sourceToUse,
-    ticks,
-    inputs,
-    memoryData,
-  });
-
-  if (result.type === 'compiled') {
-    respondError(id, 'Unexpected worker response');
-    return;
-  }
-  const { id: _, ...payload } = result;
-  respond(id, payload);
-}
-
-function handleReset(id: string, slotId: string = DEFAULT_SLOT) {
-  const slot = slots.get(slotId);
-  const sim = slot?.simulator;
-  if (!sim || !slot) {
-    respondError(id, `No circuit compiled for slot '${slotId}'.`);
-    return;
-  }
-  try {
-    sim.reset();
-    // Reset is a user-visible "start over" — drop all history so time-travel
-    // begins fresh from the post-reset state.
-    slot.snapshots.clear();
-    const portValues = portValuesToObject(sim.getPortValues());
-    respond(id, { type: 'reset', portValues, peripheralState: snapshotPeripheralState(slot) });
-  } catch (e) {
-    respondError(id, e instanceof Error ? e.message : String(e));
-  }
-}
-
-function handleSetNode(
-  id: string,
-  nodeId: string,
-  value: number | boolean | Map<number, number>,
-  slotId: string = DEFAULT_SLOT,
-  snapshot?: boolean,
-) {
-  const slot = slots.get(slotId);
-  const sim = slot?.simulator;
-  if (!sim || !slot) {
-    respondError(id, `No circuit compiled for slot '${slotId}'.`);
-    return;
-  }
-  try {
-    // Accept Map values for ROM/RAM memory loading
-    sim.setNode(nodeId, value as any);
-    sim.runCombinational();
-    const portValues = portValuesToObject(sim.getPortValues());
-    const snapshotId = snapshot ? takeSnapshot(slot) : undefined;
-    respond(id, {
-      type: 'node-set',
-      portValues,
-      peripheralState: snapshotPeripheralState(slot),
-      snapshotId,
-    });
-  } catch (e) {
-    respondError(id, e instanceof Error ? e.message : String(e));
-  }
-}
-
-function handleDispose(id: string, slotId: string) {
-  slots.delete(slotId);
-  respond(id, { type: 'disposed' });
-}
-
-// ============================================================================
-// Time-travel snapshot / restore / prune handlers
-// ============================================================================
-
-function handleSnapshot(id: string, slotId: string = DEFAULT_SLOT) {
-  const slot = slots.get(slotId);
-  const sim = slot?.simulator;
-  if (!sim || !slot) {
-    respondError(id, `No circuit compiled for slot '${slotId}'.`);
-    return;
-  }
-  const snapshotId = takeSnapshot(slot);
-  respond(id, { type: 'snapshotted', snapshotId });
-}
-
-function handleRestore(id: string, snapshotId: number, slotId: string = DEFAULT_SLOT) {
-  const slot = slots.get(slotId);
-  const sim = slot?.simulator;
-  if (!sim || !slot) {
-    respondError(id, `No circuit compiled for slot '${slotId}'.`);
-    return;
-  }
-  const full = slot.snapshots.get(snapshotId);
-  if (!full) {
-    respondError(id, `Snapshot ${snapshotId} not found for slot '${slotId}'.`);
-    return;
-  }
-  try {
-    // Restore the engine's sequential + port state first, then re-apply the
-    // environmental state (Switch/Button/Input values).
-    //
-    // Why we can't just call `restoreEnvironmentalState` from core and be
-    // done: the simulator keeps a numeric cache of node-argument values that
-    // it reads at eval time. Mutating `node.arguments` directly updates the
-    // circuit object but NOT the numeric cache — subsequent evals would still
-    // use the stale value. The only API that invalidates both is `sim.setNode`.
-    //
-    // Also: `captureEnvironmentalState` produces `undefined` for primitives
-    // whose interactive arg was never explicitly set (e.g. a Switch at its
-    // implicit default). We can't pass `undefined` to `sim.setNode`, so we
-    // fall back to 0 — the universal "off" for Switch/Button/Input.
-    sim.restore(full.sim);
-    if (slot.flatCircuit && slot.library) {
-      for (const node of slot.flatCircuit.nodes) {
-        const def = slot.library.resolveCircuit(node.primitiveType);
-        const interactiveArg = (def as { metadata?: { interactiveArg?: string } } | undefined)
-          ?.metadata?.interactiveArg;
-        if (!interactiveArg) continue;
-        const saved = full.env.get(node.id);
-        sim.setNode(
-          node.id,
-          typeof saved === 'number' || typeof saved === 'string' ? saved : Number(saved === true),
-        );
-      }
-    }
-    sim.runCombinational();
-    respond(id, {
-      type: 'restored',
-      portValues: portValuesToObject(sim.getPortValues()),
-      cycle: full.sim.cycleCount,
-      peripheralState: snapshotPeripheralState(slot),
-    });
-  } catch (e) {
-    respondError(id, e instanceof Error ? e.message : String(e));
-  }
-}
-
-function handlePruneSnapshots(id: string, keepAfterId: number, slotId: string = DEFAULT_SLOT) {
-  const slot = slots.get(slotId);
-  if (!slot) {
-    // Silently succeed — host may prune a slot that was never touched.
-    respond(id, { type: 'pruned' });
-    return;
-  }
-  // Drop every snapshot with id <= keepAfterId. Callers use this to cap
-  // history at N entries on the host side; anything older than the oldest
-  // ID the host is still referencing can safely go.
-  for (const key of [...slot.snapshots.keys()]) {
-    if (key <= keepAfterId) slot.snapshots.delete(key);
-  }
-  respond(id, { type: 'pruned' });
-}
-
-/**
- * Compile from Circuit IR (not source code).
- * Used for the auto-harnessed circuit — the harness is built client-side
- * as Circuit IR and sent here for simulation.
- * Uses the library from the last executeCircuitCode (has eval functions).
- */
-function handleCompileIR(
-  id: string,
-  circuit: Circuit,
-  libraryCircuits: Circuit[],
-  slotId: string,
-  evalSources?: Record<string, EvalSource>,
-  snapshot?: boolean,
-) {
-  try {
-    // If evalSources are provided, reconstruct the functions and register them.
-    // This is how the embed transfers eval functions from the main frame to the sandbox.
-    if (evalSources) {
-      for (const [name, info] of Object.entries(evalSources)) {
-        if (STDLIB_EVAL_NAMES.has(name)) continue;
-        try {
-          const evalFn = new Function('return (' + info.evalSource + ')')() as (
-            inputs: Record<string, any>,
-          ) => Record<string, any>;
-          const onTickFn = info.onTickSource
-            ? (new Function('return (' + info.onTickSource + ')')() as (
-                inputs: Record<string, any>,
-              ) => Record<string, any>)
-            : undefined;
-          registerCircuitEval(name, {
-            inputNames: info.inputNames,
-            outputNames: info.outputNames,
-            evalFn,
-            onTickFn,
-            stateKeys: info.stateKeys,
-          });
-        } catch (e) {
-          console.warn(`[sandbox] Failed to register eval for '${name}':`, e);
-        }
-      }
-    }
-
-    // Find or build a library. If any slot has one (from source compile), reuse it.
-    // Otherwise build a fresh library just for this compile.
-    let lib: SlotLibrary | null = null;
-    for (const s of slots.values()) {
-      if (s.library) {
-        lib = s.library;
-        break;
-      }
-    }
-    if (!lib) lib = newLibrary();
-
-    // Add all provided circuits to the library
-    for (const c of libraryCircuits) {
-      lib.addCircuit(c);
-    }
-    lib.addCircuit(circuit);
-
-    const flatCircuit = elaborate(circuit, lib);
-    const sim = createSimulator(flatCircuit, { componentLibrary: lib });
-
-    const slot = getSlot(slotId);
-    slot.simulator = sim;
-    slot.library = lib;
-    slot.flatCircuit = flatCircuit;
-    slot.peripheralBusNodes = computePeripheralBusNodes(flatCircuit, lib);
-    // Recompile is a fresh timeline — any prior history is meaningless against
-    // the new simulator instance.
-    slot.snapshots.clear();
-
-    const portValues = portValuesToObject(sim.getPortValues());
-    const snapshotId = snapshot ? takeSnapshot(slot) : undefined;
-    respond(id, {
-      type: 'compiled-ir',
-      portValues,
-      peripheralState: snapshotPeripheralState(slot),
-      snapshotId,
-    });
-  } catch (e) {
-    respondError(id, e instanceof Error ? e.message : String(e));
-  }
-}
-
-// ============================================================================
-// Message dispatcher
+// Inbound
 // ============================================================================
 
 self.addEventListener('message', (event: MessageEvent) => {
   const req = event.data as SandboxRequest;
   if (!req?.id || !req?.type) return;
 
-  // Pin parent origin on first valid message. Reject any later message from
-  // a different origin — prevents a malicious iframe peer from impersonating
-  // the parent once a legit session is established.
+  // Pin the parent origin on the first valid message and drop anything from
+  // another origin after that, so a peer frame can't impersonate the parent.
   if (parentOrigin === null) {
     parentOrigin = event.origin;
   } else if (event.origin !== parentOrigin) {
     return;
   }
 
-  switch (req.type) {
-    case 'compile':
-      handleCompile(req.id, req.source, req.slot);
-      break;
-    case 'compile-ir':
-      handleCompileIR(
-        req.id,
-        req.circuit,
-        req.libraryCircuits,
-        req.slot,
-        req.evalSources,
-        req.snapshot,
-      );
-      break;
-    case 'tick':
-      handleTick(req.id, req.inputs, req.slot, req.snapshot);
-      break;
-    case 'render-samples':
-      handleRenderSamples(req.id, req.portKey, req.count, req.inputs, req.slot);
-      break;
-    case 'tick-n':
-      handleTickN(req.id, req.n, req.inputs, req.slot, req.snapshot);
-      break;
-    case 'scan-port':
-      handleScanPort(req.id, req.addrNodeId, req.valuePortKey, req.count, req.slot);
-      break;
-    case 'simulate':
-      handleSimulate(req.id, req.ticks, req.source, req.inputs, req.memoryData, req.slot);
-      break;
-    case 'reset':
-      handleReset(req.id, req.slot);
-      break;
-    case 'set-node':
-      handleSetNode(req.id, req.nodeId, req.value, req.slot, req.snapshot);
-      break;
-    case 'snapshot':
-      handleSnapshot(req.id, req.slot);
-      break;
-    case 'restore':
-      handleRestore(req.id, req.snapshotId, req.slot);
-      break;
-    case 'prune-snapshots':
-      handlePruneSnapshots(req.id, req.keepAfterId, req.slot);
-      break;
-    case 'dispose':
-      handleDispose(req.id, req.slot);
-      break;
-  }
+  send(req);
 });
 
-// Signal that the sandbox is ready. We can't know the parent's origin yet
-// (no inbound message has arrived), so this single initial signal uses '*'.
-// Payload carries no sensitive data — just a ready bit. All subsequent
-// traffic is pinned to the origin captured from the parent's first message.
+// We can't know the parent's origin until it messages us, so this one signal
+// uses '*'. It carries nothing but the ready bit.
 parent.postMessage({ type: 'ready' }, '*');

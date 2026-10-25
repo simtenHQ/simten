@@ -17,13 +17,13 @@ The four layers a circuit flows through in the browser:
 |---|---|---|
 | **Public hook** | `packages/embed/src/hooks/useCircuitSimulator.ts` | What every embed/blog/editor consumer calls. `tick()`, `setNode()`, `stepBack()`, time-travel, auto-run. |
 | **Sandbox bridge** (host) | `packages/ui/src/sandbox/useSandbox.ts` | postMessage transport + slot lifecycle. Used internally by `useCircuitSimulator`; only advanced consumers (editor, web component) touch it directly. |
-| **Sandbox iframe** | `apps/sandbox/src/main.ts` | The other side of the bridge. Runs *inside* the iframe (cross-origin). Receives postMessage commands, evaluates user code in a Web Worker, drives the engine. |
+| **Sandbox iframe** | `apps/sandbox/src/main.ts`, `worker.ts` | The other side of the bridge. Runs *inside* the iframe (cross-origin). The iframe's main thread relays postMessage commands to a Web Worker, which runs user code and drives the engine, and restarts the worker if it hangs. |
 | **Simulator engine** | `packages/core/src/simulator/` | Pure computation, with no iframe and no React. Used by the iframe app for browser sims; used directly by `@simten/core/sim` for Node/CI scripts. |
 
 Direction of calls (browser path):
 
 ```
-useCircuitSimulator → useSandbox → [postMessage / iframe boundary] → apps/sandbox/main.ts → core/simulator
+useCircuitSimulator → useSandbox → [postMessage / iframe boundary] → apps/sandbox/main.ts → worker.ts → core/simulator
 ```
 
 If you're writing a `vitest` property test or a CI fuzzer, you skip the bridge entirely and just import from `@simten/core/sim` and drive the engine directly. See "Two ways to run a circuit" below.
@@ -287,7 +287,7 @@ The same engine powers two distinct consumption paths. The split is **interactiv
 
 ### Sandbox path
 
-When user code runs inside the editor or an embed, it goes through the sandbox iframe + worker (see [Security](/docs/security)). Code in this path *defines* circuits; *something else* drives them: a human flipping a switch, or Claude calling MCP actions like `RUN_SIMULATION` / `SET_INPUT`. User code itself currently has no API to drive the canvas simulator. That's intentional: the canvas sim and any user-code sim run on different threads, so a user-code `simulate(...)` call would create a parallel-universe instance instead of moving the canvas. (Tracked in issue #51 as a prereq for self-animating embeds.)
+When user code runs inside the editor or an embed, it goes through the sandbox iframe + worker (see [Security](/docs/security)). Code in this path *defines* circuits; *something else* drives them: a human flipping a switch, or Claude calling MCP actions like `RUN_SIMULATION` / `SET_INPUT`. User code itself currently has no API to drive the canvas simulator. The canvas sim and user code share the sandbox worker, but a user-code `simulate(...)` call would still create a separate instance instead of moving the canvas; wiring it to the canvas slot is what self-animating embeds would need.
 
 ### Script path
 
