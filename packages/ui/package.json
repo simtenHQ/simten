@@ -1,7 +1,7 @@
 {
   "name": "@simten/ui",
   "version": "0.15.6",
-  "description": "Canvas, editor, and waveform React components for Simten. Built on React Flow with dagre layout and Zustand stores.",
+  "description": "Canvas, editor, and waveform React components for Simten.",
   "license": "Apache-2.0",
   "author": "Charles Harris",
   "repository": {

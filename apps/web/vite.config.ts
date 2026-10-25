@@ -117,8 +117,9 @@ const config = defineConfig(({ command }) => ({
   // consumer of @radix-ui/react-dialog, so without this Vite discovers it lazily
   // on first /circuit load and re-optimizes mid-render — which surfaces as a
   // spurious "Invalid hook call / duplicate React" error until a dev restart.
+  // It is a dependency of @simten/ui, not of this app, hence the nested form.
   optimizeDeps: {
-    include: ['@radix-ui/react-dialog'],
+    include: ['@simten/ui > @radix-ui/react-dialog'],
   },
 }));
 
