@@ -35,6 +35,12 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Install Icarus Verilog
+        # For core's differential test (simulator vs iverilog on the exported
+        # Verilog). The test fails rather than skips when CI is set and
+        # iverilog is missing.
+        run: sudo apt-get update && sudo apt-get install -y iverilog && iverilog -V | head -1
+
       - name: Lint & format check (Biome)
         # Runs the pinned @simten/biome devDep (not the setup-biome action) so
         # CI uses the exact version in package.json — a floating "latest" could
