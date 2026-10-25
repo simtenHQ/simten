@@ -50,10 +50,17 @@
  * serialization cost per tick — see SlotState.snapshots.
  */
 
-import type { BitValue, BusValue, Circuit, SimulatorSnapshot } from '@simten/core';
+import type { BitValue, BusValue, Circuit, CircuitLibrary, SimulatorSnapshot } from '@simten/core';
 import { createSimulator, elaborate } from '@simten/core';
 import { getAllCircuitEvals, registerCircuitEval } from '@simten/core/circuit';
-import { captureEnvironmentalState, type EnvironmentalStateValue } from '@simten/core/simulator';
+import type { EnvironmentalStateValue } from '@simten/core/simulator';
+import type {
+  EvalSource,
+  SandboxRequest,
+  SandboxResult,
+  WorkerRequest,
+  WorkerResponse,
+} from '@simten/ui/sandbox/protocol';
 
 /**
  * Stdlib component names, captured before any user code runs.
@@ -74,77 +81,6 @@ import { captureEnvironmentalState, type EnvironmentalStateValue } from '@simten
  */
 const STDLIB_EVAL_NAMES: ReadonlySet<string> = new Set(getAllCircuitEvals().keys());
 
-/** Serialized eval entry — source strings reconstructed via new Function() */
-interface EvalSource {
-  evalSource: string;
-  onTickSource?: string;
-  inputNames: string[];
-  outputNames: string[];
-  stateKeys?: string[];
-}
-
-// ============================================================================
-// Types
-// ============================================================================
-
-/** Each simulation lives in a named slot. Slots are independent (own simulator, library, source). */
-type SandboxRequest =
-  | { id: string; type: 'compile'; source: string; slot?: string }
-  | {
-      id: string;
-      type: 'compile-ir';
-      circuit: Circuit;
-      libraryCircuits: Circuit[];
-      slot: string;
-      evalSources?: Record<string, EvalSource>;
-      snapshot?: boolean;
-    }
-  | {
-      id: string;
-      type: 'tick';
-      inputs?: Record<string, number | boolean>;
-      slot?: string;
-      snapshot?: boolean;
-    }
-  | {
-      id: string;
-      type: 'tick-n';
-      n: number;
-      inputs?: Record<string, number | boolean>;
-      slot?: string;
-      snapshot?: boolean;
-    }
-  | {
-      id: string;
-      type: 'scan-port';
-      addrNodeId: string;
-      valuePortKey: string;
-      count: number;
-      slot?: string;
-    }
-  | {
-      id: string;
-      type: 'simulate';
-      source?: string;
-      ticks: number;
-      inputs?: Record<string, number | boolean>;
-      memoryData?: Record<string, Record<string, number>>;
-      slot?: string;
-    }
-  | { id: string; type: 'reset'; slot?: string }
-  | {
-      id: string;
-      type: 'set-node';
-      nodeId: string;
-      value: number | boolean | Map<number, number>;
-      slot?: string;
-      snapshot?: boolean;
-    }
-  | { id: string; type: 'snapshot'; slot?: string }
-  | { id: string; type: 'restore'; slot?: string; snapshotId: number }
-  | { id: string; type: 'prune-snapshots'; slot?: string; keepAfterId: number }
-  | { id: string; type: 'dispose'; slot: string };
-
 // ============================================================================
 // Worker management
 // ============================================================================
@@ -152,12 +88,12 @@ type SandboxRequest =
 const WORKER_TIMEOUT_MS = 5000;
 
 let worker = createWorker();
-const pendingWorker = new Map<string, (result: object) => void>();
+const pendingWorker = new Map<string, (result: WorkerResponse) => void>();
 
 function createWorker(): Worker {
   const w = new Worker(new URL('./worker.ts', import.meta.url), { type: 'module' });
   w.onmessage = (e: MessageEvent) => {
-    const { id } = e.data as { id: string };
+    const { id } = e.data as WorkerResponse;
     const resolve = pendingWorker.get(id);
     if (resolve) {
       pendingWorker.delete(id);
@@ -170,7 +106,7 @@ function createWorker(): Worker {
   return w;
 }
 
-function delegateToWorker(msg: object & { id: string }): Promise<object> {
+function delegateToWorker(msg: WorkerRequest): Promise<WorkerResponse> {
   return new Promise((resolve) => {
     const timer = setTimeout(() => {
       worker.terminate();
@@ -221,12 +157,25 @@ interface FullSnapshot {
   env: Map<string, EnvironmentalStateValue>;
 }
 
+type SlotLibrary = CircuitLibrary & { addCircuit(c: Circuit): void };
+
+function newLibrary(): SlotLibrary {
+  const circuits = new Map<string, Circuit>();
+  return {
+    resolveCircuit: (name) => circuits.get(name),
+    getAllPrimitiveNames: () =>
+      [...circuits.values()]
+        .filter((c) => c.implementation?.kind === 'primitive')
+        .map((c) => c.name),
+    addCircuit: (c) => {
+      circuits.set(c.name, c);
+    },
+  };
+}
+
 interface SlotState {
   simulator: ReturnType<typeof createSimulator> | null;
-  library: {
-    resolveCircuit(name: string): Circuit | undefined;
-    addCircuit?(c: Circuit): void;
-  } | null;
+  library: SlotLibrary | null;
   source: string;
   /**
    * The elaborated flat circuit. Kept so we can capture/restore environmental
@@ -374,12 +323,8 @@ function snapshotPeripheralState(slot: SlotState): Record<string, unknown> | und
 
 function portValuesToObject(
   values: ReadonlyMap<string, BitValue | BusValue>,
-): Record<string, number | boolean> {
-  const obj: Record<string, number | boolean> = {};
-  for (const [k, v] of values) {
-    obj[k] = v as number | boolean;
-  }
-  return obj;
+): Record<string, number> {
+  return Object.fromEntries(values);
 }
 
 function applyInputs(
@@ -396,14 +341,13 @@ function applyInputs(
 // request/response traffic goes to the captured origin.
 let parentOrigin: string | null = null;
 
-function respond(id: string, payload: object) {
+function respond(id: string, payload: SandboxResult) {
   if (!parentOrigin) return;
   parent.postMessage({ id, ...payload }, parentOrigin);
 }
 
 function respondError(id: string, error: string) {
-  if (!parentOrigin) return;
-  parent.postMessage({ id, type: 'error', error }, parentOrigin);
+  respond(id, { type: 'error', error });
 }
 
 // ============================================================================
@@ -412,31 +356,15 @@ function respondError(id: string, error: string) {
 
 async function handleCompile(id: string, source: string, slotId: string = DEFAULT_SLOT) {
   // Worker compiles source (handles imports via esm.sh) → returns Circuit IR + eval sources
-  const workerResult = (await delegateToWorker({ id, type: 'compile', source })) as {
-    type: string;
-    error?: string;
-    circuits?: Circuit[];
-    libraryCircuits?: Circuit[];
-    evalSources?: Record<
-      string,
-      {
-        evalSource: string;
-        onTickSource?: string;
-        inputNames: string[];
-        outputNames: string[];
-        stateKeys?: string[];
-      }
-    >;
-  };
-
-  if (workerResult.type === 'error' || workerResult.error) {
-    respondError(id, workerResult.error ?? 'Unknown compile error');
+  const workerResult = await delegateToWorker({ id, type: 'compile', source });
+  if (workerResult.type !== 'compiled') {
+    respondError(
+      id,
+      workerResult.type === 'error' ? workerResult.error : 'Unexpected worker response',
+    );
     return;
   }
-
-  const circuits = workerResult.circuits ?? [];
-  const libraryCircuits = workerResult.libraryCircuits ?? [];
-  const evalSources = workerResult.evalSources ?? {};
+  const { circuits, libraryCircuits, evalSources } = workerResult;
 
   if (circuits.length === 0) {
     respondError(
@@ -473,18 +401,7 @@ async function handleCompile(id: string, source: string, slotId: string = DEFAUL
       }
     }
 
-    // Build a library from the Circuit IRs the worker sent back
-    const circuitMap = new Map<string, Circuit>();
-    const library = {
-      resolveCircuit: (name: string) => circuitMap.get(name),
-      getAllPrimitiveNames: () =>
-        [...circuitMap.values()]
-          .filter((c) => c.implementation?.kind === 'primitive')
-          .map((c) => c.name),
-      addCircuit: (c: Circuit) => {
-        circuitMap.set(c.name, c);
-      },
-    };
+    const library = newLibrary();
     for (const c of [...circuits, ...libraryCircuits]) {
       library.addCircuit(c);
     }
@@ -684,7 +601,12 @@ async function handleSimulate(
     memoryData,
   });
 
-  if (parentOrigin) parent.postMessage({ ...result }, parentOrigin);
+  if (result.type === 'compiled') {
+    respondError(id, 'Unexpected worker response');
+    return;
+  }
+  const { id: _, ...payload } = result;
+  respond(id, payload);
 }
 
 function handleReset(id: string, slotId: string = DEFAULT_SLOT) {
@@ -726,7 +648,7 @@ function handleSetNode(
     const portValues = portValuesToObject(sim.getPortValues());
     const snapshotId = snapshot ? takeSnapshot(slot) : undefined;
     respond(id, {
-      type: 'set-node',
+      type: 'node-set',
       portValues,
       peripheralState: snapshotPeripheralState(slot),
       snapshotId,
@@ -753,7 +675,7 @@ function handleSnapshot(id: string, slotId: string = DEFAULT_SLOT) {
     return;
   }
   const snapshotId = takeSnapshot(slot);
-  respond(id, { type: 'snapshot', snapshotId });
+  respond(id, { type: 'snapshotted', snapshotId });
 }
 
 function handleRestore(id: string, snapshotId: number, slotId: string = DEFAULT_SLOT) {
@@ -790,8 +712,10 @@ function handleRestore(id: string, snapshotId: number, slotId: string = DEFAULT_
           ?.metadata?.interactiveArg;
         if (!interactiveArg) continue;
         const saved = full.env.get(node.id);
-        const value = saved === undefined ? 0 : saved;
-        sim.setNode(node.id, value as number | boolean);
+        sim.setNode(
+          node.id,
+          typeof saved === 'number' || typeof saved === 'string' ? saved : Number(saved === true),
+        );
       }
     }
     sim.runCombinational();
@@ -866,32 +790,20 @@ function handleCompileIR(
 
     // Find or build a library. If any slot has one (from source compile), reuse it.
     // Otherwise build a fresh library just for this compile.
-    let lib: {
-      resolveCircuit(name: string): Circuit | undefined;
-      addCircuit?(c: Circuit): void;
-    } | null = null;
+    let lib: SlotLibrary | null = null;
     for (const s of slots.values()) {
       if (s.library) {
         lib = s.library;
         break;
       }
     }
-    if (!lib) {
-      // Build a library from the provided circuits
-      const circuitMap = new Map<string, Circuit>();
-      lib = {
-        resolveCircuit: (name) => circuitMap.get(name),
-        addCircuit: (c: Circuit) => {
-          circuitMap.set(c.name, c);
-        },
-      };
-    }
+    if (!lib) lib = newLibrary();
 
     // Add all provided circuits to the library
     for (const c of libraryCircuits) {
-      if (lib.addCircuit) lib.addCircuit(c);
+      lib.addCircuit(c);
     }
-    if (lib.addCircuit) lib.addCircuit(circuit);
+    lib.addCircuit(circuit);
 
     const flatCircuit = elaborate(circuit, lib);
     const sim = createSimulator(flatCircuit, { componentLibrary: lib });
