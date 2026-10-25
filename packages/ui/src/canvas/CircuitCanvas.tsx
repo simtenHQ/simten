@@ -513,7 +513,7 @@ function CircuitCanvasInner({
         nodesConnectable={false}
         elementsSelectable={true}
         selectionOnDrag={false}
-        panOnDrag={isMobile && !panOnMobile ? false : [1, 2]}
+        panOnDrag={!isMobile || panOnMobile}
         zoomOnScroll={true}
         zoomOnPinch={true}
         zoomOnDoubleClick={false}
