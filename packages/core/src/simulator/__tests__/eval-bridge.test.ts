@@ -12,7 +12,7 @@ import {
   resolveTypeIndex,
 } from '../eval-bridge.js';
 import { EVALUATORS } from '../evaluators/index.js';
-import { type EvalContext, readInput, writeOutput } from '../evaluators/types.js';
+import type { EvalContext } from '../evaluators/types.js';
 import type { NumericCircuit } from '../numeric-types.js';
 import { PRIMITIVE_TYPE_INDICES } from '../numeric-types.js';
 import type { NumericPortValues } from '../numeric-values.js';

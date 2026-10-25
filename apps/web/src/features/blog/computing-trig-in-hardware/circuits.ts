@@ -26,7 +26,7 @@ import type { BlogCircuit } from '../types';
 
 // ── Self-contained circuit definitions ──
 
-export const RightShiftDemo = circuit('RightShiftDemo', {
+const RightShiftDemo = circuit('RightShiftDemo', {
   nodes: {
     value: Input({ value: 80 }),
     shift: Input({ value: 1 }),
@@ -40,7 +40,7 @@ export const RightShiftDemo = circuit('RightShiftDemo', {
   ],
 });
 
-export const RotationStep = circuit('RotationStep', {
+const RotationStep = circuit('RotationStep', {
   nodes: {
     x: Input({ value: 80 }),
     y: Input({ value: 0 }),
@@ -69,7 +69,7 @@ export const RotationStep = circuit('RotationStep', {
   ],
 });
 
-export const SignDetection = circuit('SignDetection', {
+const SignDetection = circuit('SignDetection', {
   nodes: {
     angle: Input({ value: 32 }),
     zero: Constant({ value: 0 }),
@@ -90,7 +90,7 @@ export const SignDetection = circuit('SignDetection', {
   ],
 });
 
-export const IterationControl = circuit('IterationControl', {
+const IterationControl = circuit('IterationControl', {
   nodes: {
     iter: Register({ value: 0 }),
     eight: Constant({ value: 8 }),
@@ -108,7 +108,7 @@ export const IterationControl = circuit('IterationControl', {
   ],
 });
 
-export const AngleLookup = circuit('AngleLookup', {
+const AngleLookup = circuit('AngleLookup', {
   nodes: {
     iteration: Input({ value: 0 }),
     angle0: Constant({ value: 32 }),

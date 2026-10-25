@@ -25,7 +25,6 @@ import {
   type ObjectBindingPattern,
   type ObjectLiteralExpression,
   Project,
-  SyntaxKind,
 } from 'ts-morph';
 
 // ── CLI ─────────────────────────────────────────────────────────────────────

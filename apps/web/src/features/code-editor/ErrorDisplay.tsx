@@ -9,7 +9,7 @@
 
 import React, { useState } from 'react';
 
-export interface CompilationError {
+interface CompilationError {
   message: string;
   line: number;
   column: number;

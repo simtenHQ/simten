@@ -16,12 +16,12 @@
  * Set SYNTH_URL=http://localhost:8788/synth for local dev.
  */
 
-export interface TimingStats {
+interface TimingStats {
   achieved_mhz: number;
   constraint_mhz: number;
 }
 
-export interface UtilStats {
+interface UtilStats {
   comb: number; // TRELLIS_COMB (combinational LUTs)
   ff: number; // TRELLIS_FF (flip-flops)
   bram: number; // TRELLIS_BRAM

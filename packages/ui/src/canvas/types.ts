@@ -1,15 +1,7 @@
 /**
  * Types for the embed package.
- * Defines layout metadata types and re-exports simulator types from core.
+ * Defines the inspector and layout metadata types.
  */
-
-export type { Circuit } from '@simten/core';
-// Re-export simulator types from core so embed consumers don't need to install core separately
-export type {
-  FlatCircuit,
-  FlatPortValueMap,
-  FlatSequentialState,
-} from '@simten/core/simulator';
 
 // --- Inspector types (used by the canvas-level drill-down inspector) ---
 
@@ -38,23 +30,23 @@ export interface OriginRect {
 
 // --- Layout metadata types (extracted from packages/ui/src/editor/types/visual.ts) ---
 
-export interface Position {
+interface Position {
   x: number;
   y: number;
 }
 
-export interface Dimensions {
+interface Dimensions {
   width: number;
   height: number;
 }
 
-export interface ComponentMetadata {
+interface ComponentMetadata {
   id: string;
   position: Position;
   dimensions?: Dimensions;
 }
 
-export interface ConnectionMetadata {
+interface ConnectionMetadata {
   id: string;
 }
 

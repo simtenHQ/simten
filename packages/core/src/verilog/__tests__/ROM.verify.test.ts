@@ -14,7 +14,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { bit, bus, circuit } from '../../circuit/index.js';
+import { bus, circuit } from '../../circuit/index.js';
 import { createSimulatorFromCircuit } from '../../simulator/index.js';
 import { ROM } from '../../std/index.js';
 import type { Circuit, CircuitLibrary } from '../../types/circuit.js';

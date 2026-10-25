@@ -107,7 +107,7 @@ export function forbiddenPrimitives(flat: FlatCircuit, allowed: string[]): strin
  * silently; this way anything outside `allowed` is either structural or already
  * rejected above.
  */
-export function countGates(flat: FlatCircuit, allowed: string[]): number {
+function countGates(flat: FlatCircuit, allowed: string[]): number {
   const permitted = new Set(allowed);
   return flat.nodes.filter((n) => permitted.has(n.primitiveType)).length;
 }

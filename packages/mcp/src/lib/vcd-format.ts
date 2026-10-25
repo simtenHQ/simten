@@ -35,14 +35,14 @@ export interface FormatOptions {
   clockId?: string;
 }
 
-export interface InitialValue {
+interface InitialValue {
   cycle: number;
   value: string;
   value_hex?: string;
   stable_since: number;
 }
 
-export interface FormattedSignal {
+interface FormattedSignal {
   requested: string;
   resolved: string;
   width: number;

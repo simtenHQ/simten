@@ -39,7 +39,7 @@ function hashCode(code: string): string {
  * A single frame on the drill-down navigation stack.
  * Each frame represents one level of composite hierarchy.
  */
-export interface DrillDownFrame {
+interface DrillDownFrame {
   nodeId: string; // Instance node ID in the parent circuit (e.g., "ha1_abc")
   nodeLabel: string; // Human-readable label (e.g., "ha1")
   componentName: string; // Component type name (e.g., "HalfAdder")

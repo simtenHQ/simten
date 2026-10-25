@@ -28,7 +28,7 @@ export { CIRCUITS as GATE_CIRCUITS } from '@/features/splash/circuits';
 
 // ── Circuit Definitions ──
 
-export const SRLatch = circuit('SRLatch', {
+const SRLatch = circuit('SRLatch', {
   inputs: { s: bit, r: bit },
   outputs: { q: bit, q_bar: bit },
   nodes: { nor1: Nor, nor2: Nor },
@@ -43,7 +43,7 @@ export const SRLatch = circuit('SRLatch', {
 // D Flip-Flop is a primitive, so use it directly; auto-harness handles Switch/Led
 // For display, we just show the DFlipFlop itself
 
-export const Reg4 = circuit('Reg4', {
+const Reg4 = circuit('Reg4', {
   inputs: { d0: bit, d1: bit, d2: bit, d3: bit },
   outputs: { q0: bit, q1: bit, q2: bit, q3: bit },
   nodes: { ff0: DFlipFlop(), ff1: DFlipFlop(), ff2: DFlipFlop(), ff3: DFlipFlop() },
@@ -59,7 +59,7 @@ export const Reg4 = circuit('Reg4', {
   ],
 });
 
-export const Counter4 = circuit('Counter4', {
+const Counter4 = circuit('Counter4', {
   outputs: { q0: bit, q1: bit, q2: bit, q3: bit },
   nodes: {
     ff0: DFlipFlop(),
@@ -87,7 +87,7 @@ export const Counter4 = circuit('Counter4', {
   ],
 });
 
-export const Adder4 = circuit('Adder4', {
+const Adder4 = circuit('Adder4', {
   inputs: { a0: bit, a1: bit, a2: bit, a3: bit, b0: bit, b1: bit, b2: bit, b3: bit },
   outputs: { s0: bit, s1: bit, s2: bit, s3: bit, cout: bit },
   nodes: { fa0: FullAdder, fa1: FullAdder, fa2: FullAdder, fa3: FullAdder },
@@ -111,7 +111,7 @@ export const Adder4 = circuit('Adder4', {
   ],
 });
 
-export const ALU1 = circuit('ALU1', {
+const ALU1 = circuit('ALU1', {
   inputs: { a: bit, b: bit, cin: bit, op0: bit, op1: bit },
   outputs: { result: bit, cout: bit },
   nodes: {
@@ -145,7 +145,7 @@ export const ALU1 = circuit('ALU1', {
 });
 
 // RAM demo is self-contained (no ports), so auto-harness skips it
-export const DemoRAM = circuit('DemoRAM', {
+const DemoRAM = circuit('DemoRAM', {
   nodes: {
     addr: Input(),
     data_in: Input(),
@@ -162,7 +162,7 @@ export const DemoRAM = circuit('DemoRAM', {
 });
 
 // D flip-flop demo is self-contained
-export const DemoFlipFlop = circuit('DemoFlipFlop', {
+const DemoFlipFlop = circuit('DemoFlipFlop', {
   nodes: { sw_d: Switch, dff: DFlipFlop(), led_q: Led },
   connect: ({ nodes: { sw_d, dff, led_q } }) => [sw_d.out.to(dff.d), dff.q.to(led_q.in)],
 });

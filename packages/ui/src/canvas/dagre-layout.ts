@@ -13,7 +13,7 @@ import { pinColumnHeight, pinLabelGutter } from '../nodes/BaseNode';
 import type { MetadataState } from './types';
 
 /** Node size constants by component type. Used to feed dagre. */
-export const NODE_DIMENSIONS: Record<string, { width: number; height: number }> = {
+const NODE_DIMENSIONS: Record<string, { width: number; height: number }> = {
   Switch: { width: 140, height: 110 },
   Input: { width: 140, height: 80 },
   Led: { width: 100, height: 110 },
@@ -29,9 +29,9 @@ export const NODE_DIMENSIONS: Record<string, { width: number; height: number }> 
   DualPortRAM: { width: 140, height: 100 },
 };
 
-export const DEFAULT_DIMENSIONS = { width: 160, height: 80 };
+const DEFAULT_DIMENSIONS = { width: 160, height: 80 };
 
-export function getDimensions(componentRef: string) {
+function getDimensions(componentRef: string) {
   return NODE_DIMENSIONS[componentRef] ?? DEFAULT_DIMENSIONS;
 }
 

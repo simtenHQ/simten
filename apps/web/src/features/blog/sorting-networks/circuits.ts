@@ -26,7 +26,7 @@ const CompareSwap = circuit('CompareSwap', {
 });
 
 // ── Standalone demo: single compare-and-swap ──
-export const CompareSwapDemo = circuit('CompareSwapDemo', {
+const CompareSwapDemo = circuit('CompareSwapDemo', {
   nodes: {
     a: Input({ value: 7 }),
     b: Input({ value: 3 }),
@@ -48,7 +48,7 @@ export const CompareSwapDemo = circuit('CompareSwapDemo', {
 // Stage 1: (0,1) (2,3)
 // Stage 2: (0,2) (1,3)
 // Stage 3:    (1,2)
-export const SortNet4 = circuit('SortNet4', {
+const SortNet4 = circuit('SortNet4', {
   inputs: { v0: bus(8), v1: bus(8), v2: bus(8), v3: bus(8) },
   outputs: { s0: bus(8), s1: bus(8), s2: bus(8), s3: bus(8) },
   nodes: {
@@ -84,7 +84,7 @@ export const SortNet4 = circuit('SortNet4', {
 });
 
 // ── Top-level demo: SortNet4 with Inputs and HexDisplays ──
-export const SortDemo = circuit('SortDemo', {
+const SortDemo = circuit('SortDemo', {
   nodes: {
     v0: Input({ value: 42 }),
     v1: Input({ value: 7 }),
@@ -112,7 +112,7 @@ export const SortDemo = circuit('SortDemo', {
 // Same 5 comparators as SortNet4, but register banks between each stage
 // make inputs and outputs independent, so a new result emerges every clock cycle
 // after 3 cycles of initial latency.
-export const PipelinedSortNet4 = circuit('PipelinedSortNet4', {
+const PipelinedSortNet4 = circuit('PipelinedSortNet4', {
   inputs: { v0: bus(8), v1: bus(8), v2: bus(8), v3: bus(8) },
   outputs: { s0: bus(8), s1: bus(8), s2: bus(8), s3: bus(8) },
   nodes: {

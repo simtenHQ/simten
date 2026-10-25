@@ -29,7 +29,7 @@ export function findRepoRoot(): string {
 }
 
 /** Locate tsx: SIMTEN_TSX → <root>/node_modules/.bin/tsx → bare `tsx` on PATH. */
-export function resolveTsx(root: string): string | null {
+function resolveTsx(root: string): string | null {
   if (process.env.SIMTEN_TSX) return process.env.SIMTEN_TSX;
   const local = resolve(root, 'node_modules/.bin/tsx');
   if (existsSync(local)) return local;
