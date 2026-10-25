@@ -1,6 +1,6 @@
+import { Button } from '@simten/ui/primitives/button';
 import React from 'react';
 import { useTheme } from '@/components/ThemeProvider';
-import { Button } from '@/components/ui/button';
 
 export function ThemeToggle() {
   const { resolvedTheme, setTheme } = useTheme();

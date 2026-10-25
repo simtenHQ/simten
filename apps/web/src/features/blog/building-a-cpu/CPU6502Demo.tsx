@@ -1,5 +1,10 @@
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@simten/ui/primitives/tooltip';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import type { StageStatus } from '@/lib/cc65-compiler';
 import { CCodeEditor } from './CCodeEditor';
 import { useCC65Compiler } from './useCC65Compiler';
