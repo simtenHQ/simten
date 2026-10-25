@@ -20,7 +20,7 @@ export const simulateSchema = z.object({
     .default(10)
     .describe('Number of clock ticks to simulate (default: 10)'),
   inputs: z
-    .record(z.union([z.number(), z.boolean()]))
+    .record(z.string(), z.union([z.number(), z.boolean()]))
     .optional()
     .describe('Initial input values as { portName: value }'),
 });
