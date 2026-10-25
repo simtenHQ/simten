@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "@simten/ui": "workspace:*",
-    "vite": "^7.3.5",
+    "vite": "^7.3.7",
     "typescript": "^5.8.3",
     "wrangler": "^4.73.0"
   }
