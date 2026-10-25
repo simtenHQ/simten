@@ -8,7 +8,7 @@ import { defineConfig } from 'vite';
 // actually function:
 //
 //   script-src 'self'             — the main.ts bundle, served same-origin.
-//   script-src 'unsafe-eval'      — executeCircuitCode + iframe-main eval
+//   script-src 'unsafe-eval'      — executeCircuitCode + the worker's eval
 //                                   reconstruction use new Function().
 //   script-src blob:              — worker.ts dynamically imports a blob-URL
 //                                   loader module to resolve npm packages.

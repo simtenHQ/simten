@@ -16,7 +16,7 @@
  *     which allows only esm.sh, for npm imports.
  *   - Only structured-clone data crosses postMessage; the page never receives
  *     user code.
- *   - Compiles run in the sandbox's worker under a 5s timeout.
+ *   - All user code and simulation run in the sandbox's worker under a 5s watchdog.
  *
  * Usage:
  *   const sandbox = useSandbox();
