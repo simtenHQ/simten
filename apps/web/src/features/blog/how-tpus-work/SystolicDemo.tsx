@@ -1,6 +1,6 @@
 import { CircuitCanvas } from '@simten/ui/canvas';
+import { TooltipProvider } from '@simten/ui/primitives/tooltip';
 import { useMemo } from 'react';
-import { TooltipProvider } from '@/components/ui/tooltip';
 import { useSystolicSimulator } from './useSystolicSimulator';
 
 /**

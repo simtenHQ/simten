@@ -1,6 +1,11 @@
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@simten/ui/primitives/tooltip';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { SiteHeader } from '@/components/SiteHeader';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { explainInstruction } from './rv32i-explain';
 import {
   ABI_NAMES,
