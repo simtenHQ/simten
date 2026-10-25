@@ -1,6 +1,7 @@
 /**
  * Messages between the page (`useSandbox`), the sandbox iframe
- * (`apps/sandbox/src/main.ts`) and its worker (`apps/sandbox/src/worker.ts`).
+ * (`apps/sandbox/src/main.ts`) and its worker (`apps/sandbox/src/worker.ts`),
+ * which runs all user code and holds all simulation state.
  * Both sides import these types, so a change to one side that the other
  * doesn't handle is a type error.
  */
@@ -11,7 +12,7 @@ import type { RLEValue } from '@simten/core/api';
 /** Slot ids are arbitrary strings; each slot is an independent simulation. */
 export type SimSlot = string;
 
-/** An eval or onTick function sent as source text and rebuilt with `new Function`. */
+/** An eval or onTick function sent as source text (compile-ir) and rebuilt with `new Function`. */
 export interface EvalSource {
   evalSource: string;
   onTickSource?: string;
@@ -164,24 +165,9 @@ export type SandboxResponse = SandboxResult & { id: string };
 
 // ── Iframe ↔ worker ─────────────────────────────────────────────────────────
 
-export type WorkerRequest =
-  | { id: string; type: 'compile'; source: string }
-  | {
-      id: string;
-      type: 'simulate';
-      source: string;
-      ticks: number;
-      inputs?: Inputs;
-      memoryData?: Record<string, Record<string, number>>;
-    };
-
-export type WorkerResponse = { id: string } & (
-  | {
-      type: 'compiled';
-      circuits: Circuit[];
-      libraryCircuits: Circuit[];
-      evalSources: Record<string, EvalSource>;
-    }
-  | ({ type: 'simulated' } & SimulateResult)
-  | SandboxError
-);
+/**
+ * The iframe's main thread only relays: the worker handles every page request
+ * and its responses go back to the page unchanged.
+ */
+export type WorkerRequest = SandboxRequest;
+export type WorkerResponse = SandboxResponse;

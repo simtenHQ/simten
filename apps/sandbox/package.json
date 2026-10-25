@@ -6,7 +6,8 @@
     "dev": "vite dev --port 3002",
     "build": "vite build",
     "preview": "vite preview --port 3002",
-    "deploy": "pnpm run build && wrangler deploy"
+    "deploy": "pnpm run build && wrangler deploy",
+    "test:e2e": "tsx e2e/watchdog.mts"
   },
   "dependencies": {
     "@simten/core": "workspace:*"
