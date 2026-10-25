@@ -7,8 +7,6 @@ export {
   BaseNode,
   type BaseNodeProps,
   CompositeBadge,
-  EmbedConsoleNode,
-  EmbedScreenNode,
   InputNode,
   LogicGateNode,
   type NodeData,
