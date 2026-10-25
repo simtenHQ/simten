@@ -53,6 +53,28 @@ const Fibonacci = circuit('Fibonacci', {
 })
 `;
 
+// A user circuit that shares a stdlib name. It must not change the stdlib Adder.
+const FAKE_ADDER = `
+const Adder = circuit('Adder', {
+  inputs: { a: bus(8), b: bus(8), carry_in: bit },
+  outputs: { sum: bus(8), carry_out: bit },
+  eval: () => ({ sum: 99, carry_out: 0 }),
+})
+`;
+
+const inc = (step: number) => `
+const Inc = circuit('Inc', {
+  inputs: { a: bus(8) },
+  outputs: { y: bus(8) },
+  eval: ({ a }) => ({ y: (a + ${step}) & 255 }),
+})
+const IncTop = circuit('IncTop', {
+  outputs: { y: bus(8) },
+  nodes: { c: Constant({ value: 1, width: 8 }), inc: Inc },
+  connect: ({ outputs, nodes: { c, inc } }) => [c.out.to(inc.a), inc.y.to(outputs.y)],
+})
+`;
+
 const STUCK = `
 const Stuck = circuit('Stuck', {
   inputs: { a: bit },
@@ -61,9 +83,17 @@ const Stuck = circuit('Stuck', {
 })
 `;
 
-type Response = { type: string; error?: string; cycle?: number; snapshotId?: number };
+type Response = {
+  type: string;
+  error?: string;
+  cycle?: number;
+  snapshotId?: number;
+  portValues?: Record<string, number>;
+  signals?: Record<string, unknown>;
+};
 
-const show = (r: Response) => r.error ?? `${r.type}, cycle ${r.cycle}`;
+const show = (r: Response) =>
+  r.error ?? `${r.type}, cycle ${r.cycle}${r.portValues ? ` ${JSON.stringify(r.portValues)}` : ''}`;
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = '') {
@@ -189,6 +219,29 @@ try {
   );
   const ticked = await send({ type: 'tick-n', n: 5, slot: 'again' });
   check('tick after restart', ticked.type === 'ticked-n' && ticked.cycle === 5, show(ticked));
+
+  // User code can't change stdlib behaviour for any slot.
+  check(
+    'compile fake Adder',
+    (await send({ type: 'compile', source: FAKE_ADDER, slot: 'fake' })).type === 'compiled',
+  );
+  const fibAfter = await send({ type: 'tick-n', n: 5, slot: 'again' });
+  check(
+    'running slot keeps the std Adder',
+    fibAfter.portValues?.['__top__.fib'] === 55,
+    show(fibAfter),
+  );
+  await send({ type: 'compile', source: FIBONACCI, slot: 'again' });
+  const fibFresh = await send({ type: 'tick-n', n: 5, slot: 'again' });
+  check('new slot gets the std Adder', fibFresh.portValues?.['__top__.fib'] === 5, show(fibFresh));
+
+  // simulate() registrations don't leak into existing slots.
+  await send({ type: 'compile', source: inc(1), slot: 'inc' });
+  const sim = await send({ type: 'simulate', source: inc(100), ticks: 1 });
+  check('simulate uses its own Inc', sim.type === 'simulated', JSON.stringify(sim.signals));
+  // Changing the input makes the slot evaluate Inc again.
+  const incAfter = await send({ type: 'set-node', nodeId: 'c', value: 2, slot: 'inc' });
+  check('slot keeps its Inc after simulate', incAfter.portValues?.['inc.y'] === 3, show(incAfter));
 
   check('no console errors', consoleErrors.length === 0, consoleErrors.join(' | '));
 } finally {

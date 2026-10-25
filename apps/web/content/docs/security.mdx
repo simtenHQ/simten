@@ -90,7 +90,7 @@ The main app never hangs.
 
 Circuit components can attach user lambdas via `eval:` and `onTick:`, which the simulator calls on every evaluation and tick. All simulation runs in the worker, so these lambdas run there too, inside the same terminate envelope as compile and simulate. **The parent app (`simten.dev`) never executes user code at all.**
 
-A pathological lambda (for instance `eval: () => { while(1); }`) blocks only the worker. The watchdog on the iframe's main thread kills it after 5 seconds, and the simulation restarts at cycle 0. What the worker held is gone: cycle count, switch positions and time-travel history. Snapshot ids from before the restart no longer restore. If a circuit hangs again while it's being recompiled, that simulation is dropped.
+A pathological lambda (for instance `eval: () => { while(1); }`) blocks only the worker. The watchdog on the iframe's main thread kills it after 5 seconds, and the simulation restarts at cycle 0. What the worker held is gone: cycle count, switch positions and time-travel history. Memory loaded at runtime, such as a program written into ROM or RAM, is cleared too. Snapshot ids from before the restart no longer restore. If a circuit hangs again while it's being recompiled, that simulation is dropped.
 
 ### postMessage boundary
 

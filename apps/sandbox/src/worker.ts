@@ -32,10 +32,11 @@ import {
   executeCircuitCode,
   executeJsCode,
   getAllCircuitEvals,
+  getCircuitEval,
   registerCircuitEval,
   stripTypes,
 } from '@simten/core/circuit';
-import type { EnvironmentalStateValue } from '@simten/core/simulator';
+import { type EnvironmentalStateValue, ensureEvaluatorRegistered } from '@simten/core/simulator';
 import type {
   EvalSource,
   SandboxRequest,
@@ -49,16 +50,32 @@ import {
 } from './rewrite-imports.js';
 
 /**
- * Stdlib component names, captured before any user code runs.
+ * Stdlib evals, captured before any user code runs.
+ *
+ * The eval registry is global and keyed by name (#435), and running
+ * simulators dispatch through a table built from it. User code must not change
+ * stdlib behaviour, so these entries are put back after any user code runs.
  *
  * Evals sent as source text (compile-ir) are rebuilt with `new Function`,
  * which keeps the body but not the closure. That is wrong for the stdlib:
  * `Adder` is written `({ a, b, carry_in, width: w = width }) => …`, where the
  * default reads the factory's `width`, so a rebuilt copy throws "width is not
- * defined". Importing `@simten/core` already registered the real ones, so
- * rebuilt stdlib names are skipped.
+ * defined". Rebuilt stdlib names are skipped.
  */
-const STDLIB_EVAL_NAMES: ReadonlySet<string> = new Set(getAllCircuitEvals().keys());
+const STDLIB_EVALS: ReadonlyMap<string, EvalEntry> = new Map(getAllCircuitEvals());
+const STDLIB_EVAL_NAMES: ReadonlySet<string> = new Set(STDLIB_EVALS.keys());
+
+/**
+ * Put back registry entries that changed since `saved` was taken, and rebuild
+ * their evaluators so running slots use them again.
+ */
+function restoreEvals(saved: ReadonlyMap<string, EvalEntry>) {
+  for (const [name, entry] of saved) {
+    if (getCircuitEval(name) === entry) continue;
+    registerCircuitEval(name, entry);
+    ensureEvaluatorRegistered(name);
+  }
+}
 
 /**
  * Snapshot ids must not repeat across worker restarts, or the page could
@@ -296,7 +313,12 @@ async function executeSource(source: string) {
 }
 
 async function compile(source: string, slotId: string = DEFAULT_SLOT): Promise<SandboxResult> {
-  const result = await executeSource(source);
+  let result: Awaited<ReturnType<typeof executeSource>>;
+  try {
+    result = await executeSource(source);
+  } finally {
+    restoreEvals(STDLIB_EVALS);
+  }
   if (result.error) throw new RequestError(result.error);
 
   // A source that defines nothing but exports a component (`export default
@@ -334,7 +356,10 @@ async function compile(source: string, slotId: string = DEFAULT_SLOT): Promise<S
  * it can reference that slot's components.
  */
 function compileIR(req: Extract<SandboxRequest, { type: 'compile-ir' }>): SandboxResult {
-  if (req.evalSources) registerEvalSources(req.evalSources);
+  if (req.evalSources) {
+    registerEvalSources(req.evalSources);
+    restoreEvals(STDLIB_EVALS);
+  }
 
   let lib: SlotLibrary | undefined;
   for (const s of slots.values()) {
@@ -369,13 +394,21 @@ function simulate(req: Extract<SandboxRequest, { type: 'simulate' }>): SandboxRe
     }
   }
 
-  const result = simulateCircuit({
-    source,
-    ticks: req.ticks,
-    inputs:
-      req.inputs && Object.fromEntries(Object.entries(req.inputs).map(([k, v]) => [k, Number(v)])),
-    memoryData,
-  });
+  // simulate gets its own run; what it registers must not reach the slots.
+  const saved = new Map(getAllCircuitEvals());
+  let result: ReturnType<typeof simulateCircuit>;
+  try {
+    result = simulateCircuit({
+      source,
+      ticks: req.ticks,
+      inputs:
+        req.inputs &&
+        Object.fromEntries(Object.entries(req.inputs).map(([k, v]) => [k, Number(v)])),
+      memoryData,
+    });
+  } finally {
+    restoreEvals(saved);
+  }
   if ('error' in result) throw new RequestError(result.error);
 
   return {
