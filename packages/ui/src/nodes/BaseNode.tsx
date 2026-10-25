@@ -11,6 +11,33 @@ export interface PortConfig {
   value?: number;
 }
 
+/** Vertical room per pin, so a block with many pins grows instead of squeezing them together. */
+export const PIN_PITCH = 18;
+/** Roughly one character of an 11px monospace pin label. */
+const LABEL_CHAR_WIDTH = 7;
+
+/** Height a node needs for the busier of its two pin columns. */
+export function pinColumnHeight(pinCount: number): number {
+  return (pinCount + 1) * PIN_PITCH;
+}
+
+/** Room a column of pin labels needs between the node's edge and its content. */
+export function pinLabelGutter(names: string[]): number {
+  const longest = names.reduce((max, name) => Math.max(max, name.length), 0);
+  return Math.max(32, 18 + longest * LABEL_CHAR_WIDTH);
+}
+
+const PIN_LABEL_CLASS =
+  'absolute text-[11px] font-mono text-[var(--embed-text-secondary)] pointer-events-none select-none';
+
+/**
+ * Pin labels hide when their canvas is zoomed out past the point of reading
+ * them. `CircuitCanvas` sets this variable on its wrapper. A variable, not an
+ * ancestor selector, because the drill-down canvas renders inside the main one
+ * and must follow its own zoom, not the zoom of the canvas around it.
+ */
+const PIN_LABEL_DISPLAY = 'var(--simten-pin-labels, block)';
+
 export interface BaseNodeProps {
   children: React.ReactNode;
   inputPorts?: PortConfig[];
@@ -35,10 +62,11 @@ export function BaseNode({
   return (
     <div
       className={cn(
-        'relative rounded-lg border-2 bg-[var(--embed-bg-secondary)] shadow-md transition-all',
+        'relative flex flex-col justify-center rounded-lg border-2 bg-[var(--embed-bg-secondary)] shadow-md transition-all',
         selected ? 'border-blue-500 shadow-lg' : 'border-[var(--embed-border-node)]',
         className,
       )}
+      style={{ minHeight: pinColumnHeight(Math.max(inputPorts.length, outputPorts.length)) }}
     >
       {/* Input Ports (Left Side) */}
       {inputPorts.map((port) => {
@@ -88,8 +116,13 @@ export function BaseNode({
             />
             {showPortLabels && (
               <div
-                className="absolute text-[11px] font-mono text-[var(--embed-text-secondary)] pointer-events-none select-none"
-                style={{ top: topPct, left: '10px', transform: 'translateY(-50%)' }}
+                className={PIN_LABEL_CLASS}
+                style={{
+                  top: topPct,
+                  left: '10px',
+                  transform: 'translateY(-50%)',
+                  display: PIN_LABEL_DISPLAY,
+                }}
               >
                 {port.name}
               </div>
@@ -101,8 +134,21 @@ export function BaseNode({
       {/* Node Content */}
       {/* Port labels sit inside the node, so the content needs to give them
           room or they collide with it — on a two-input gate the box is ~88px
-          wide, and a symbol plus `a`/`b`/`out` does not fit in that. */}
-      <div className={cn('relative py-2', showPortLabels ? 'px-8' : 'px-3')}>{children}</div>
+          wide, and a symbol plus `a`/`b`/`out` does not fit in that. Each side
+          is as wide as its longest label, so `timing_ctrl` gets more than `a`. */}
+      <div
+        className="relative px-3 py-2"
+        style={
+          showPortLabels
+            ? {
+                paddingLeft: pinLabelGutter(inputPorts.map((p) => p.name)),
+                paddingRight: pinLabelGutter(outputPorts.map((p) => p.name)),
+              }
+            : undefined
+        }
+      >
+        {children}
+      </div>
 
       {/* Output Ports (Right Side) */}
       {outputPorts.map((port) => {
@@ -157,12 +203,13 @@ export function BaseNode({
             />
             {showPortLabels && (
               <div
-                className="absolute text-[11px] font-mono text-[var(--embed-text-secondary)] pointer-events-none select-none"
+                className={PIN_LABEL_CLASS}
                 style={{
                   top: topPct,
                   right: '10px',
                   transform: 'translateY(-50%)',
                   textAlign: 'right',
+                  display: PIN_LABEL_DISPLAY,
                 }}
               >
                 {port.name}

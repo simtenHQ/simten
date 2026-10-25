@@ -501,8 +501,6 @@ function PlayLevel({ level }: { level: Level }) {
                     componentLibrary={canvasLibrary ?? undefined}
                     portValues={preview.portValues}
                     showControls
-                    // The code needs exact port names; this is where players find them.
-                    showPortLabels
                     // The default only re-lays out when nodes change, not wires.
                     autoLayout
                     onToggleNode={preview.toggleNode}

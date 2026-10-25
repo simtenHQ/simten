@@ -9,6 +9,7 @@
 
 import dagre from '@dagrejs/dagre';
 import type { Circuit } from '@simten/core';
+import { pinColumnHeight, pinLabelGutter } from '../nodes/BaseNode';
 import type { MetadataState } from './types';
 
 /** Node size constants by component type. Used to feed dagre. */
@@ -32,6 +33,29 @@ export const DEFAULT_DIMENSIONS = { width: 160, height: 80 };
 
 export function getDimensions(componentRef: string) {
   return NODE_DIMENSIONS[componentRef] ?? DEFAULT_DIMENSIONS;
+}
+
+/** Roughly one character of the node's name and component text. */
+const TITLE_CHAR_WIDTH = 7;
+
+/**
+ * The size a node will render at, for spacing. A block's height follows its
+ * busier pin column and its width makes room for both columns of pin labels,
+ * the same sums `BaseNode` uses, so a 9-output block isn't laid out as if it
+ * were 80px tall and then drawn on top of its neighbour.
+ */
+function nodeDimensions(node: Circuit['nodes'][number]) {
+  const base = getDimensions(node.componentRef);
+  const pins = Math.max(node.inputs.length, node.outputs.length);
+  const height = Math.max(base.height, pinColumnHeight(pins));
+  // Harness switches and LEDs never show pin labels.
+  if (node.harness) return { width: base.width, height };
+  const title = Math.max((node.label ?? node.id).length, node.componentRef.length);
+  const labelled =
+    pinLabelGutter(node.inputs.map((p) => p.name)) +
+    pinLabelGutter(node.outputs.map((p) => p.name)) +
+    title * TITLE_CHAR_WIDTH;
+  return { width: Math.max(base.width, labelled), height };
 }
 
 export interface DagreLayoutOptions {
@@ -68,7 +92,7 @@ export function computeDagreLayout(circuit: Circuit, options?: DagreLayoutOption
   // Add nodes with their dimensions.
   const nodeIds = new Set<string>();
   for (const node of circuit.nodes) {
-    const dims = getDimensions(node.componentRef);
+    const dims = nodeDimensions(node);
     g.setNode(node.id, { width: dims.width, height: dims.height });
     nodeIds.add(node.id);
   }
