@@ -25,6 +25,9 @@ const WIRE_COLORS = {
   UNDEFINED: '#cbd5e1',
 };
 
+/** Buses draw heavier than single bits, as on a schematic. Width isn't shown, only bit vs bus. */
+const WIRE_STROKE = { BIT: 2, BUS: 4 };
+
 function portPathKey(path: PortPath): string {
   return path.nodeId === '' ? `.${path.portName}` : `${path.nodeId}.${path.portName}`;
 }
@@ -406,7 +409,10 @@ function projectCircuitToEdges(
       target: connection.target.nodeId,
       sourceHandle: `out-${connection.source.portName}`,
       targetHandle: `in-${connection.target.portName}`,
-      style: { stroke: edgeColor, strokeWidth: 2 },
+      style: {
+        stroke: edgeColor,
+        strokeWidth: connection.portType.kind === 'bus' ? WIRE_STROKE.BUS : WIRE_STROKE.BIT,
+      },
       animated: false,
       selectable: false,
       deletable: false,
