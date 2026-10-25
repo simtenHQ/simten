@@ -1,49 +1,7 @@
 name: CI
 
-# CI is intentionally scoped to the parts of the workspace that are
-# currently green end-to-end. See the "Deferred coverage" notes below
-# for what we want to add once the underlying issues are fixed.
-#
-# What runs today:
-#   1. pnpm install (frozen lockfile)
-#   2. Biome lint + format check (`biome ci`) — fast, fail-fast gate. Errors
-#                                              block; pre-existing lint/a11y
-#                                              findings are warnings for now
-#                                              (tracked in biome.json).
-#   3. wrangler types generation             — required by the Cloudflare
-#                                              apps' tsconfigs (the file is
-#                                              gitignored)
-#   4. workspace-wide typecheck               — `pnpm -r exec tsc --noEmit`
-#                                              across every package and app
-#   5. @simten/core unit tests                — 481 tests, the load-bearing
-#                                              simulator + circuit IR + std lib
-#                                              + verilog exporter
-#   6. @simten/ui unit tests                  — 82 tests across editor stores,
-#                                              circuit flattener, vcd generator
-#                                              (14 quarantined; need porting to
-#                                              the post-refactor evaluator API)
-#   7. workspace package builds               — sequential `tsc -b` + vite for
-#                                              core/ui/embed/mcp
-#   8. publish-readiness lint (publint)        — validates package.json shape +
-#                                              exports paths against the built
-#                                              dist/ for each publishable package
-#   9. exports drift check                    — keeps `exports` (src, for dev)
-#                                              and `publishConfig.exports`
-#                                              (dist, for npm) in correspondence
-#  10. web production build                   — proves the web app + Cloudflare
-#                                              Workers bundle compiles end to end
-#
-# Deferred coverage (TODO before this is "real" CI):
-#
-#   • packages/embed Playwright e2e tests
-#       Status: not run in CI yet. Needs `pnpm exec playwright install` step
-#       and a separate job (slower, browser-based). Add when we want
-#       end-to-end coverage of the embeddable widget.
-#
-#   • Cloudflare Container apps (apps/compiler, apps/verifier)
-#       Status: no automated tests today. Both run inside Workerd Containers
-#       and require Docker for local builds. A real smoke test would deploy
-#       to a preview environment and curl the /verify and /compile endpoints.
+# Every workspace test suite, the Go container tests, typecheck, lint,
+# package builds and the web build. Embed Playwright e2e is not run yet (#432).
 
 on:
   push:
@@ -57,7 +15,7 @@ concurrency:
 
 jobs:
   test:
-    name: core+ui tests, workspace build, web build
+    name: tests, workspace build, web build
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -156,17 +114,11 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Run core tests
-        run: pnpm --filter @simten/core test
-
-      - name: Run ui tests
-        run: pnpm --filter @simten/ui test
-
-      - name: FPGA CPU tests (RV32I ISA suite)
-        # Pure-sim RV32I suite (no board), run via tsx. Keeps the FPGA path from
-        # drifting unnoticed — the gap that let the load-align bug diverge across
-        # the three copies before consolidation.
-        run: pnpm fpga:test
+      - name: Run tests
+        # Every workspace package with a `test` script, including the RV32I
+        # ISA suite in hardware/ulx3s. The root `pnpm test` also runs the two
+        # drift checks, which have their own steps above.
+        run: pnpm -r test
 
       - name: FPGA netlist byte-identity guard
         # Locks the synthesized RV32I_CPU_Core netlist (the flat IR fed to the
@@ -216,3 +168,29 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm --filter @simten/web build
+
+  go:
+    name: container tests (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      matrix:
+        app: [compiler, synth, verifier]
+    defaults:
+      run:
+        working-directory: apps/${{ matrix.app }}/container_src
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: apps/${{ matrix.app }}/container_src/go.mod
+          cache: false
+
+      - name: Vet
+        run: go vet ./...
+
+      - name: Test
+        run: go test ./...

@@ -24,9 +24,8 @@ export interface TestNameResolution {
  * Returns the absolute path to the VCD for the given test name.
  * Throws if the file does not exist on disk.
  */
-export function resolveTestName(name: string): TestNameResolution {
+export function resolveTestName(name: string, root = findRepoRoot()): TestNameResolution {
   const slug = slugify(name);
-  const root = findRepoRoot();
   const path = resolve(root, VCD_PROJECT_DIR_SUFFIX, `${slug}.vcd`);
   if (!existsSync(path)) {
     throw new Error(
