@@ -1,0 +1,12 @@
+{
+  "machine": "Apple M1 Pro",
+  "results": {
+    "level load (nand), ms": 746.9,
+    "editor load (6502), ms": 630.6,
+    "step (6502), ms": 7.3,
+    "auto-run (6502), ticks/s": 10091,
+    "auto-run (6502), fps": 120,
+    "auto-run (rv32i), ticks/s": 10091,
+    "auto-run (rv32i), fps": 106
+  }
+}

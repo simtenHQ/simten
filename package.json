@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "bench": "pnpm --filter @simten/core bench",
+    "bench:browser": "tsx bench/browser.mts",
     "build": "pnpm -r build",
     "dev": "dotenv -- pnpm --filter @simten/web dev",
     "dev:game": "dotenv -- pnpm --filter @simten/game dev",
@@ -45,6 +46,7 @@
   "devDependencies": {
     "@biomejs/biome": "2.5.2",
     "@changesets/cli": "^2.31.0",
+    "@playwright/test": "^1.58.2",
     "dotenv-cli": "^11.0.0",
     "ts-morph": "^28.0.0",
     "tsx": "^4.19.2",
