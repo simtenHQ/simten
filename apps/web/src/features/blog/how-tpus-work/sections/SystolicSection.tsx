@@ -43,66 +43,72 @@ export function SystolicSection() {
           <div className="text-center">
             <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">A</div>
             <table className="border border-gray-300 dark:border-gray-600">
-              {[
-                [1, 2, 3],
-                [4, 5, 6],
-                [7, 8, 9],
-              ].map((row, i) => (
-                <tr key={i}>
-                  {row.map((v, j) => (
-                    <td
-                      key={j}
-                      className="w-8 h-8 text-center border border-gray-200 dark:border-gray-700 text-blue-600 dark:text-blue-400"
-                    >
-                      {v}
-                    </td>
-                  ))}
-                </tr>
-              ))}
+              <tbody>
+                {[
+                  [1, 2, 3],
+                  [4, 5, 6],
+                  [7, 8, 9],
+                ].map((row, i) => (
+                  <tr key={i}>
+                    {row.map((v, j) => (
+                      <td
+                        key={j}
+                        className="w-8 h-8 text-center border border-gray-200 dark:border-gray-700 text-blue-600 dark:text-blue-400"
+                      >
+                        {v}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
           <span className="text-gray-500 dark:text-gray-400 text-lg">&times;</span>
           <div className="text-center">
             <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">B</div>
             <table className="border border-gray-300 dark:border-gray-600">
-              {[
-                [2, 0, 1],
-                [0, 2, 0],
-                [1, 0, 2],
-              ].map((row, i) => (
-                <tr key={i}>
-                  {row.map((v, j) => (
-                    <td
-                      key={j}
-                      className="w-8 h-8 text-center border border-gray-200 dark:border-gray-700 text-purple-600 dark:text-purple-400"
-                    >
-                      {v}
-                    </td>
-                  ))}
-                </tr>
-              ))}
+              <tbody>
+                {[
+                  [2, 0, 1],
+                  [0, 2, 0],
+                  [1, 0, 2],
+                ].map((row, i) => (
+                  <tr key={i}>
+                    {row.map((v, j) => (
+                      <td
+                        key={j}
+                        className="w-8 h-8 text-center border border-gray-200 dark:border-gray-700 text-purple-600 dark:text-purple-400"
+                      >
+                        {v}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
           <span className="text-gray-500 dark:text-gray-400 text-lg">=</span>
           <div className="text-center">
             <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">C (expected)</div>
             <table className="border border-gray-300 dark:border-gray-600">
-              {[
-                [5, 4, 7],
-                [14, 10, 16],
-                [23, 16, 25],
-              ].map((row, i) => (
-                <tr key={i}>
-                  {row.map((v, j) => (
-                    <td
-                      key={j}
-                      className="w-8 h-8 text-center border border-gray-200 dark:border-gray-700 text-green-600 dark:text-green-400 font-semibold"
-                    >
-                      {v}
-                    </td>
-                  ))}
-                </tr>
-              ))}
+              <tbody>
+                {[
+                  [5, 4, 7],
+                  [14, 10, 16],
+                  [23, 16, 25],
+                ].map((row, i) => (
+                  <tr key={i}>
+                    {row.map((v, j) => (
+                      <td
+                        key={j}
+                        className="w-8 h-8 text-center border border-gray-200 dark:border-gray-700 text-green-600 dark:text-green-400 font-semibold"
+                      >
+                        {v}
+                      </td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
             </table>
           </div>
         </div>
