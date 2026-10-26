@@ -6,6 +6,8 @@ import { Hono } from 'hono';
 export class CompilerContainer extends Container<Env> {
   defaultPort = 8080;
   sleepAfter = '2m';
+  // No outbound network: these run user-supplied code.
+  enableInternet = false;
 }
 
 // --- Worker (API Gateway) ---
