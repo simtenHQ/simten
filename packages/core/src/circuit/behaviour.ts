@@ -35,24 +35,21 @@ export function hasCallbacks(behaviour: Behaviour): boolean {
   return behaviour.evalFn !== NO_EVAL || behaviour.onTickFn !== undefined;
 }
 
-const BEHAVIOUR = '_behaviour';
-
 /**
- * Attach behaviour to a built circuit. Non-enumerable, so it stays out of
- * JSON, structured clone and `Object.keys`: the IR and the wrapper's data
- * remain plain. Configurable, so a test harness can swap it (fault injection).
+ * Behaviour of each primitive built by `circuit()`, keyed by the built object.
+ * The circuit itself stays plain data, and a circuit nothing references any
+ * more is freed along with its entry.
  */
+const behaviours = new WeakMap<Circuit, Behaviour>();
+
+/** Record a built circuit's behaviour. Calling it again replaces it (fault injection). */
 export function attachBehaviour(built: Circuit, behaviour: Behaviour): void {
-  Object.defineProperty(built, BEHAVIOUR, {
-    value: behaviour,
-    enumerable: false,
-    configurable: true,
-  });
+  behaviours.set(built, behaviour);
 }
 
 /** The behaviour a circuit was built with, if it is a primitive built by `circuit()`. */
 export function behaviourOf(built: Circuit): Behaviour | undefined {
-  return (built as unknown as { [BEHAVIOUR]?: Behaviour })[BEHAVIOUR];
+  return behaviours.get(built);
 }
 
 const definitionKeys = new WeakMap<Behaviour, string>();

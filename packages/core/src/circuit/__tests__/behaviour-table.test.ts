@@ -9,6 +9,8 @@
  * one silently running as the other.
  */
 
+import { setFlagsFromString } from 'node:v8';
+import { runInNewContext } from 'node:vm';
 import { describe, expect, it } from 'vitest';
 import type { CircuitIR } from '../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
@@ -231,10 +233,46 @@ describe('defining a circuit registers nothing', () => {
     expect(getStdBehaviours().has('BTRegistersNothing')).toBe(false);
   });
 
-  it('the circuit carries it, so its own design runs', () => {
+  it('the built circuit has it, so its own design runs', () => {
     expect(designOf(Probe).behaviours.has('BTRegistersNothing')).toBe(true);
     const sim = simulate(Probe);
     sim.set({ a: 1 });
     expect(sim.get('y')).toBe(1);
+  });
+});
+
+describe('behaviour is kept beside the circuit, not on it', () => {
+  it('leaves the built circuit with no extra properties', () => {
+    const Plain = circuit('BTPlain', { inputs: { a: bit }, outputs: { y: bit } });
+    const WithEval = circuit('BTWithEval', {
+      inputs: { a: bit },
+      outputs: { y: bit },
+      eval: ({ a }) => ({ y: a }),
+    });
+    expect(Reflect.ownKeys(WithEval)).toEqual(Reflect.ownKeys(Plain));
+  });
+
+  it('frees circuits from earlier edits once nothing uses them', async () => {
+    setFlagsFromString('--expose-gc');
+    const gc = runInNewContext('gc') as () => void;
+
+    // Each edit in the editor recompiles the source and drops the previous
+    // result. Compiled in a helper so this test's own frame holds none of them.
+    const compileEdits = (count: number): WeakRef<object>[] => {
+      const refs: WeakRef<object>[] = [];
+      for (let i = 0; i < count; i++) {
+        const result = executeCircuitCode(twinSource(`a + ${i}`));
+        expect(result.error).toBeNull();
+        for (const c of result.circuits) refs.push(new WeakRef(c));
+      }
+      return refs;
+    };
+    const refs = compileEdits(50);
+    expect(refs).toHaveLength(100);
+
+    // A WeakRef keeps its target alive until the current job ends.
+    await new Promise((resolve) => setImmediate(resolve));
+    gc();
+    expect(refs.filter((ref) => ref.deref() !== undefined)).toHaveLength(0);
   });
 });
