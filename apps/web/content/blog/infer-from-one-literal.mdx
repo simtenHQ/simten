@@ -36,7 +36,7 @@ function circuit<
   inputs?:  Ins
   outputs?: Outs
   nodes?:   Nodes
-  connect?: (arg: ConnectArg<Ins, Outs, Nodes>) => Connection[]
+  connect?: (arg: ConnectContext<Ins, Outs, Nodes>) => Connection[]
 }): Circuit<Ins, Outs>
 ```
 
@@ -91,7 +91,7 @@ So the brand has to be marked as an exception to the stripping. It's the one int
 There was a comment in the codebase, sitting next to the mapped type that builds the `connect` argument. The type is roughly this:
 
 ```ts
-type ConnectArg<Ins, Outs, Nodes> = {
+type ConnectContext<Ins, Outs, Nodes> = {
   inputs:  { readonly [K in keyof Ins]:  Source<Ins[K]> }
   outputs: { readonly [K in keyof Outs]: Sink<Outs[K]> }
   nodes: {

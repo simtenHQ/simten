@@ -116,9 +116,20 @@ export interface MemoryType {
 
 export type StateType = BitType | BusType | MemoryType;
 
+/**
+ * Memory contents: a plain object from address to stored value, e.g.
+ * `{ 0: 0x3e, 1: 0x07 }`. Addresses left out read 0. This is the one format
+ * memory contents take everywhere: `mem(depth, width, contents)`, the std
+ * memories' `memory` option, `romFromBytes`/`romFromWords`, the IR and
+ * `SimulationHandle.setNode`. It is plain JSON, so it survives the IR's trips
+ * through `JSON.stringify` and `postMessage`. Arrays are rejected (`length`
+ * is `never`): build dense contents with `romFromBytes` or `romFromWords`.
+ */
+export type MemoryContents = { [address: number]: number; length?: never };
+
 export interface MemoryValue {
-  /** Sparse storage: only store non-default values */
-  data: Map<number, number>;
+  /** Sparse contents: only non-zero addresses need an entry. */
+  data: MemoryContents;
   addressWidth: number;
   dataWidth: number;
 }
@@ -155,12 +166,7 @@ export interface Connection {
 // Nodes (Component Instances)
 // ============================================================================
 
-export type ArgumentValue =
-  | number
-  | string
-  | boolean
-  | number[] // For array initialization (ROM data, RAM init)
-  | Record<number, number>; // For sparse initialization (ROM data, RAM init)
+export type ArgumentValue = number | string | boolean | MemoryContents; // Memory contents (ROM data, RAM init)
 
 export interface Node {
   id: string;

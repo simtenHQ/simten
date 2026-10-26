@@ -12,7 +12,7 @@ import { bit, bus, circuit, mem, reg } from '../index.js';
 // ── reg() and mem() helpers ──────────────────────────────────────────────
 
 describe('reg() helper', () => {
-  it('creates a RegState with correct properties', () => {
+  it('creates a RegDecl with correct properties', () => {
     const r = reg(8);
     expect(r.__stateKind).toBe('reg');
     expect(r.width).toBe(8);
@@ -33,22 +33,18 @@ describe('reg() helper', () => {
 });
 
 describe('mem() helper', () => {
-  it('creates a MemState with correct properties', () => {
+  it('creates a MemDecl with correct properties', () => {
     const m = mem(256, 8);
     expect(m.__stateKind).toBe('mem');
     expect(m.depth).toBe(256);
     expect(m.width).toBe(8);
-    expect(m.initial.size).toBe(0);
+    expect(m.initial).toEqual({});
   });
 
   it('accepts initial data', () => {
-    const init = new Map([
-      [0, 42],
-      [1, 99],
-    ]);
-    const m = mem(256, 8, init);
-    expect(m.initial.get(0)).toBe(42);
-    expect(m.initial.get(1)).toBe(99);
+    const m = mem(256, 8, { 0: 42, 1: 99 });
+    expect(m.initial[0]).toBe(42);
+    expect(m.initial[1]).toBe(99);
   });
 
   it('throws for invalid dimensions', () => {

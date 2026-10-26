@@ -4,6 +4,7 @@
 
 import { bit, bus, mem } from '../circuit/bit-bus.js';
 import { circuit } from '../circuit/circuit.js';
+import type { MemoryContents } from '../ir/circuit-ir.js';
 
 /**
  * RISC-V instruction decoder. Splits a 32-bit RV32I instruction word into
@@ -386,7 +387,7 @@ export const RV32I_RegisterFile = circuit('RV32I_RegisterFile', {
 /**
  * RISC-V instruction memory. 64 KB byte-addressable ROM that returns a
  * 32-bit little-endian word at the given PC. Read-only — populated via
- * the `init` node argument (use `romFromBytes`/`romFromWords`).
+ * the `memory` option (use `romFromBytes`/`romFromWords`).
  *
  * **Input:** `addr` — `bus(32)`
  * **Output:** `instruction` — `bus(32)`
@@ -734,34 +735,31 @@ export const RV32I_HazardUnit = circuit('RV32I_HazardUnit', {
  * independent 32-bit little-endian read ports — typical use is sharing
  * instruction memory between fetch and a separate inspection/debug path,
  * or between instruction and data caches in a Harvard-style layout.
- * Initialize via the `init` node argument (use `romFromBytes`/`romFromWords`).
+ * Initialize via the `memory` option (use `romFromBytes`/`romFromWords`).
  *
  * **Inputs:** `addrA`, `addrB` — `bus(32)`
  * **Outputs:** `dataA`, `dataB` — `bus(32)`
  */
-export const DualPortROM = circuit(
-  'DualPortROM',
-  (_opts?: { memory?: Record<number, number> | number[] }) => ({
-    inputs: { addrA: bus(32), addrB: bus(32) },
-    outputs: { dataA: bus(32), dataB: bus(32) },
-    state: { memory: mem(65536, 8) },
-    eval: ({ addrA, addrB, memory }) => {
-      // Word-aligned reads, like real memory: the CPU's WB-stage aligner picks
-      // bytes/halves out of the word via addr[1:0], so the data port must NOT
-      // pre-shift (returning the word *starting at* a byte address would make
-      // unaligned rodata byte loads extract twice and come back 0).
-      const aA = ((addrA as number) >>> 0) & ~3;
-      const aB = ((addrB as number) >>> 0) & ~3;
-      return {
-        dataA:
-          ((memory[aA + 3] << 24) | (memory[aA + 2] << 16) | (memory[aA + 1] << 8) | memory[aA]) >>>
-          0,
-        dataB:
-          ((memory[aB + 3] << 24) | (memory[aB + 2] << 16) | (memory[aB + 1] << 8) | memory[aB]) >>>
-          0,
-      };
-    },
-    onTick: ({ memory }) => ({ memory }), // read-only
-    meta: { category: 'memory', description: 'Dual-port read-only memory' },
-  }),
-);
+export const DualPortROM = circuit('DualPortROM', (_opts?: { memory?: MemoryContents }) => ({
+  inputs: { addrA: bus(32), addrB: bus(32) },
+  outputs: { dataA: bus(32), dataB: bus(32) },
+  state: { memory: mem(65536, 8) },
+  eval: ({ addrA, addrB, memory }) => {
+    // Word-aligned reads, like real memory: the CPU's WB-stage aligner picks
+    // bytes/halves out of the word via addr[1:0], so the data port must NOT
+    // pre-shift (returning the word *starting at* a byte address would make
+    // unaligned rodata byte loads extract twice and come back 0).
+    const aA = ((addrA as number) >>> 0) & ~3;
+    const aB = ((addrB as number) >>> 0) & ~3;
+    return {
+      dataA:
+        ((memory[aA + 3] << 24) | (memory[aA + 2] << 16) | (memory[aA + 1] << 8) | memory[aA]) >>>
+        0,
+      dataB:
+        ((memory[aB + 3] << 24) | (memory[aB + 2] << 16) | (memory[aB + 1] << 8) | memory[aB]) >>>
+        0,
+    };
+  },
+  onTick: ({ memory }) => ({ memory }), // read-only
+  meta: { category: 'memory', description: 'Dual-port read-only memory' },
+}));

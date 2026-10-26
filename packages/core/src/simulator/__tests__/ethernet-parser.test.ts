@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { bit, bus, circuit } from '../../circuit/index.js';
+import { bit, bus, circuit, type MemoryContents } from '../../circuit/index.js';
 import {
   Eth_AddrClassifier,
   Eth_CRC32,
@@ -50,15 +50,21 @@ function buildEthernetFrame(
   srcMac: number[],
   ethertype: number,
   payload: number[],
-): Map<number, number> {
+): MemoryContents {
   const frame = [...dstMac, ...srcMac, (ethertype >> 8) & 0xff, ethertype & 0xff, ...payload];
   while (frame.length < 60) frame.push(0x00);
   const crc = computeCRC32(frame);
   frame.push(crc & 0xff, (crc >> 8) & 0xff, (crc >> 16) & 0xff, (crc >> 24) & 0xff);
 
-  const memory = new Map<number, number>();
-  frame.forEach((b, i) => memory.set(i, b));
-  return memory;
+  return frameContents(frame);
+}
+
+/**
+ * Every byte gets an entry, zeros too: Eth_FrameInput takes the frame length
+ * from the highest address present.
+ */
+function frameContents(frame: number[]): MemoryContents {
+  return Object.fromEntries(frame.map((b, i) => [i, b]));
 }
 
 /** Build VLAN-tagged frame */
@@ -68,7 +74,7 @@ function buildVlanFrame(
   vlanId: number,
   ethertype: number,
   payload: number[],
-): Map<number, number> {
+): MemoryContents {
   const vlanTci = vlanId & 0xfff;
   const frame = [
     ...dstMac,
@@ -85,9 +91,7 @@ function buildVlanFrame(
   const crc = computeCRC32(frame);
   frame.push(crc & 0xff, (crc >> 8) & 0xff, (crc >> 16) & 0xff, (crc >> 24) & 0xff);
 
-  const memory = new Map<number, number>();
-  frame.forEach((b, i) => memory.set(i, b));
-  return memory;
+  return frameContents(frame);
 }
 
 // ============================================================================
@@ -155,7 +159,7 @@ const Pipeline = circuit('TestEthPipeline', {
 
 /** Run pipeline simulation and return per-tick signal arrays */
 function runPipeline(
-  frameMemory: Map<number, number>,
+  frameMemory: MemoryContents,
   ticks: number,
 ): Record<string, (number | boolean)[]> {
   const s = simulate(Pipeline);
@@ -193,7 +197,7 @@ describe('Ethernet Parser Pipeline', () => {
   it('parses minimum untagged IPv4 frame (64 bytes)', () => {
     const payload = new Array(46).fill(0x42);
     const frame = buildEthernetFrame(DST_MAC, SRC_MAC, 0x0800, payload);
-    expect(frame.size).toBe(64);
+    expect(Object.keys(frame)).toHaveLength(64);
 
     const out = runPipeline(frame, 20);
 
@@ -261,7 +265,7 @@ describe('Ethernet Parser Pipeline', () => {
     const payload = new Array(46).fill(0x42);
     const frame = buildEthernetFrame(DST_MAC, SRC_MAC, 0x0800, payload);
 
-    frame.set(20, (frame.get(20) ?? 0) ^ 0xff);
+    frame[20] ^= 0xff;
 
     const out = runPipeline(frame, 20);
     const doneTick = out.frame_done.indexOf(true);
@@ -273,7 +277,7 @@ describe('Ethernet Parser Pipeline', () => {
   it('completes 64-byte frame in exactly 16 stream cycles', () => {
     const payload = new Array(46).fill(0x00);
     const frame = buildEthernetFrame(DST_MAC, SRC_MAC, 0x0800, payload);
-    expect(frame.size).toBe(64);
+    expect(Object.keys(frame)).toHaveLength(64);
 
     const out = runPipeline(frame, 20);
 

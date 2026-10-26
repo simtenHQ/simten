@@ -21,7 +21,7 @@
       "ticksPerSec": 28918
     },
     "rv32i-computer": {
-      "fingerprint": "f03edc121183e493",
+      "fingerprint": "fa2e0c115a23e4d3",
       "evalsPerTick": 213.4,
       "compileMs": 4.4,
       "ticksPerSec": 14061

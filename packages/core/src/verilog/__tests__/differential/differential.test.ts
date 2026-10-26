@@ -67,6 +67,7 @@ import {
   Register,
   RightShifter,
   ROM,
+  romFromBytes,
   SignExtend,
   SignedAdder,
   SignedComparator,
@@ -117,7 +118,6 @@ const BUG = {
   combiner: 'unfiled: Combiner bit inputs driven by internal nets get width-wide wires',
   switches: 'unfiled: Switch and Input nodes export as undriven wires',
   dualPortRom: 'unfiled: DualPortROM exports reads of a memory it never declares',
-  memArray: 'unfiled: ROM/DualPortRAM drop memory contents given as an array',
   ramInit: 'unfiled: RAM drops its memory contents on export',
 } as const;
 
@@ -294,11 +294,13 @@ std('ROM, object contents', () => ROM({ memory: record(bytes(16)) }), { opts: lo
 std('DualPortRAM 4x16, object contents', () =>
   DualPortRAM({ addressWidth: 4, dataWidth: 16, memory: record(bytes(16)) }),
 );
-std('ROM, array contents', () => ROM({ memory: bytes(16) }), {
+std('ROM, romFromBytes contents', () => ROM({ memory: romFromBytes(bytes(16)) }), {
   opts: low16,
-  bug: BUG.memArray,
 });
-std('RAM, initial contents', () => RAM({ memory: bytes(16) }), { opts: low16, bug: BUG.ramInit });
+std('RAM, initial contents', () => RAM({ memory: record(bytes(16)) }), {
+  opts: low16,
+  bug: BUG.ramInit,
+});
 std('RAM, uninitialised', () => RAM(), { bug: BUG.xMemory });
 
 // ── small composites ────────────────────────────────────────────────────

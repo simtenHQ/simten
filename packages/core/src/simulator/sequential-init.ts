@@ -10,8 +10,11 @@ import type {
   BitValue,
   BusValue,
   CircuitLibrary,
+  MemoryContents,
+  MemoryValue,
   StateBlock,
 } from '../ir/circuit-ir.js';
+import { memoryContentsShapeError } from '../ir/memory-contents.js';
 import type { FlatCircuit, FlatSequentialState, PrimitiveState } from './types.js';
 
 /**
@@ -100,37 +103,16 @@ function resolveBlockInitial(
 
   if (kind === 'memory') {
     const memory = new Map<number, number>();
-    // Seed from the block's declared initial (if any). `data` is a Map in
-    // the original Circuit IR, but the sandbox worker round-trips IR
-    // through JSON before postMessage, which turns Maps into plain objects
-    // — handle both.
-    const blockInit = block.initialValue as
-      | { data?: Map<number, number> | Record<string, number> }
-      | undefined;
-    if (blockInit?.data) {
-      if (blockInit.data instanceof Map) {
-        for (const [addr, value] of blockInit.data) memory.set(addr, value);
-      } else if (typeof blockInit.data === 'object') {
-        for (const [key, value] of Object.entries(blockInit.data)) {
-          const addr = parseInt(key, 10);
-          if (!isNaN(addr) && typeof value === 'number') memory.set(addr, value);
-        }
-      }
-    }
-    // Apply node.arguments override (array | sparse object | Map).
+    // Seed from the block's declared contents, then the node's own
+    // (`ROM({ memory })`). Both are `{ address: value }` objects; circuit()
+    // has already checked them against the memory's depth and width.
+    const declared = (block.initialValue as MemoryValue | undefined)?.data;
+    if (declared) addContents(memory, declared);
     if (override !== undefined) {
-      if (Array.isArray(override)) {
-        override.forEach((value, index) => {
-          if (typeof value === 'number') memory.set(index, value);
-        });
-      } else if (override instanceof Map) {
-        for (const [addr, value] of override as Map<number, number>) memory.set(addr, value);
-      } else if (typeof override === 'object' && override !== null) {
-        for (const [key, value] of Object.entries(override)) {
-          const addr = parseInt(key, 10);
-          if (!isNaN(addr) && typeof value === 'number') memory.set(addr, value);
-        }
-      }
+      // A hand-built or deserialized IR is not checked by circuit().
+      const shapeError = memoryContentsShapeError(override);
+      if (shapeError) throw new Error(`Node '${nodeId}' state '${block.name}': ${shapeError}`);
+      addContents(memory, override as MemoryContents);
     }
     // Runtime memoryData overlay (e.g. user-uploaded ROM) wins.
     if (memoryData) {
@@ -157,6 +139,13 @@ function resolveBlockInitial(
   // value was numeric. Coerce instead of asserting.
   if (typeof declared === 'boolean') return declared ? 1 : 0;
   return declared as BitValue | BusValue;
+}
+
+function addContents(memory: Map<number, number>, contents: MemoryContents): void {
+  for (const [key, value] of Object.entries(contents)) {
+    const addr = Number(key);
+    if (Number.isInteger(addr) && typeof value === 'number') memory.set(addr, value);
+  }
 }
 
 /**

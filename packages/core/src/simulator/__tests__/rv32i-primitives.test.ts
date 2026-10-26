@@ -456,13 +456,7 @@ describe('RV32I_InstrMem', () => {
 
     const s = simulate(c);
     try {
-      const memory = new Map<number, number>([
-        [0, 0x93],
-        [1, 0x00],
-        [2, 0x50],
-        [3, 0x00],
-      ]);
-      s.setNode('im', memory);
+      s.setNode('im', { 0: 0x93, 1: 0x00, 2: 0x50, 3: 0x00 });
       s.set({ addr: 0 } as any);
       // setNode invalidates the cache; tick to re-propagate combinational outputs
       s.tick();

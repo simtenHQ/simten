@@ -2,7 +2,7 @@
  * Snippet completions for Simten circuit source.
  *
  * The TypeScript service already handles the parts that need type knowledge:
- * `nodes.xor1.` lists that component's ports (ConnectArg is a mapped type over
+ * `nodes.xor1.` lists that component's ports (ConnectContext is a mapped type over
  * each node's shape), and `.to()` is only offered on source refs (SourcePortRef
  * carries a brand the sink type lacks). What it cannot do is produce the
  * scaffold — the six-key object literal every circuit opens with, where the

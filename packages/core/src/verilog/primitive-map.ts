@@ -479,9 +479,9 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       const initLines: string[] = [];
       if (ctx.target === 'simulation') {
         const initData = args.memory;
-        if (initData && typeof initData === 'object' && !Array.isArray(initData)) {
+        if (initData && typeof initData === 'object') {
           initLines.push(`initial begin`);
-          for (const [addr, val] of Object.entries(initData as Record<number, number>)) {
+          for (const [addr, val] of Object.entries(initData)) {
             initLines.push(`  ${memName}[${addr}] = ${dw}'d${val};`);
           }
           initLines.push(`end`);
@@ -530,9 +530,9 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       const initLines: string[] = [];
       if (ctx.target === 'simulation') {
         const initData = args.memory;
-        if (initData && typeof initData === 'object' && !Array.isArray(initData)) {
+        if (initData && typeof initData === 'object') {
           initLines.push(`initial begin`);
-          for (const [addr, val] of Object.entries(initData as Record<number, number>)) {
+          for (const [addr, val] of Object.entries(initData)) {
             initLines.push(`  ${memName}[${addr}] = ${dw}'d${val};`);
           }
           initLines.push(`end`);

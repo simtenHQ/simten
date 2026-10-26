@@ -11,7 +11,8 @@
  * - No combinational loops
  */
 
-import type { CircuitIR, PortType } from '../ir/circuit-ir.js';
+import type { CircuitIR, MemoryValue, PortType } from '../ir/circuit-ir.js';
+import { memoryContentsToMap } from '../ir/memory-contents.js';
 import { elaborate } from '../simulator/elaboration.js';
 import type { CircuitLibrary, FlatCircuit, FlatConnection, FlatNode } from '../simulator/types.js';
 import {
@@ -49,7 +50,7 @@ function portTypeToVerilog(pt: PortType): string {
 /**
  * Collect preloaded memory state from the component definition for a flat
  * node. Looks up `node.primitiveType` in the library and extracts memory
- * state blocks that have a non-empty `initialValue.data` Map. Returned
+ * state blocks that have non-empty `initialValue.data` contents. Returned
  * array is handed to primitive-map via `PrimitiveContext.stateInits` so
  * each primitive can emit `initial begin …` using its own reg-name
  * convention. Circuits without memory state (or with empty init) yield
@@ -62,10 +63,11 @@ function collectStateInits(node: FlatNode, library: CircuitLibrary): StateInit[]
   const inits: StateInit[] = [];
   for (const block of def.state) {
     if (block.stateType.kind !== 'memory') continue;
-    const iv = block.initialValue as { data?: Map<number, number>; dataWidth?: number } | undefined;
-    const data = iv?.data;
-    if (!data || !(data instanceof Map) || data.size === 0) continue;
-    const width = iv?.dataWidth ?? block.stateType.dataWidth ?? 8;
+    const iv = block.initialValue as MemoryValue | undefined;
+    if (!iv?.data) continue;
+    const data = memoryContentsToMap(iv.data);
+    if (data.size === 0) continue;
+    const width = iv.dataWidth ?? block.stateType.dataWidth ?? 8;
     inits.push({ stateName: block.name, data, width });
   }
   return inits.length > 0 ? inits : undefined;

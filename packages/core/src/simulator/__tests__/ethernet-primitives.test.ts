@@ -198,9 +198,9 @@ describe('Eth_FrameInput', () => {
   });
 
   function loadFrame(s: ReturnType<typeof simulate>, bytes: number[]) {
-    const memory = new Map<number, number>();
-    bytes.forEach((b, i) => memory.set(i, b));
-    s.setNode('fi', memory);
+    // Every byte gets an entry, zeros too: Eth_FrameInput takes the frame
+    // length from the highest address present.
+    s.setNode('fi', Object.fromEntries(bytes.map((b, i) => [i, b])));
   }
 
   it('streams 8-byte frame in 2 cycles', () => {

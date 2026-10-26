@@ -142,11 +142,7 @@ describe('exportVerilog', () => {
           {
             ...RAM().circuit.state[0],
             initialValue: {
-              data: new Map<number, number>([
-                [2, 0xab],
-                [0, 0xcd],
-                [1, 0xef],
-              ]),
+              data: { 2: 0xab, 0: 0xcd, 1: 0xef },
               addressWidth: 8,
               dataWidth: 8,
             },
@@ -189,11 +185,11 @@ describe('exportVerilog', () => {
         ],
       });
 
-      const bigData = new Map<number, number>();
+      const bigData: Record<number, number> = {};
       // 10 entries is tiny, but we'll lower the threshold via export options
       // to force the $readmemh path — cheaper than populating 2048+ entries
       // for a unit test.
-      for (let i = 0; i < 10; i++) bigData.set(i, i * 3 + 1);
+      for (let i = 0; i < 10; i++) bigData[i] = i * 3 + 1;
 
       const ramDefWithData: CircuitIR = {
         ...RAM().circuit,

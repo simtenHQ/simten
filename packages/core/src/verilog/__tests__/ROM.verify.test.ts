@@ -64,7 +64,7 @@ function buildRom() {
       {
         ...Rom.circuit.state[0],
         initialValue: {
-          data: new Map<number, number>(ROM_CONTENTS),
+          data: Object.fromEntries(ROM_CONTENTS),
           addressWidth: 16,
           dataWidth: 8,
         },

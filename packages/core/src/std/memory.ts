@@ -6,6 +6,7 @@
 
 import { bit, bus, mem } from '../circuit/bit-bus.js';
 import { circuit } from '../circuit/circuit.js';
+import type { MemoryContents } from '../ir/circuit-ir.js';
 
 /**
  * Read-only memory with address decoding. 64K × 8-bit by default. Initialize
@@ -28,19 +29,16 @@ import { circuit } from '../circuit/circuit.js';
  * })
  * ```
  */
-export const ROM = circuit(
-  'ROM',
-  (_opts?: { memory?: Record<number, number> | number[]; baseAddress?: number }) => ({
-    inputs: { addr: bus(16) },
-    outputs: { data_out: bus(8) },
-    state: { memory: mem(65536, 8) },
-    meta: { category: 'memory', icon: '📀', description: 'Read-only memory with address decoding' },
-    eval: ({ addr, memory }) => ({
-      data_out: memory[addr],
-    }),
-    onTick: ({ memory }) => ({ memory }),
+export const ROM = circuit('ROM', (_opts?: { memory?: MemoryContents; baseAddress?: number }) => ({
+  inputs: { addr: bus(16) },
+  outputs: { data_out: bus(8) },
+  state: { memory: mem(65536, 8) },
+  meta: { category: 'memory', icon: '📀', description: 'Read-only memory with address decoding' },
+  eval: ({ addr, memory }) => ({
+    data_out: memory[addr],
   }),
-);
+  onTick: ({ memory }) => ({ memory }),
+}));
 
 /**
  * Random access memory. 256 × 8-bit synchronous read/write. Reads
@@ -65,7 +63,7 @@ export const ROM = circuit(
  * })
  * ```
  */
-export const RAM = circuit('RAM', (_opts?: { memory?: Record<number, number> | number[] }) => ({
+export const RAM = circuit('RAM', (_opts?: { memory?: MemoryContents }) => ({
   inputs: { addr: bus(8), data_in: bus(8), we: bit },
   outputs: { data_out: bus(8) },
   state: { memory: mem(256, 8) },
@@ -119,7 +117,7 @@ export const DualPortRAM = circuit(
   }: {
     addressWidth?: number;
     dataWidth?: number;
-    memory?: Record<number, number> | number[];
+    memory?: MemoryContents;
   } = {}) => ({
     inputs: { addrA: bus(addressWidth), dataA: bus(dataWidth), weA: bit, addrB: bus(addressWidth) },
     outputs: { outA: bus(dataWidth), outB: bus(dataWidth) },
@@ -157,7 +155,7 @@ export const DualPortRAM = circuit(
  * Each value is masked to 8 bits. Use for fonts, sprites, audio samples,
  * file blobs, or anything that fits in a Uint8Array.
  */
-export function romFromBytes(bytes: Uint8Array | ArrayLike<number>): Record<number, number> {
+export function romFromBytes(bytes: Uint8Array | ArrayLike<number>): MemoryContents {
   const out: Record<number, number> = {};
   for (let i = 0; i < bytes.length; i++) {
     const v = bytes[i] & 0xff;
@@ -172,7 +170,7 @@ export function romFromBytes(bytes: Uint8Array | ArrayLike<number>): Record<numb
  * Each word is masked to `width` bits. Use for instruction memories, wide
  * lookup tables, or any data wider than a byte.
  */
-export function romFromWords(words: ArrayLike<number>, width: number): Record<number, number> {
+export function romFromWords(words: ArrayLike<number>, width: number): MemoryContents {
   if (!Number.isInteger(width) || width < 1 || width > 32) {
     throw new Error(`ROM word width must be an integer in 1..32, got ${width}`);
   }
@@ -191,9 +189,7 @@ export function romFromWords(words: ArrayLike<number>, width: number): Record<nu
  * Use when data is naturally sparse (e.g. a few patched opcodes, scattered
  * lookup entries). Throws on negative or non-integer addresses.
  */
-export function romFromEntries(
-  entries: Iterable<readonly [number, number]>,
-): Record<number, number> {
+export function romFromEntries(entries: Iterable<readonly [number, number]>): MemoryContents {
   const out: Record<number, number> = {};
   for (const [addr, value] of entries) {
     if (!Number.isInteger(addr) || addr < 0) {
