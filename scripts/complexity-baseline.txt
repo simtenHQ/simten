@@ -12,7 +12,6 @@ hardware/ulx3s/projects/cpu/sim.ts runSim
 hardware/ulx3s/projects/cpu/verify.ts runSuite
 hardware/ulx3s/run_on_fpga.ts main
 packages/core/src/circuit/auto-harness.ts autoHarness
-packages/core/src/circuit/circuit.ts circuit
 packages/core/src/circuit/execute.ts executeJsCode
 packages/core/src/import/import-netlist.ts moduleShapes
 packages/core/src/import/import-netlist.ts rtlSignalNames

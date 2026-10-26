@@ -28,6 +28,7 @@ import * as std from '../std/index.js';
 import type { Circuit, CircuitLibrary } from '../types/circuit.js';
 import { bit, bus, mem, reg } from './bit-bus.js';
 import { circuit } from './circuit.js';
+import { beginDefinitionScope } from './eval-registry.js';
 import type { BuiltCircuit } from './types.js';
 
 // ============================================================================
@@ -224,6 +225,8 @@ function exportedNames(code: string): string[] {
  * @returns Execution result with circuits and any error
  */
 export function executeJsCode(jsCode: string, extraScope?: Record<string, unknown>): ExecuteResult {
+  // Each run is a new version of the source, not a second definition.
+  beginDefinitionScope();
   const { names, values } = getScope();
 
   const allNames = extraScope ? [...names, ...Object.keys(extraScope)] : names;
