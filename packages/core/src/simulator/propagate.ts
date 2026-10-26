@@ -13,10 +13,16 @@ import { EVALUATORS, type EvalContext } from './evaluators/index.js';
 import type { NumericEventQueue } from './numeric-event-queue.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 import type { NumericPortValues } from './numeric-values.js';
-import type { ClockEdges } from './primitive-interface.js';
 
-/** Maximum iterations before assuming unstable feedback loop */
-const MAX_PROPAGATION_ITERATIONS = 10000;
+/**
+ * Node evaluations one propagate call may make before it gives up and reports
+ * an unstable feedback loop. Scaled with the circuit: a settling wave can
+ * evaluate every node several times over, so a fixed cap falsely trips on a
+ * large circuit that is perfectly stable.
+ */
+export function maxPropagationIterations(nodeCount: number): number {
+  return Math.max(10000, nodeCount * 64);
+}
 
 /** Proxy -> the holder carrying whichever Map that proxy is currently backed by:
  *  the committed one until a write forces a copy, the copy afterwards. */
@@ -71,8 +77,28 @@ function wrapMapForOnTick(map: Map<number, number>): any {
  *  taken alongside `oldValues` so first-eval propagation always fires —
  *  even when an evaluator's canonical output happens to equal the zero
  *  default that Int32Array gives us. */
-const oldValuesScratch = new Int32Array(64);
+const oldValuesScratch = new Uint32Array(64);
 const wasInitializedScratch = new Uint8Array(64);
+
+/** Booleans are accepted at the API boundary; everything stored is numeric. */
+function toPortValue(value: unknown): number {
+  return typeof value === 'boolean' ? (value ? 1 : 0) : (value as number);
+}
+
+/** Names the nodes still switching when the cap is hit, which is the loop. */
+function unstableLoopMessage(
+  circuit: NumericCircuit,
+  queue: NumericEventQueue,
+  maxIterations: number,
+): string {
+  const pending = queue.toArray().map((i) => circuit.indexToNodeId[i]);
+  const shown = pending.slice(0, 8).join(', ');
+  const more = pending.length > 8 ? `, and ${pending.length - 8} more` : '';
+  return (
+    `Propagation did not stabilize after ${maxIterations} evaluations: ` +
+    `a combinational loop is oscillating. Still changing: ${shown}${more}.`
+  );
+}
 
 /**
  * Propagation loop using the numeric circuit and the evaluator table.
@@ -98,11 +124,13 @@ export function propagate(
     for (const [key, value] of topLevelInputs) {
       const portIdx = circuit.portKeyToIndex.get(key);
       if (portIdx !== undefined) {
-        values.values[portIdx] = typeof value === 'boolean' ? (value ? 1 : 0) : value;
+        values.values[portIdx] = toPortValue(value) & circuit.portMask[portIdx];
         values.initialized[portIdx] = 1;
       }
     }
   }
+
+  const maxIterations = maxPropagationIterations(circuit.nodeCount);
 
   // Create evaluation context (reused for all evaluations)
   const ctx: EvalContext = {
@@ -117,11 +145,8 @@ export function propagate(
   };
 
   while (!queue.isEmpty()) {
-    if (++evalCount > MAX_PROPAGATION_ITERATIONS) {
-      throw new Error(
-        `Propagation did not stabilize after ${MAX_PROPAGATION_ITERATIONS} iterations. ` +
-          `Possible unstable feedback loop in circuit.`,
-      );
+    if (++evalCount > maxIterations) {
+      throw new Error(unstableLoopMessage(circuit, queue, maxIterations));
     }
 
     const nodeIndex = queue.dequeue();
@@ -143,7 +168,7 @@ export function propagate(
     // first eval of any port as a "change" so propagation reaches its
     // dependents — necessary because Int32Array zero-defaults can't be
     // distinguished from a real zero output by value comparison alone.
-    const oldValues = outputCount <= 64 ? oldValuesScratch : new Int32Array(outputCount);
+    const oldValues = outputCount <= 64 ? oldValuesScratch : new Uint32Array(outputCount);
     const wasInitialized = outputCount <= 64 ? wasInitializedScratch : new Uint8Array(outputCount);
     for (let i = 0; i < outputCount; i++) {
       oldValues[i] = values.values[outputStart + i];
@@ -250,19 +275,6 @@ export function seedStateOutputNodes(circuit: NumericCircuit, queue: NumericEven
   }
 }
 
-/**
- * Update clock states for all clocks in the circuit.
- */
-export function updateClockStates(
-  _circuit: NumericCircuit,
-  seqState: NumericSequentialState,
-): void {
-  for (const [_clockKey, clockState] of seqState.clocks) {
-    clockState.edge = 'rising';
-    clockState.value = true;
-  }
-}
-
 let DEBUG_STATE_UPDATE = false;
 
 /**
@@ -279,7 +291,7 @@ let DEBUG_STATE_UPDATE = false;
  * event-driven, so a node that is never seeded and never enqueued by a
  * changed dependency simply doesn't run. The eval/changed counts show
  * whether a pass converged — a `changed` that stays high across passes is
- * oscillation heading for MAX_PROPAGATION_ITERATIONS.
+ * oscillation heading for maxPropagationIterations.
  *
  * Global and not thread-safe; intended for a failing test or a one-off
  * script, not production code.
@@ -328,16 +340,6 @@ export function updateSequentialStates(
       }
     }
 
-    // Build clock edges
-    const clockEdges: ClockEdges = {};
-    for (const clockPort of node.clocks) {
-      const clockKey = `${node.id}.${clockPort.name}`;
-      const clockState = seqState.clocks.get(clockKey);
-      if (clockState) {
-        clockEdges[clockPort.name] = clockState.edge;
-      }
-    }
-
     // Update state via onTick
     const currentState = seqState.currentState[nodeIdx];
     const obj: Record<string, any> = {};
@@ -354,7 +356,12 @@ export function updateSequentialStates(
       typeof currentState === 'object' &&
       !(currentState instanceof Map)
     ) {
-      for (const key of onTick.stateKeys) obj[key] = (currentState as any)[key];
+      // Memory fields get the same copy-on-write wrapper as a lone memory, so an
+      // in-place write can't reach the committed Map that snapshots alias.
+      for (const key of onTick.stateKeys) {
+        const field = (currentState as any)[key];
+        obj[key] = field instanceof Map ? wrapMapForOnTick(field) : field;
+      }
     } else if (currentState != null && onTick.stateKeys.length === 1) {
       // Wrap Map in Proxy for array-indexable access in onTick: memory[addr] = value
       if (currentState instanceof Map) {
@@ -364,15 +371,32 @@ export function updateSequentialStates(
       }
     }
     const result = onTick.fn(obj);
-    let nextState: PrimitiveState =
-      onTick.stateKeys.length === 1 ? result[onTick.stateKeys[0]] : result;
-    // Unwrap Proxy back to Map if needed
-    if (nextState != null && typeof nextState === 'object' && PROXY_TO_MAP.has(nextState)) {
-      nextState = PROXY_TO_MAP.get(nextState)!.current;
-    }
-
-    seqState.nextState[nodeIdx] = nextState;
+    seqState.nextState[nodeIdx] =
+      onTick.stateKeys.length === 1
+        ? unwrapOnTickMap(result[onTick.stateKeys[0]])
+        : unwrapOnTickFields(result);
   }
+}
+
+/** A proxy handed to onTick comes back as whichever Map now backs it. */
+function unwrapOnTickMap(value: any): PrimitiveState {
+  if (value != null && typeof value === 'object' && PROXY_TO_MAP.has(value)) {
+    return PROXY_TO_MAP.get(value)!.current;
+  }
+  return value;
+}
+
+/** Same, for each field of a multi-block state object. */
+function unwrapOnTickFields(result: any): any {
+  if (result == null || typeof result !== 'object') return result;
+  const keys = Object.keys(result).filter((key) => {
+    const field = result[key];
+    return field != null && typeof field === 'object' && PROXY_TO_MAP.has(field);
+  });
+  if (keys.length === 0) return result;
+  const out: Record<string, any> = { ...result };
+  for (const key of keys) out[key] = PROXY_TO_MAP.get(result[key])!.current;
+  return out;
 }
 
 /**
@@ -468,7 +492,7 @@ export function fromFlatPortValueMap(
   for (const [key, value] of flatValues) {
     const portIdx = circuit.portKeyToIndex.get(key);
     if (portIdx !== undefined) {
-      values.values[portIdx] = typeof value === 'boolean' ? (value ? 1 : 0) : value;
+      values.values[portIdx] = toPortValue(value) & circuit.portMask[portIdx];
       // A restored value is, by definition, initialized — otherwise
       // change detection and getPortValues would mistakenly treat it
       // as still-pending.

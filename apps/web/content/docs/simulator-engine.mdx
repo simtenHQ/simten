@@ -152,11 +152,11 @@ readsTopLevelInput: Uint8Array[nodeIdx]  → reads from circuit boundary
 
 
 
-All port values stored in a single `Int32Array`:
+All port values stored in a single `Uint32Array`, each masked to its port's declared width:
 
 ```typescript
 interface NumericPortValues {
-  values: Int32Array;       // One entry per port (bits stored as 0/1, buses as numbers)
+  values: Uint32Array;      // One entry per port (bits stored as 0/1, buses unsigned)
   changed: Uint8Array;      // Per-wave change flag for the propagation queue
   initialized: Uint8Array;  // 1 once a port has been written by any evaluator
 }
@@ -225,9 +225,10 @@ function readInput(ctx: EvalContext, inputIndex: number): number {
   return sourcePortIdx >= 0 ? ctx.values.values[sourcePortIdx] : 0;
 }
 
-// Write output port value (O(1))
+// Write output port value (O(1)), masked to the port's declared width
 function writeOutput(ctx: EvalContext, outputIndex: number, value: number): void {
-  ctx.values.values[ctx.portStart + ctx.inputCount + outputIndex] = value;
+  const idx = ctx.portStart + ctx.inputCount + outputIndex;
+  ctx.values.values[idx] = value & ctx.circuit.portMask[idx];
 }
 ```
 
@@ -266,20 +267,18 @@ while queue is not empty:
     enqueueAll(dependents[node])
 ```
 
-Stabilizes when no more changes propagate. Throws after 10,000 iterations (unstable feedback loop).
+Stabilizes when no more changes propagate. Throws once it has made 64 evaluations per node
+(at least 10,000), naming the nodes still changing: that is an oscillating combinational loop.
 
 This phase evaluates combinational logic against the **current (pre-edge)** register state. Its
-result is not the snapshot returned to the API; that comes from Phase 5, after the clock edge.
+result is not the snapshot returned to the API; that comes from Phase 4, after the clock edge.
 
-### Phase 2: Clock Update
+There is only ever the one implicit rising-edge clock every stateful primitive subscribes to.
+[How it works §3](/docs/how-it-works#3-sequential-vs-combinational) covers where it comes from and
+why circuits never wire it. A component that asks for anything else (a falling edge, a clock of its
+own, a second clock) is rejected when the circuit is compiled for simulation.
 
-```typescript
-updateClockStates(circuit, seqState);
-```
-
-Sets all clocks to rising edge. Currently all clocks tick simultaneously (single clock domain). There is only ever the one implicit clock every stateful primitive subscribes to. [How it works §3](/docs/how-it-works#3-sequential-vs-combinational) covers where it comes from and why circuits never wire it.
-
-### Phase 3: Sequential State Computation
+### Phase 2: Sequential State Computation
 
 ```typescript
 updateSequentialStates(circuit, values, seqState, topLevelInputs);
@@ -287,15 +286,14 @@ updateSequentialStates(circuit, values, seqState, topLevelInputs);
 
 For each node with `hasState[nodeIdx]`:
 1. Build inputs Map from current port values
-2. Build clock edges from `seqState.clocks`
-3. Call `evaluator.updateState(inputs, currentState, clockEdges)`
-4. Store result in `seqState.nextState[nodeIdx]`
+2. Call the component's `onTick` with its inputs and current state
+3. Store result in `seqState.nextState[nodeIdx]`
 
 **Note**: This phase still uses Map-based evaluators (not the numeric fast path).
 It runs once per tick per stateful node, so performance impact is proportional to the
 number of sequential components, not total node count.
 
-### Phase 4: State Commit
+### Phase 3: State Commit
 
 ```typescript
 commitSequentialState(seqState);
@@ -305,7 +303,7 @@ Atomically copies `nextState → currentState` for all nodes. Deep-copies Map-ba
 (RAM/ROM). Increments cycle count. This ensures all state updates appear to happen
 simultaneously, matching real hardware behavior.
 
-### Phase 5: Re-propagation
+### Phase 4: Re-propagation
 
 ```typescript
 seedStateOutputNodes(circuit, queue);
@@ -373,7 +371,7 @@ engine.getPortValues();
 engine.getState();
 engine.getOutput(nodeId, portName);
 
-// Time-travel
+// Time-travel (a snapshot carries top-level inputs and Switch/Input values too)
 const snapshot = engine.snapshot();
 engine.restore(snapshot);
 engine.reset();
@@ -385,11 +383,11 @@ engine.reset();
 
 The propagation loop allocates nothing:
 - Event queue: pre-allocated ring buffer
-- Port values: pre-allocated Int32Array
+- Port values: pre-allocated Uint32Array
 - Evaluator lookup: array index
 - Input reading: array index
 - Output writing: array index
-- Change detection: compare Int32 values
+- Change detection: compare Uint32 values
 - Dependent enqueue: iterate pre-computed Uint32Array
 
 ### Complexity
@@ -398,7 +396,7 @@ The propagation loop allocates nothing:
 |-----------|------|-------|
 | Compilation | O(nodes + connections) | O(nodes + ports) |
 | Single propagation | O(changed_nodes × avg_dependents) | O(1) amortized |
-| Tick (5 phases) | O(total_evals) | O(stateful_nodes) for Map building |
+| Tick (4 phases) | O(total_evals) | O(stateful_nodes) for Map building |
 | Memory read | O(1) Map lookup | — |
 | Memory write | O(1) Map set | O(written_cells) |
 
@@ -410,13 +408,13 @@ The event-driven approach means only nodes whose inputs actually changed get re-
 
 ### Limitations
 
-- **Single clock domain**: All clocks tick simultaneously. Multi-clock-domain circuits are
-  not supported (no clock dividers, no async crossings).
-- **Combinational loop detection**: Throws after 10,000 iterations. Intentional latches
-  (transparent latches, async resets) are not supported.
+- **Single clock domain**: one global rising-edge clock. Falling edges, gated or derived
+  clocks and multiple clock domains are compile errors.
+- **Combinational loop detection**: Throws after 64 evaluations per node (at least 10,000).
+  Intentional latches (transparent latches, async resets) are not supported.
 - **Sequential state update path**: Uses Map-based evaluators, not the numeric fast path.
   Performance scales with the number of stateful nodes, not total nodes.
-- **32-bit value range**: All values stored as Int32. Bus widths up to 32 bits are supported.
-  Wider buses require splitting.
+- **32-bit value range**: All values stored as unsigned 32-bit and masked to their port width.
+  A bus wider than 32 bits is a compile error; split it into narrower buses.
 - **No timing simulation**: All combinational logic evaluates in zero simulated time. There is
   no gate delay model: this is a functional simulator, not a timing simulator.

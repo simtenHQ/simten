@@ -119,6 +119,22 @@ export const Output = circuit('Output', {
 });
 
 /**
+ * A Constant's port is as wide as its `width`, and the simulator masks every
+ * value to its port, so `Constant({ value: 255 })` would quietly output 1.
+ * Refuse it instead, saying how wide it needs to be. Negative values are
+ * accepted down to the two's-complement minimum for the width.
+ */
+function checkConstantFits(value: number | undefined, width: number): void {
+  if (typeof value !== 'number' || width >= 32) return;
+  if (value <= 2 ** width - 1 && value >= -(2 ** (width - 1))) return;
+  const needed = value < 0 ? Math.ceil(Math.log2(-value)) + 1 : Math.ceil(Math.log2(value + 1));
+  throw new Error(
+    `Constant value ${value} does not fit in ${width} bit${width === 1 ? '' : 's'}; ` +
+      `give it a width, e.g. Constant({ value: ${value}, width: ${needed} })`,
+  );
+}
+
+/**
  * Fixed value source. Outputs a single bit (configurable per instance).
  * Use when a sub-circuit needs a hardcoded 0 or 1 — e.g. tying a
  * `carry_in` low on the bottom Adder of a chain.
@@ -138,14 +154,17 @@ export const Output = circuit('Output', {
  */
 export const Constant = circuit(
   'Constant',
-  ({ width = 1 }: { value?: number; width?: number } = {}) => ({
-    outputs: { out: width === 1 ? bit : bus(width) },
-    eval: ({ value }) => ({ out: typeof value === 'number' ? value : 0 }),
-    meta: {
-      category: 'utilities',
-      icon: 'K',
-      description: 'Fixed value source',
-      interactiveArg: 'value',
-    },
-  }),
+  ({ width = 1, value }: { value?: number; width?: number } = {}) => {
+    checkConstantFits(value, width);
+    return {
+      outputs: { out: width === 1 ? bit : bus(width) },
+      eval: ({ value }) => ({ out: typeof value === 'number' ? value : 0 }),
+      meta: {
+        category: 'utilities',
+        icon: 'K',
+        description: 'Fixed value source',
+        interactiveArg: 'value',
+      },
+    };
+  },
 );

@@ -630,26 +630,30 @@ function checkBusWidths(
   // If signedness moves into PortType, a widening starts carrying a real choice
   // and this warning should become an error — or disappear, resolved by type.
   //
-  // Scoped to bus->bus. Crossing bit<->bus is a *kind* change, not a width
-  // mismatch, and stays a documented affordance (see SourcePortRef, #144) —
-  // `bit` is its own PortType kind here, not `bus(1)`.
+  // `bit` counts as `bus(1)` (decision 0002, #144): `bus(n)` into `bit` for
+  // n > 1 truncates like any other narrowing, and `bit` into `bus(n)` widens
+  // with the same warning.
   //
   // Runs after the multi-driver dedupe so a duplicated identical connection is
   // reported once, and re-resolves both endpoints because ConnectionDef carries
   // only the source's type.
+  const widthOf = (t: PortType) => (t.kind === 'bus' ? t.width : 1);
+  const typeName = (t: PortType) => (t.kind === 'bus' ? `bus(${t.width})` : 'bit');
   const wideningWarnings: string[] = [];
   for (const conn of connectionDefs) {
     const sourceType = resolvePortRef(conn.source, inputs, outputs, nodes);
-    if (sourceType?.kind !== 'bus') continue;
+    if (!sourceType) continue;
     for (const target of conn.targets) {
       const targetType = resolvePortRef(target, inputs, outputs, nodes);
-      if (targetType?.kind !== 'bus') continue;
-      if (targetType.width === sourceType.width) continue;
+      if (!targetType) continue;
+      const sourceWidth = widthOf(sourceType);
+      const targetWidth = widthOf(targetType);
+      if (targetWidth === sourceWidth) continue;
       const describe =
-        `${formatPath(conn.source)} bus(${sourceType.width}) ` +
-        `into ${formatPath(target)} bus(${targetType.width})`;
-      if (sourceType.width > targetType.width) {
-        errors.push(`truncates ${describe}`);
+        `${formatPath(conn.source)} ${typeName(sourceType)} ` +
+        `into ${formatPath(target)} ${typeName(targetType)}`;
+      if (sourceWidth > targetWidth) {
+        errors.push(`truncates ${describe} (take the bits you need with Slice)`);
       } else {
         wideningWarnings.push(`widens ${describe}`);
       }

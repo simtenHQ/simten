@@ -15,7 +15,7 @@ import type { BlogCircuit } from '../types';
 const CompareSwap = circuit('CompareSwap', {
   inputs: { a: bus(8), b: bus(8) },
   outputs: { lo: bus(8), hi: bus(8) },
-  nodes: { cmp: Comparator(), muxLo: Mux(), muxHi: Mux() },
+  nodes: { cmp: Comparator(), muxLo: Mux({ width: 8 }), muxHi: Mux({ width: 8 }) },
   connect: ({ inputs, outputs, nodes: { cmp, muxLo, muxHi } }) => [
     inputs.a.to(cmp.a, muxLo.in1, muxHi.in0),
     inputs.b.to(cmp.b, muxLo.in0, muxHi.in1),

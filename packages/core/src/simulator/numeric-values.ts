@@ -2,7 +2,8 @@
  * Numeric Port Value Storage for Fast Simulation
  *
  * Typed array storage for port values with change tracking.
- * Uses Int32Array which is sufficient for all bus widths up to 32 bits.
+ * Uses Uint32Array: buses are at most 32 bits and every value is unsigned, so
+ * a 32-bit all-ones value reads back as 0xFFFFFFFF rather than -1.
  */
 
 /**
@@ -13,9 +14,9 @@ export interface NumericPortValues {
   /**
    * Port values indexed by port index.
    * - Bits stored as 0 or 1
-   * - Buses stored as their numeric value
+   * - Buses stored as their numeric value, unsigned and masked to the port width
    */
-  values: Int32Array;
+  values: Uint32Array;
 
   /**
    * Change tracking for event-driven propagation.
@@ -45,14 +46,14 @@ export interface NumericPortValues {
 
 /**
  * Create a new numeric port values container. `values` defaults to 0
- * (Int32Array's standard zero-init); `initialized` starts all zeros so
+ * (the typed array's standard zero-init); `initialized` starts all zeros so
  * the first write to each port is correctly detected as a change.
  *
  * @param portCount - Total number of ports
  */
 export function createNumericPortValues(portCount: number): NumericPortValues {
   return {
-    values: new Int32Array(portCount),
+    values: new Uint32Array(portCount),
     changed: new Uint8Array(portCount),
     initialized: new Uint8Array(portCount),
   };

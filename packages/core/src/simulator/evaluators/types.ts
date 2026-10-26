@@ -46,12 +46,14 @@ export function readInput(ctx: EvalContext, inputIndex: number): number {
 }
 
 /**
- * Helper to write an output value in the evaluation context. Always marks
- * the port as initialized so first-eval propagation fires even when the
- * canonical output value equals the zero default.
+ * Helper to write an output value in the evaluation context. The value is
+ * masked to the port's declared width, so an eval that returns `a + b` on an
+ * 8-bit port stores the low 8 bits, as hardware would. Always marks the port
+ * as initialized so first-eval propagation fires even when the canonical
+ * output value equals the zero default.
  */
 export function writeOutput(ctx: EvalContext, outputIndex: number, value: number): void {
   const idx = ctx.portStart + ctx.inputCount + outputIndex;
-  ctx.values.values[idx] = value;
+  ctx.values.values[idx] = value & ctx.circuit.portMask[idx];
   ctx.values.initialized[idx] = 1;
 }

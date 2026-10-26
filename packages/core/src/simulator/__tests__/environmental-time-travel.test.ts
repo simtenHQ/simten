@@ -1,24 +1,19 @@
 /**
  * Environmental State Time-Travel
  *
- * The simulator engine's `snapshot()` / `restore()` round-trips SEQUENTIAL
- * state (registers, flip-flops, memory) and port values — but it does NOT
- * revert `node.arguments`. Switch / Input primitives drive their
- * outputs from `node.arguments.value`, which mutates on `setNode`. So a
- * naive time-travel that only restores the engine leaves stale switch
- * positions, and the next tick would use the wrong input.
+ * Switch / Input primitives drive their outputs from `node.arguments.value`,
+ * which `setNode` writes. The engine's `snapshot()` / `restore()` carry those
+ * values and the top-level inputs along with sequential state and port
+ * values, so a rewind puts the switches back as well as the registers.
  *
- * The complete host-side recipe is engine restore + `captureEnvironmentalState`
- * / `restoreEnvironmentalState` (walks `metadata.interactiveArg` to find
- * which node args to snapshot). This test locks in both halves:
- *
- *   1. engine-only restore leaves switch ON when it should be OFF (the bug)
- *   2. pairing engine restore with environmental restore reproduces the
- *      original trace (the fix)
+ * The sandbox also restores them itself, through `captureEnvironmentalState`
+ * style walks over `metadata.interactiveArg` and `setNode`. These tests pin
+ * both: the engine alone reproduces the trace, and the host recipe layered
+ * on top still does.
  *
  * The shift-register time-travel demo on the landing page relies on this
- * invariant: if sandbox-side restore skips env state, the visible switch
- * desyncs from actual circuit behavior.
+ * invariant: if restore skips env state, the visible switch desyncs from
+ * actual circuit behavior.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -106,7 +101,7 @@ describe('environmental state time-travel', () => {
     expect(rightWay.get('sw')).toBe(1);
   });
 
-  it('engine-only restore leaves stale Switch value (the bug)', () => {
+  it('engine restore puts the Switch back', () => {
     const { sim } = buildSim();
     try {
       // Tick once with switch at its default (OFF) — DFF latches 0.
@@ -119,23 +114,22 @@ describe('environmental state time-travel', () => {
       sim.tick();
       expect(qOut(sim)).toBe(true);
 
-      // Engine-only restore. DFF state reverts to 0, but Switch's node
-      // argument is still ON — the engine never touched it.
+      // Engine-only restore. DFF state reverts to 0 and the Switch goes back
+      // to OFF with it.
       sim.restore(snap);
       sim.runCombinational();
       expect(qOut(sim)).toBe(false); // DFF reverted correctly
 
-      // Ticking again should (in a true rewind) reproduce the original
-      // trace: switch was OFF, DFF latches 0. But with the stale switch
-      // argument still ON, the DFF latches 1 — proving the bug.
+      // Ticking again reproduces the original trace: switch was OFF, so the
+      // DFF latches 0. (It used to latch 1 from the stale switch argument.)
       sim.tick();
-      expect(qOut(sim)).toBe(true); // BUG: should be false if switch really reverted
+      expect(qOut(sim)).toBe(false);
     } finally {
       // SimulatorEngine has no dispose — it's a plain object.
     }
   });
 
-  it('engine + environmental restore reproduces the trace (the fix)', () => {
+  it('engine + environmental restore reproduces the trace', () => {
     const { sim, flat, library } = buildSim();
     try {
       // Tick with switch OFF, capture BOTH halves.

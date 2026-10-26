@@ -49,6 +49,7 @@ function createTestContext(
     nodePortStart: new Uint32Array([0]),
     nodeInputCount: new Uint8Array([inputCount]),
     nodeOutputCount: new Uint8Array([outputCount]),
+    portMask: new Uint32Array(totalPorts).fill(0xffffffff),
     flatCircuit: { nodes: [{ arguments: {} }] },
   } as unknown as NumericCircuit;
 

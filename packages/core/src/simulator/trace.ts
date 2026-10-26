@@ -16,7 +16,7 @@ import { NumericEventQueue } from './numeric-event-queue.js';
 import type { NumericCircuit } from './numeric-types.js';
 import type { NumericPortValues } from './numeric-values.js';
 import { createNumericPortValues } from './numeric-values.js';
-import { seedInitialQueue } from './propagate.js';
+import { maxPropagationIterations, seedInitialQueue } from './propagate.js';
 
 /** A single step in the propagation trace */
 export interface PropagationStep {
@@ -32,8 +32,7 @@ export interface PropagationStep {
   queueSnapshot: string[];
 }
 
-const MAX_ITERATIONS = 10000;
-const oldValuesScratch = new Int32Array(64);
+const oldValuesScratch = new Uint32Array(64);
 const wasInitializedScratch = new Uint8Array(64);
 
 /**
@@ -47,6 +46,7 @@ function propagateWithTrace(
 ): PropagationStep[] {
   const trace: PropagationStep[] = [];
   let evalCount = 0;
+  const maxIterations = maxPropagationIterations(circuit.nodeCount);
 
   const ctx: EvalContext = {
     circuit,
@@ -60,7 +60,7 @@ function propagateWithTrace(
   };
 
   while (!queue.isEmpty()) {
-    if (++evalCount > MAX_ITERATIONS) break;
+    if (++evalCount > maxIterations) break;
 
     const nodeIndex = queue.dequeue();
 
@@ -76,9 +76,9 @@ function propagateWithTrace(
 
     // Capture old outputs AND their initialized flags. Mirrors propagate.ts
     // change detection: a port counts as changed on value diff OR on the
-    // first eval (uninit → init transition), so Int32Array zero defaults
+    // first eval (uninit → init transition), so typed-array zero defaults
     // never accidentally swallow a real zero output.
-    const oldValues = outputCount <= 64 ? oldValuesScratch : new Int32Array(outputCount);
+    const oldValues = outputCount <= 64 ? oldValuesScratch : new Uint32Array(outputCount);
     const wasInitialized = outputCount <= 64 ? wasInitializedScratch : new Uint8Array(outputCount);
     for (let i = 0; i < outputCount; i++) {
       oldValues[i] = values.values[outputStart + i];

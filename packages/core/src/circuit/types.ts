@@ -34,10 +34,12 @@ declare const __portDir: unique symbol;
  *  Outer-circuit inputs and inner-node outputs are sources.
  *  Has `.to(...)` to connect downstream into sinks.
  *
- *  NOTE: `.to()` accepts any `SinkPortRef` regardless of `T` to permit bit↔bus
- *  connections (e.g. tying a 1-bit signal into a wider control word). Width
- *  mismatch checking is deferred to #108 — once `BusType<W>` carries a literal
- *  width, this signature can tighten to `SinkPortRef<T>[]` for free. */
+ *  NOTE: `.to()` accepts any `SinkPortRef` regardless of `T`. Widths are
+ *  checked when the circuit is built, with `bit` counted as `bus(1)`: a
+ *  narrower source into a wider sink widens with a warning (e.g. tying a 1-bit
+ *  signal into a wider control word), a wider one into a narrower sink is an
+ *  error. Once `BusType<W>` carries a literal width (#108), this signature can
+ *  tighten to `SinkPortRef<T>[]` for free. */
 export interface SourcePortRef<T extends PortType = PortType> {
   /** Direction brand — keeps SourcePortRef and SinkPortRef disjoint at the
    *  type level. Must survive `stripInternal` in the published `.d.ts` or the

@@ -22,7 +22,6 @@ packages/core/src/simulator/elaboration.ts stitchCompositeConnections
 packages/core/src/simulator/elaboration.ts topologicalSortFlat
 packages/core/src/simulator/elaboration.ts traceCompositePorts
 packages/core/src/simulator/eval-bridge.ts userEvalWrapperWithState
-packages/core/src/simulator/propagate.ts propagate
 packages/core/src/simulator/propagate.ts updateSequentialStates
 packages/core/src/simulator/sequential-init.ts resolveBlockInitial
 packages/core/src/std/mos6502.ts (anonymous)

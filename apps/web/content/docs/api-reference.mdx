@@ -102,7 +102,8 @@ Common parameters across the stdlib:
 
 | Parameter | Used by | Description |
 |-----------|---------|-------------|
-| `width` | Adder, Subtractor, Comparator, Mux, BusAnd/Or/Xor, LeftShifter, RightShifter, Register | Bus width (default: 8) |
+| `width` | Adder, Subtractor, Comparator, BusAnd/Or/Xor, LeftShifter, RightShifter, Register | Bus width (default: 8) |
+| `width` | Mux, Constant | Bus width (default: 1, a `bit`). A Mux carrying a bus or a Constant above 1 needs it. |
 | `value` | Constant, Input, Switch, Button, Register, DFlipFlop | Fixed or initial state value (matches state/eval field). For Register and DFlipFlop this is also the reset target: when the exporter's auto-plumbed `rst_n` goes low, the register snaps back to `value`. |
 | `memory` | RAM, DualPortRAM, ROM, DualPortROM | Memory initialization map `{ addr: value, ... }` |
 | `low`, `high` | BitSlice | Bit range to extract (inclusive) |
@@ -222,9 +223,10 @@ The three patterns are not mutually exclusive: a circuit can have both `nodes`/`
 
 ## Type Rules
 
-- `bit → bit`: valid
-- `bus(N) → bus(N)`: valid (same width)
-- `bit → bus(N)`: invalid (needs explicit conversion)
-- `bus(8) → bus(16)`: invalid (width mismatch)
+A `bit` counts as `bus(1)`.
 
-Use `Splitter`, `BitSlice`, or `Concat` for type conversions.
+- `bit → bit`, `bus(N) → bus(N)`: valid (same width)
+- `bit → bus(N)`, `bus(8) → bus(16)`: valid with a warning (zero-extends)
+- `bus(N) → bit`, `bus(16) → bus(8)`: error (truncates; pick the bits you want with `Slice` or `BitSlice`)
+
+Buses are at most 32 bits wide, and every value is masked to the width of the port it is written to.

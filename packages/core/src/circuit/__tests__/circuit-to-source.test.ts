@@ -59,7 +59,7 @@ describe('circuitToSource', () => {
 
   it('preserves node arguments via factory-call form', () => {
     const WithArgs = circuit('WithArgs', {
-      outputs: { q: bit },
+      outputs: { q: bus(8) },
       nodes: { r: Register({ value: 42 }) },
       connect: ({ outputs, nodes: { r } }) => [r.q.to(outputs.q)],
     });
