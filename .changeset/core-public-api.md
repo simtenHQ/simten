@@ -22,3 +22,4 @@ Public entry points: `@simten/core` (`circuit`, `bit`, `bus`, `reg`, `mem`, `sim
 | `@simten/core/util/test-name` (`slugify`) | `@simten/core/internal` |
 | `executeCircuitCode`, `buildFromIR`, `circuitToSource`, `autoHarness`, `isSequentialCircuit` and the other non-builder exports of `/circuit` | `@simten/core/internal` |
 | `getGrammarHandler`, `getCircuitAPISummary` | removed; the text lives in the MCP `get_grammar` tool |
+| `CircuitShape`, `PortRef`, `StateFieldType` (`/circuit`) | removed; they appear in no public signature |

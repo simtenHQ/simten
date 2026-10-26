@@ -71,7 +71,7 @@ export interface SinkPortRef<T extends PortType = PortType> {
  *  `ConnectArg`-typed slots in your `connect` callback instead. */
 export type PortRef<T extends PortType = PortType> = SourcePortRef<T> | SinkPortRef<T>;
 
-/** A connection definition produced by PortRef.to() */
+/** A connection definition produced by SourcePortRef.to() */
 export interface ConnectionDef {
   readonly source: { nodeId: string; portName: string };
   readonly targets: { nodeId: string; portName: string }[];

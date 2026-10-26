@@ -91,7 +91,7 @@ const HOVER_DICT: Record<string, HoverEntry> = {
       'Edge-triggered D flip-flop. Captures d on every rising clock edge; q holds the captured value, q_bar is the inverse.',
   },
   to: {
-    signature: 'port.to(...targets: PortRef[]): ConnectionDef',
+    signature: 'port.to(...targets: SinkPortRef[]): ConnectionDef',
     description: 'Wires this port to one or more target node ports. Used inside connect.',
   },
 };
