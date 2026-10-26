@@ -11,12 +11,12 @@
  * - Apply selected circuit to canvas
  */
 
-import { autoHarness } from '@simten/core/circuit';
+import { autoHarness } from '@simten/core/internal';
 import { HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { createDrillDownViewCircuit } from '../../canvas/drill-down-view';
-import type { Circuit } from '../types/circuit';
+import type { CircuitIR } from '../types/circuit';
 import { useCircuitLibraryStore } from './circuit-library-store';
 import { useCircuitStore } from './circuit-store';
 
@@ -43,12 +43,12 @@ interface DrillDownFrame {
   nodeId: string; // Instance node ID in the parent circuit (e.g., "ha1_abc")
   nodeLabel: string; // Human-readable label (e.g., "ha1")
   componentName: string; // Component type name (e.g., "HalfAdder")
-  circuit: Circuit; // The view circuit (with boundary nodes) for this level
+  circuit: CircuitIR; // The view circuit (with boundary nodes) for this level
 }
 
 interface CircuitPreviewActions {
   // Circuit management
-  setCompiledCircuits: (circuits: Circuit[], code: string) => void;
+  setCompiledCircuits: (circuits: CircuitIR[], code: string) => void;
   selectCircuit: (index: number) => void;
   applyToCanvas: () => void;
 
@@ -62,7 +62,7 @@ interface CircuitPreviewActions {
   setAutoCompileEnabled: (enabled: boolean) => void;
 
   // Canvas → code sync
-  updateFromCanvas: (circuit: Circuit, code: string) => void;
+  updateFromCanvas: (circuit: CircuitIR, code: string) => void;
 
   // Drill-down navigation
   drillInto: (nodeId: string) => void;
@@ -73,7 +73,7 @@ interface CircuitPreviewActions {
 }
 
 interface CircuitPreviewState {
-  compiledCircuits: Circuit[];
+  compiledCircuits: CircuitIR[];
   selectedCircuitIndex: number; // -1 if none, defaults to last circuit
   autoCompileEnabled: boolean;
 
@@ -226,7 +226,7 @@ export const useCircuitPreviewStore = create<CircuitPreviewStore>()(
       // Determine the currently active circuit (either drilled-in view or top-level)
       const { drillDownStack, compiledCircuits, selectedCircuitIndex } = get();
 
-      let activeCircuit: Circuit | null;
+      let activeCircuit: CircuitIR | null;
       if (drillDownStack.length > 0) {
         // Currently inside a drill-down; look for the node in the current view
         activeCircuit = drillDownStack[drillDownStack.length - 1].circuit;

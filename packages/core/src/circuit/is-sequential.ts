@@ -8,11 +8,11 @@
  * Walks the full dependency tree via the library's resolveCircuit.
  */
 
-import type { Circuit } from '../types/circuit.js';
+import type { CircuitIR } from '../ir/circuit-ir.js';
 
 export function isSequentialCircuit(
-  circuit: Circuit | null | undefined,
-  resolveCircuit: (name: string) => Circuit | undefined,
+  circuit: CircuitIR | null | undefined,
+  resolveCircuit: (name: string) => CircuitIR | undefined,
   visited: Set<string> = new Set(),
 ): boolean {
   if (!circuit) return false;

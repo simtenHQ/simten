@@ -21,8 +21,8 @@
 
 import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
-import { buildFromIR } from '../../circuit/index.js';
-import { simulate } from '../../sim/index.js';
+import { buildFromIR } from '../../internal.js';
+import { simulate } from '../../simulator/simulate.js';
 import type { YosysNetlist } from '../index.js';
 import { importNetlist } from '../index.js';
 

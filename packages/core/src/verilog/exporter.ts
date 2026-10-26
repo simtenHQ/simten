@@ -11,9 +11,9 @@
  * - No combinational loops
  */
 
+import type { CircuitIR, PortType } from '../ir/circuit-ir.js';
 import { elaborate } from '../simulator/elaboration.js';
-import type { Circuit, PortType } from '../types/circuit.js';
-import type { CircuitLibrary, FlatCircuit, FlatConnection, FlatNode } from '../types/simulator.js';
+import type { CircuitLibrary, FlatCircuit, FlatConnection, FlatNode } from '../simulator/types.js';
 import {
   emitPrimitive,
   isSequentialPrimitive,
@@ -76,7 +76,7 @@ function collectStateInits(node: FlatNode, library: CircuitLibrary): StateInit[]
  * Elaborates the circuit first, then emits a single flat module.
  */
 export function exportVerilogFlat(
-  circuit: Circuit,
+  circuit: CircuitIR,
   library: CircuitLibrary,
   options?: VerilogExportOptions,
 ): ExportResult {
@@ -94,7 +94,7 @@ export function exportVerilogFlat(
  * next to the `.v` for the Verilog to compile.
  */
 export function exportVerilog(
-  circuit: Circuit,
+  circuit: CircuitIR,
   library: CircuitLibrary,
   options?: VerilogExportOptions,
 ): ExportResult {
@@ -109,7 +109,7 @@ export function exportVerilog(
 // ── Flat module emission ────────────────────────────────────────────────
 
 function emitFlatModule(
-  circuit: Circuit,
+  circuit: CircuitIR,
   flat: FlatCircuit,
   library: CircuitLibrary,
   opts: Required<VerilogExportOptions>,

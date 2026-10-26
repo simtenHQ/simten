@@ -5,10 +5,10 @@
  * Accepts TypeScript circuit builder code.
  */
 
-import { createSimulator, elaborate, TOP_LEVEL_NODE } from '../simulator/index.js';
-import type { SimulationTrace } from '../types/analysis.js';
-import { compressTrace, detectSteadyState } from '../types/analysis.js';
-import type { BitValue, BusValue } from '../types/circuit.js';
+import type { BitValue, BusValue } from '../ir/circuit-ir.js';
+import { createEngine, elaborate, TOP_LEVEL_NODE } from '../simulator/index.js';
+import type { SimulationTrace } from '../simulator/trace-analysis.js';
+import { compressTrace, detectSteadyState } from '../simulator/trace-analysis.js';
 import { compileSource } from './compile-source.js';
 import { exportVCD } from './vcd.js';
 
@@ -28,7 +28,7 @@ export interface SimulateError {
   error: string;
 }
 
-export function simulateCircuit(params: {
+export function traceSource(params: {
   source: string;
   sourceName?: string;
   circuitName?: string;
@@ -65,7 +65,7 @@ export function simulateCircuit(params: {
   const flatCircuit = elaborate(target, compiled.library);
 
   // Create simulator from flat circuit
-  const simulator = createSimulator(flatCircuit, { componentLibrary: compiled.library });
+  const simulator = createEngine(flatCircuit, { componentLibrary: compiled.library });
 
   // Load memory data if provided
   if (params.memoryData) {

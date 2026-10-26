@@ -12,22 +12,27 @@
  *     → core/simulator         — pure simulator engine
  *
  * For non-browser callers (vitest, CI), skip this hook entirely and use
- * `@simten/core/sim` directly — no iframe, no React, just the engine.
+ * `@simten/core` directly — no iframe, no React, just the engine.
  *
  * See: apps/web/content/docs/architecture.mdx → "Runtime topology".
  */
 
-import type { BitValue, BusValue, Circuit } from '@simten/core';
-import type { BuiltCircuit } from '@simten/core/circuit';
-import { autoHarness, getCircuitEval, isSequentialCircuit } from '@simten/core/circuit';
+import type { BitValue, BusValue } from '@simten/core';
+import type { Circuit } from '@simten/core/circuit';
 import type {
+  CircuitIR,
   CircuitLibrary,
   FlatPortValueMap,
   FlatSequentialState,
   SimulatorEngine,
-} from '@simten/core/simulator';
+} from '@simten/core/internal';
+import { autoHarness, getCircuitBehavior, isSequentialCircuit } from '@simten/core/internal';
 import { HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
-import { type EvalSource, SANDBOX_UNAVAILABLE_ERROR, useSandboxContext } from '@simten/ui/sandbox';
+import {
+  type BehaviorSource,
+  SANDBOX_UNAVAILABLE_ERROR,
+  useSandboxContext,
+} from '@simten/ui/sandbox';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 /**
@@ -46,7 +51,7 @@ export interface SimulatorState {
   ready: boolean;
   error: string | null;
   isSequential: boolean;
-  circuit: Circuit | null;
+  circuit: CircuitIR | null;
   portValues: FlatPortValueMap | null;
   sequentialState: FlatSequentialState | null;
   componentLibrary: CircuitLibrary | null;
@@ -114,21 +119,21 @@ export interface UseCircuitSimulatorOptions {
 }
 
 /**
- * Extract eval function sources from a BuiltCircuit and its dependencies.
+ * Extract eval function sources from a Circuit and its dependencies.
  * These are serialized and sent to the sandbox, which reconstructs them with new Function().
  * Returns empty object if the circuit's evals aren't registered in this frame
  * (e.g. editor case where evals live only in the sandbox from prior compile).
  */
-function extractEvalSources(circuit: BuiltCircuit): Record<string, EvalSource> {
-  const sources: Record<string, EvalSource> = {};
+function extractBehaviorSources(circuit: Circuit): Record<string, BehaviorSource> {
+  const sources: Record<string, BehaviorSource> = {};
   const visited = new Set<string>();
 
-  function collect(c: BuiltCircuit) {
+  function collect(c: Circuit) {
     const name = c.circuit.name;
     if (visited.has(name)) return;
     visited.add(name);
 
-    const entry = getCircuitEval(name);
+    const entry = getCircuitBehavior(name);
     if (entry) {
       sources[name] = {
         evalSource: entry.evalFn.toString(),
@@ -148,23 +153,23 @@ function extractEvalSources(circuit: BuiltCircuit): Record<string, EvalSource> {
 }
 
 /**
- * Build a minimal BuiltCircuit-like object from a Circuit IR and its dependencies.
+ * Build a minimal Circuit-like object from a Circuit IR and its dependencies.
  * Used by the editor to adapt sandbox compile results into the shape useCircuitSimulator expects.
  * The resulting object has no live eval functions (empty registry lookups) — the sandbox
  * is expected to already have the evals registered from a prior sandbox.compile(source).
  */
-export function builtFromIR(circuit: Circuit, dependencies: Circuit[]): BuiltCircuit {
-  const depMap = new Map<string, BuiltCircuit>();
+export function builtFromIR(circuit: CircuitIR, dependencies: CircuitIR[]): Circuit {
+  const depMap = new Map<string, Circuit>();
   for (const dep of dependencies) {
     depMap.set(dep.name, {
       circuit: dep,
       _dependencies: new Map(),
-    } as unknown as BuiltCircuit);
+    } as unknown as Circuit);
   }
   return {
     circuit,
     _dependencies: depMap,
-  } as unknown as BuiltCircuit;
+  } as unknown as Circuit;
 }
 
 /**
@@ -192,12 +197,12 @@ function waitForSandboxReady(
 /**
  * Circuit simulator hook — runs simulation in the sandbox iframe.
  *
- * Takes a BuiltCircuit and returns reactive simulation state + actions.
+ * Takes a Circuit and returns reactive simulation state + actions.
  * All simulation happens inside the sandbox for security (CSP-isolated,
  * cross-origin) — no user code runs in the main frame at simulation time.
  */
 export function useCircuitSimulator(
-  circuit: BuiltCircuit | null,
+  circuit: Circuit | null,
   options?: UseCircuitSimulatorOptions,
 ): SimulatorState & SimulatorActions {
   const sandbox = useSandboxContext();
@@ -209,8 +214,8 @@ export function useCircuitSimulator(
 
   // ── Build library + resolve circuit IR ──
   const { rawCircuit, componentLibrary } = useMemo(() => {
-    const circuitMap = new Map<string, Circuit>();
-    const lib: CircuitLibrary & { addCircuit(c: Circuit): void } = {
+    const circuitMap = new Map<string, CircuitIR>();
+    const lib: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
       resolveCircuit: (name) => circuitMap.get(name),
       getAllPrimitiveNames: () =>
         [...circuitMap.entries()]
@@ -328,15 +333,15 @@ export function useCircuitSimulator(
       await waitForSandboxReady(sandbox, () => cancelled);
       if (cancelled) return;
 
-      // Extract eval sources from the BuiltCircuit and its dependencies
-      const evalSources = extractEvalSources(circuit);
+      // Extract eval sources from the Circuit and its dependencies
+      const evalSources = extractBehaviorSources(circuit);
 
       // Collect all library circuits (stdlib + user).
       // The harnessed circuit references the raw circuit as "dut" by name, so we
       // need to include it + all its dependencies + harness components.
-      const libCircuits: Circuit[] = [];
+      const libCircuits: CircuitIR[] = [];
       const seen = new Set<string>();
-      const addCircuit = (c: Circuit) => {
+      const addCircuit = (c: CircuitIR) => {
         if (seen.has(c.name)) return;
         seen.add(c.name);
         libCircuits.push(c);

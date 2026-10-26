@@ -16,7 +16,12 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import type { Circuit, CircuitLibrary, FlatPortValueMap, FlatSequentialState } from '@simten/core';
+import type {
+  CircuitIR,
+  CircuitLibrary,
+  FlatPortValueMap,
+  FlatSequentialState,
+} from '@simten/core/internal';
 import React, {
   type CSSProperties,
   type ReactNode,
@@ -90,7 +95,7 @@ function CanvasControls() {
 }
 
 export interface CircuitCanvasProps {
-  circuit?: Circuit | null;
+  circuit?: CircuitIR | null;
   componentLibrary?: CircuitLibrary;
   portValues?: FlatPortValueMap | null;
   sequentialState?: FlatSequentialState | null;
@@ -150,17 +155,17 @@ export interface CircuitCanvasProps {
 let _defaultLibrary: CircuitLibrary | null = null;
 function getDefaultLibrary(): CircuitLibrary {
   if (!_defaultLibrary) {
-    const circuitMap = new Map<string, Circuit>();
+    const circuitMap = new Map<string, CircuitIR>();
     _defaultLibrary = {
       resolveCircuit: (name) => circuitMap.get(name),
       getAllPrimitiveNames: () =>
         [...circuitMap.entries()]
           .filter(([, c]) => c.implementation.kind === 'primitive')
           .map(([n]) => n),
-      addCircuit: (c: Circuit) => {
+      addCircuit: (c: CircuitIR) => {
         circuitMap.set(c.name, c);
       },
-    } as CircuitLibrary & { addCircuit(c: Circuit): void };
+    } as CircuitLibrary & { addCircuit(c: CircuitIR): void };
   }
   return _defaultLibrary;
 }

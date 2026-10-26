@@ -11,17 +11,14 @@
  * handful of types that exist for the editor UI and have no core equivalent.
  */
 
-import type { PortPath } from '@simten/core';
+import type { PortPath } from '@simten/core/internal';
 
 // ── Re-exported from core: the IR proper ────────────────────────────────────
 
+export type { BitType, BitValue, BusType, BusValue, PortType } from '@simten/core';
 export type {
   ArgumentValue,
-  BitType,
-  BitValue,
-  BusType,
-  BusValue,
-  Circuit,
+  CircuitIR,
   CircuitMetadata,
   ClockDescriptor,
   ClockInstance,
@@ -31,10 +28,9 @@ export type {
   Node,
   PortDescriptor,
   PortPath,
-  PortType,
   StateBlock,
   StateValue,
-} from '@simten/core';
+} from '@simten/core/internal';
 
 export {
   bitType,
@@ -44,7 +40,7 @@ export {
   isPortTypeCompatible,
   memoryType,
   portPathKey,
-} from '@simten/core';
+} from '@simten/core/internal';
 
 // ── Editor-only: no core equivalent ─────────────────────────────────────────
 

@@ -5,8 +5,8 @@
  * Circuits + their dependencies are added by callers.
  */
 
+import type { CircuitIR, CircuitLibrary, MutableCircuitLibrary } from '../ir/circuit-ir.js';
 import { STDLIB_CIRCUITS } from '../std/index.js';
-import type { Circuit, CircuitLibrary, MutableCircuitLibrary } from '../types/circuit.js';
 
 let cachedLibrary: CircuitLibrary | null = null;
 
@@ -33,15 +33,15 @@ export function getLibrary(): CircuitLibrary {
 
 export function createMutableLibrary(): {
   library: MutableCircuitLibrary;
-  circuits: Circuit[];
+  circuits: CircuitIR[];
 } {
-  const circuits: Circuit[] = [];
+  const circuits: CircuitIR[] = [];
 
   const library: MutableCircuitLibrary = {
     resolveCircuit: (name: string) => circuits.find((c) => c.name === name),
     getAllPrimitiveNames: () =>
       circuits.filter((c) => c.implementation.kind === 'primitive').map((c) => c.name),
-    addCircuit: (circuit: Circuit) => {
+    addCircuit: (circuit: CircuitIR) => {
       circuits.push(circuit);
     },
     getAllCircuitNames: () => circuits.map((c) => c.name),

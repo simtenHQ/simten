@@ -14,7 +14,7 @@ body:
       label: Affected area
       description: Which part of Simten is misbehaving?
       options:
-        - Simulator engine (@simten/core/simulator)
+        - Simulator engine (@simten/core/internal)
         - Circuit IR / builder (@simten/core/circuit)
         - Standard library primitive (@simten/core/std)
         - Verilog exporter (@simten/core/verilog)

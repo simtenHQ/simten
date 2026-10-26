@@ -34,8 +34,8 @@
  */
 
 import { bit, bus } from '../circuit/bit-bus.js';
+import type { Circuit } from '../circuit/builder-types.js';
 import { circuit } from '../circuit/circuit.js';
-import type { BuiltCircuit } from '../circuit/types.js';
 import { Constant } from './io.js';
 import {
   MOS6502_ADHBus,
@@ -50,9 +50,9 @@ import {
   MOS6502_StatusLogic,
   MOS6502_TimingLogic,
 } from './mos6502.js';
-import { Slice } from './reconstruction.js';
 import { AddressCombiner, Mux } from './routing.js';
 import { DFlipFlop, Register } from './sequential.js';
+import { Slice } from './wiring.js';
 
 type B = ReturnType<typeof bus>;
 type Bit = typeof bit;
@@ -457,4 +457,4 @@ type CoreOuts = {
 /** A cycle-accurate NMOS 6502 core; memory and I/O connect to its bus pins. */
 export const MOS6502_Core = MOS6502_CoreFactory as unknown as (opts?: {
   debug?: boolean;
-}) => BuiltCircuit<CoreIns, CoreOuts>;
+}) => Circuit<CoreIns, CoreOuts>;

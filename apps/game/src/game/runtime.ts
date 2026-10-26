@@ -7,14 +7,14 @@
  * test suite passes a local one built on `executeCircuitCode`.
  */
 
-import type { Circuit } from '@simten/core';
+import type { CircuitIR } from '@simten/core/internal';
 import type { SandboxHandle, SimSlot } from '@simten/ui/sandbox';
 
 interface CompiledSource {
   /** Circuits the source defines. */
-  circuits: Circuit[];
+  circuits: CircuitIR[];
   /** Everything else the source pulled in, stdlib included. */
-  libraryCircuits: Circuit[];
+  libraryCircuits: CircuitIR[];
 }
 
 export interface GradeRuntime {
@@ -26,7 +26,7 @@ export interface GradeRuntime {
    * LAST circuit in the source, so a player who defines a helper below their
    * answer would otherwise be graded on the helper.
    */
-  select(target: Circuit, library: Circuit[]): Promise<void>;
+  select(target: CircuitIR, library: CircuitIR[]): Promise<void>;
   /**
    * Drive the named input signals, advance one clock cycle, then read the named
    * output signals.
@@ -39,7 +39,7 @@ export interface GradeRuntime {
    *
    * Keys in and out are the level's BARE signal names. The contract has to say
    * so: the sandbox reports top-level ports namespaced under `__top__` while
-   * `@simten/core/sim` returns them bare, and leaving that unstated let the two
+   * `@simten/core` returns them bare, and leaving that unstated let the two
    * implementations disagree silently: grading read `undefined` for every
    * output and scored it 0, which passes any row that expects 0.
    *

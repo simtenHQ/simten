@@ -16,8 +16,8 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { buildFromIR } from '../../circuit/index.js';
-import type { Circuit, CircuitLibrary } from '../../index.js';
+import type { CircuitIR, CircuitLibrary } from '../../internal.js';
+import { buildFromIR } from '../../internal.js';
 import { exportVerilog } from '../../verilog/index.js';
 import { importNetlist, type YosysNetlist } from '../index.js';
 
@@ -26,10 +26,10 @@ const fix = (name: string) =>
     readFileSync(fileURLToPath(new URL(`../__fixtures__/${name}`, import.meta.url)), 'utf8'),
   ) as YosysNetlist;
 
-const inputNames = (c: Circuit) => c.inputs.map((p) => p.name);
+const inputNames = (c: CircuitIR) => c.inputs.map((p) => p.name);
 
 /** Re-export the imported top back to Verilog and count `input clk` declarations. */
-function reexportClkCount(top: Circuit, deps: Circuit[]): number {
+function reexportClkCount(top: CircuitIR, deps: CircuitIR[]): number {
   const built = buildFromIR(top, deps);
   const lib: CircuitLibrary = {
     resolveCircuit: (n) =>

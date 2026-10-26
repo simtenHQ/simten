@@ -1,10 +1,10 @@
 /**
  * IR → TypeScript source serializer.
  *
- * Given a `BuiltCircuit`, emit a TypeScript string that the editor can compile
+ * Given a `Circuit`, emit a TypeScript string that the editor can compile
  * back into the same circuit (modulo comments and code outside `circuit()`
  * calls). Powers the Fork button on `<CircuitEmbed />`, where the embed has
- * a compiled `BuiltCircuit` but no original source.
+ * a compiled `Circuit` but no original source.
  *
  * Supported:
  * - Composite circuits that compose stdlib components and other user circuits
@@ -13,7 +13,7 @@
  * - Simple state (bit / bus / memory with default widths)
  *
  * NOT supported (throws with a clear message — Fork button surfaces it):
- * - Primitives with custom `eval` / `onTick` callbacks (would need eval-registry
+ * - Primitives with custom `eval` / `onTick` callbacks (would need behavior registry
  *   walking; defer to a follow-up if blog circuits ever need it)
  * - Intrinsic implementations
  *
@@ -21,18 +21,18 @@
  */
 
 import { importFactoryName, isKnownSerializablePrimitive } from '../import/component-homes.js';
-import { STDLIB_CIRCUITS } from '../std/index.js';
 import type {
   ArgumentValue,
-  Circuit,
+  CircuitIR,
   Node,
   PortDescriptor,
   PortType,
   StateBlock,
-} from '../types/circuit.js';
-import { getCircuitEval } from './eval-registry.js';
+} from '../ir/circuit-ir.js';
+import { STDLIB_CIRCUITS } from '../std/index.js';
+import { getCircuitBehavior } from './behavior-registry.js';
+import type { Circuit } from './builder-types.js';
 import { safeIdentifier } from './reserved-identifiers.js';
-import type { BuiltCircuit } from './types.js';
 
 const STDLIB_NAMES: ReadonlySet<string> = new Set(STDLIB_CIRCUITS.map((c) => c.circuit.name));
 
@@ -44,10 +44,10 @@ export class CircuitToSourceError extends Error {
 }
 
 /**
- * Serialize a `BuiltCircuit` (plus its transitive dependencies) to a TypeScript
+ * Serialize a `Circuit` (plus its transitive dependencies) to a TypeScript
  * source string.
  */
-export function circuitToSource(built: BuiltCircuit): string {
+export function circuitToSource(built: Circuit): string {
   // Collect user-defined (non-stdlib) deps. Stdlib is pre-injected into the
   // editor sandbox, so we don't need to track or emit it.
   // Pre-injected = stdlib OR an import-namespace primitive (Pmux/Mem/Dlatch):
@@ -55,7 +55,7 @@ export function circuitToSource(built: BuiltCircuit): string {
   // name (import primitives as a factory call) and never recursed into.
   const isPreInjected = (name: string) =>
     STDLIB_NAMES.has(name) || isKnownSerializablePrimitive(name);
-  const userCircuits = new Map<string, Circuit>();
+  const userCircuits = new Map<string, CircuitIR>();
   for (const [name, dep] of built._dependencies) {
     if (!isPreInjected(name)) {
       userCircuits.set(name, dep.circuit);
@@ -103,9 +103,9 @@ export function circuitToSource(built: BuiltCircuit): string {
 // Topological sort: a circuit's dependencies (other user circuits it uses
 // in its `nodes`) must come before it.
 // ──────────────────────────────────────────────────────────────────────────
-function topoSort(circuits: Map<string, Circuit>): Circuit[] {
+function topoSort(circuits: Map<string, CircuitIR>): CircuitIR[] {
   const visited = new Set<string>();
-  const result: Circuit[] = [];
+  const result: CircuitIR[] = [];
   const visit = (name: string) => {
     if (visited.has(name)) return;
     visited.add(name);
@@ -123,7 +123,7 @@ function topoSort(circuits: Map<string, Circuit>): Circuit[] {
 // ──────────────────────────────────────────────────────────────────────────
 // Per-circuit emission
 // ──────────────────────────────────────────────────────────────────────────
-function emitCircuit(c: Circuit, idOf: (name: string) => string): string {
+function emitCircuit(c: CircuitIR, idOf: (name: string) => string): string {
   if (c.implementation.kind === 'intrinsic') {
     throw new CircuitToSourceError(
       `Cannot serialize circuit '${c.name}': intrinsic implementations are not supported.`,
@@ -133,7 +133,7 @@ function emitCircuit(c: Circuit, idOf: (name: string) => string): string {
     // A primitive with a registered eval/onTick relies on a callback we can't
     // recover from the IR alone. (Bare primitives — pure port-shape declarations
     // with no eval — are fine to round-trip.)
-    if (getCircuitEval(c.name)) {
+    if (getCircuitBehavior(c.name)) {
       throw new CircuitToSourceError(
         `Cannot serialize circuit '${c.name}': primitives with eval/onTick callbacks aren't supported by the v1 fork serializer.`,
       );
@@ -279,7 +279,7 @@ function jsLiteral(v: ArgumentValue | boolean): string {
   return `{ ${entries.join(', ')} }`;
 }
 
-function emitConnect(c: Circuit): string {
+function emitConnect(c: CircuitIR): string {
   // Group connections by source port path so we can emit
   //   src.to(t1, t2, t3)
   // matching the canonical DSL form.

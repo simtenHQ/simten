@@ -74,7 +74,7 @@ Build your own UI around the simulator. Each hook instance has its own isolated 
 
 | Prop | Type | Default | Description |
 |------|------|---------|-------------|
-| `circuit` | `BuiltCircuit` | required | Circuit definition (result of `circuit()`) |
+| `circuit` | `Circuit` | required | Circuit definition (result of `circuit()`) |
 | `height` | `number \| string` | `300` | Component height |
 | `showControls` | `boolean` | `true` | Show tick/auto/reset for sequential circuits |
 | `title` | `string` | — | Header title |
@@ -89,7 +89,7 @@ Build your own UI around the simulator. Each hook instance has its own isolated 
 
 ## How it works
 
-1. The `BuiltCircuit` is elaborated (composites flattened to primitives)
+1. The `Circuit` is elaborated (composites flattened to primitives)
 2. A simulator engine evaluates the netlist
 3. ReactFlow renders the circuit as interactive nodes and edges
 4. The layout engine computes positions when no `layout` prop is provided (lazy-loaded, SSR-safe)

@@ -11,9 +11,9 @@
  * - Eliminates runtime composite evaluation complexity
  */
 
-import type { Circuit, CircuitLibrary, PortPath } from '../types/circuit.js';
-import type { FlatCircuit, FlatConnection, FlatNode, HierarchyNode } from '../types/simulator.js';
-import { SEQUENTIAL_INPUT_PORTS, TOP_LEVEL_NODE } from '../types/simulator.js';
+import type { CircuitIR, CircuitLibrary, PortPath } from '../ir/circuit-ir.js';
+import type { FlatCircuit, FlatConnection, FlatNode, HierarchyNode } from './types.js';
+import { SEQUENTIAL_INPUT_PORTS, TOP_LEVEL_NODE } from './types.js';
 
 export interface ElaborateOptions {
   /** Expand primitives that have referenceCircuit definitions into base primitives.
@@ -38,7 +38,7 @@ export interface ElaborateOptions {
  * @returns Flattened circuit with only primitives
  */
 export function elaborate(
-  circuit: Circuit,
+  circuit: CircuitIR,
   library: CircuitLibrary,
   debug: boolean = false,
   _options?: ElaborateOptions,
@@ -56,7 +56,7 @@ export function elaborate(
    * Recursively flatten a circuit and all its nested composites.
    */
   function flattenCircuit(
-    circ: Circuit,
+    circ: CircuitIR,
     pathPrefix: string,
     parentHierarchy: HierarchyNode,
     elaborationStack: Set<string> = new Set(),
@@ -243,7 +243,7 @@ export function elaborate(
  * Stitch connections through composite port boundaries.
  */
 function stitchCompositeConnections(
-  circuit: Circuit,
+  circuit: CircuitIR,
   connections: FlatConnection[],
   flatNodes: FlatNode[],
   library: CircuitLibrary,
@@ -258,7 +258,7 @@ function stitchCompositeConnections(
 
   // Build forwarding map for each composite instance
   function buildForwardingMap(
-    circ: Circuit,
+    circ: CircuitIR,
     prefix: string,
     elaborationStack: Set<string> = new Set(),
   ): void {
@@ -561,7 +561,7 @@ function resolveThroughComposites(
  * Trace a composite's circuit-level ports to their internal primitive sources/targets.
  */
 function traceCompositePorts(
-  composite: Circuit,
+  composite: CircuitIR,
   compositePath: string,
   portForwarding: Map<string, PortPath[]>,
   library: CircuitLibrary,
@@ -629,7 +629,7 @@ function traceCompositePorts(
 function resolveInternalPorts(
   compositePath: string,
   portRef: PortPath,
-  composite: Circuit,
+  composite: CircuitIR,
   library: CircuitLibrary,
   visited: Set<string> = new Set(),
 ): PortPath[] {

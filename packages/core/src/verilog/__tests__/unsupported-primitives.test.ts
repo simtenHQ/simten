@@ -23,7 +23,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { bus, circuit } from '../../circuit/index.js';
-import type { Circuit, CircuitLibrary } from '../../index.js';
+import type { CircuitIR, CircuitLibrary } from '../../internal.js';
 import { And, Slice } from '../../std/index.js';
 import { exportVerilog } from '../index.js';
 import { UNSUPPORTED_MARKER } from '../primitive-map.js';
@@ -31,11 +31,11 @@ import { UNSUPPORTED_MARKER } from '../primitive-map.js';
 /** Same shape as `exporter.test.ts`'s helper: the top circuit plus every
  *  transitive dependency, so elaboration can resolve the primitives. */
 function libraryFor(c: {
-  circuit: Circuit;
-  _dependencies: ReadonlyMap<string, { circuit: Circuit }>;
+  circuit: CircuitIR;
+  _dependencies: ReadonlyMap<string, { circuit: CircuitIR }>;
 }) {
-  const byName = new Map<string, Circuit>();
-  const lib: CircuitLibrary & { addCircuit(x: Circuit): void } = {
+  const byName = new Map<string, CircuitIR>();
+  const lib: CircuitLibrary & { addCircuit(x: CircuitIR): void } = {
     resolveCircuit: (name) => byName.get(name),
     getAllPrimitiveNames: () =>
       [...byName.entries()]
@@ -46,7 +46,8 @@ function libraryFor(c: {
     },
   };
   lib.addCircuit(c.circuit);
-  for (const [, dep] of c._dependencies) lib.addCircuit(dep.circuit ?? (dep as unknown as Circuit));
+  for (const [, dep] of c._dependencies)
+    lib.addCircuit(dep.circuit ?? (dep as unknown as CircuitIR));
   return lib;
 }
 

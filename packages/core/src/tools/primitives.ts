@@ -4,7 +4,7 @@
  * Pure function to get primitive component catalog.
  */
 
-import type { CircuitLibrary } from '../types/circuit.js';
+import type { CircuitLibrary } from '../ir/circuit-ir.js';
 
 export function getPrimitivesHandler(
   params: {

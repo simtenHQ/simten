@@ -5,11 +5,11 @@
  * like `BitSlice({ low: 5, high: 7 })`.
  */
 
-import type { Circuit } from '@simten/core';
+import type { CircuitIR } from '@simten/core/internal';
 import { describe, expect, it } from 'vitest';
 import { projectCircuitToReactFlow } from '../projection';
 
-const circuit: Circuit = {
+const circuit: CircuitIR = {
   name: 'Top',
   inputs: [],
   outputs: [],
@@ -57,7 +57,7 @@ const circuit: Circuit = {
     },
   ],
   implementation: { kind: 'composite' },
-} as unknown as Circuit;
+} as unknown as CircuitIR;
 
 const library = {
   resolveCircuit: () => undefined,

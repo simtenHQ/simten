@@ -1,6 +1,5 @@
-import type { Circuit, FlatCircuit } from '@simten/core';
-import { buildFromIR } from '@simten/core/circuit';
-import { compileForSimulation, elaborate } from '@simten/core/simulator';
+import type { CircuitIR, FlatCircuit } from '@simten/core/internal';
+import { buildFromIR, compileForSimulation, elaborate } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { CircuitEmbed } from '@simten/embed';
 import { useSandboxContext } from '@simten/ui/sandbox';
@@ -81,8 +80,8 @@ export function PipelineVisualizer() {
     | null
     | { error: string }
     | {
-        circuits: Circuit[];
-        fullAdder: Circuit;
+        circuits: CircuitIR[];
+        fullAdder: CircuitIR;
         flat: FlatCircuit;
         numeric: ReturnType<typeof compileForSimulation>;
       }
@@ -104,7 +103,7 @@ export function PipelineVisualizer() {
         const resolveCircuit = (name: string) => circuitMap.get(name);
 
         // Build primitive name list from stdlib (safe: no new Function())
-        const prims = STDLIB_CIRCUITS.map((c) => c.circuit) as Circuit[];
+        const prims = STDLIB_CIRCUITS.map((c) => c.circuit) as CircuitIR[];
         const primNames = prims.map((p) => p.name);
 
         // Stage 2: Elaborate the FullAdder

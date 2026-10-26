@@ -9,7 +9,7 @@
  *   import { createStdLibrary } from '@simten/core/std'
  */
 
-import type { BuiltCircuit } from '../circuit/types.js';
+import type { Circuit } from '../circuit/builder-types.js';
 
 // Arithmetic
 export {
@@ -81,8 +81,6 @@ export {
   UART_RX,
   UART_TX,
 } from './networking.js';
-// Reconstruction / bit-manipulation (importer authoring constructs)
-export { DynamicSlice, SignExtend, Slice, ZeroExtend } from './reconstruction.js';
 // Routing / Plexers / Utilities
 export {
   AddressCombiner,
@@ -120,12 +118,14 @@ export {
 export { RV32I_Core } from './rv32i-cpu.js';
 // Sequential
 export { DFlipFlop, Register } from './sequential.js';
+// Reconstruction / bit-manipulation (importer authoring constructs)
+export { DynamicSlice, SignExtend, Slice, ZeroExtend } from './wiring.js';
 
 // ============================================================================
 // Aggregate circuit list
 // ============================================================================
 //
-// Pre-filtered, well-typed list of every BuiltCircuit in the stdlib. Consumers
+// Pre-filtered, well-typed list of every Circuit in the stdlib. Consumers
 // that need to iterate primitives (editor type-gen, library registration,
 // elaboration scope) should use this instead of `Object.values(std).filter(...)`,
 // which breaks the moment a non-circuit helper (like romFromBytes) is exported.
@@ -138,14 +138,13 @@ import * as Memory from './memory.js';
 import { MOS6502_ALU } from './mos6502.js';
 import * as MOS6502Cpu from './mos6502-cpu.js';
 import * as Networking from './networking.js';
-import * as Reconstruction from './reconstruction.js';
 import * as Routing from './routing.js';
 import * as RV32I from './rv32i.js';
 import * as RV32ICpu from './rv32i-cpu.js';
 import * as Sequential from './sequential.js';
+import * as Reconstruction from './wiring.js';
 
-const isBuiltCircuit = (v: unknown): v is BuiltCircuit =>
-  !!v && typeof v === 'object' && 'circuit' in v;
+const isCircuit = (v: unknown): v is Circuit => !!v && typeof v === 'object' && 'circuit' in v;
 
 const _allExports: unknown[] = [
   ...Object.values(Logic),
@@ -164,14 +163,14 @@ const _allExports: unknown[] = [
 ];
 
 // Materialize parameterized factories with their default options so the
-// editor/library has a concrete `BuiltCircuit` to register for each one.
+// editor/library has a concrete `Circuit` to register for each one.
 // Singletons pass through unchanged.
-const _materialize = (v: unknown): BuiltCircuit | null => {
-  if (isBuiltCircuit(v)) return v;
+const _materialize = (v: unknown): Circuit | null => {
+  if (isCircuit(v)) return v;
   if (typeof v === 'function') {
     try {
       const built = (v as () => unknown)();
-      return isBuiltCircuit(built) ? built : null;
+      return isCircuit(built) ? built : null;
     } catch {
       return null;
     }
@@ -179,6 +178,6 @@ const _materialize = (v: unknown): BuiltCircuit | null => {
   return null;
 };
 
-export const STDLIB_CIRCUITS: readonly BuiltCircuit[] = Object.freeze(
-  _allExports.map(_materialize).filter((c): c is BuiltCircuit => c !== null),
+export const STDLIB_CIRCUITS: readonly Circuit[] = Object.freeze(
+  _allExports.map(_materialize).filter((c): c is Circuit => c !== null),
 );

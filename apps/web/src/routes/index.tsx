@@ -205,9 +205,8 @@ function BentoCell({
 // and top get cropped by the cell's overflow-hidden, giving the
 // "you're peeking at a real editor" look from Cursor's bento. Identifiers
 // inside the code body get the same hover popups as the hero block.
-const TYPESAFE_SNIPPET = `import { circuit, bit } from '@simten/core';
+const TYPESAFE_SNIPPET = `import { circuit, bit, simulate } from '@simten/core';
 import { Xor, And, Or } from '@simten/core/std';
-import { simulate } from '@simten/core/sim';
 
 const HalfAdder = circuit('HalfAdder', {
   inputs:  { a: bit, b: bit },
@@ -267,7 +266,7 @@ const Logo = ROM({ memory: romFromBytes(bytes) });`,
     filename: 'adder.test.ts',
     code: `// fast-check: property-test the half adder
 import * as fc from 'fast-check';
-import { simulate } from '@simten/core/sim';
+import { simulate } from '@simten/core';
 
 fc.assert(
   fc.property(fc.boolean(), fc.boolean(), (a, b) => {

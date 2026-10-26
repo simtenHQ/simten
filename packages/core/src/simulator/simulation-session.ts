@@ -23,7 +23,7 @@ import type {
   FlatSequentialState,
   SimulatorEngine,
   SimulatorSnapshot,
-} from '../types/simulator.js';
+} from './types.js';
 
 // ============================================================================
 // Public types

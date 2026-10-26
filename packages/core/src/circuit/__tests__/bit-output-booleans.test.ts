@@ -19,7 +19,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { simulate } from '../../sim/index.js';
+import { simulate } from '../../simulator/simulate.js';
 import { bit, bus } from '../bit-bus.js';
 import { circuit } from '../circuit.js';
 

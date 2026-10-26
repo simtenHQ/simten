@@ -8,7 +8,7 @@
  */
 
 import dagre from '@dagrejs/dagre';
-import type { Circuit } from '@simten/core';
+import type { CircuitIR } from '@simten/core/internal';
 import { pinColumnHeight, pinLabelGutter } from '../nodes/BaseNode';
 import type { MetadataState } from './types';
 
@@ -44,7 +44,7 @@ const TITLE_CHAR_WIDTH = 7;
  * the same sums `BaseNode` uses, so a 9-output block isn't laid out as if it
  * were 80px tall and then drawn on top of its neighbour.
  */
-function nodeDimensions(node: Circuit['nodes'][number]) {
+function nodeDimensions(node: CircuitIR['nodes'][number]) {
   const base = getDimensions(node.componentRef);
   const pins = Math.max(node.inputs.length, node.outputs.length);
   const height = Math.max(base.height, pinColumnHeight(pins));
@@ -74,7 +74,10 @@ export interface DagreLayoutOptions {
  * Synchronous — dagre.layout() does no I/O. Callers can use the result
  * immediately on first render.
  */
-export function computeDagreLayout(circuit: Circuit, options?: DagreLayoutOptions): MetadataState {
+export function computeDagreLayout(
+  circuit: CircuitIR,
+  options?: DagreLayoutOptions,
+): MetadataState {
   const direction = options?.direction ?? 'LR';
   const nodeSpacing = options?.nodeSpacing ?? 60;
   const rankSpacing = options?.rankSpacing ?? 90;

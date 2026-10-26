@@ -1,11 +1,11 @@
-import type { PortDescriptor } from '@simten/core';
-import type { BuiltCircuit } from '@simten/core/circuit';
+import type { Circuit } from '@simten/core/circuit';
+import type { PortDescriptor } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { CircuitEmbed } from '@simten/embed';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-// All stdlib BuiltCircuit objects (singletons + materialized factory defaults).
-const ALL_STD: readonly BuiltCircuit[] = STDLIB_CIRCUITS;
+// All stdlib Circuit objects (singletons + materialized factory defaults).
+const ALL_STD: readonly Circuit[] = STDLIB_CIRCUITS;
 
 // Category display order and labels
 const CATEGORY_ORDER = [
@@ -73,7 +73,7 @@ export function PrimitiveExplorer() {
 
   // Group stdlib circuits by category
   const grouped = useMemo(() => {
-    const groups: Record<string, BuiltCircuit[]> = {};
+    const groups: Record<string, Circuit[]> = {};
     for (const comp of ALL_STD) {
       if (!shouldShow(comp.circuit.name)) continue;
       const cat = comp.circuit.metadata?.category ?? 'other';
@@ -87,7 +87,7 @@ export function PrimitiveExplorer() {
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim();
     if (!q) return grouped;
-    const result: Record<string, BuiltCircuit[]> = {};
+    const result: Record<string, Circuit[]> = {};
     for (const [cat, comps] of Object.entries(grouped)) {
       const matches = comps.filter(
         (c) =>
@@ -99,7 +99,7 @@ export function PrimitiveExplorer() {
     return result;
   }, [grouped, search]);
 
-  // Build a name→BuiltCircuit map for lookups
+  // Build a name→Circuit map for lookups
   const byName = useMemo(() => new Map(ALL_STD.map((c) => [c.circuit.name, c])), []);
 
   const selected = selectedName ? (byName.get(selectedName) ?? null) : null;

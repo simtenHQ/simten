@@ -9,7 +9,7 @@
  * no `width` argument, so the default always fires.
  *
  * That crashed Snake and Pong with "width is not defined" once
- * `registerCircuitEval` became last-write-wins: the rebuilt copies started
+ * `registerCircuitBehavior` became last-write-wins: the rebuilt copies started
  * replacing the real ones instead of being discarded. The same last-write-wins
  * rule made the closure wrong even in-process — one registry entry per name, so
  * the last `Adder({ width: N })` defined anywhere set the fallback width for
@@ -27,7 +27,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { getAllCircuitEvals } from '../../circuit/index.js';
+import { getAllCircuitBehaviors } from '../../internal.js';
 import '../index.js';
 
 /**
@@ -63,7 +63,7 @@ function survivesRoundTrip(entry: {
 
 describe('stdlib evals rebuilt from source', () => {
   const closureDeps: string[] = [];
-  for (const [name, entry] of getAllCircuitEvals()) {
+  for (const [name, entry] of getAllCircuitBehaviors()) {
     const result = survivesRoundTrip(entry);
     if (!result.ok && result.reference) closureDeps.push(name);
   }
@@ -88,7 +88,7 @@ describe('stdlib evals rebuilt from source', () => {
   });
 
   it('rebuilds the majority of stdlib evals cleanly', () => {
-    const total = [...getAllCircuitEvals()].length;
+    const total = [...getAllCircuitBehaviors()].length;
     expect(total).toBeGreaterThan(50);
     expect(closureDeps.length).toBeLessThan(total / 2);
   });

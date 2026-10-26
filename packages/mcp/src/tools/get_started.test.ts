@@ -6,8 +6,8 @@
  * top-level circuits — and must still compile cleanly via checkCircuit.
  */
 
-import { checkCircuit } from '@simten/core/api';
-import { EXAMPLES } from '@simten/core/examples/catalog';
+import { EXAMPLES } from '@simten/core/examples';
+import { checkCircuit } from '@simten/core/internal';
 import { describe, expect, it } from 'vitest';
 import { buildOrientation, materializeExample } from './get_started.js';
 

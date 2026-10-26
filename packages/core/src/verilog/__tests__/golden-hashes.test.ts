@@ -28,6 +28,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
 import {
   // Arithmetic (composites — these have `connect` and are touched by codemod)
   Adder,
@@ -58,16 +59,15 @@ import {
   Subtractor,
   Xor,
 } from '../../std/index.js';
-import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
 import { exportVerilog } from '../exporter.js';
 
 const GOLDEN_FILE_REL = '../../../../../tools/codemod/golden-verilog-hashes.json';
 
 function libraryFor(c: {
-  circuit: Circuit;
-  _dependencies: ReadonlyMap<string, { circuit: Circuit }>;
+  circuit: CircuitIR;
+  _dependencies: ReadonlyMap<string, { circuit: CircuitIR }>;
 }): CircuitLibrary {
-  const map = new Map<string, Circuit>();
+  const map = new Map<string, CircuitIR>();
   map.set(c.circuit.name, c.circuit);
   for (const [, dep] of c._dependencies) map.set(dep.circuit.name, dep.circuit);
   return {
@@ -83,7 +83,7 @@ function hash(s: string): string {
 
 function tryHash(
   name: string,
-  c: { circuit: Circuit; _dependencies: ReadonlyMap<string, any> },
+  c: { circuit: CircuitIR; _dependencies: ReadonlyMap<string, any> },
 ): string | null {
   try {
     const { verilog } = exportVerilog(c.circuit, libraryFor(c));
@@ -150,7 +150,7 @@ function buildSimpleSequential() {
 // ── Hashable set ─────────────────────────────────────────────────────────────
 
 const subjects: Array<{ name: string; build: () => any }> = [
-  // Stdlib — singletons are bare BuiltCircuits; parameterized components are
+  // Stdlib — singletons are bare Circuits; parameterized components are
   // invoked with default args to capture the canonical (default-width) shape.
   // Widths are exercised through the synthetic composites further down.
   { name: 'And', build: () => And },

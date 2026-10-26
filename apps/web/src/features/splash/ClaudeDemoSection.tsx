@@ -6,7 +6,7 @@
  * Extracted so it can be relocated on the page and gated on scroll.
  */
 
-import type { BuiltCircuit } from '@simten/core/circuit';
+import type { Circuit } from '@simten/core/circuit';
 import { bit, circuit } from '@simten/core/circuit';
 import { And, DFlipFlop, Not, Or, Xor } from '@simten/core/std';
 import { CircuitEmbed, type CircuitEmbedHandle } from '@simten/embed';
@@ -145,7 +145,7 @@ const DEMO_SCRIPT: TermLine[] = [
 
 type PromptOption = {
   label: string;
-  circuit: BuiltCircuit;
+  circuit: Circuit;
   displayCode: string;
   script: TermLine[];
 };
@@ -738,7 +738,7 @@ interface HeroBrowserWindowHandle {
 interface HeroDemo {
   key: string;
   label: string;
-  circuit: BuiltCircuit;
+  circuit: Circuit;
   displayCode: string;
 }
 
@@ -796,7 +796,7 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, { canvasReady?: bo
   function HeroBrowserWindow({ canvasReady = false }, ref) {
     const [codeTyping, setCodeTyping] = useState(false);
     const [showCircuit, setShowCircuit] = useState(false);
-    const [targetCircuit, setTargetCircuit] = useState<BuiltCircuit>(HalfAdder);
+    const [targetCircuit, setTargetCircuit] = useState<Circuit>(HalfAdder);
     const [displayCode, setDisplayCode] = useState(HALF_ADDER_DISPLAY);
     // Stable identity per demo so CircuitEmbed remounts cleanly when the
     // user cycles through HERO_DEMOS post-reveal (React Flow doesn't

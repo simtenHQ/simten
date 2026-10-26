@@ -3,7 +3,7 @@
  */
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { checkCircuit } from '@simten/core/api';
+import { checkCircuit } from '@simten/core/internal';
 import { z } from 'zod';
 import { readCircuitSource } from '../lib/file-reader.js';
 

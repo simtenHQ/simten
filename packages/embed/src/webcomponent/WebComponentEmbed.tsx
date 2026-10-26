@@ -4,14 +4,14 @@
  * Internal to the web component registration. Not a public API.
  * Takes a `code` string (from the <circuit-embed> HTML attribute),
  * compiles it via the sandbox (isolated iframe, separate origin),
- * and passes the resulting BuiltCircuit to CircuitEmbed.
+ * and passes the resulting Circuit to CircuitEmbed.
  *
  * Security: code executes only inside the sandbox iframe — never in
  * the main frame. Only plain Circuit IR (JSON) crosses the boundary.
  */
 
-import type { BuiltCircuit } from '@simten/core/circuit';
-import { buildFromIR } from '@simten/core/circuit';
+import type { Circuit } from '@simten/core/circuit';
+import { buildFromIR } from '@simten/core/internal';
 import { SandboxProvider, useSandboxContext } from '@simten/ui/sandbox';
 import { useEffect, useId, useState } from 'react';
 import { CircuitEmbed } from '../CircuitEmbed';
@@ -47,12 +47,12 @@ function WebComponentEmbedInner({
   // circuit compiled last. `useCircuitSimulator` already does this for the
   // simulation slot; compilation was the half that was missed.
   const slotId = `wc-${useId()}`;
-  const [builtCircuit, setBuiltCircuit] = useState<BuiltCircuit | null>(null);
+  const [built, setBuilt] = useState<Circuit | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (!code) {
-      setBuiltCircuit(null);
+      setBuilt(null);
       setError(null);
       return;
     }
@@ -64,19 +64,19 @@ function WebComponentEmbedInner({
 
       if ('error' in result) {
         setError(result.error);
-        setBuiltCircuit(null);
+        setBuilt(null);
         return;
       }
 
       const circuit = result.circuits[result.circuits.length - 1];
       if (!circuit) {
         setError('No circuit found in code');
-        setBuiltCircuit(null);
+        setBuilt(null);
         return;
       }
 
       setError(null);
-      setBuiltCircuit(buildFromIR(circuit, result.libraryCircuits));
+      setBuilt(buildFromIR(circuit, result.libraryCircuits));
     });
 
     return () => {
@@ -103,7 +103,7 @@ function WebComponentEmbedInner({
     );
   }
 
-  if (!builtCircuit) {
+  if (!built) {
     return (
       <div style={{ height }} className="flex items-center justify-center text-sm text-gray-500">
         Compiling...
@@ -114,7 +114,7 @@ function WebComponentEmbedInner({
   return (
     <div data-embed-theme={theme ?? 'dark'}>
       <CircuitEmbed
-        circuit={builtCircuit}
+        circuit={built}
         height={height}
         showControls={showControls}
         title={title}

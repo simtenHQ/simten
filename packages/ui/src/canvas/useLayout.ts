@@ -6,7 +6,7 @@
  * circuits.
  */
 
-import type { Circuit } from '@simten/core';
+import type { CircuitIR } from '@simten/core/internal';
 import { useMemo } from 'react';
 import { computeDagreLayout, type DagreLayoutOptions } from './dagre-layout';
 import type { MetadataState } from './types';
@@ -19,7 +19,7 @@ export type { DagreLayoutOptions };
  * the consumer is providing a static `layout` prop).
  */
 export function useLayout(
-  circuit: Circuit | null,
+  circuit: CircuitIR | null,
   options?: DagreLayoutOptions,
 ): { metadata: MetadataState; isLayoutReady: boolean } {
   return useMemo(() => {

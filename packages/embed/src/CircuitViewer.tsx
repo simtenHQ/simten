@@ -1,13 +1,13 @@
 /**
  * CircuitViewer — the single "render an interactive circuit" component.
  *
- * Takes a BuiltCircuit, wires up simulation, and renders CircuitCanvas + ClockControls.
+ * Takes a Circuit, wires up simulation, and renders CircuitCanvas + ClockControls.
  * Pure props — no stores. Everything else (CircuitEmbed, EditorWorkspace, <circuit-embed>)
  * is a thin wrapper around this.
  */
 
-import type { BuiltCircuit } from '@simten/core/circuit';
-import type { FlatPortValueMap } from '@simten/core/simulator';
+import type { Circuit } from '@simten/core/circuit';
+import type { FlatPortValueMap } from '@simten/core/internal';
 import type { CircuitLayout } from '@simten/ui/canvas';
 import { CircuitCanvas, ClockControls, useDetectTheme } from '@simten/ui/canvas';
 import {
@@ -27,19 +27,19 @@ import { useCircuitSimulator } from './hooks/useCircuitSimulator';
  * names ∪ output names ∪ `'dut'`. CircuitLayout<HarnessedCircuit<C>>
  * resolves to exactly that key set.
  */
-type HarnessedCircuit<C extends BuiltCircuit> =
-  C extends BuiltCircuit<infer Ins, infer Outs, any>
-    ? BuiltCircuit<
+type HarnessedCircuit<C extends Circuit> =
+  C extends Circuit<infer Ins, infer Outs, any>
+    ? Circuit<
         Ins,
         Outs,
-        { [K in keyof Ins]: BuiltCircuit } & { [K in keyof Outs]: BuiltCircuit } & { dut: C }
+        { [K in keyof Ins]: Circuit } & { [K in keyof Outs]: Circuit } & { dut: C }
       >
     : never;
 
 /** Strictly-keyed layout for an autoHarness-wrapped circuit. */
-export type HarnessedLayout<C extends BuiltCircuit> = CircuitLayout<HarnessedCircuit<C>>;
+export type HarnessedLayout<C extends Circuit> = CircuitLayout<HarnessedCircuit<C>>;
 
-export interface CircuitViewerProps<C extends BuiltCircuit = BuiltCircuit> {
+export interface CircuitViewerProps<C extends Circuit = Circuit> {
   /** The circuit to display (result of circuit()) */
   circuit: C;
   /** Container height */
@@ -106,7 +106,7 @@ export interface CircuitViewerHandle {
   stopAutoRun: () => void;
 }
 
-export function CircuitViewer<C extends BuiltCircuit = BuiltCircuit>({
+export function CircuitViewer<C extends Circuit = Circuit>({
   circuit,
   height = 300,
   showControls = true,

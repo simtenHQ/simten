@@ -6,8 +6,8 @@
  */
 
 import { afterEach, describe, expect, it } from 'vitest';
+import type { PortMap } from '../../circuit/builder-types.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { PortMap } from '../../circuit/types.js';
 import { And, DFlipFlop, Register, Xor } from '../../std/index.js';
 import type { SimulationHandle } from '../simulate.js';
 import { simulate } from '../simulate.js';

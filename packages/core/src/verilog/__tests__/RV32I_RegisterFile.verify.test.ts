@@ -15,9 +15,9 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import { createSimulatorFromCircuit } from '../../simulator/index.js';
+import type { CircuitLibrary } from '../../ir/circuit-ir.js';
+import { createEngine, elaborate } from '../../simulator/index.js';
 import { RV32I_RegisterFile } from '../../std/index.js';
-import type { CircuitLibrary } from '../../types/circuit.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { hasVerifier, verifyVerilog } from './verify.js';
@@ -96,7 +96,7 @@ interface SampleOut {
 
 function runSimulator(steps: Step[]): SampleOut[] {
   const { circuit, lib } = buildRegfile();
-  const sim = createSimulatorFromCircuit(circuit, lib);
+  const sim = createEngine(elaborate(circuit, lib), { componentLibrary: lib });
   const outputs: SampleOut[] = [];
   for (const step of steps) {
     sim.setNode('rs1', step.rs1);

@@ -17,28 +17,26 @@
  * compile-ir carries evals as source text from the page; those are rebuilt
  * with new Function (closures don't survive), skipping stdlib names.
  *
- * Scope injection: don't add `simulate` (or any handle on a slot's simulator)
- * to the scope user code sees without deciding how it relates to the canvas
- * slot. A fresh `simulate()` instance would not drive what the user watches.
- *
  * Output is plain structured-clone data only: no functions, no class instances.
  */
 
-import type { BitValue, BusValue, Circuit, CircuitLibrary, SimulatorSnapshot } from '@simten/core';
-import { createSimulator, elaborate } from '@simten/core';
-import { simulateCircuit } from '@simten/core/api';
+import type { BitValue, BusValue } from '@simten/core';
+import type { CircuitIR, CircuitLibrary, SimulatorSnapshot } from '@simten/core/internal';
 import {
-  type EvalEntry,
+  type BehaviorEntry,
+  createEngine,
+  type EnvironmentalStateValue,
+  elaborate,
+  ensureEvaluatorRegistered,
   executeCircuitCode,
   executeJsCode,
-  getAllCircuitEvals,
-  getCircuitEval,
-  registerCircuitEval,
+  getAllCircuitBehaviors,
+  getCircuitBehavior,
+  registerCircuitBehavior,
   stripTypes,
-} from '@simten/core/circuit';
-import { type EnvironmentalStateValue, ensureEvaluatorRegistered } from '@simten/core/simulator';
+} from '@simten/core/internal';
 import type {
-  EvalSource,
+  BehaviorSource,
   SandboxRequest,
   SandboxResult,
   WorkerResponse,
@@ -62,17 +60,17 @@ import {
  * default reads the factory's `width`, so a rebuilt copy throws "width is not
  * defined". Rebuilt stdlib names are skipped.
  */
-const STDLIB_EVALS: ReadonlyMap<string, EvalEntry> = new Map(getAllCircuitEvals());
+const STDLIB_EVALS: ReadonlyMap<string, BehaviorEntry> = new Map(getAllCircuitBehaviors());
 const STDLIB_EVAL_NAMES: ReadonlySet<string> = new Set(STDLIB_EVALS.keys());
 
 /**
  * Put back registry entries that changed since `saved` was taken, and rebuild
  * their evaluators so running slots use them again.
  */
-function restoreEvals(saved: ReadonlyMap<string, EvalEntry>) {
+function restoreEvals(saved: ReadonlyMap<string, BehaviorEntry>) {
   for (const [name, entry] of saved) {
-    if (getCircuitEval(name) === entry) continue;
-    registerCircuitEval(name, entry);
+    if (getCircuitBehavior(name) === entry) continue;
+    registerCircuitBehavior(name, entry);
     ensureEvaluatorRegistered(name);
   }
 }
@@ -101,10 +99,10 @@ interface FullSnapshot {
   env: Map<string, EnvironmentalStateValue>;
 }
 
-type SlotLibrary = CircuitLibrary & { addCircuit(c: Circuit): void };
+type SlotLibrary = CircuitLibrary & { addCircuit(c: CircuitIR): void };
 
 function newLibrary(): SlotLibrary {
-  const circuits = new Map<string, Circuit>();
+  const circuits = new Map<string, CircuitIR>();
   return {
     resolveCircuit: (name) => circuits.get(name),
     getAllPrimitiveNames: () =>
@@ -117,7 +115,7 @@ function newLibrary(): SlotLibrary {
   };
 }
 
-type Simulator = ReturnType<typeof createSimulator>;
+type Simulator = ReturnType<typeof createEngine>;
 
 interface FlatCircuitLike {
   nodes: Array<{ id: string; primitiveType: string; arguments: Record<string, unknown> }>;
@@ -126,8 +124,6 @@ interface FlatCircuitLike {
 interface SlotState {
   simulator: Simulator;
   library: SlotLibrary;
-  /** Source of the last `compile`, used by `simulate` without a source. */
-  source: string;
   /** Kept to capture/restore environmental state on snapshot/restore. */
   flatCircuit: FlatCircuitLike;
   /**
@@ -144,19 +140,13 @@ interface SlotState {
 const slots = new Map<string, SlotState>();
 const DEFAULT_SLOT = 'default';
 
-function installSlot(
-  slotId: string,
-  target: Circuit,
-  library: SlotLibrary,
-  source: string,
-): SlotState {
+function installSlot(slotId: string, target: CircuitIR, library: SlotLibrary): SlotState {
   const flatCircuit = elaborate(target, library);
-  const simulator = createSimulator(flatCircuit, { componentLibrary: library });
+  const simulator = createEngine(flatCircuit, { componentLibrary: library });
   // Recompile is a fresh timeline: prior snapshots refer to the old sim.
   const slot: SlotState = {
     simulator,
     library,
-    source,
     flatCircuit,
     peripheralBusNodes: computePeripheralBusNodes(flatCircuit, library),
     snapshots: new Map(),
@@ -258,16 +248,16 @@ function requireSlot(slotId: string = DEFAULT_SLOT): SlotState {
 }
 
 /** Circuits cross postMessage; a JSON round trip drops anything that can't. */
-function serializable(c: Circuit): Circuit {
+function serializable(c: CircuitIR): CircuitIR {
   return JSON.parse(JSON.stringify(c));
 }
 
-function registerEvalSources(evalSources: Record<string, EvalSource>) {
+function registerBehaviorSources(evalSources: Record<string, BehaviorSource>) {
   for (const [name, info] of Object.entries(evalSources)) {
     if (STDLIB_EVAL_NAMES.has(name)) continue;
     try {
-      const rebuild = (src: string) => new Function(`return (${src})`)() as EvalEntry['evalFn'];
-      registerCircuitEval(name, {
+      const rebuild = (src: string) => new Function(`return (${src})`)() as BehaviorEntry['evalFn'];
+      registerCircuitBehavior(name, {
         inputNames: info.inputNames,
         outputNames: info.outputNames,
         evalFn: rebuild(info.evalSource),
@@ -331,7 +321,7 @@ async function compile(source: string, slotId: string = DEFAULT_SLOT): Promise<S
   }
 
   const circuits = renderable.map(serializable);
-  const libraryCircuits: Circuit[] = [];
+  const libraryCircuits: CircuitIR[] = [];
   for (const name of result.library.getAllCircuitNames()) {
     const c = result.library.resolveCircuit(name);
     if (c) libraryCircuits.push(serializable(c));
@@ -339,7 +329,7 @@ async function compile(source: string, slotId: string = DEFAULT_SLOT): Promise<S
 
   const library = newLibrary();
   for (const c of [...circuits, ...libraryCircuits]) library.addCircuit(c);
-  const slot = installSlot(slotId, circuits[circuits.length - 1], library, source);
+  const slot = installSlot(slotId, circuits[circuits.length - 1], library);
 
   return {
     type: 'compiled',
@@ -357,7 +347,7 @@ async function compile(source: string, slotId: string = DEFAULT_SLOT): Promise<S
  */
 function compileIR(req: Extract<SandboxRequest, { type: 'compile-ir' }>): SandboxResult {
   if (req.evalSources) {
-    registerEvalSources(req.evalSources);
+    registerBehaviorSources(req.evalSources);
     restoreEvals(STDLIB_EVALS);
   }
 
@@ -370,54 +360,12 @@ function compileIR(req: Extract<SandboxRequest, { type: 'compile-ir' }>): Sandbo
   for (const c of req.libraryCircuits) lib.addCircuit(c);
   lib.addCircuit(req.circuit);
 
-  const slot = installSlot(req.slot, req.circuit, lib, slots.get(req.slot)?.source ?? '');
+  const slot = installSlot(req.slot, req.circuit, lib);
   return {
     type: 'compiled-ir',
     portValues: portValues(slot.simulator.getPortValues()),
     peripheralState: peripheralState(slot),
     snapshotId: req.snapshot ? takeSnapshot(slot) : undefined,
-  };
-}
-
-function simulate(req: Extract<SandboxRequest, { type: 'simulate' }>): SandboxResult {
-  const source = req.source ?? slots.get(req.slot ?? DEFAULT_SLOT)?.source ?? '';
-  if (!source) throw new RequestError('No circuit compiled. Provide source or call compile first.');
-
-  let memoryData: Map<string, Map<number, number>> | undefined;
-  if (req.memoryData) {
-    memoryData = new Map();
-    for (const [pattern, addrMap] of Object.entries(req.memoryData)) {
-      memoryData.set(
-        pattern,
-        new Map(Object.entries(addrMap).map(([addr, val]) => [Number(addr), val])),
-      );
-    }
-  }
-
-  // simulate gets its own run; what it registers must not reach the slots.
-  const saved = new Map(getAllCircuitEvals());
-  let result: ReturnType<typeof simulateCircuit>;
-  try {
-    result = simulateCircuit({
-      source,
-      ticks: req.ticks,
-      inputs:
-        req.inputs &&
-        Object.fromEntries(Object.entries(req.inputs).map(([k, v]) => [k, Number(v)])),
-      memoryData,
-    });
-  } finally {
-    restoreEvals(saved);
-  }
-  if ('error' in result) throw new RequestError(result.error);
-
-  return {
-    type: 'simulated',
-    circuitName: result.circuit,
-    signals: result.signals,
-    vcd: result.vcd,
-    ticks: result.ticks,
-    steadyStateAt: result.steadyStateAt,
   };
 }
 
@@ -550,8 +498,6 @@ async function handle(req: SandboxRequest): Promise<SandboxResult> {
       return compile(req.source, req.slot);
     case 'compile-ir':
       return compileIR(req);
-    case 'simulate':
-      return simulate(req);
     case 'tick':
       return tick(req);
     case 'tick-n':

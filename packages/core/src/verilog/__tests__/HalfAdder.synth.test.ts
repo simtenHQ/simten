@@ -8,8 +8,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, circuit } from '../../circuit/index.js';
+import type { CircuitLibrary } from '../../ir/circuit-ir.js';
 import { And, Xor } from '../../std/index.js';
-import type { CircuitLibrary } from '../../types/circuit.js';
 import { exportVerilog } from '../exporter.js';
 import { hasSynth, synthesizeVerilog } from './synth.js';
 

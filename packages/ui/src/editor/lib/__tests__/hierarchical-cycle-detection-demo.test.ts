@@ -4,12 +4,16 @@
  * Demonstrates that composites with internal registers no longer trigger false cycle detection
  */
 
-import { registerCircuitEval } from '@simten/core/circuit';
-import { type CircuitLibrary, createSimulatorFromCircuit } from '@simten/core/simulator';
+import {
+  type CircuitLibrary,
+  createEngine,
+  elaborate,
+  registerCircuitBehavior,
+} from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
-import { bitType, busType, type Circuit } from '../../types/circuit';
+import { bitType, busType, type CircuitIR } from '../../types/circuit';
 
 // Register an eval for the local 'Add' primitive defined below. The
 // simulator dispatches everything via the eval-bridge registry — any
@@ -18,7 +22,7 @@ import { bitType, busType, type Circuit } from '../../types/circuit';
 // outputs for unregistered primitives, which let this test pass on a
 // fluke while computing nonsense. Registering the eval makes the test
 // honest about what it's testing.)
-registerCircuitEval('Add', {
+registerCircuitBehavior('Add', {
   inputNames: ['a', 'b'],
   outputNames: ['out'],
   evalFn: ({ a, b }) => ({ out: (((a as number) >>> 0) + ((b as number) >>> 0)) & 0xff }),
@@ -40,7 +44,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
   let library: ReturnType<typeof useCircuitLibraryStore.getState>;
 
   // Minimal Add circuit (8-bit adder, no carry) for tests that reference 'Add'
-  const Add: import('../../types/circuit').Circuit = {
+  const Add: import('../../types/circuit').CircuitIR = {
     version: 1,
     name: 'Add',
     inputs: [
@@ -64,7 +68,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
 
   it('should compile a multi-level hierarchy with state machines', () => {
     // Create a simple FSM (Finite State Machine) with register
-    const fsm: Circuit = {
+    const fsm: CircuitIR = {
       version: 1,
       name: 'SimpleFSM',
       inputs: [{ name: 'trigger', portType: bitType() }],
@@ -155,7 +159,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
     library.addCircuit(fsm);
 
     // Create a Controller that contains the FSM
-    const controller: Circuit = {
+    const controller: CircuitIR = {
       version: 1,
       name: 'Controller',
       inputs: [{ name: 'enable', portType: bitType() }],
@@ -193,7 +197,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
     library.addCircuit(controller);
 
     // Create a top-level system with multiple controllers
-    const system: Circuit = {
+    const system: CircuitIR = {
       version: 1,
       name: 'System',
       inputs: [],
@@ -248,7 +252,8 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
 
     // Before the fix: This would fail with "Cycle detected in circuit"
     // After the fix: This should succeed because registers break the paths
-    const sim = createSimulatorFromCircuit(system, getLibrary());
+    const simLibrary = getLibrary();
+    const sim = createEngine(elaborate(system, simLibrary), { componentLibrary: simLibrary });
     const result = sim.runCombinational();
 
     expect(result.error).toBeUndefined();
@@ -261,7 +266,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
     // Each composite has internal registers that break the combinational loop
 
     // Create a minimal controller with register
-    const ingressController: Circuit = {
+    const ingressController: CircuitIR = {
       version: 1,
       name: 'IngressController',
       inputs: [{ name: 'data_in', portType: busType(8) }],
@@ -314,7 +319,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
       implementation: { kind: 'composite' },
     };
 
-    const arbiter: Circuit = {
+    const arbiter: CircuitIR = {
       version: 1,
       name: 'SimpleArbiter',
       inputs: [{ name: 'req', portType: busType(8) }],
@@ -367,7 +372,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
       implementation: { kind: 'composite' },
     };
 
-    const packetForwarder: Circuit = {
+    const packetForwarder: CircuitIR = {
       version: 1,
       name: 'PacketForwarder',
       inputs: [{ name: 'pkt_in', portType: busType(8) }],
@@ -426,7 +431,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
 
     // Create the network with apparent cycle:
     // IngressController → Arbiter → PacketForwarder → IngressController
-    const network: Circuit = {
+    const network: CircuitIR = {
       version: 1,
       name: 'Network',
       inputs: [],
@@ -488,7 +493,8 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
 
     // OLD BEHAVIOR: Would falsely detect cycle
     // NEW BEHAVIOR: Correctly recognizes registers break the path
-    const sim = createSimulatorFromCircuit(network, getLibrary());
+    const simLibrary = getLibrary();
+    const sim = createEngine(elaborate(network, simLibrary), { componentLibrary: simLibrary });
     const result = sim.runCombinational();
 
     expect(result.error).toBeUndefined();

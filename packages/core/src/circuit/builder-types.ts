@@ -14,11 +14,11 @@ import type {
   ArgumentValue,
   BitType,
   BusType,
-  Circuit,
+  CircuitIR,
   Node,
   PortDescriptor,
   PortType,
-} from '../types/circuit.js';
+} from '../ir/circuit-ir.js';
 
 export type { ArgumentValue };
 
@@ -71,7 +71,7 @@ export interface SinkPortRef<T extends PortType = PortType> {
  *  `ConnectArg`-typed slots in your `connect` callback instead. */
 export type PortRef<T extends PortType = PortType> = SourcePortRef<T> | SinkPortRef<T>;
 
-/** A connection definition produced by PortRef.to() */
+/** A connection definition produced by SourcePortRef.to() */
 export interface ConnectionDef {
   readonly source: { nodeId: string; portName: string };
   readonly targets: { nodeId: string; portName: string }[];
@@ -114,7 +114,7 @@ type SinkRefs<M> = { readonly [K in keyof M]: SinkPortRef<NormalizePort<M[K]>> }
  * `Object.fromEntries` loses it before `circuit()` ever sees it, so `n[i].a`
  * can autocomplete where `nodes[\`n${i}\`].a` cannot.
  */
-export type NodeEntry = BuiltCircuit | readonly BuiltCircuit[];
+export type NodeEntry = Circuit | readonly Circuit[];
 
 /** The connect callback argument — typed from the config's inputs/outputs/nodes.
  *
@@ -128,7 +128,7 @@ export type NodeEntry = BuiltCircuit | readonly BuiltCircuit[];
  *
  * The conditional on `Nodes[K]` is inlined inside the mapped type so the
  * `infer` substitution happens per-key. Hoisting the conditional out into a
- * named alias causes TS to evaluate the `infer` against `BuiltCircuit`'s
+ * named alias causes TS to evaluate the `infer` against `Circuit`'s
  * default generic constraints — yielding an open index signature that made
  * `nodes.xor1.bogusPort` silently typecheck.
  */
@@ -142,12 +142,12 @@ export type ConnectArg<
   readonly nodes: {
     // The array case is checked first and its conditional is nested rather
     // than hoisted, for the same reason as below: a named alias would infer
-    // against BuiltCircuit's defaults and open the refs back up.
+    // against Circuit's defaults and open the refs back up.
     readonly [K in keyof Nodes]: Nodes[K] extends readonly (infer E)[]
-      ? E extends BuiltCircuit<infer EIns, infer EOuts, infer _ENs>
+      ? E extends Circuit<infer EIns, infer EOuts, infer _ENs>
         ? readonly (SinkRefs<EIns> & SourceRefs<EOuts>)[]
         : never
-      : Nodes[K] extends BuiltCircuit<infer NIns, infer NOuts, infer _NNs>
+      : Nodes[K] extends Circuit<infer NIns, infer NOuts, infer _NNs>
         ? SinkRefs<NIns> & SourceRefs<NOuts>
         : never;
   };
@@ -191,7 +191,7 @@ type PortOutputValues<M> = {
  * 1/0 on the way into the typed array and never stored. A boolean *in state* is
  * stored verbatim.
  *
- * Distinct from the `StateValue` in ../types/circuit.ts, which is the same
+ * Distinct from the `StateValue` in ../ir/circuit-ir.ts, which is the same
  * concept *after* elaboration into the serialized IR: there, memory is a
  * `MemoryValue` carrying its address/data widths rather than a bare Map, and
  * the declarative forms have already been resolved. circuit() converts this
@@ -301,7 +301,7 @@ export interface CircuitMeta {
 // ============================================================================
 
 /** A fully built circuit that can be used as a node or simulated */
-export interface BuiltCircuit<
+export interface Circuit<
   Ins extends PortMap = PortMap,
   Outs extends PortMap = PortMap,
   Ns extends Record<string, unknown> = Record<string, unknown>,
@@ -309,8 +309,8 @@ export interface BuiltCircuit<
   /** The Circuit IR for this circuit. Contains the canonical representation
    *  used by the simulator, Verilog exporter, and serialization — name, port
    *  descriptors, node list, connection list, etc. Pass this (rather than
-   *  the `BuiltCircuit` wrapper) to APIs that consume IR. */
-  readonly circuit: Circuit;
+   *  the `Circuit` wrapper) to APIs that consume IR. */
+  readonly circuit: CircuitIR;
   /** Input ports keyed by name. Use this instead of
    *  `circuit.inputs.find(p => p.name === '…')` when you need a specific
    *  port descriptor — autocompletes against the actual port names. */
@@ -329,9 +329,9 @@ export interface BuiltCircuit<
   /** Sub-circuit definitions needed for simulation (transitive). Walk this
    *  map to collect every component needed to register in a `CircuitLibrary`
    *  before simulating or rendering this circuit. */
-  readonly _dependencies: ReadonlyMap<string, BuiltCircuit>;
+  readonly _dependencies: ReadonlyMap<string, Circuit>;
   /** @internal Per-instance arguments baked in by a factory call. Populated
-   *  when this BuiltCircuit was produced by calling a parameterized factory
+   *  when this Circuit was produced by calling a parameterized factory
    *  (e.g. `Register({ width: 16, value: 100 })`); undefined for bare
    *  singletons. The parent `circuit()` reads this to populate
    *  `irNodes[i].arguments`, where the simulator picks it up.
@@ -359,7 +359,7 @@ export interface CircuitConfig<
   /** Output ports — same shape as `inputs`. */
   outputs?: Outs;
   /** Sub-components used inside this circuit. Map a local name to a
-   *  `BuiltCircuit` (from the stdlib or another `circuit(...)` call), then
+   *  `Circuit` (from the stdlib or another `circuit(...)` call), then
    *  wire them up in `connect`. Parameterized components (e.g. `Register`,
    *  `ROM`, `Constant`) are factories — call them with options to specialize:
    *  `nodes: { reg: Register({ width: 16, value: 100 }) }`. Singletons

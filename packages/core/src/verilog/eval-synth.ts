@@ -38,7 +38,7 @@ export interface SynthValidation {
  * Handles arrow functions and regular functions.
  * Returns null if parsing fails.
  */
-export function parseEvalSource(fn: Function): ParsedEval | null {
+export function parseBehaviorSource(fn: Function): ParsedEval | null {
   try {
     const source = fn.toString();
 
@@ -918,7 +918,7 @@ export function tryEmitFromEval(
     }
   }
   // Try transpiling eval
-  const parsed = parseEvalSource(entry.evalFn);
+  const parsed = parseBehaviorSource(entry.evalFn);
   if (!parsed) return null;
 
   const validation = validateSynthAST(parsed, entry.inputNames, entry.outputNames, {
@@ -959,7 +959,7 @@ export function tryEmitFromEval(
 
   // If there's an onTick, try transpiling it too
   if (entry.onTickFn) {
-    const onTickParsed = parseEvalSource(entry.onTickFn);
+    const onTickParsed = parseBehaviorSource(entry.onTickFn);
     if (!onTickParsed) return null;
 
     const onTickValidation = validateSynthAST(onTickParsed, entry.inputNames, entry.outputNames, {
@@ -1018,7 +1018,7 @@ export function checkSynthesizable(
   inputNames: string[],
   outputNames: string[],
 ): SynthValidation {
-  const parsed = parseEvalSource(evalFn);
+  const parsed = parseBehaviorSource(evalFn);
   if (!parsed) return { valid: false, errors: ['Could not parse eval function source'] };
   return validateSynthAST(parsed, inputNames, outputNames);
 }

@@ -5,7 +5,7 @@
  */
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { simulate } from '../../sim/simulate.js';
+import { simulate } from '../../simulator/simulate.js';
 import { Register } from '../../std/index.js';
 import { executeJsCode } from '../execute.js';
 import { bit, bus, circuit, reg } from '../index.js';

@@ -13,7 +13,7 @@
 
 import { readdirSync, readFileSync } from 'node:fs';
 import { join, relative } from 'node:path';
-import { executeCircuitCode } from '@simten/core';
+import { executeCircuitCode } from '@simten/core/internal';
 import { describe, expect, it } from 'vitest';
 
 const CONTENT = join(__dirname, '../../content');

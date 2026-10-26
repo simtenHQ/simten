@@ -2,7 +2,7 @@
  * A level: brief, code and circuit side by side, laid out like simten.dev/circuit.
  */
 
-import { elaborate } from '@simten/core';
+import { elaborate } from '@simten/core/internal';
 import { ErrorDisplay, useCompiledCircuit } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
 import { ClockControls, DEFAULT_SPEED } from '@simten/ui/editor/components';

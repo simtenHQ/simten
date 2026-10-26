@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { simulateCircuit } from '../simulate.js';
+import { traceSource } from '../simulate.js';
 
 // ============================================================================
 // Helpers
@@ -86,7 +86,7 @@ describe('VCD export — HalfAdder (combinational)', () => {
   `;
 
   it('has correct VCD header', () => {
-    const result = simulateCircuit({ source, ticks: 4 });
+    const result = traceSource({ source, ticks: 4 });
     expect('error' in result).toBe(false);
     if ('error' in result) return;
 
@@ -98,7 +98,7 @@ describe('VCD export — HalfAdder (combinational)', () => {
   });
 
   it('has top-level scope named HalfAdder', () => {
-    const result = simulateCircuit({ source, ticks: 4 });
+    const result = traceSource({ source, ticks: 4 });
     if ('error' in result) return;
 
     const scopes = parseScopes(result.vcd);
@@ -106,7 +106,7 @@ describe('VCD export — HalfAdder (combinational)', () => {
   });
 
   it('has internal node scopes for x (Xor) and and (And)', () => {
-    const result = simulateCircuit({ source, ticks: 4 });
+    const result = traceSource({ source, ticks: 4 });
     if ('error' in result) return;
 
     const scopes = parseScopes(result.vcd);
@@ -115,7 +115,7 @@ describe('VCD export — HalfAdder (combinational)', () => {
   });
 
   it('has top-level ports a, b, sum, carry under HalfAdder scope', () => {
-    const result = simulateCircuit({ source, ticks: 4 });
+    const result = traceSource({ source, ticks: 4 });
     if ('error' in result) return;
 
     const vars = parseVars(result.vcd);
@@ -127,7 +127,7 @@ describe('VCD export — HalfAdder (combinational)', () => {
   });
 
   it('has internal ports for x (Xor) node', () => {
-    const result = simulateCircuit({ source, ticks: 4 });
+    const result = traceSource({ source, ticks: 4 });
     if ('error' in result) return;
 
     const vars = parseVars(result.vcd);
@@ -137,7 +137,7 @@ describe('VCD export — HalfAdder (combinational)', () => {
   });
 
   it('all identifiers are unique', () => {
-    const result = simulateCircuit({ source, ticks: 4 });
+    const result = traceSource({ source, ticks: 4 });
     if ('error' in result) return;
 
     const vars = parseVars(result.vcd);
@@ -147,7 +147,7 @@ describe('VCD export — HalfAdder (combinational)', () => {
   });
 
   it('only emits changes, not every tick', () => {
-    const result = simulateCircuit({ source, ticks: 10 });
+    const result = traceSource({ source, ticks: 10 });
     if ('error' in result) return;
 
     // HalfAdder with constant inputs — no changes after t=0
@@ -176,7 +176,7 @@ describe('VCD export — Counter (sequential)', () => {
   `;
 
   it('has Counter as top-level scope', () => {
-    const result = simulateCircuit({ source, ticks: 5 });
+    const result = traceSource({ source, ticks: 5 });
     if ('error' in result) return;
 
     const scopes = parseScopes(result.vcd);
@@ -184,7 +184,7 @@ describe('VCD export — Counter (sequential)', () => {
   });
 
   it('has internal scopes for reg, adder, one, we, zero', () => {
-    const result = simulateCircuit({ source, ticks: 5 });
+    const result = traceSource({ source, ticks: 5 });
     if ('error' in result) return;
 
     const scopes = parseScopes(result.vcd);
@@ -194,7 +194,7 @@ describe('VCD export — Counter (sequential)', () => {
   });
 
   it('count signal increments 1 through 5', () => {
-    const result = simulateCircuit({ source, ticks: 5 });
+    const result = traceSource({ source, ticks: 5 });
     if ('error' in result) return;
 
     const changes = getSignalValues(result.vcd, 'count');
@@ -207,7 +207,7 @@ describe('VCD export — Counter (sequential)', () => {
   });
 
   it('emits a change every tick (counter increments each tick)', () => {
-    const result = simulateCircuit({ source, ticks: 5 });
+    const result = traceSource({ source, ticks: 5 });
     if ('error' in result) return;
 
     const ticks = getChangeTicks(result.vcd);
@@ -218,7 +218,7 @@ describe('VCD export — Counter (sequential)', () => {
   });
 
   it('reg node has q port', () => {
-    const result = simulateCircuit({ source, ticks: 5 });
+    const result = traceSource({ source, ticks: 5 });
     if ('error' in result) return;
 
     const vars = parseVars(result.vcd);
@@ -227,7 +227,7 @@ describe('VCD export — Counter (sequential)', () => {
   });
 
   it('bus signals are 32-bit wide', () => {
-    const result = simulateCircuit({ source, ticks: 5 });
+    const result = traceSource({ source, ticks: 5 });
     if ('error' in result) return;
 
     const vars = parseVars(result.vcd);
@@ -269,7 +269,7 @@ describe('VCD export — nested composite (FullAdder)', () => {
   `;
 
   it('has nested scopes: FullAdder > ha1, ha2', () => {
-    const result = simulateCircuit({ source, ticks: 4 });
+    const result = traceSource({ source, ticks: 4 });
     if ('error' in result) return;
 
     const scopes = parseScopes(result.vcd);
@@ -279,7 +279,7 @@ describe('VCD export — nested composite (FullAdder)', () => {
   });
 
   it('has deeply nested internal nodes from HalfAdder instances', () => {
-    const result = simulateCircuit({ source, ticks: 4 });
+    const result = traceSource({ source, ticks: 4 });
     if ('error' in result) return;
 
     // ha1 contains x (Xor) and and (And) — these become ha1.x and ha1.and
@@ -294,7 +294,7 @@ describe('VCD export — nested composite (FullAdder)', () => {
   it('ha1 inner Xor node (x) has out port', () => {
     // Composite nodes (HalfAdder) are flattened — ha1 itself has no $var lines.
     // The ha1 scope contains child scopes for its primitives: x (Xor) and and (And).
-    const result = simulateCircuit({ source, ticks: 4 });
+    const result = traceSource({ source, ticks: 4 });
     if ('error' in result) return;
 
     const vars = parseVars(result.vcd);

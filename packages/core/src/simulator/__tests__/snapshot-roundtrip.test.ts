@@ -39,8 +39,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import { simulate } from '../../sim/simulate.js';
 import { Adder, DFlipFlop, Not, RAM, Register, Xor } from '../../std/index.js';
+import { simulate } from '../simulate.js';
 
 // ============================================================================
 // Fixtures

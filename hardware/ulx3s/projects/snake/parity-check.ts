@@ -21,8 +21,8 @@
  * and this check exists to catch exactly that class of drift.
  */
 
-import { executeCircuitCode } from '@simten/core/circuit';
-import type { Circuit } from '@simten/core/simulator';
+import type { CircuitIR } from '@simten/core/internal';
+import { executeCircuitCode } from '@simten/core/internal';
 import { Snake as BlogSnake } from '../../../../apps/web/src/features/blog/snake-in-hardware/circuits.js';
 import { EXAMPLES } from '../../../../apps/web/src/features/visual-editor/examples.js';
 import { buildSnake } from './index.js';
@@ -44,7 +44,7 @@ function portSig(p: { name: string; portType: { kind: string; width?: number } }
   return `${p.name}:${p.portType.kind === 'bus' ? `bus(${p.portType.width})` : p.portType.kind}`;
 }
 
-function canon(c: Circuit): CanonCircuit {
+function canon(c: CircuitIR): CanonCircuit {
   return {
     inputs: c.inputs.map(portSig).sort(),
     outputs: c.outputs.map(portSig).sort(),
@@ -106,7 +106,7 @@ function diff(name: string, ref: CanonCircuit, other: CanonCircuit): string[] {
 const { built } = buildSnake();
 
 /** Canonical circuits by name: the FPGA top plus its whole dependency tree. */
-const canonical = new Map<string, Circuit>([[built.circuit.name, built.circuit]]);
+const canonical = new Map<string, CircuitIR>([[built.circuit.name, built.circuit]]);
 for (const [name, dep] of built._dependencies) {
   if (dep.circuit.implementation.kind === 'composite') canonical.set(name, dep.circuit);
 }

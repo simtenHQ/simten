@@ -16,18 +16,18 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import type { CircuitIR } from '../../ir/circuit-ir.js';
 import { And, Or } from '../../std/index.js';
-import type { Circuit } from '../../types/circuit.js';
 import { autoHarness } from '../auto-harness.js';
 import { bit } from '../bit-bus.js';
 import { circuit } from '../circuit.js';
 
 function makeLibrary() {
-  const store = new Map<string, Circuit>();
+  const store = new Map<string, CircuitIR>();
   return {
     store,
     resolveCircuit: (name: string) => store.get(name),
-    addCircuit: (c: Circuit) => {
+    addCircuit: (c: CircuitIR) => {
       store.set(c.name, c);
     },
   };
@@ -47,7 +47,7 @@ function build(inputs: Record<string, typeof bit>) {
   }).circuit;
 }
 
-const dutPorts = (harness: Circuit) =>
+const dutPorts = (harness: CircuitIR) =>
   harness.nodes.find((n) => n.id === 'dut')?.inputs.map((p) => p.name) ?? [];
 
 const libraryPorts = (lib: ReturnType<typeof makeLibrary>) =>

@@ -20,7 +20,7 @@
  */
 
 import { fileURLToPath } from 'node:url';
-import { simulate } from '@simten/core/sim';
+import { simulate } from '@simten/core';
 import { buildCPUCore } from './index.js';
 
 // ── raw5 firmware ─────────────────────────────────────────────────────────────

@@ -30,7 +30,7 @@ The whole reason `verify` runs on the host via `tsx` rather than in a sandbox is
 The canonical example, lifted verbatim from `packages/core/src/verify/__fixtures__/flagship-npm-oracle.verify.ts`:
 
 ```ts
-import { simulate } from '@simten/core/sim';
+import { simulate } from '@simten/core';
 import { verify, declareOracle } from '@simten/core/verify';
 import { sha256 } from '@noble/hashes/sha2.js';
 import { HashRom } from './flagship-rom.circuit.js';
@@ -73,7 +73,7 @@ A testbench is a sibling file to your circuit named `<name>.verify.ts`. The shap
 ### Required pieces
 
 ```ts
-import { simulate } from '@simten/core/sim';
+import { simulate } from '@simten/core';
 import { verify, declareOracle } from '@simten/core/verify';
 import { MyCircuit } from './my_circuit.circuit.js';   // your DUT
 

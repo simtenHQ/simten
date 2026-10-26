@@ -18,7 +18,7 @@ The four layers a circuit flows through in the browser:
 | **Public hook** | `packages/embed/src/hooks/useCircuitSimulator.ts` | What every embed/blog/editor consumer calls. `tick()`, `setNode()`, `stepBack()`, time-travel, auto-run. |
 | **Sandbox bridge** (host) | `packages/ui/src/sandbox/useSandbox.ts` | postMessage transport + slot lifecycle. Used internally by `useCircuitSimulator`; only advanced consumers (editor, web component) touch it directly. |
 | **Sandbox iframe** | `apps/sandbox/src/main.ts`, `worker.ts` | The other side of the bridge. Runs *inside* the iframe (cross-origin). The iframe's main thread relays postMessage commands to a Web Worker, which runs user code and drives the engine, and restarts the worker if it hangs. |
-| **Simulator engine** | `packages/core/src/simulator/` | Pure computation, with no iframe and no React. Used by the iframe app for browser sims; used directly by `@simten/core/sim` for Node/CI scripts. |
+| **Simulator engine** | `packages/core/src/simulator/` | Pure computation, with no iframe and no React. Used by the iframe app for browser sims; used directly by `simulate()` from `@simten/core` for Node/CI scripts. |
 
 Direction of calls (browser path):
 
@@ -26,7 +26,7 @@ Direction of calls (browser path):
 useCircuitSimulator → useSandbox → [postMessage / iframe boundary] → apps/sandbox/main.ts → worker.ts → core/simulator
 ```
 
-If you're writing a `vitest` property test or a CI fuzzer, you skip the bridge entirely and just import from `@simten/core/sim` and drive the engine directly. See "Two ways to run a circuit" below.
+If you're writing a `vitest` property test or a CI fuzzer, you skip the bridge entirely and just import `simulate` from `@simten/core` and drive the circuit directly. See "Two ways to run a circuit" below.
 
 ## From TypeScript to Simulation
 
@@ -52,7 +52,7 @@ export function PipelineStage({ number, title, subtitle, children }) {
 
 <div className="my-8">
 <PipelineStage number={1} title="Build" subtitle="circuit() calls → Circuit IR">
-  The TypeScript `circuit()` builder collects node types, port declarations, and connection calls. The `.to()` wiring calls produce a declarative connection list. The result is a `BuiltCircuit`, a plain data structure describing the circuit's structure.
+  The TypeScript `circuit()` builder collects node types, port declarations, and connection calls. The `.to()` wiring calls produce a declarative connection list. The result is a `Circuit`, whose `.circuit` is the `CircuitIR`: a plain data structure describing the circuit's structure.
 </PipelineStage>
 
 <PipelineStage number={2} title="Validate" subtitle="Check for errors before running">
@@ -214,7 +214,7 @@ A single hook, `useCircuitSimulator`, handles the simulation lifecycle for every
 
 | Hook | Input | Purpose | Used by |
 |------|-------|---------|---------|
-| `useCircuitSimulator(builtCircuit)` | `BuiltCircuit` | Builds library from dependencies, optional auto-harness, compiles + ticks via sandbox | `EditorWorkspace`, `CircuitViewer` → `CircuitEmbed` → landing page, blog demos, drill-down |
+| `useCircuitSimulator(circuit)` | `Circuit` | Builds library from dependencies, optional auto-harness, compiles + ticks via sandbox | `EditorWorkspace`, `CircuitViewer` → `CircuitEmbed` → landing page, blog demos, drill-down |
 | `useCircuitCompiler(source)` | source string | Compile mechanics only: debounce, `sandbox.compile`, retry, error extraction, `library` lookup. Takes no opinion about the result. | `EditorWorkspace` (feeds its selection stores) |
 | `useCompiledCircuit(source)` | source string | `useCircuitCompiler` + `builtFromIR` + `useCircuitSimulator`, taking source straight to a running sim. | External editors/playgrounds; see [Code Editor](/docs/code-editor) |
 
@@ -223,7 +223,7 @@ Each consumer gets an isolated sandbox slot (`Map<slotId, SlotState>`) so simula
 Data flows one direction, from the compiled circuit to the sandbox to the UI:
 
 ```
-circuit() or TS Editor compile → BuiltCircuit
+circuit() or TS Editor compile → Circuit
                                        ↓
                               useCircuitSimulator → sandbox iframe
                                        ↓
@@ -238,8 +238,8 @@ The `/editor` page uses [Zustand](https://zustand-demo.pmnd.rs/) with Immer midd
 
 | Store | What it holds | Written by | Read by |
 |-------|--------------|------------|---------|
-| `useCircuitPreviewStore` | List of compiled `Circuit` objects from the last successful compilation | The compile effect (fed by `useCircuitCompiler`) | Circuit selector UI |
-| `useCircuitStore` | The currently active `Circuit` (selected from the preview list) | Preview store / circuit selector | Canvas, ChatPanel, Verilog export, MCP state callbacks |
+| `useCircuitPreviewStore` | List of compiled `CircuitIR` objects from the last successful compilation | The compile effect (fed by `useCircuitCompiler`) | Circuit selector UI |
+| `useCircuitStore` | The currently active `CircuitIR` (selected from the preview list) | Preview store / circuit selector | Canvas, ChatPanel, Verilog export, MCP state callbacks |
 | `useCircuitLibraryStore` | The `CircuitLibrary` that resolves component names to definitions | The compile effect (fed by `useCircuitCompiler`) | Canvas, ChatPanel, Verilog export |
 
 The data flows in one direction:
@@ -261,13 +261,14 @@ useCircuitStore         (the active circuit)
 
 **Why stores instead of props?** The editor page has multiple sibling consumers: Monaco, the circuit canvas, the AI chat panel, the Verilog export button, and MCP callbacks all need the current circuit and library. Threading this through props would mean `EditorWorkspace` becomes a giant prop-drilling intermediary. Zustand gives each consumer direct access with fine-grained subscriptions (a store update only re-renders components that read the changed slice).
 
-**Why not stores in embeds?** Embeds (`CircuitEmbed`, `CircuitViewer`) are props-driven: they receive a `BuiltCircuit` and manage simulation internally. They don't need shared state because there's only one consumer (the canvas). This keeps embeds self-contained and avoids leaking store state between multiple `<CircuitEmbed>` instances on the same page.
+**Why not stores in embeds?** Embeds (`CircuitEmbed`, `CircuitViewer`) are props-driven: they receive a `Circuit` and manage simulation internally. They don't need shared state because there's only one consumer (the canvas). This keeps embeds self-contained and avoids leaking store state between multiple `<CircuitEmbed>` instances on the same page.
 
 ### Import paths
 
 | Import | Contents |
 |--------|----------|
-| `@simten/core/simulator` | `SimulationSession`, `SimulatorEngine`, `PRIMITIVE_DEFINITIONS`, `PRIMITIVES`, `createSimulatorFromCircuit`, `captureEnvironmentalState`, `restoreEnvironmentalState` |
+| `@simten/core` | `circuit`, `bit`, `bus`, `simulate`, `Circuit`: the public API. Components come from `@simten/core/std` |
+| `@simten/core/internal` | `elaborate`, `createEngine`, `SimulationSession`, `SimulatorEngine`, the IR types (`CircuitIR`), the behavior registry, `executeCircuitCode`, `captureEnvironmentalState`, `restoreEnvironmentalState`: for Simten's own packages, no stability promise |
 | `@simten/embed` | `CircuitViewer`, `CircuitEmbed`, `<circuit-embed>` web component: everything needed to embed a circuit |
 | `@simten/ui/canvas` | `CircuitCanvas`, `ClockControls`: shared simulation UI |
 | `@simten/ui/sandbox` | `useSandbox`, `SandboxProvider`: sandbox iframe context used by `useCircuitSimulator` |
@@ -294,12 +295,11 @@ When user code runs inside the editor or an embed, it goes through the sandbox i
 Outside the browser there's no sandbox, no canvas, and no boundary to route through. Import `@simten/core` directly:
 
 ```ts
-import { circuit, bit } from '@simten/core';
-import { createSimulator } from '@simten/core/simulator';
+import { circuit, bit, simulate } from '@simten/core';
 
 const Counter = circuit('Counter', { ... });
-const sim = createSimulator(Counter);
-sim.setNode('reset', 1);
+const sim = simulate(Counter);
+sim.set({ reset: 1 });
 sim.tick();
 // run property tests, fuzzers, sweeps at full engine speed
 ```

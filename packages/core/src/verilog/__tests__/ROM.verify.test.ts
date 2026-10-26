@@ -15,9 +15,9 @@
 
 import { describe, expect, it } from 'vitest';
 import { bus, circuit } from '../../circuit/index.js';
-import { createSimulatorFromCircuit } from '../../simulator/index.js';
+import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
+import { createEngine, elaborate } from '../../simulator/index.js';
 import { ROM } from '../../std/index.js';
-import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { hasVerifier, verifyVerilog } from './verify.js';
@@ -58,7 +58,7 @@ function buildRom() {
   // `ROM` definition has `state[0].initialValue.data` populated. The
   // exporter's collectStateInits reads this at export time; the
   // simulator's initializer reads it at sim start.
-  const romDefWithData: Circuit = {
+  const romDefWithData: CircuitIR = {
     ...Rom.circuit,
     state: [
       {
@@ -83,7 +83,7 @@ function buildRom() {
 
 function runSimulator(addrs: number[]): number[] {
   const { circuit, lib } = buildRom();
-  const sim = createSimulatorFromCircuit(circuit, lib);
+  const sim = createEngine(elaborate(circuit, lib), { componentLibrary: lib });
 
   // Preload ROM contents the same way real apps do: setNode with a Map.
   // The flat node id for the `r: ROM` sub-node inside RomWrapper is `r`

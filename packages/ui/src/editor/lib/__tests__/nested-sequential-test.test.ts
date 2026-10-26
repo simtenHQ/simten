@@ -5,11 +5,11 @@
  * work correctly when instantiated as nodes within other circuits.
  */
 
-import { type CircuitLibrary, createSimulatorFromCircuit } from '@simten/core/simulator';
+import { type CircuitLibrary, createEngine, elaborate } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
-import { bitType, busType, type Circuit } from '../../types/circuit';
+import { bitType, busType, type CircuitIR } from '../../types/circuit';
 
 const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
   (c) => c.implementation.kind === 'primitive',
@@ -31,7 +31,7 @@ describe('Nested Sequential Components', () => {
     store.addCircuits(PRIMITIVES as any[]);
 
     // Register the circuits so they can be instantiated as components
-    const registerCircuit: Circuit = {
+    const registerCircuit: CircuitIR = {
       version: 1,
       name: 'SimpleReg',
       inputs: [{ name: 'dataIn', portType: busType(8) }],
@@ -88,7 +88,7 @@ describe('Nested Sequential Components', () => {
       implementation: { kind: 'composite' },
     };
 
-    const counterCircuit: Circuit = {
+    const counterCircuit: CircuitIR = {
       version: 1,
       name: 'SimpleCounter',
       inputs: [],
@@ -189,7 +189,7 @@ describe('Nested Sequential Components', () => {
 
   it('should handle a simple register in a nested circuit', () => {
     // Create a wrapper circuit that instantiates the register circuit (registered in beforeAll)
-    const wrapperCircuit: Circuit = {
+    const wrapperCircuit: CircuitIR = {
       version: 1,
       name: 'Wrapper',
       inputs: [{ name: 'input', portType: busType(8) }],
@@ -238,7 +238,10 @@ describe('Nested Sequential Components', () => {
     };
 
     // Create simulator
-    const sim = createSimulatorFromCircuit(wrapperCircuit, getLibrary());
+    const simLibrary = getLibrary();
+    const sim = createEngine(elaborate(wrapperCircuit, simLibrary), {
+      componentLibrary: simLibrary,
+    });
     const seqState = sim.getState();
 
     // Initial state - register should be 0
@@ -258,7 +261,7 @@ describe('Nested Sequential Components', () => {
 
   it('should handle a counter with feedback in a nested circuit', () => {
     // Wrapper circuit that instantiates the counter (registered in beforeAll)
-    const wrapperCircuit: Circuit = {
+    const wrapperCircuit: CircuitIR = {
       version: 1,
       name: 'CounterWrapper',
       inputs: [],
@@ -293,7 +296,10 @@ describe('Nested Sequential Components', () => {
     };
 
     // Create simulator
-    const sim = createSimulatorFromCircuit(wrapperCircuit, getLibrary());
+    const simLibrary = getLibrary();
+    const sim = createEngine(elaborate(wrapperCircuit, simLibrary), {
+      componentLibrary: simLibrary,
+    });
     const seqState = sim.getState();
     expect(seqState?.cycleCount).toBe(0);
 

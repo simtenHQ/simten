@@ -15,8 +15,8 @@
  * hold across non-arrow keys, and the core-to-RAM wiring of the harness.
  */
 
-import { executeCircuitCode } from '@simten/core/circuit';
-import { simulate } from '@simten/core/sim';
+import { simulate } from '@simten/core';
+import { executeCircuitCode } from '@simten/core/internal';
 import { EXAMPLES } from '../../../../apps/web/src/features/visual-editor/examples.js';
 import { renderFb } from './cosim-lib.js';
 import { FB_SIZE, SnakeRefModel } from './ref-model.js';

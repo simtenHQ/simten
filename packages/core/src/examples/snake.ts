@@ -37,6 +37,7 @@
  */
 
 import { bit, bus, circuit } from '../circuit/index.js';
+import type { CircuitLibrary } from '../ir/circuit-ir.js';
 import {
   Adder,
   And,
@@ -49,7 +50,6 @@ import {
   Or,
   Register,
 } from '../std/index.js';
-import type { CircuitLibrary } from '../types/circuit.js';
 
 export function buildSnake() {
   /**

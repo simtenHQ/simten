@@ -2,13 +2,13 @@
  * Example circuits for the editor empty state.
  *
  * The catalog itself (titles, descriptions, sources) is canonical in
- * @simten/core/examples/catalog, shared with the MCP server. Only the
+ * @simten/core/examples, shared with the MCP server. Only the
  * editor presentation (category colors/labels) lives here.
  */
 
-import type { Example } from '@simten/core/examples/catalog';
+import type { Example } from '@simten/core/examples';
 
-export { EXAMPLES } from '@simten/core/examples/catalog';
+export { EXAMPLES } from '@simten/core/examples';
 export type { Example };
 
 export const CATEGORY_COLORS: Record<Example['category'], string> = {

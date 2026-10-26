@@ -4,7 +4,7 @@
 // crypto library, independent of the circuit.
 
 import { sha256 } from '@noble/hashes/sha2.js';
-import { simulate } from '@simten/core/sim';
+import { simulate } from '@simten/core';
 import { declareOracle, verify } from '@simten/core/verify';
 import { HashRom } from './flagship-rom.circuit.js';
 

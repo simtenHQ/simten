@@ -17,13 +17,13 @@ import type {
   PortInstance,
   PortPath,
   PortType,
-} from './circuit.js';
+} from '../ir/circuit-ir.js';
 
 // Re-export the types that simulator consumers typically need alongside the
 // engine interface, so they can import everything from one place.
-export type { BitValue, BusValue, CircuitLibrary } from './circuit.js';
+export type { BitValue, BusValue, CircuitLibrary } from '../ir/circuit-ir.js';
 // Re-export TOP_LEVEL_NODE so consumers can import it from either file.
-export { TOP_LEVEL_NODE } from './circuit.js';
+export { TOP_LEVEL_NODE } from '../ir/circuit-ir.js';
 
 // ============================================================================
 // Sequential Port Classification

@@ -13,8 +13,8 @@
  * All operations are unsigned. Signed tracking is a future enhancement.
  */
 
-import { getCircuitEval } from '../circuit/eval-registry.js';
-import type { ArgumentValue } from '../types/circuit.js';
+import { getCircuitBehavior } from '../circuit/behavior-registry.js';
+import type { ArgumentValue } from '../ir/circuit-ir.js';
 
 /**
  * Sentinel emitted in place of logic when a primitive has no Verilog mapping.
@@ -977,7 +977,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
 
     // ── Unknown — try eval-synth auto-transpilation ────────────────
     default: {
-      const synthResult = tryEmitFromEval(ctx, getCircuitEval);
+      const synthResult = tryEmitFromEval(ctx, getCircuitBehavior);
       if (synthResult) return synthResult;
       return {
         lines: [`// ${UNSUPPORTED_MARKER} "${primitiveType}" (${id})`],

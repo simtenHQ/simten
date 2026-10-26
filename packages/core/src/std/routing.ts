@@ -3,9 +3,9 @@
  */
 
 import { bit, bus } from '../circuit/bit-bus.js';
+import type { ArgumentValue, Circuit, PortMap } from '../circuit/builder-types.js';
 import { circuit } from '../circuit/circuit.js';
-import type { ArgumentValue, BuiltCircuit, PortMap } from '../circuit/types.js';
-import type { BitType, BusType } from '../types/circuit.js';
+import type { BitType, BusType } from '../ir/circuit-ir.js';
 
 /**
  * Multiplexer — sel=0 picks in0, sel=1 picks in1. The fundamental
@@ -119,7 +119,7 @@ export const NibbleSplitter = circuit('NibbleSplitter', {
  * the editor sandbox rebuilds evals from their source, which drops closures.
  * The literal `8` fallback is only for a node somehow missing its args.
  */
-function withArgs<T extends BuiltCircuit>(c: T, args: Record<string, ArgumentValue>): T {
+function withArgs<T extends Circuit>(c: T, args: Record<string, ArgumentValue>): T {
   (c as { _args?: Record<string, ArgumentValue> })._args = args;
   return c;
 }
@@ -161,7 +161,7 @@ export function Splitter<W extends number = 8>({
   width = 8 as W,
 }: {
   width?: W;
-} = {}): BuiltCircuit<{ in: BusType }, BitPorts<W>> {
+} = {}): Circuit<{ in: BusType }, BitPorts<W>> {
   // Its set of ports changes with `width`, so each width registers as its own
   // primitive (`Splitter_4w`, `Splitter_8w`): the simulator compiles one
   // evaluator per primitive name with that primitive's port list baked in. Same
@@ -180,7 +180,7 @@ export function Splitter<W extends number = 8>({
       },
     }),
     { width },
-  ) as BuiltCircuit<{ in: BusType }, BitPorts<W>>;
+  ) as Circuit<{ in: BusType }, BitPorts<W>>;
 }
 
 /**
@@ -191,7 +191,7 @@ export function Combiner<W extends number = 8>({
   width = 8 as W,
 }: {
   width?: W;
-} = {}): BuiltCircuit<BitPorts<W>, { out: BusType }> {
+} = {}): Circuit<BitPorts<W>, { out: BusType }> {
   // Registers per width (`Combiner_4w`), for the same reason as `Splitter`.
   return withArgs(
     circuit(`Combiner_${width}w`, {
@@ -206,7 +206,7 @@ export function Combiner<W extends number = 8>({
       },
     }),
     { width },
-  ) as BuiltCircuit<BitPorts<W>, { out: BusType }>;
+  ) as Circuit<BitPorts<W>, { out: BusType }>;
 }
 
 /**

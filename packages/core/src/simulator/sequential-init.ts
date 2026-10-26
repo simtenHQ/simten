@@ -11,8 +11,8 @@ import type {
   BusValue,
   CircuitLibrary,
   StateBlock,
-} from '../types/circuit.js';
-import type { FlatCircuit, FlatSequentialState, PrimitiveState } from '../types/simulator.js';
+} from '../ir/circuit-ir.js';
+import type { FlatCircuit, FlatSequentialState, PrimitiveState } from './types.js';
 
 /**
  * Create port key from node ID and port name
@@ -101,7 +101,7 @@ function resolveBlockInitial(
   if (kind === 'memory') {
     const memory = new Map<number, number>();
     // Seed from the block's declared initial (if any). `data` is a Map in
-    // the original BuiltCircuit IR, but the sandbox worker round-trips IR
+    // the original Circuit IR, but the sandbox worker round-trips IR
     // through JSON before postMessage, which turns Maps into plain objects
     // — handle both.
     const blockInit = block.initialValue as

@@ -24,12 +24,12 @@
  *   const tick = await sandbox.tick({ a: true });
  */
 
-import type { Circuit } from '@simten/core';
+import type { CircuitIR } from '@simten/core/internal';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type {
+  BehaviorSource,
   CompileIRResult,
   CompileResult,
-  EvalSource,
   ResetResult,
   RestoreResult,
   SandboxError,
@@ -37,7 +37,6 @@ import type {
   SandboxResult,
   SetNodeResult,
   SimSlot,
-  SimulateResult,
   SnapshotResult,
   TickResult,
 } from './protocol.js';
@@ -182,10 +181,10 @@ export interface SandboxHandle {
    * Pass `{ snapshot: true }` to capture the initial state for time-travel.
    */
   compileIR(
-    circuit: Circuit,
-    libraryCircuits: Circuit[],
+    circuit: CircuitIR,
+    libraryCircuits: CircuitIR[],
     slot: SimSlot,
-    options?: { evalSources?: Record<string, EvalSource>; snapshot?: boolean },
+    options?: { evalSources?: Record<string, BehaviorSource>; snapshot?: boolean },
   ): Promise<CompileIRResult | SandboxError>;
   /** Pass `{ snapshot: true }` to also capture a post-tick snapshot for time-travel. */
   tick(
@@ -232,13 +231,6 @@ export interface SandboxHandle {
     count: number,
     slot?: SimSlot,
   ): Promise<{ values: number[] } | SandboxError>;
-  simulate(params: {
-    source?: string;
-    ticks: number;
-    inputs?: Record<string, number | boolean>;
-    memoryData?: Record<string, Record<string, number>>;
-    slot?: SimSlot;
-  }): Promise<SimulateResult | SandboxError>;
   reset(slot?: SimSlot): Promise<ResetResult | SandboxError>;
   setNode(
     nodeId: string,
@@ -453,10 +445,10 @@ export function useSandbox(): SandboxHandle {
 
   const compileIR = useCallback(
     async (
-      circuit: Circuit,
-      libraryCircuits: Circuit[],
+      circuit: CircuitIR,
+      libraryCircuits: CircuitIR[],
       slot: SimSlot,
-      options?: { evalSources?: Record<string, EvalSource>; snapshot?: boolean },
+      options?: { evalSources?: Record<string, BehaviorSource>; snapshot?: boolean },
     ): Promise<CompileIRResult | SandboxError> => {
       const result = await send<{ type: 'compiled-ir' } & CompileIRResult>({
         type: 'compile-ir',
@@ -568,30 +560,6 @@ export function useSandbox(): SandboxHandle {
     [send],
   );
 
-  const simulate = useCallback(
-    async (params: {
-      source?: string;
-      ticks: number;
-      inputs?: Record<string, number | boolean>;
-      memoryData?: Record<string, Record<string, number>>;
-    }): Promise<SimulateResult | SandboxError> => {
-      const result = await send<{ type: 'simulated' } & SimulateResult>({
-        type: 'simulate',
-        ...params,
-      });
-      if ('error' in result) return result as SandboxError;
-      const r = result as { type: 'simulated' } & SimulateResult;
-      return {
-        circuitName: r.circuitName,
-        signals: r.signals,
-        vcd: r.vcd,
-        ticks: r.ticks,
-        steadyStateAt: r.steadyStateAt,
-      };
-    },
-    [send],
-  );
-
   const reset = useCallback(
     async (slot: SimSlot = 'default'): Promise<ResetResult | SandboxError> => {
       const result = await send<{ type: 'reset' } & ResetResult>({ type: 'reset', slot });
@@ -686,7 +654,6 @@ export function useSandbox(): SandboxHandle {
     tickN,
     renderSamples,
     scanPort,
-    simulate,
     reset,
     setNode,
     snapshot,

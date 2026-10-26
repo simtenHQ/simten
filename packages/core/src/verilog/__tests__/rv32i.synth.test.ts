@@ -24,6 +24,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import type { CircuitLibrary } from '../../ir/circuit-ir.js';
 import {
   RV32I_ALU,
   RV32I_BranchComp,
@@ -38,25 +39,24 @@ import {
   RV32I_WBBypass,
   RV32I_WritebackMux,
 } from '../../std/index.js';
-import type { CircuitLibrary } from '../../types/circuit.js';
 import { exportVerilog } from '../exporter.js';
 import { hasSynth, synthesizeVerilog } from './synth.js';
 
 // ---- helpers ----------------------------------------------------------------
 
-type BuiltCircuit = {
-  circuit: import('../../types/circuit.js').Circuit;
-  _dependencies: Map<string, { circuit: import('../../types/circuit.js').Circuit }>;
+type CircuitLike = {
+  circuit: import('../../ir/circuit-ir.js').CircuitIR;
+  _dependencies: Map<string, { circuit: import('../../ir/circuit-ir.js').CircuitIR }>;
 };
 
-function makeLib(top: BuiltCircuit, name: string): CircuitLibrary {
+function makeLib(top: CircuitLike, name: string): CircuitLibrary {
   return {
     resolveCircuit: (n) => (n === name ? top.circuit : top._dependencies.get(n)?.circuit),
     getAllPrimitiveNames: () => [...top._dependencies.keys()],
   };
 }
 
-async function synthComponent(top: BuiltCircuit, name: string) {
+async function synthComponent(top: CircuitLike, name: string) {
   const result = exportVerilog(top.circuit, makeLib(top, name), { target: 'synthesis' });
   const resp = await synthesizeVerilog(result, name);
   if (!resp.success)

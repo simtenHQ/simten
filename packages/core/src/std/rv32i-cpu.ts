@@ -32,8 +32,8 @@
  */
 
 import { bit, bus } from '../circuit/bit-bus.js';
+import type { Circuit } from '../circuit/builder-types.js';
 import { circuit } from '../circuit/circuit.js';
-import type { BuiltCircuit } from '../circuit/types.js';
 import { Adder, BusAnd } from './arithmetic.js';
 import { Constant } from './io.js';
 import { And, Not, Or } from './logic.js';
@@ -238,7 +238,7 @@ const RV32I_ID_Stage = circuit('RV32I_ID_Stage', ({ debug = false }: { debug?: b
       return rows;
     },
   };
-}) as unknown as (opts?: { debug?: boolean }) => BuiltCircuit<
+}) as unknown as (opts?: { debug?: boolean }) => Circuit<
   { instruction: B; wb_write_data: B; wb_rd: B; wb_we: Bit; debug_rs: B },
   {
     read1: B;
@@ -1032,4 +1032,4 @@ type CoreOuts = {
 
 export const RV32I_Core = RV32I_CoreFactory as unknown as (opts?: {
   debug?: boolean;
-}) => BuiltCircuit<CoreIns, CoreOuts>;
+}) => Circuit<CoreIns, CoreOuts>;

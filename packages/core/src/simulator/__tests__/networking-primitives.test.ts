@@ -6,13 +6,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type { BuiltCircuit } from '../../circuit/index.js';
+import type { Circuit } from '../../circuit/index.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import { simulate } from '../../sim/simulate.js';
 import { MemBusMux, NIC_FIFO, UART_RX, UART_TX } from '../../std/index.js';
+import { simulate } from '../simulate.js';
 
 /** Helper: simulate combinational circuit, return output values */
-function sim<C extends BuiltCircuit>(
+function sim<C extends Circuit>(
   built: C,
   inputs: Record<string, number | boolean> = {},
 ): Record<string, number | boolean> {
@@ -31,7 +31,7 @@ function sim<C extends BuiltCircuit>(
 }
 
 /** Helper: simulate multi-tick with constant inputs, return last-tick output values */
-function simAfterTicks<C extends BuiltCircuit>(
+function simAfterTicks<C extends Circuit>(
   built: C,
   ticks: number,
   inputs: Record<string, number | boolean> = {},

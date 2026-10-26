@@ -11,10 +11,9 @@
 
 'use client';
 
-import type { BitValue, BusValue, Circuit } from '@simten/core';
-import { isSequentialCircuit } from '@simten/core/circuit';
-import type { CircuitLibrary, SimulatorEngine } from '@simten/core/simulator';
-import { createSimulatorFromCircuit } from '@simten/core/simulator';
+import type { BitValue, BusValue } from '@simten/core';
+import type { CircuitIR, CircuitLibrary, SimulatorEngine } from '@simten/core/internal';
+import { createEngine, elaborate, isSequentialCircuit } from '@simten/core/internal';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NodeData } from '../nodes';
 import { useSandboxContext } from '../sandbox/SandboxProvider';
@@ -98,7 +97,7 @@ function InspectorCanvas({
     // Include every circuit the view references (primitives AND composites,
     // recursively) — without composite defs, the sandbox can't simulate
     // composite children and their outputs stay stuck.
-    const allLib: Circuit[] = [];
+    const allLib: CircuitIR[] = [];
     const seen = new Set<string>();
     for (const name of library.getAllPrimitiveNames()) {
       const c = library.resolveCircuit(name);
@@ -107,7 +106,7 @@ function InspectorCanvas({
         allLib.push(c);
       }
     }
-    const walk = (c: Circuit) => {
+    const walk = (c: CircuitIR) => {
       for (const node of c.nodes) {
         if (seen.has(node.componentRef)) continue;
         const resolved = library.resolveCircuit(node.componentRef);
@@ -123,7 +122,9 @@ function InspectorCanvas({
       if ('error' in result) {
         // Fall back to local simulator (for embed contexts where no source was compiled)
         try {
-          const engine = createSimulatorFromCircuit(viewCircuit, library);
+          const engine = createEngine(elaborate(viewCircuit, library), {
+            componentLibrary: library,
+          });
           engine.runCombinational();
           localEngineRef.current = engine;
           setUseSandbox(false);

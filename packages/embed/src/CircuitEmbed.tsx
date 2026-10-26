@@ -5,13 +5,14 @@
  *   - Auto-harness (wraps bare circuits with Switch/Led nodes)
  *   - Info bar (title, subtitle, description, link)
  *
- * For React users: pass a BuiltCircuit object.
+ * For React users: pass a Circuit object.
  * For web component users: <circuit-embed code="..."> goes through the
  * web component bridge which sandboxes compilation via an iframe.
  */
 
-import { type BuiltCircuit, circuitToSource } from '@simten/core/circuit';
-import type { FlatPortValueMap } from '@simten/core/simulator';
+import type { Circuit } from '@simten/core/circuit';
+import type { FlatPortValueMap } from '@simten/core/internal';
+import { circuitToSource } from '@simten/core/internal';
 import {
   Tooltip,
   TooltipContent,
@@ -33,7 +34,7 @@ function simtenHost(): string {
   return window.location.hostname === 'localhost' ? window.location.origin : 'https://simten.dev';
 }
 
-export interface CircuitEmbedProps<C extends BuiltCircuit = BuiltCircuit> {
+export interface CircuitEmbedProps<C extends Circuit = Circuit> {
   /** The circuit to display (result of circuit()) */
   circuit: C;
   /**
@@ -72,7 +73,7 @@ export interface CircuitEmbedProps<C extends BuiltCircuit = BuiltCircuit> {
   href?: string;
   /**
    * Optional raw TypeScript source for the Fork button. When provided, the
-   * Fork button encodes this verbatim instead of running the BuiltCircuit
+   * Fork button encodes this verbatim instead of running the Circuit
    * through the IR-to-source serializer (which drops comments and helpers).
    * The web-component path passes the user's original `code` here.
    */
@@ -157,7 +158,7 @@ function ForkButton({
   );
 }
 
-export function CircuitEmbed<C extends BuiltCircuit = BuiltCircuit>({
+export function CircuitEmbed<C extends Circuit = Circuit>({
   circuit,
   height,
   aspectRatio,

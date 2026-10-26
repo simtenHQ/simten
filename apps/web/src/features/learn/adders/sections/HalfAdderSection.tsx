@@ -1,4 +1,4 @@
-import type { FlatPortValueMap } from '@simten/core/simulator';
+import type { FlatPortValueMap } from '@simten/core/internal';
 import { CircuitEmbed } from '@simten/embed';
 import { useState } from 'react';
 import { computeActiveRow, TruthTable } from '@/components/TruthTable';

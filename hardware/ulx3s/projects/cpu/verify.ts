@@ -20,7 +20,7 @@
  *        bun hardware/ulx3s/cpu_verify.ts --filter ADD (ISA test by substring)
  */
 
-import { slugify } from '@simten/core/util/test-name';
+import { slugify } from '@simten/core/internal';
 import { mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { runFirmware } from './sim.js';

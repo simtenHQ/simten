@@ -3,10 +3,10 @@
  *
  * Each circuit has:
  * - displayCode: The circuit definition shown to users (TS builder syntax)
- * - circuit: The actual BuiltCircuit for simulation
+ * - circuit: The actual Circuit for simulation
  */
 
-import type { BuiltCircuit } from '@simten/core/circuit';
+import type { Circuit } from '@simten/core/circuit';
 import { bit, circuit } from '@simten/core/circuit';
 import { And, DFlipFlop, Nand, Not, Or, Xor } from '@simten/core/std';
 
@@ -14,7 +14,7 @@ export interface CircuitDefinition {
   name: string;
   description: string;
   displayCode: string;
-  circuit: BuiltCircuit;
+  circuit: Circuit;
 }
 
 // ── Gate Circuits (built from NAND only) ──

@@ -14,8 +14,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import type { CircuitLibrary } from '../../ir/circuit-ir.js';
 import { Adder, And, BusAnd, Multiplier, Mux, Or, Xor } from '../../std/index.js';
-import type { CircuitLibrary } from '../../types/circuit.js';
 import { exportVerilog } from '../exporter.js';
 import { hasSynth, synthesizeVerilog } from './synth.js';
 
@@ -23,10 +23,10 @@ import { hasSynth, synthesizeVerilog } from './synth.js';
 
 function makeLib<
   T extends {
-    circuit: import('../../types/circuit.js').Circuit;
-    // ReadonlyMap: that is what BuiltCircuit exposes. Declaring it mutable made
-    // every real BuiltCircuit unassignable here.
-    _dependencies: ReadonlyMap<string, { circuit: import('../../types/circuit.js').Circuit }>;
+    circuit: import('../../ir/circuit-ir.js').CircuitIR;
+    // ReadonlyMap: that is what Circuit exposes. Declaring it mutable made
+    // every real Circuit unassignable here.
+    _dependencies: ReadonlyMap<string, { circuit: import('../../ir/circuit-ir.js').CircuitIR }>;
   },
 >(top: T, name: string): CircuitLibrary {
   return {

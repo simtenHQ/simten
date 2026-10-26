@@ -5,11 +5,11 @@
  * This is a one-time operation during initialization.
  */
 
-import type { Circuit, CircuitLibrary, PortType } from '../types/circuit.js';
-import type { FlatCircuit, FlatNode, PrimitiveState } from '../types/simulator.js';
-import { TOP_LEVEL_NODE } from '../types/simulator.js';
+import type { CircuitIR, CircuitLibrary, PortType } from '../ir/circuit-ir.js';
 import { ensureEvaluatorRegistered } from './eval-bridge.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
+import type { FlatCircuit, FlatNode, PrimitiveState } from './types.js';
+import { TOP_LEVEL_NODE } from './types.js';
 
 /**
  * Compile a FlatCircuit to a NumericCircuit for fast simulation.
@@ -302,7 +302,7 @@ function maskFor(portType: PortType, where: string): number {
  * clock of its own, or a second clock) would otherwise be run on that rising
  * edge without a word, so it is rejected here, naming the node.
  */
-function checkClocking(node: FlatNode, component: Circuit): void {
+function checkClocking(node: FlatNode, component: CircuitIR): void {
   const where = `Node '${node.id}' (${node.primitiveType})`;
   const clockNames = (component.clocks ?? []).map((c) => c.name);
   if (clockNames.length > 1) {

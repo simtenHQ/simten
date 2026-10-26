@@ -22,10 +22,10 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import type { SinkPortRef } from '../../circuit/builder-types.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { SinkPortRef } from '../../circuit/types.js';
-import { simulate } from '../../sim/simulate.js';
 import { Adder, BusNot, Constant, Not, Register } from '../../std/index.js';
+import { simulate } from '../simulate.js';
 import { assertFlatCircuitInvariants, elaborateBuilt } from './_invariants.js';
 
 // ╔════════════════════════════════════════════════════════════════════════╗

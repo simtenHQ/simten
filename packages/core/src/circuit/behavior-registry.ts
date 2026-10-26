@@ -7,7 +7,7 @@
  * Lives in the circuit layer (not simulator) — circuits own their behavior.
  */
 
-export interface EvalEntry {
+export interface BehaviorEntry {
   inputNames: string[];
   outputNames: string[];
   evalFn: (inputs: Record<string, any>) => Record<string, any>;
@@ -21,7 +21,7 @@ export interface EvalEntry {
   _synthErrors?: string[];
 }
 
-const registry = new Map<string, EvalEntry>();
+const registry = new Map<string, BehaviorEntry>();
 
 /**
  * Record a component's behaviour. Last definition wins — the editor re-executes
@@ -30,15 +30,15 @@ const registry = new Map<string, EvalEntry>();
  * now shadows it for the session. Callers caching from these entries must
  * invalidate on identity change; see `ensureEvaluatorRegistered`.
  */
-export function registerCircuitEval(name: string, entry: EvalEntry): void {
+export function registerCircuitBehavior(name: string, entry: BehaviorEntry): void {
   registry.set(name, entry);
 }
 
-export function getCircuitEval(name: string): EvalEntry | undefined {
+export function getCircuitBehavior(name: string): BehaviorEntry | undefined {
   return registry.get(name);
 }
 
-export function getAllCircuitEvals(): ReadonlyMap<string, EvalEntry> {
+export function getAllCircuitBehaviors(): ReadonlyMap<string, BehaviorEntry> {
   return registry;
 }
 

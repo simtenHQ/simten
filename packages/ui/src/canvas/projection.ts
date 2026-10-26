@@ -4,14 +4,15 @@
  * No stores, no caches, no globals — explicit params only.
  */
 
-import type { Circuit, PortPath } from '@simten/core';
 import type {
   BitValue,
   BusValue,
+  CircuitIR,
   CircuitLibrary,
   FlatPortValueMap,
   FlatSequentialState,
-} from '@simten/core/simulator';
+  PortPath,
+} from '@simten/core/internal';
 import { hasMadeOf } from '@simten/core/std';
 import type { Edge, Node as ReactFlowNode } from '@xyflow/react';
 import type { NodeData } from '../nodes';
@@ -86,7 +87,7 @@ function getNodeTypeForComponent(
  * Pure function — all state passed explicitly.
  */
 function projectCircuitToNodes(
-  circuit: Circuit,
+  circuit: CircuitIR,
   metadata: MetadataState,
   library: CircuitLibrary,
   portValues?: FlatPortValueMap,
@@ -341,7 +342,7 @@ function projectCircuitToNodes(
  */
 function resolvePortValue(
   path: PortPath,
-  circuit: Circuit,
+  circuit: CircuitIR,
   library: CircuitLibrary,
   portValues: FlatPortValueMap,
   prefix = '',
@@ -383,7 +384,7 @@ function resolvePortValue(
  * Pure function — no hidden state.
  */
 function projectCircuitToEdges(
-  circuit: Circuit,
+  circuit: CircuitIR,
   library: CircuitLibrary,
   portValues?: FlatPortValueMap,
 ): Edge[] {
@@ -426,7 +427,7 @@ function projectCircuitToEdges(
  * Main projection function — pure, no side effects.
  */
 export function projectCircuitToReactFlow(
-  circuit: Circuit | null,
+  circuit: CircuitIR | null,
   metadata: MetadataState,
   library: CircuitLibrary,
   portValues?: FlatPortValueMap,

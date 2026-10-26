@@ -23,7 +23,6 @@ const NULL_HANDLE: SandboxHandle = {
   tickN: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   renderSamples: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   scanPort: async () => ({ type: 'error', error: 'Sandbox not ready' }),
-  simulate: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   reset: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   setNode: async () => ({ type: 'error', error: 'Sandbox not ready' }),
   snapshot: async () => ({ type: 'error', error: 'Sandbox not ready' }),

@@ -3,7 +3,7 @@
  * tick, plus a way to load register state directly into the core.
  */
 
-import { simulate } from '../../../sim/simulate.js';
+import { simulate } from '../../../simulator/simulate.js';
 import { MOS6502_Core } from '../../mos6502-cpu.js';
 
 export interface CpuState {
