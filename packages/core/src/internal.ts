@@ -5,12 +5,18 @@
  */
 
 export { autoHarness } from './circuit/auto-harness.js';
-export type { BehaviorEntry } from './circuit/behavior-registry.js';
 export {
-  getAllCircuitBehaviors,
-  getCircuitBehavior,
-  registerCircuitBehavior,
-} from './circuit/behavior-registry.js';
+  addToDesign,
+  type Behaviour,
+  type BehaviourFn,
+  type BehaviourTable,
+  type BehaviourValues,
+  behaviourOf,
+  createLibrary,
+  type Design,
+  designOf,
+  emptyDesign,
+} from './circuit/behaviour.js';
 export { buildFromIR } from './circuit/build-from-ir.js';
 export {
   type CircuitNameSite,

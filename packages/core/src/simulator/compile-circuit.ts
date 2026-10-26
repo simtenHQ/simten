@@ -5,8 +5,9 @@
  * This is a one-time operation during initialization.
  */
 
+import type { BehaviourTable } from '../circuit/behaviour.js';
 import type { CircuitIR, CircuitLibrary, PortType } from '../ir/circuit-ir.js';
-import { ensureEvaluatorRegistered } from './eval-bridge.js';
+import { createDispatchTables, typeIndexFor } from './eval-bridge.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 import type { FlatCircuit, FlatNode, PrimitiveState } from './types.js';
 import { TOP_LEVEL_NODE } from './types.js';
@@ -16,11 +17,13 @@ import { TOP_LEVEL_NODE } from './types.js';
  *
  * @param flatCircuit - The flattened circuit to compile
  * @param library - Component library for resolving component definitions
+ * @param behaviours - This compile's behaviour, by primitive type name
  * @returns Compiled numeric circuit
  */
 export function compileForSimulation(
   flatCircuit: FlatCircuit,
   library: CircuitLibrary,
+  behaviours: BehaviourTable,
 ): NumericCircuit {
   const nodeCount = flatCircuit.nodes.length;
 
@@ -149,15 +152,13 @@ export function compileForSimulation(
   // Step 4: Build primitive type indices
   // ============================================================================
 
+  // One type index per primitive type in this circuit, into dispatch tables
+  // built from this compile's behaviour and nothing else.
   const primitiveTypeIndex = new Uint16Array(nodeCount);
+  const dispatch = createDispatchTables();
 
   for (let i = 0; i < nodeCount; i++) {
-    const node = flatCircuit.nodes[i];
-    // Always call ensureEvaluatorRegistered: for built-ins it returns the
-    // static index and lazily populates the EVALUATORS slot from the registry
-    // if it's null; for user primitives it allocates a dynamic index and
-    // wraps their eval lambda. Idempotent — no-op when the slot is already set.
-    primitiveTypeIndex[i] = ensureEvaluatorRegistered(node.primitiveType);
+    primitiveTypeIndex[i] = typeIndexFor(dispatch, flatCircuit.nodes[i].primitiveType, behaviours);
   }
 
   // ============================================================================
@@ -258,6 +259,9 @@ export function compileForSimulation(
     portKeyToIndex,
     indexToPortKey,
     primitiveTypeIndex,
+    primitiveTypeNames: dispatch.typeNames,
+    evaluators: dispatch.evaluators,
+    onTicks: dispatch.onTicks,
     nodePortStart,
     nodeInputCount,
     nodeOutputCount,

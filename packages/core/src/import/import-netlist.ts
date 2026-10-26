@@ -18,6 +18,7 @@
  * Follows auto-harness.ts: pure Circuit IR construction, no code execution.
  */
 
+import { type Behaviour, behaviourOf } from '../circuit/behaviour.js';
 import type { Circuit } from '../circuit/builder-types.js';
 import type {
   ArgumentValue,
@@ -538,9 +539,18 @@ function nodeFromBuilt(id: string, built: Circuit, args: Record<string, Argument
   };
 }
 
-/** Collect a Circuit's circuit + transitive dependency circuits. */
-function collectDeps(built: Circuit, into: Map<string, CircuitIR>): void {
-  if (!into.has(built.circuit.name)) into.set(built.circuit.name, built.circuit);
+/** Where translation collects the circuits it builds nodes from, and their behaviour. */
+interface ImportDeps {
+  library: Map<string, CircuitIR>;
+  behaviours: Map<string, Behaviour>;
+}
+
+/** Collect a Circuit's circuit + transitive dependency circuits, with their behaviour. */
+function collectDeps(built: Circuit, into: ImportDeps): void {
+  const name = built.circuit.name;
+  if (!into.library.has(name)) into.library.set(name, built.circuit);
+  const behaviour = behaviourOf(built);
+  if (behaviour && !into.behaviours.has(name)) into.behaviours.set(name, behaviour);
   for (const [, dep] of built._dependencies) collectDeps(dep, into);
 }
 
@@ -861,7 +871,7 @@ function translateModule(
   mod: YosysModule,
   shapes: Map<string, ModuleShape>,
   netlist: YosysNetlist,
-  libDeps: Map<string, CircuitIR>,
+  libDeps: ImportDeps,
   moduleNameOf: (raw: string) => string,
   warnings: string[],
 ): CircuitIR {
@@ -1327,6 +1337,8 @@ export interface ImportResult {
   top: CircuitIR;
   /** Every module circuit + every stdlib/rtl dependency circuit, by name. */
   library: Map<string, CircuitIR>;
+  /** Behaviour of every primitive in `library`, by name, for simulating the import. */
+  behaviours: Map<string, Behaviour>;
   /** Non-fatal notes about the import (e.g. undriven nets tied to 0). */
   warnings: string[];
 }
@@ -1372,12 +1384,13 @@ export function importNetlist(netlist: YosysNetlist, topName?: string): ImportRe
   const shapes = moduleShapes(netlist);
   const moduleNameOf = makeModuleNameSanitizer(netlist);
   const library = new Map<string, CircuitIR>();
+  const behaviours = new Map<string, Behaviour>();
   const warnings: string[] = [];
 
   for (const [name, mod] of Object.entries(netlist.modules)) {
     library.set(
       moduleNameOf(name),
-      translateModule(name, mod, shapes, netlist, library, moduleNameOf, warnings),
+      translateModule(name, mod, shapes, netlist, { library, behaviours }, moduleNameOf, warnings),
     );
   }
 
@@ -1406,5 +1419,10 @@ export function importNetlist(netlist: YosysNetlist, topName?: string): ImportRe
     top = roots[0];
   }
 
-  return { top: library.get(moduleNameOf(top))!, library, warnings: [...new Set(warnings)] };
+  return {
+    top: library.get(moduleNameOf(top))!,
+    library,
+    behaviours,
+    warnings: [...new Set(warnings)],
+  };
 }

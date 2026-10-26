@@ -22,9 +22,8 @@ import type { Circuit, SinkPortRef, SourcePortRef } from '../../../circuit/build
 import { bit, bus, circuit } from '../../../circuit/index.js';
 import { EXAMPLES } from '../../../examples/catalog.js';
 import { importNetlist, type YosysNetlist } from '../../../import/index.js';
-import { buildFromIR } from '../../../internal.js';
-import type { CircuitIR, PortType } from '../../../ir/circuit-ir.js';
-import type { CircuitLibrary } from '../../../simulator/types.js';
+import { buildFromIR, designOf } from '../../../internal.js';
+import type { PortType } from '../../../ir/circuit-ir.js';
 import {
   Adder,
   AddressCombiner,
@@ -121,23 +120,10 @@ const BUG = {
   ramInit: 'unfiled: RAM drops its memory contents on export',
 } as const;
 
-/** Top circuit plus every transitive dependency, so elaboration can resolve. */
-function libraryFor(top: Circuit): CircuitLibrary {
-  const byName = new Map<string, CircuitIR>();
-  const add = (b: { circuit?: CircuitIR; _dependencies?: ReadonlyMap<string, unknown> }) => {
-    if (!b?.circuit || byName.has(b.circuit.name)) return;
-    byName.set(b.circuit.name, b.circuit);
-    for (const dep of b._dependencies?.values() ?? []) add(dep as typeof b);
-  };
-  add(top);
-  return {
-    resolveCircuit: (name: string) => byName.get(name),
-    getAllPrimitiveNames: () => [...byName.keys()],
-  };
-}
-
+/** Top circuit plus every transitive dependency and their behaviour. */
 function target(top: Circuit): DiffTarget {
-  return { top: top.circuit, library: libraryFor(top) };
+  const { library, behaviours } = designOf(top);
+  return { top: top.circuit, library, behaviours };
 }
 
 /**
@@ -170,7 +156,11 @@ function example(id: string): DiffTarget {
   if (!ex) throw new Error(`no example '${id}'`);
   const compiled = compileSource(ex.code);
   if (compiled.error) throw new Error(`${id}: ${compiled.error}`);
-  return { top: compiled.circuits[compiled.circuits.length - 1], library: compiled.library };
+  return {
+    top: compiled.circuits[compiled.circuits.length - 1],
+    library: compiled.library,
+    behaviours: compiled.behaviours,
+  };
 }
 
 const fixture = (name: string) =>
@@ -178,9 +168,9 @@ const fixture = (name: string) =>
 
 function imported(module: string): DiffTarget {
   const netlist = JSON.parse(fixture('imports.json')) as YosysNetlist;
-  const { top, library } = importNetlist(netlist, module);
+  const { top, library, behaviours } = importNetlist(netlist, module);
   const deps = [...library.values()].filter((c) => c.name !== top.name);
-  return target(buildFromIR(top, deps));
+  return target(buildFromIR(top, deps, behaviours));
 }
 
 const cases: Case[] = [];

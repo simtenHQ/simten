@@ -3,7 +3,7 @@
  */
 
 export { type CheckResult, checkCircuit } from './check.js';
-export { createMutableLibrary, getLibrary } from './lib.js';
+export { createMutableLibrary, getLibrary, getStdBehaviours } from './lib.js';
 export { getPrimitivesHandler } from './primitives.js';
 export {
   type RLEValue,

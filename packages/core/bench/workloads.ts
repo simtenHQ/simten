@@ -35,6 +35,7 @@ export function load(workload: Workload): Loaded {
   const top = compiled.circuits[compiled.circuits.length - 1];
   const engine = createEngine(elaborate(top, compiled.library), {
     componentLibrary: compiled.library,
+    behaviours: compiled.behaviours,
   });
 
   if (!workload.randomInputs) return { engine, step: () => engine.tick() };

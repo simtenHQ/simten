@@ -268,7 +268,7 @@ useCircuitStore         (the active circuit)
 | Import | Contents |
 |--------|----------|
 | `@simten/core` | `circuit`, `bit`, `bus`, `simulate`, `Circuit`: the public API. Components come from `@simten/core/std` |
-| `@simten/core/internal` | `elaborate`, `createEngine`, `SimulationSession`, `SimulatorEngine`, the IR types (`CircuitIR`), the behavior registry, `executeCircuitCode`, `captureEnvironmentalState`, `restoreEnvironmentalState`: for Simten's own packages, no stability promise |
+| `@simten/core/internal` | `elaborate`, `createEngine`, `SimulationSession`, `SimulatorEngine`, the IR types (`CircuitIR`), behaviour tables (`designOf`, `behaviourOf`), `executeCircuitCode`, `captureEnvironmentalState`, `restoreEnvironmentalState`: for Simten's own packages, no stability promise |
 | `@simten/embed` | `CircuitViewer`, `CircuitEmbed`, `<circuit-embed>` web component: everything needed to embed a circuit |
 | `@simten/ui/canvas` | `CircuitCanvas`, `ClockControls`: shared simulation UI |
 | `@simten/ui/sandbox` | `useSandbox`, `SandboxProvider`: sandbox iframe context used by `useCircuitSimulator` |

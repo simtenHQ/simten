@@ -113,10 +113,10 @@ export const Adder = circuit(
     outputs: { sum: bus(width), carry_out: bit },
     meta: { category: 'arithmetic', icon: '+', description: 'N-bit adder with carry' },
     // `width` is read from inputs (bridge merges node.arguments) so a single
-    // registered lambda works for every Adder({width: N}) instance. The
-    // fallback is the literal 8, not the factory's `width`: the registry keys
-    // by name and last write wins, so closing over it would let whichever
-    // Adder({width: N}) was defined last set the width for every bare Adder().
+    // lambda works for every Adder({width: N}) instance. The fallback is the
+    // literal 8, not the factory's `width`: a compile keys behaviour by name,
+    // so one instance's closure serves them all, and the sandbox rebuilds
+    // evals sent as text without their closure.
     eval: ({ a, b, carry_in, width: w = 8 }) => {
       const wn = w as number;
       const mask = wn >= 32 ? 0xffffffff : (1 << wn) - 1;

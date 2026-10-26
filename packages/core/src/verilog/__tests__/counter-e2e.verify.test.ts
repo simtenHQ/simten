@@ -21,6 +21,7 @@ import { bit, bus, circuit } from '../../circuit/index.js';
 import type { CircuitLibrary } from '../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
 import { Adder, Constant, Mux, Or, Register } from '../../std/index.js';
+import { getStdBehaviours } from '../../tools/lib.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { hasVerifier, verifyVerilog } from './verify.js';
@@ -100,7 +101,10 @@ function buildCounter() {
 
 function runSimulator(steps: Step[]): number[] {
   const { circuit, lib } = buildCounter();
-  const sim = createEngine(elaborate(circuit, lib), { componentLibrary: lib });
+  const sim = createEngine(elaborate(circuit, lib), {
+    componentLibrary: lib,
+    behaviours: getStdBehaviours(),
+  });
   const outputs: number[] = [];
   for (const step of steps) {
     sim.setNode('enable', step.enable);

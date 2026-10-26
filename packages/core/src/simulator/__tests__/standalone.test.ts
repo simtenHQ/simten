@@ -10,6 +10,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import type { Behaviour } from '../../circuit/behaviour.js';
 import {
   bitType,
   type CircuitIR,
@@ -171,25 +172,26 @@ describe('Core Simulator Standalone', () => {
     expect(flatCircuit.nodes[0].primitiveType).toBe('And');
   });
 
-  // NOTE: the previous "should run combinational simulation" and
-  // "should support sequential simulation API" tests in this file relied
-  // on the simulator having hand-written evaluators pre-populated at
-  // module load (the deleted simulator/evaluators/*.ts files). That
-  // contract is gone: the simulator now dispatches uniformly through the
-  // eval-bridge registry, which is populated by circuit() at definition
-  // time. Tests that construct raw Circuit IRs without going through
-  // circuit() must either:
-  //   - register an eval lambda via registerEvalFunction(), or
-  //   - import @simten/core/std (which registers the entire stdlib).
-  // The "no browser dependencies" guarantee this file checks is still
-  // valid: createCircuitLibrary + elaborate run without DOM/React/Zustand.
-  // The simulation tests below have been replaced with a single one that
-  // exercises the new registration contract explicitly.
+  // The engine runs the behaviour table it is given and nothing else. A test
+  // that builds raw Circuit IR, without circuit(), supplies that table itself.
+  // createCircuitLibrary + elaborate + createEngine still run without
+  // DOM/React/Zustand.
 
-  it('should run a simulation when primitives are explicitly registered', async () => {
-    const { registerEvalFunction } = await import('../eval-bridge.js');
-    registerEvalFunction('And', ['a', 'b'], ['out'], ({ a, b }) => ({ out: a && b ? 1 : 0 }));
-    registerEvalFunction('Switch', [], ['out'], ({ value }) => ({ out: value ? 1 : 0 }));
+  it('should run a simulation from a behaviour table built by hand', () => {
+    const behaviours = new Map<string, Behaviour>([
+      [
+        'And',
+        {
+          inputNames: ['a', 'b'],
+          outputNames: ['out'],
+          evalFn: ({ a, b }) => ({ out: a && b ? 1 : 0 }),
+        },
+      ],
+      [
+        'Switch',
+        { inputNames: [], outputNames: ['out'], evalFn: ({ value }) => ({ out: value ? 1 : 0 }) },
+      ],
+    ]);
 
     const primitives = createTestPrimitives();
     const library = createCircuitLibrary(primitives);
@@ -255,7 +257,7 @@ describe('Core Simulator Standalone', () => {
     };
 
     const flatCircuit = elaborate(circuit, library);
-    const sim = createEngine(flatCircuit, { componentLibrary: library });
+    const sim = createEngine(flatCircuit, { componentLibrary: library, behaviours });
 
     // Both switches are on, so AND should output 1
     const result = sim.runCombinational();
@@ -274,7 +276,7 @@ describe('Core Simulator Standalone', () => {
   // worked pre-deletion only because evalRegister was statically populated.
   // Under the new contract (eval-bridge dispatches everything), tests that
   // need to exercise the simulator API surface should use circuit() to
-  // define their primitives — that auto-registers the eval and stays free
-  // of browser deps. The combinational test above demonstrates the shape
-  // with explicit registerEvalFunction() for callers that build raw IRs.
+  // define their primitives, which carries the eval and stays free of
+  // browser deps. The combinational test above shows the shape for callers
+  // that build raw IRs: a behaviour table built by hand.
 });

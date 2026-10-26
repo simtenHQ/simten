@@ -17,6 +17,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { designOf } from '../../circuit/behaviour.js';
 import { bit, circuit } from '../../circuit/index.js';
 import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
 import { DFlipFlop, Switch } from '../../std/index.js';
@@ -66,7 +67,10 @@ function buildSim() {
   }
 
   const flat = elaborate(SwitchedFF.circuit, library);
-  const sim = createEngine(flat, { componentLibrary: library });
+  const sim = createEngine(flat, {
+    componentLibrary: library,
+    behaviours: designOf(SwitchedFF).behaviours,
+  });
   return { sim, flat, library };
 }
 

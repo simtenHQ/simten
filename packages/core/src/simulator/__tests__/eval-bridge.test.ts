@@ -3,19 +3,26 @@
  * produce correct outputs when wrapped and run through the fast simulation path.
  */
 
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import type { Behaviour, BehaviourFn } from '../../circuit/behaviour.js';
 import {
-  generateEvalWrapper,
-  getOrAllocateTypeIndex,
-  registerEvalFunction,
-  resetDynamicIndices,
-  resolveTypeIndex,
+  createDispatchTables,
+  generateEvalWrapper as generateFromBehaviour,
+  typeIndexFor,
 } from '../eval-bridge.js';
-import { EVALUATORS } from '../evaluators/index.js';
 import type { EvalContext } from '../evaluators/types.js';
-import type { NumericCircuit } from '../numeric-types.js';
-import { PRIMITIVE_TYPE_INDICES } from '../numeric-types.js';
+import type { NumericCircuit, NumericSequentialState } from '../numeric-types.js';
 import type { NumericPortValues } from '../numeric-values.js';
+
+/** The tests' evals take numbers; behaviour in general takes any named values. */
+function generateEvalWrapper(
+  inputNames: string[],
+  outputNames: string[],
+  evalFn: (inputs: Record<string, number>) => Record<string, number>,
+  stateKeys?: string[],
+) {
+  return generateFromBehaviour(inputNames, outputNames, evalFn as BehaviourFn, stateKeys);
+}
 
 // ============================================================================
 // Helpers: create a minimal EvalContext for testing
@@ -24,7 +31,7 @@ import type { NumericPortValues } from '../numeric-values.js';
 function createTestContext(
   inputs: number[],
   outputCount: number,
-  state?: any,
+  state?: unknown,
 ): { ctx: EvalContext; values: Float64Array } {
   const inputCount = inputs.length;
   const totalPorts = inputCount + outputCount;
@@ -61,8 +68,8 @@ function createTestContext(
   const ctx: EvalContext = {
     circuit,
     values: portValues,
-    state: state ?? undefined,
-    queue: null as any,
+    state: state as NumericSequentialState | undefined,
+    queue: null as unknown as EvalContext['queue'],
     nodeIndex: 0,
     portStart: 0,
     inputCount,
@@ -71,55 +78,6 @@ function createTestContext(
 
   return { ctx, values };
 }
-
-// ============================================================================
-// Dynamic index allocation
-// ============================================================================
-
-describe('dynamic type index allocation', () => {
-  beforeEach(() => {
-    resetDynamicIndices();
-  });
-
-  it('returns static index for built-in primitives', () => {
-    expect(getOrAllocateTypeIndex('And')).toBe(PRIMITIVE_TYPE_INDICES.And);
-    expect(getOrAllocateTypeIndex('Register')).toBe(PRIMITIVE_TYPE_INDICES.Register);
-  });
-
-  it('allocates dynamic indices starting at 200', () => {
-    const idx = getOrAllocateTypeIndex('MyCustomGate');
-    expect(idx).toBe(200);
-  });
-
-  it('returns same index for same name', () => {
-    const idx1 = getOrAllocateTypeIndex('CustomA');
-    const idx2 = getOrAllocateTypeIndex('CustomA');
-    expect(idx1).toBe(idx2);
-  });
-
-  it('allocates sequential indices for different names', () => {
-    const idx1 = getOrAllocateTypeIndex('CustomA');
-    const idx2 = getOrAllocateTypeIndex('CustomB');
-    expect(idx2).toBe(idx1 + 1);
-  });
-
-  it('resolveTypeIndex returns undefined for unregistered names', () => {
-    expect(resolveTypeIndex('NeverRegistered')).toBeUndefined();
-  });
-
-  it('resolveTypeIndex returns index after allocation', () => {
-    const idx = getOrAllocateTypeIndex('Registered');
-    expect(resolveTypeIndex('Registered')).toBe(idx);
-  });
-
-  it('reset clears dynamic allocations', () => {
-    getOrAllocateTypeIndex('WillBeCleared');
-    resetDynamicIndices();
-    expect(resolveTypeIndex('WillBeCleared')).toBeUndefined();
-    // Next allocation starts fresh at 200
-    expect(getOrAllocateTypeIndex('NewAfterReset')).toBe(200);
-  });
-});
 
 // ============================================================================
 // Wrapper generation — combinational
@@ -168,11 +126,15 @@ describe('generateEvalWrapper (combinational)', () => {
 
     const { ctx, values } = createTestContext([], 1);
     // Set the node argument (normally set when user clicks Switch)
-    (ctx.circuit.flatCircuit.nodes[0] as any).arguments = { value: true };
+    (ctx.circuit.flatCircuit.nodes[0] as { arguments: Record<string, unknown> }).arguments = {
+      value: true,
+    };
     wrapper(ctx);
     expect(values[0]).toBe(1);
 
-    (ctx.circuit.flatCircuit.nodes[0] as any).arguments = { value: false };
+    (ctx.circuit.flatCircuit.nodes[0] as { arguments: Record<string, unknown> }).arguments = {
+      value: false,
+    };
     wrapper(ctx);
     expect(values[0]).toBe(0);
   });
@@ -184,7 +146,9 @@ describe('generateEvalWrapper (combinational)', () => {
     }));
 
     const { ctx, values } = createTestContext([99], 1);
-    (ctx.circuit.flatCircuit.nodes[0] as any).arguments = { value: 7 };
+    (ctx.circuit.flatCircuit.nodes[0] as { arguments: Record<string, unknown> }).arguments = {
+      value: 7,
+    };
     wrapper(ctx);
     expect(values[1]).toBe(99); // port input (99), not argument (7)
   });
@@ -250,50 +214,53 @@ describe('generateEvalWrapper (sequential)', () => {
 });
 
 // ============================================================================
-// registerEvalFunction
+// Per-compile dispatch tables
 // ============================================================================
 
-describe('registerEvalFunction', () => {
-  beforeEach(() => {
-    resetDynamicIndices();
+const xor: Behaviour = {
+  inputNames: ['a', 'b'],
+  outputNames: ['out'],
+  evalFn: ({ a, b }) => ({ out: (a as number) ^ (b as number) }),
+};
+
+describe('dispatch tables', () => {
+  it('gives each type one index, in the order types are seen', () => {
+    const tables = createDispatchTables();
+    const behaviours = new Map([['Xor', xor]]);
+    expect(typeIndexFor(tables, 'Xor', behaviours)).toBe(0);
+    expect(typeIndexFor(tables, 'Other', behaviours)).toBe(1);
+    expect(typeIndexFor(tables, 'Xor', behaviours)).toBe(0);
+    expect(tables.typeNames).toEqual(['Xor', 'Other']);
   });
 
-  it('registers a user-defined component and assigns a type index', () => {
-    const idx = registerEvalFunction('MyGate', ['a', 'b'], ['out'], ({ a, b }) => ({ out: a ^ b }));
-
-    expect(idx).toBe(200);
-    expect(EVALUATORS[idx]).toBeDefined();
-
-    // Verify it works
+  it("builds an evaluator from the compile's own behaviour", () => {
+    const tables = createDispatchTables();
+    const idx = typeIndexFor(tables, 'Xor', new Map([['Xor', xor]]));
     const { ctx, values } = createTestContext([1, 0], 1);
-    EVALUATORS[idx]!(ctx);
+    tables.evaluators[idx]?.(ctx);
     expect(values[2]).toBe(1);
   });
 
-  it('does not overwrite an existing populated slot', () => {
-    // Set up the precondition explicitly: install a sentinel evaluator into
-    // the And slot. (Pre-deletion this was populated at module load by the
-    // hand-written evalAnd; post-deletion slots are populated lazily by the
-    // bridge, so the test installs its own sentinel to assert the
-    // no-overwrite invariant directly.)
-    const idx = PRIMITIVE_TYPE_INDICES.And;
-    const sentinel: (typeof EVALUATORS)[number] = () => {
-      /* sentinel */
-    };
-    const saved = EVALUATORS[idx];
-    EVALUATORS[idx] = sentinel;
+  it('leaves a type with no behaviour empty, for the engine to report', () => {
+    const tables = createDispatchTables();
+    const idx = typeIndexFor(tables, 'Missing', new Map());
+    expect(tables.evaluators[idx]).toBeNull();
+    expect(tables.onTicks[idx]).toBeUndefined();
+  });
 
-    try {
-      const returnedIdx = registerEvalFunction(
-        'And',
-        ['a', 'b'],
-        ['out'],
-        () => ({ out: 999 }), // would be wrong if it ran
-      );
-      expect(returnedIdx).toBe(idx);
-      expect(EVALUATORS[idx]).toBe(sentinel); // not overwritten
-    } finally {
-      EVALUATORS[idx] = saved;
-    }
+  it('two compiles of one name keep their own behaviour', () => {
+    const a = createDispatchTables();
+    const b = createDispatchTables();
+    const xnor: Behaviour = {
+      ...xor,
+      evalFn: ({ a, b }) => ({ out: (a as number) === (b as number) ? 1 : 0 }),
+    };
+    typeIndexFor(a, 'Gate', new Map([['Gate', xor]]));
+    typeIndexFor(b, 'Gate', new Map([['Gate', xnor]]));
+    const first = createTestContext([1, 1], 1);
+    a.evaluators[0]?.(first.ctx);
+    const second = createTestContext([1, 1], 1);
+    b.evaluators[0]?.(second.ctx);
+    expect([first.values[2], second.values[2]]).toEqual([0, 1]);
   });
 });

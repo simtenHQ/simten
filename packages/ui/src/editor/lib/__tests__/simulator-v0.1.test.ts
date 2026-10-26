@@ -5,7 +5,12 @@
  * Focus on end-to-end circuit simulation, edge cases, and critical behaviors.
  */
 
-import { type CircuitLibrary, createEngine, elaborate } from '@simten/core/internal';
+import {
+  type CircuitLibrary,
+  createEngine,
+  elaborate,
+  getStdBehaviours,
+} from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
@@ -75,7 +80,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const result = sim.runCombinational();
 
       // Check that Switch outputs 1
@@ -130,7 +138,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const result = sim.runCombinational();
 
       expect(result.portValues.get('switch1.out')).toBe(0);
@@ -212,7 +223,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const result = sim.runCombinational();
 
       // true AND true = true
@@ -280,7 +294,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const result = sim.runCombinational();
 
       // true OR false = true
@@ -329,7 +346,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const result = sim.runCombinational();
 
       // NOT true = false
@@ -463,7 +483,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const result = sim.runCombinational();
 
       // (true AND false) OR (true AND true) = false OR true = true
@@ -490,7 +513,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const result = sim.runCombinational();
 
       expect(result.portValues.size).toBe(0);
@@ -531,7 +557,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const result = sim.runCombinational();
 
       expect(result.portValues.get('switch1.out')).toBe(1);
@@ -568,7 +597,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const result = sim.runCombinational();
 
       // Unconnected inputs should default to false, so false AND false = false
@@ -642,7 +674,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const result = sim.runCombinational();
 
       // Both circuits should work independently
@@ -681,7 +716,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const seqState = sim.getState();
 
       // Should initialize state for DFF
@@ -722,7 +760,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const seqState = sim.getState();
 
       // Should initialize state for Register
@@ -809,7 +850,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const result = sim.tick();
 
       // After one tick with d=true and rising clock edge, q should be true
@@ -885,7 +929,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const result = sim.runCombinational();
 
       // Check that output ports are stored
@@ -951,7 +998,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const seqState = sim.getState();
 
       // Should initialize with custom value
@@ -1010,7 +1060,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const seqState = sim.getState();
 
       // Should initialize with Map containing the init data
@@ -1073,7 +1126,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const seqState = sim.getState();
 
       // Should initialize with Map containing the array data
@@ -1135,7 +1191,10 @@ describe('Simulator', () => {
 
       const simLibrary = getLibrary();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, simLibrary), {
+        componentLibrary: simLibrary,
+        behaviours: getStdBehaviours(),
+      });
       const seqState = sim.getState();
 
       // Should initialize with empty Map

@@ -43,6 +43,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { designOf } from '../../circuit/behaviour.js';
 import { bit, circuit } from '../../circuit/index.js';
 import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
 import { DFlipFlop } from '../../std/index.js';
@@ -106,7 +107,10 @@ describe('no booleans in the value domain', () => {
     (ff.state[0] as { initialValue: unknown }).initialValue = false;
 
     const library = libraryFor([ff, Top.circuit]);
-    const sim = createEngine(elaborate(Top.circuit, library), { componentLibrary: library });
+    const sim = createEngine(elaborate(Top.circuit, library), {
+      componentLibrary: library,
+      behaviours: designOf(Top).behaviours,
+    });
     sim.runCombinational();
 
     const found: string[] = [];

@@ -13,7 +13,12 @@
 
 import type { BitValue, BusValue } from '@simten/core';
 import type { CircuitIR, CircuitLibrary, SimulatorEngine } from '@simten/core/internal';
-import { createEngine, elaborate, isSequentialCircuit } from '@simten/core/internal';
+import {
+  createEngine,
+  elaborate,
+  getStdBehaviours,
+  isSequentialCircuit,
+} from '@simten/core/internal';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NodeData } from '../nodes';
 import { useSandboxContext } from '../sandbox/SandboxProvider';
@@ -122,8 +127,11 @@ function InspectorCanvas({
       if ('error' in result) {
         // Fall back to local simulator (for embed contexts where no source was compiled)
         try {
+          // The page runs no user code, so this local engine has only std's
+          // behaviour: enough for a circuit built from std components.
           const engine = createEngine(elaborate(viewCircuit, library), {
             componentLibrary: library,
+            behaviours: getStdBehaviours(),
           });
           engine.runCombinational();
           localEngineRef.current = engine;

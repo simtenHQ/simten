@@ -26,7 +26,7 @@ import type {
   FlatSequentialState,
   SimulatorEngine,
 } from '@simten/core/internal';
-import { autoHarness, getCircuitBehavior, isSequentialCircuit } from '@simten/core/internal';
+import { autoHarness, behaviourOf, isSequentialCircuit } from '@simten/core/internal';
 import { HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
 import {
   type BehaviorSource,
@@ -119,10 +119,12 @@ export interface UseCircuitSimulatorOptions {
 }
 
 /**
- * Extract eval function sources from a Circuit and its dependencies.
- * These are serialized and sent to the sandbox, which reconstructs them with new Function().
- * Returns empty object if the circuit's evals aren't registered in this frame
- * (e.g. editor case where evals live only in the sandbox from prior compile).
+ * Extract eval function sources from a Circuit and its dependencies, from the
+ * behaviour each built circuit carries. These are serialized and sent to the
+ * sandbox, which uses its own closure for any that match std's text and
+ * rebuilds the rest with new Function(). Returns an empty object for a circuit
+ * built from IR (the editor case, where the behaviour lives in the sandbox's
+ * own compile of the source).
  */
 function extractBehaviorSources(circuit: Circuit): Record<string, BehaviorSource> {
   const sources: Record<string, BehaviorSource> = {};
@@ -133,7 +135,7 @@ function extractBehaviorSources(circuit: Circuit): Record<string, BehaviorSource
     if (visited.has(name)) return;
     visited.add(name);
 
-    const entry = getCircuitBehavior(name);
+    const entry = behaviourOf(c);
     if (entry) {
       sources[name] = {
         evalSource: entry.evalFn.toString(),
@@ -155,8 +157,8 @@ function extractBehaviorSources(circuit: Circuit): Record<string, BehaviorSource
 /**
  * Build a minimal Circuit-like object from a Circuit IR and its dependencies.
  * Used by the editor to adapt sandbox compile results into the shape useCircuitSimulator expects.
- * The resulting object has no live eval functions (empty registry lookups) — the sandbox
- * is expected to already have the evals registered from a prior sandbox.compile(source).
+ * The resulting object carries no behaviour: the sandbox runs the behaviour of its own
+ * prior sandbox.compile(source).
  */
 export function builtFromIR(circuit: CircuitIR, dependencies: CircuitIR[]): Circuit {
   const depMap = new Map<string, Circuit>();

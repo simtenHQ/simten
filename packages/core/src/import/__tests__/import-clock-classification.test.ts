@@ -32,7 +32,7 @@ function build() {
   );
   const result = importNetlist(netlist, 'clock_classification');
   const deps = [...result.library.values()].filter((c) => c.name !== result.top.name);
-  return { result, sim: simulate(buildFromIR(result.top, deps) as never) };
+  return { result, sim: simulate(buildFromIR(result.top, deps, result.behaviours) as never) };
 }
 
 describe('clock classification', () => {

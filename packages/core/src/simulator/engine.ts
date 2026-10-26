@@ -88,7 +88,11 @@ class DefaultSimulatorEngine implements SimulatorEngine {
     this.options = options;
 
     // Compile circuit to numeric representation
-    this.numericCircuit = compileForSimulation(circuit, options.componentLibrary);
+    this.numericCircuit = compileForSimulation(
+      circuit,
+      options.componentLibrary,
+      options.behaviours,
+    );
 
     // Initialize flat sequential state (memory data loaded later via setNode)
     const flatSeqState = initializeFlatSequentialState(circuit, options.componentLibrary);
@@ -467,18 +471,10 @@ class DefaultSimulatorEngine implements SimulatorEngine {
  *
  * Uses a numeric simulator with typed arrays for optimal performance.
  *
- * **Registration contract:** every primitive type in the flattened circuit
- * must have an eval lambda registered with the eval-bridge before its first
- * dispatch. Two ways to satisfy this:
- *   1. Define primitives via `circuit()` — registers automatically.
- *   2. Construct IRs by hand — call `registerEvalFunction(name, ...)` for
- *      each primitive type used.
- *
- * Importing `@simten/core/std` registers the entire standard library as a
- * side effect; most callers want that and don't need to think about it.
- * Calling `createEngine` with a circuit referencing an unregistered
- * primitive will throw on first encounter of that primitive during
- * propagation, with a message naming the missing primitive.
+ * **Behaviour:** the engine runs `options.behaviours` and nothing else. Every
+ * primitive type in the flattened circuit needs an entry there; `designOf`
+ * collects the library and the table from a built circuit tree. A primitive
+ * with no entry throws on its first dispatch, naming it.
  *
  * @param circuit - The flattened circuit to simulate
  * @param options - Initialization options

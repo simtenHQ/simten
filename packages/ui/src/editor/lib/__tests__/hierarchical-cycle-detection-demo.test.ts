@@ -5,28 +5,33 @@
  */
 
 import {
+  type Behaviour,
   type CircuitLibrary,
   createEngine,
   elaborate,
-  registerCircuitBehavior,
+  getStdBehaviours,
 } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import { bitType, busType, type CircuitIR } from '../../types/circuit';
 
-// Register an eval for the local 'Add' primitive defined below. The
-// simulator dispatches everything via the eval-bridge registry — any
-// primitive used by a test must have an eval registered. (Before the
-// hand-written fast paths were deleted, the simulator silently zeroed
-// outputs for unregistered primitives, which let this test pass on a
-// fluke while computing nonsense. Registering the eval makes the test
-// honest about what it's testing.)
-registerCircuitBehavior('Add', {
-  inputNames: ['a', 'b'],
-  outputNames: ['out'],
-  evalFn: ({ a, b }) => ({ out: (((a as number) >>> 0) + ((b as number) >>> 0)) & 0xff }),
-});
+// Behaviour for the local 'Add' primitive defined below, on top of std's. The
+// engine runs only the behaviour table it is given, so any primitive a test
+// uses needs an entry. (Before the hand-written fast paths were deleted, the
+// simulator silently zeroed outputs for unknown primitives, which let this
+// test pass on a fluke while computing nonsense.)
+const BEHAVIOURS = new Map<string, Behaviour>([
+  ...getStdBehaviours(),
+  [
+    'Add',
+    {
+      inputNames: ['a', 'b'],
+      outputNames: ['out'],
+      evalFn: ({ a, b }) => ({ out: (((a as number) >>> 0) + ((b as number) >>> 0)) & 0xff }),
+    },
+  ],
+]);
 
 const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
   (c) => c.implementation.kind === 'primitive',
@@ -253,7 +258,10 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
     // Before the fix: This would fail with "Cycle detected in circuit"
     // After the fix: This should succeed because registers break the paths
     const simLibrary = getLibrary();
-    const sim = createEngine(elaborate(system, simLibrary), { componentLibrary: simLibrary });
+    const sim = createEngine(elaborate(system, simLibrary), {
+      componentLibrary: simLibrary,
+      behaviours: BEHAVIOURS,
+    });
     const result = sim.runCombinational();
 
     expect(result.error).toBeUndefined();
@@ -494,7 +502,10 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
     // OLD BEHAVIOR: Would falsely detect cycle
     // NEW BEHAVIOR: Correctly recognizes registers break the path
     const simLibrary = getLibrary();
-    const sim = createEngine(elaborate(network, simLibrary), { componentLibrary: simLibrary });
+    const sim = createEngine(elaborate(network, simLibrary), {
+      componentLibrary: simLibrary,
+      behaviours: BEHAVIOURS,
+    });
     const result = sim.runCombinational();
 
     expect(result.error).toBeUndefined();

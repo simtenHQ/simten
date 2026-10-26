@@ -18,6 +18,7 @@ import { bus, circuit } from '../../circuit/index.js';
 import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
 import { ROM } from '../../std/index.js';
+import { getStdBehaviours } from '../../tools/lib.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { hasVerifier, verifyVerilog } from './verify.js';
@@ -83,7 +84,10 @@ function buildRom() {
 
 function runSimulator(addrs: number[]): number[] {
   const { circuit, lib } = buildRom();
-  const sim = createEngine(elaborate(circuit, lib), { componentLibrary: lib });
+  const sim = createEngine(elaborate(circuit, lib), {
+    componentLibrary: lib,
+    behaviours: getStdBehaviours(),
+  });
 
   // Preload ROM contents the same way real apps do: setNode with a Map.
   // The flat node id for the `r: ROM` sub-node inside RomWrapper is `r`

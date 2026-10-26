@@ -5,7 +5,12 @@
  * work correctly when instantiated as nodes within other circuits.
  */
 
-import { type CircuitLibrary, createEngine, elaborate } from '@simten/core/internal';
+import {
+  type CircuitLibrary,
+  createEngine,
+  elaborate,
+  getStdBehaviours,
+} from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
@@ -241,6 +246,7 @@ describe('Nested Sequential Components', () => {
     const simLibrary = getLibrary();
     const sim = createEngine(elaborate(wrapperCircuit, simLibrary), {
       componentLibrary: simLibrary,
+      behaviours: getStdBehaviours(),
     });
     const seqState = sim.getState();
 
@@ -299,6 +305,7 @@ describe('Nested Sequential Components', () => {
     const simLibrary = getLibrary();
     const sim = createEngine(elaborate(wrapperCircuit, simLibrary), {
       componentLibrary: simLibrary,
+      behaviours: getStdBehaviours(),
     });
     const seqState = sim.getState();
     expect(seqState?.cycleCount).toBe(0);

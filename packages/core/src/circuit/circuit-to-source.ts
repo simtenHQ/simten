@@ -13,8 +13,9 @@
  * - Simple state (bit / bus / memory with default widths)
  *
  * NOT supported (throws with a clear message — Fork button surfaces it):
- * - Primitives with custom `eval` / `onTick` callbacks (would need behavior registry
- *   walking; defer to a follow-up if blog circuits ever need it)
+ * - Primitives with custom `eval` / `onTick` callbacks (the callbacks are
+ *   carried by the built circuit, but turning them back into source is
+ *   deferred until blog circuits need it)
  * - Intrinsic implementations
  *
  * Comments and any code outside `circuit()` calls are not preserved.
@@ -32,7 +33,7 @@ import type {
   StateBlock,
 } from '../ir/circuit-ir.js';
 import { STDLIB_CIRCUITS } from '../std/index.js';
-import { getCircuitBehavior } from './behavior-registry.js';
+import { behaviourOf, hasCallbacks } from './behaviour.js';
 import type { Circuit } from './builder-types.js';
 import { safeIdentifier } from './reserved-identifiers.js';
 
@@ -89,14 +90,22 @@ export function circuitToSource(built: Circuit): string {
   for (const c of [...ordered, built.circuit]) idMap.set(c.name, safeIdentifier(c.name, used));
   const idOf = (name: string) => idMap.get(name) ?? name;
 
+  // Which circuits carry eval/onTick callbacks, which the IR cannot express.
+  const withCallbacks = new Set<string>();
+  for (const c of [built, ...built._dependencies.values()]) {
+    const behaviour = behaviourOf(c);
+    if (behaviour && hasCallbacks(behaviour)) withCallbacks.add(c.circuit.name);
+  }
+  const emit = (c: CircuitIR) => emitCircuit(c, idOf, withCallbacks.has(c.name));
+
   for (const c of ordered) {
-    lines.push(emitCircuit(c, idOf));
+    lines.push(emit(c));
     lines.push('');
   }
 
   // Emit entry circuit. No `export` — the editor's sandbox evaluates source as
   // a script body via `new Function(...)`, which rejects ES module syntax.
-  lines.push(emitCircuit(built.circuit, idOf));
+  lines.push(emit(built.circuit));
 
   return lines.join('\n');
 }
@@ -125,17 +134,21 @@ function topoSort(circuits: Map<string, CircuitIR>): CircuitIR[] {
 // ──────────────────────────────────────────────────────────────────────────
 // Per-circuit emission
 // ──────────────────────────────────────────────────────────────────────────
-function emitCircuit(c: CircuitIR, idOf: (name: string) => string): string {
+function emitCircuit(
+  c: CircuitIR,
+  idOf: (name: string) => string,
+  hasEvalCallbacks: boolean,
+): string {
   if (c.implementation.kind === 'intrinsic') {
     throw new CircuitToSourceError(
       `Cannot serialize circuit '${c.name}': intrinsic implementations are not supported.`,
     );
   }
   if (c.implementation.kind === 'primitive') {
-    // A primitive with a registered eval/onTick relies on a callback we can't
-    // recover from the IR alone. (Bare primitives — pure port-shape declarations
-    // with no eval — are fine to round-trip.)
-    if (getCircuitBehavior(c.name)) {
+    // A primitive with an eval/onTick relies on a callback we can't recover
+    // from the IR alone. (Bare primitives, pure port-shape declarations with
+    // no eval, are fine to round-trip.)
+    if (hasEvalCallbacks) {
       throw new CircuitToSourceError(
         `Cannot serialize circuit '${c.name}': primitives with eval/onTick callbacks aren't supported by the v1 fork serializer.`,
       );

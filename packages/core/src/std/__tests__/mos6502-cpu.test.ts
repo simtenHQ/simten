@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { getAllCircuitBehaviors } from '../../internal.js';
+import { behaviourOf } from '../../internal.js';
 import { simulate } from '../../simulator/simulate.js';
 import { checkSynthesizable } from '../../verilog/eval-synth.js';
 import * as MOS6502 from '../mos6502.js';
@@ -81,10 +81,9 @@ describe('MOS6502_Core', () => {
   });
 
   it('keeps every 6502 eval inside the synthesizable subset', () => {
-    const names = Object.values(MOS6502).map((c) => c.circuit.name);
-    const evals = [...getAllCircuitBehaviors()].filter(([name]) => names.includes(name));
-    expect(evals.length).toBe(names.length);
+    const evals = Object.values(MOS6502).map((c) => [c.circuit.name, behaviourOf(c)] as const);
     for (const [name, entry] of evals) {
+      if (!entry) throw new Error(`${name} carries no eval`);
       const res = checkSynthesizable(entry.evalFn, entry.inputNames, entry.outputNames);
       expect({ name, errors: res.errors }).toEqual({ name, errors: [] });
     }

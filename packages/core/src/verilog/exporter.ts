@@ -11,10 +11,12 @@
  * - No combinational loops
  */
 
+import type { BehaviourTable } from '../circuit/behaviour.js';
 import type { CircuitIR, MemoryValue, PortType } from '../ir/circuit-ir.js';
 import { memoryContentsToMap } from '../ir/memory-contents.js';
 import { elaborate } from '../simulator/elaboration.js';
 import type { CircuitLibrary, FlatCircuit, FlatConnection, FlatNode } from '../simulator/types.js';
+import { getStdBehaviours } from '../tools/lib.js';
 import {
   emitPrimitive,
   isSequentialPrimitive,
@@ -27,7 +29,11 @@ import {
 import type { ExportResult, VerilogExportOptions } from './types.js';
 import { INLINE_MEMORY_THRESHOLD } from './types.js';
 
-const DEFAULT_OPTIONS: Required<VerilogExportOptions> = {
+type ResolvedOptions = Required<Omit<VerilogExportOptions, 'behaviours'>> & {
+  behaviours: BehaviourTable;
+};
+
+const DEFAULT_OPTIONS: Required<Omit<VerilogExportOptions, 'behaviours'>> = {
   mode: 'flat',
   topModuleName: '',
   clockName: 'clk',
@@ -82,7 +88,11 @@ export function exportVerilogFlat(
   library: CircuitLibrary,
   options?: VerilogExportOptions,
 ): ExportResult {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
+  const opts: ResolvedOptions = {
+    ...DEFAULT_OPTIONS,
+    ...options,
+    behaviours: options?.behaviours ?? getStdBehaviours(),
+  };
   const flatCircuit = elaborate(circuit, library, false, { expandReferences: true });
   return emitFlatModule(circuit, flatCircuit, library, opts);
 }
@@ -100,12 +110,8 @@ export function exportVerilog(
   library: CircuitLibrary,
   options?: VerilogExportOptions,
 ): ExportResult {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
-  if (opts.mode === 'hierarchical') {
-    // TODO: hierarchical mode (emit sub-modules)
-    // For now, fall back to flat
-  }
-  return exportVerilogFlat(circuit, library, opts);
+  // TODO: hierarchical mode (emit sub-modules). For now every mode is flat.
+  return exportVerilogFlat(circuit, library, options);
 }
 
 // ── Flat module emission ────────────────────────────────────────────────
@@ -114,7 +120,7 @@ function emitFlatModule(
   circuit: CircuitIR,
   flat: FlatCircuit,
   library: CircuitLibrary,
-  opts: Required<VerilogExportOptions>,
+  opts: ResolvedOptions,
 ): ExportResult {
   const moduleName = opts.topModuleName || sanitizeId(circuit.name);
   /** primitiveType -> node ids the exporter had no mapping for. */
@@ -338,9 +344,10 @@ function emitFlatModule(
     }
 
     const ctx: PrimitiveContext = {
+      behaviours: opts.behaviours,
       nodeId: node.id,
       primitiveType: node.primitiveType,
-      args: node.arguments as Record<string, any>,
+      args: node.arguments,
       wires,
       clockName: opts.clockName,
       resetName: RESET_NAME,

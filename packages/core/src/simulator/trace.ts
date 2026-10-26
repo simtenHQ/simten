@@ -8,9 +8,10 @@
  * has zero tracing overhead.
  */
 
+import type { BehaviourTable } from '../circuit/behaviour.js';
 import type { CircuitLibrary } from '../ir/circuit-ir.js';
 import { compileForSimulation } from './compile-circuit.js';
-import { EVALUATORS, type EvalContext } from './evaluators/index.js';
+import type { EvalContext } from './evaluators/types.js';
 import { NumericEventQueue } from './numeric-event-queue.js';
 import type { NumericCircuit } from './numeric-types.js';
 import type { NumericPortValues } from './numeric-values.js';
@@ -86,8 +87,7 @@ function propagateWithTrace(
     }
 
     // Evaluate
-    const typeIdx = circuit.primitiveTypeIndex[nodeIndex];
-    const evaluator = EVALUATORS[typeIdx];
+    const evaluator = circuit.evaluators[circuit.primitiveTypeIndex[nodeIndex]];
     if (evaluator) evaluator(ctx);
 
     // Check for changes
@@ -129,8 +129,9 @@ function propagateWithTrace(
 export function tracePropagation(
   flatCircuit: FlatCircuit,
   library: CircuitLibrary,
+  behaviours: BehaviourTable,
 ): PropagationStep[] {
-  const numeric = compileForSimulation(flatCircuit, library);
+  const numeric = compileForSimulation(flatCircuit, library, behaviours);
   const values = createNumericPortValues(numeric.portCount);
   const queue = new NumericEventQueue(numeric.nodeCount);
 

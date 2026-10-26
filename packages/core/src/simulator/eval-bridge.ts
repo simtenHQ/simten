@@ -1,25 +1,23 @@
 /**
- * Eval Bridge — connects user-defined .eval() functions to the simulator.
+ * Eval Bridge — connects `eval`/`onTick` behaviour to the simulator.
  *
- * The simulator dispatches evaluators via:
- *   EVALUATORS[primitiveTypeIndex[nodeIndex]](ctx)
+ * The engine dispatches through a per-compile evaluator table:
+ *   circuit.evaluators[circuit.primitiveTypeIndex[nodeIndex]](ctx)
  *
- * User .eval() functions work with named plain objects:
+ * Behaviour works with named plain objects:
  *   ({ a, b }) => ({ sum: a + b })
  *
- * This module bridges the two by generating wrapper functions that:
- * 1. Read inputs from typed arrays by index → build named input object
- * 2. Merge state values if the component is sequential
- * 3. Call user's .eval() function
- * 4. Write output object properties back to typed arrays by index
+ * This module builds that table from one compile's `BehaviourTable`, by
+ * wrapping each eval in a function that:
+ * 1. Reads inputs from typed arrays by index → builds a named input object
+ * 2. Merges state values if the component is sequential
+ * 3. Calls the eval
+ * 4. Writes output object properties back to typed arrays by index
  */
 
-import type { BehaviorEntry } from '../circuit/behavior-registry.js';
-import { getAllCircuitBehaviors, getCircuitBehavior } from '../circuit/behavior-registry.js';
-import { EVALUATORS } from './evaluators/index.js';
+import type { BehaviourFn, BehaviourTable } from '../circuit/behaviour.js';
 import type { EvalContext, NumericEvaluator } from './evaluators/types.js';
 import { readInput, writeOutput } from './evaluators/types.js';
-import { PRIMITIVE_INDEX_TO_NAME, PRIMITIVE_TYPE_INDICES } from './numeric-types.js';
 
 // ============================================================================
 // Map-as-array Proxy for memory state
@@ -30,14 +28,14 @@ import { PRIMITIVE_INDEX_TO_NAME, PRIMITIVE_TYPE_INDICES } from './numeric-types
  * This allows eval functions to use `memory[addr]` syntax for reads
  * and `memory[addr] = value` for writes.
  */
-function wrapMapAsArray(map: Map<number, number>): any {
+function wrapMapAsArray(map: Map<number, number>): Map<number, number> {
   return new Proxy(map, {
     get(target, prop) {
       if (typeof prop === 'string' && /^\d+$/.test(prop)) {
         return target.get(Number(prop)) ?? 0;
       }
       // Pass through Map methods (get, set, has, etc.) for backward compat
-      const val = (target as any)[prop];
+      const val: unknown = Reflect.get(target, prop);
       return typeof val === 'function' ? val.bind(target) : val;
     },
     set(target, prop, value) {
@@ -51,93 +49,60 @@ function wrapMapAsArray(map: Map<number, number>): any {
 }
 
 // ============================================================================
-// Dynamic type index allocation
-// ============================================================================
-
-/** Starting index for dynamically allocated component types */
-const DYNAMIC_INDEX_START = 200;
-
-/** Next available dynamic index */
-let nextDynamicIndex = DYNAMIC_INDEX_START;
-
-/** Map from component name to dynamically allocated type index */
-const dynamicTypeIndices = new Map<string, number>();
-
-/**
- * Get or allocate a type index for a component.
- * Built-in primitives use their static index from PRIMITIVE_TYPE_INDICES.
- * User-defined components get a dynamic index starting at 200.
- */
-export function getOrAllocateTypeIndex(componentName: string): number {
-  // Check static indices first
-  const staticIdx = PRIMITIVE_TYPE_INDICES[componentName];
-  if (staticIdx !== undefined) return staticIdx;
-
-  // Check if already allocated dynamically
-  const existing = dynamicTypeIndices.get(componentName);
-  if (existing !== undefined) return existing;
-
-  // Allocate new
-  const idx = nextDynamicIndex++;
-  dynamicTypeIndices.set(componentName, idx);
-
-  // Update reverse mapping for debugging
-  PRIMITIVE_INDEX_TO_NAME[idx] = componentName;
-
-  return idx;
-}
-
-/**
- * Resolve a type index for a component name. Returns undefined if not registered.
- */
-export function resolveTypeIndex(componentName: string): number | undefined {
-  return PRIMITIVE_TYPE_INDICES[componentName] ?? dynamicTypeIndices.get(componentName);
-}
-
-/**
- * Reset dynamic allocations (for testing).
- */
-export function resetDynamicIndices(): void {
-  nextDynamicIndex = DYNAMIC_INDEX_START;
-  for (const [, idx] of dynamicTypeIndices) {
-    EVALUATORS[idx] = null;
-    delete PRIMITIVE_INDEX_TO_NAME[idx];
-  }
-  dynamicTypeIndices.clear();
-}
-
-// ============================================================================
 // Wrapper generator
 // ============================================================================
 
+/** The current stored state, merged over the inputs (state overwrites everything). */
+function mergeState(ctx: EvalContext, stateKeys: string[], inputs: Record<string, unknown>) {
+  if (!ctx.state) return;
+  const nodeState = ctx.state.currentState[ctx.nodeIndex];
+  if (
+    nodeState != null &&
+    typeof nodeState === 'object' &&
+    !Array.isArray(nodeState) &&
+    !(nodeState instanceof Map)
+  ) {
+    const stateObj = nodeState as Record<string, unknown>;
+    for (const key of stateKeys) {
+      const val = stateObj[key];
+      // Wrap Map state in Proxy for array-indexable access: memory[addr]
+      inputs[key] = val instanceof Map ? wrapMapAsArray(val) : val;
+    }
+  } else if (nodeState != null) {
+    inputs[stateKeys[0]] = nodeState instanceof Map ? wrapMapAsArray(nodeState) : nodeState;
+  }
+}
+
 /**
- * Generate a NumericEvaluator wrapper for a user-defined .eval() function.
+ * Generate a NumericEvaluator wrapper for an `eval` function.
  *
  * The wrapper:
  * - Reads inputs from typed arrays → builds plain object with port names
  * - Merges in state values if the component is sequential
- * - Calls user's eval function
+ * - Calls the eval
  * - Writes output values from returned object → back to typed arrays
+ *
+ * The two wrappers repeat their read and write loops rather than share helpers:
+ * this is the per-node dispatch on every evaluation.
  */
 export function generateEvalWrapper(
   inputNames: string[],
   outputNames: string[],
-  evalFn: (inputs: Record<string, number>) => Record<string, number>,
+  evalFn: BehaviourFn,
   stateKeys?: string[],
 ): NumericEvaluator {
   const numInputs = inputNames.length;
   const numOutputs = outputNames.length;
 
-  // Pre-compute for the common case: no state
   if (!stateKeys || stateKeys.length === 0) {
     return function userEvalWrapper(ctx: EvalContext): void {
-      const inputs: Record<string, any> = {};
+      const inputs: Record<string, unknown> = {};
 
-      // Merge node.arguments first so eval functions can read parameters (value, width, etc.)
-      // Port inputs below will overwrite any same-named argument (ports take precedence).
+      // Node arguments first so eval can read parameters (value, width, etc.);
+      // a port of the same name overwrites its argument below.
       const args = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex]?.arguments;
       if (args) {
-        for (const key in args) inputs[key] = (args as Record<string, any>)[key];
+        for (const key in args) inputs[key] = args[key];
       }
 
       for (let i = 0; i < numInputs; i++) {
@@ -148,150 +113,84 @@ export function generateEvalWrapper(
 
       for (let i = 0; i < numOutputs; i++) {
         const val = outputs[outputNames[i]];
-        if (val !== undefined) writeOutput(ctx, i, val);
+        if (val !== undefined) writeOutput(ctx, i, val as number);
       }
     };
   }
 
-  // Sequential: merge state into inputs
   return function userEvalWrapperWithState(ctx: EvalContext): void {
-    const inputs: Record<string, any> = {};
+    const inputs: Record<string, unknown> = {};
 
-    // Merge node.arguments (parameters like value, width)
     const args = ctx.circuit.flatCircuit.nodes[ctx.nodeIndex]?.arguments;
     if (args) {
-      for (const key in args) inputs[key] = (args as Record<string, any>)[key];
+      for (const key in args) inputs[key] = args[key];
     }
 
-    // Port inputs overwrite arguments
     for (let i = 0; i < numInputs; i++) {
       inputs[inputNames[i]] = readInput(ctx, i);
     }
 
-    // State overwrites everything (current stored value)
-    if (ctx.state) {
-      const nodeState = ctx.state.currentState[ctx.nodeIndex];
-      if (
-        nodeState != null &&
-        typeof nodeState === 'object' &&
-        !Array.isArray(nodeState) &&
-        !(nodeState instanceof Map)
-      ) {
-        const stateObj = nodeState as Record<string, unknown>;
-        for (const key of stateKeys!) {
-          const val = stateObj[key];
-          // Wrap Map state in Proxy for array-indexable access: memory[addr]
-          inputs[key] = val instanceof Map ? wrapMapAsArray(val) : val;
-        }
-      } else if (nodeState != null) {
-        // Wrap Map state in Proxy for array-indexable access
-        inputs[stateKeys![0]] = nodeState instanceof Map ? wrapMapAsArray(nodeState) : nodeState;
-      }
-    }
+    mergeState(ctx, stateKeys, inputs);
 
     const outputs = evalFn(inputs);
 
     for (let i = 0; i < numOutputs; i++) {
       const val = outputs[outputNames[i]];
-      if (val !== undefined) writeOutput(ctx, i, val);
+      if (val !== undefined) writeOutput(ctx, i, val as number);
     }
   };
 }
 
 // ============================================================================
-// EVALUATORS population from behavior registry
-// ============================================================================
-
-/**
- * The registry entry each compiled evaluator was built from, so a redefinition
- * can be detected. Keyed by type index, matching EVALUATORS.
- */
-const evaluatorSource = new Map<number, BehaviorEntry>();
-
-/**
- * Ensure the EVALUATORS table has an entry for the given component name.
- * Reads from the behavior registry (populated at circuit() definition time).
- *
- * The compiled wrapper closes over the entry's `evalFn`, so it has to be
- * regenerated when that function changes — otherwise redefining a primitive
- * (which the browser editor does on every re-run, in the same realm) leaves the
- * old behaviour compiled in. Identity of the registry entry is the signal:
- * `circuit()` builds a fresh object per definition, so a differing reference
- * means the source changed. Same reference is the common case and still costs
- * only a Map lookup, at compile time rather than per evaluation.
- */
-export function ensureEvaluatorRegistered(name: string): number {
-  const idx = getOrAllocateTypeIndex(name);
-
-  const entry = getCircuitBehavior(name);
-  if (!entry) {
-    // Evaluators registered directly through registerEvalFunction have no
-    // registry entry; keep whatever is already compiled.
-    if (EVALUATORS[idx] != null) return idx;
-    console.warn(`[eval-bridge] No eval-registry entry for '${name}' — getAllCircuitEvals:`, [
-      ...(getAllCircuitBehaviors() as Map<string, any>).keys(),
-    ]);
-    return idx;
-  }
-
-  if (EVALUATORS[idx] != null && evaluatorSource.get(idx) === entry) return idx;
-
-  while (EVALUATORS.length <= idx) EVALUATORS.push(null);
-  EVALUATORS[idx] = generateEvalWrapper(
-    entry.inputNames,
-    entry.outputNames,
-    entry.evalFn,
-    entry.stateKeys,
-  );
-  evaluatorSource.set(idx, entry);
-  // Derived from the same entry, so it is stale for the same reason.
-  onTickRegistry.delete(name);
-
-  return idx;
-}
-
-// ============================================================================
-// onTick registry — user-defined state update functions
+// Per-compile dispatch tables
 // ============================================================================
 
 export type OnTickEntry = {
   inputNames: string[];
   stateKeys: string[];
-  fn: (inputsAndState: Record<string, any>) => Record<string, any>;
+  fn: BehaviourFn;
 };
 
-/** Registry of user-defined onTick functions, keyed by component name */
-const onTickRegistry = new Map<string, OnTickEntry>();
-
-/**
- * Get (or lazily populate) the onTick function for a component name.
- */
-export function getOnTickFunction(name: string): OnTickEntry | undefined {
-  if (onTickRegistry.has(name)) return onTickRegistry.get(name);
-
-  const entry = getCircuitBehavior(name);
-  if (!entry?.onTickFn) return undefined;
-
-  const onTickEntry: OnTickEntry = {
-    inputNames: entry.inputNames,
-    stateKeys: entry.stateKeys ?? [],
-    fn: entry.onTickFn,
-  };
-  onTickRegistry.set(name, onTickEntry);
-  return onTickEntry;
+/** One compile's dispatch: an evaluator and an onTick per primitive type, by type index. */
+export interface DispatchTables {
+  /** Primitive type name for each type index. */
+  typeNames: string[];
+  /** Null when the compile has no behaviour for that type; dispatching it throws. */
+  evaluators: (NumericEvaluator | null)[];
+  onTicks: (OnTickEntry | undefined)[];
+  /** Type index for each name in `typeNames`. */
+  typeIndex: Map<string, number>;
 }
 
-// Keep for backwards compat — simulate.ts still calls this
-export function registerEvalFunction(
+/** Start an empty set of tables; `typeIndexFor` fills it as types are seen. */
+export function createDispatchTables(): DispatchTables {
+  return { typeNames: [], evaluators: [], onTicks: [], typeIndex: new Map() };
+}
+
+/**
+ * The type index for a primitive type in this compile, building its evaluator
+ * and onTick from the behaviour table the first time the type is seen.
+ */
+export function typeIndexFor(
+  tables: DispatchTables,
   name: string,
-  inputNames: string[],
-  outputNames: string[],
-  evalFn: (inputs: Record<string, number>) => Record<string, number>,
-  stateKeys?: string[],
+  behaviours: BehaviourTable,
 ): number {
-  const idx = getOrAllocateTypeIndex(name);
-  if (EVALUATORS[idx] != null) return idx;
-  while (EVALUATORS.length <= idx) EVALUATORS.push(null);
-  EVALUATORS[idx] = generateEvalWrapper(inputNames, outputNames, evalFn, stateKeys);
+  const existing = tables.typeIndex.get(name);
+  if (existing !== undefined) return existing;
+  const idx = tables.typeNames.length;
+  tables.typeIndex.set(name, idx);
+  tables.typeNames.push(name);
+  const entry = behaviours.get(name);
+  tables.evaluators.push(
+    entry
+      ? generateEvalWrapper(entry.inputNames, entry.outputNames, entry.evalFn, entry.stateKeys)
+      : null,
+  );
+  tables.onTicks.push(
+    entry?.onTickFn
+      ? { inputNames: entry.inputNames, stateKeys: entry.stateKeys ?? [], fn: entry.onTickFn }
+      : undefined,
+  );
   return idx;
 }

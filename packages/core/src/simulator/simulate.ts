@@ -12,6 +12,7 @@
  *   sim.get('sum')  // 0
  */
 
+import { designOf } from '../circuit/behaviour.js';
 import type { Circuit, PortMap } from '../circuit/builder-types.js';
 import { isSequentialCircuit } from '../circuit/is-sequential.js';
 import type {
@@ -114,19 +115,9 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
 ): SimulationHandle<Ins, Outs> {
   const rawCircuit = comp.circuit;
 
-  // Build component library from the circuit + all transitive dependencies
-  const circuitMap = new Map<string, CircuitIR>();
-  const defaultLibrary: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
-    resolveCircuit: (name) => circuitMap.get(name),
-    getAllPrimitiveNames: () =>
-      [...circuitMap.entries()]
-        .filter(([, c]) => c.implementation.kind === 'primitive')
-        .map(([n]) => n),
-    addCircuit: (c) => {
-      circuitMap.set(c.name, c);
-    },
-  };
-  const library = options?.library ?? defaultLibrary;
+  // The library and behaviour table for this circuit and its dependencies.
+  const design = designOf(comp);
+  const library = options?.library ?? design.library;
   if (isMutable(library)) {
     library.addCircuit(rawCircuit);
     if (comp._dependencies) {
@@ -144,7 +135,10 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
   const isSequential = isSequentialCircuit(circuit, library.resolveCircuit);
 
   // Create engine and session
-  const engine = createEngine(elaborate(circuit, library), { componentLibrary: library });
+  const engine = createEngine(elaborate(circuit, library), {
+    componentLibrary: library,
+    behaviours: design.behaviours,
+  });
 
   // Run initial combinational propagation
   engine.runCombinational();

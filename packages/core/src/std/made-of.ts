@@ -342,8 +342,8 @@ function comparatorMadeOf(args: Record<string, ArgumentValue>) {
 // ============================================================================
 
 // Deliberately not a mutable registry: the set is fixed at build time and
-// nothing registers into it at runtime, unlike `behavior registry`, which exists
-// because user code defines evals dynamically.
+// nothing registers into it at runtime. (Behaviour, which user code defines
+// dynamically, travels with each compile instead; see circuit/behaviour.ts.)
 /** Gate-level reference builds, keyed by primitive name. Display only. */
 export const MADE_OF: Readonly<Record<string, MadeOfBuilder>> = Object.freeze({
   Adder: adderMadeOf,

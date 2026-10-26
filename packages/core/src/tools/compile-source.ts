@@ -5,12 +5,14 @@
  * Accepts TypeScript code using the circuit() API.
  */
 
+import type { Behaviour } from '../circuit/behaviour.js';
 import { executeCircuitCode } from '../circuit/execute.js';
 import type { CircuitIR, CircuitLibrary } from '../ir/circuit-ir.js';
 
 export interface CompileSourceResult {
   circuits: CircuitIR[];
   library: CircuitLibrary & { addCircuit(c: CircuitIR): void };
+  behaviours: Map<string, Behaviour>;
   error: string | null;
 }
 
@@ -19,15 +21,17 @@ export interface CompileSourceResult {
  */
 export function compileSource(source: string, _sourceName?: string): CompileSourceResult {
   const result = executeCircuitCode(source);
+  const { library, behaviours } = result;
   if (result.error) {
-    return { circuits: [], library: result.library, error: result.error };
+    return { circuits: [], library, behaviours, error: result.error };
   }
   if (result.circuits.length === 0) {
     return {
       circuits: [],
-      library: result.library,
+      library,
+      behaviours,
       error: 'No circuits found. Call .build() on your component() definitions.',
     };
   }
-  return { circuits: result.circuits, library: result.library, error: null };
+  return { circuits: result.circuits, library, behaviours, error: null };
 }

@@ -1,9 +1,8 @@
 /**
  * Standard Library — Logic Gates
  *
- * Defined using circuit() for full TypeScript type inference.
- * The simulation engine uses hand-written fast evaluators (EVALUATORS table)
- * for these — the eval functions here are fallbacks and documentation.
+ * Defined using circuit() for full TypeScript type inference. The engine runs
+ * the eval functions here, through each compile's behaviour table.
  */
 
 import { bit, bus } from '../circuit/bit-bus.js';
@@ -381,7 +380,7 @@ export const ReduceAnd = circuit('ReduceAnd', ({ width = 8 }: { width?: number }
     description: 'Reduction AND (&a) — 1 iff all bits set',
   },
   // Literal default and an inlined mask, so nothing here reads the factory
-  // scope — the registry keys by name and last write wins (see Adder).
+  // scope: one closure serves every instance of a name (see Adder).
   eval: ({ a, width: w = 8 }) => {
     const wn = w as number;
     const m = (wn >= 32 ? 0xffffffff : (1 << wn) - 1) >>> 0;

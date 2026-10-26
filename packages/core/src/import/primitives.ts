@@ -10,16 +10,12 @@
  *
  * N-way concatenation and sign-extension (MSB replication) are expressed as a
  * fold of `RtlConcat2`, so every instance shares a fixed set of port NAMES
- * (`in`/`out`, `hi`/`lo`/`out`) — a hard requirement of the behavior registry,
- * which keys behaviour by circuit name and varies only widths per instance
+ * (`in`/`out`, `hi`/`lo`/`out`): a compile's behaviour table is keyed by
+ * circuit name, so one eval serves every instance and only widths vary
  * (same contract as `Adder`/`Register` in std).
  *
  * Names contain no `$`: `sanitizeId` in verilog/exporter.ts strips non-word
  * chars, so a `$`-named primitive would silently collide on export.
- *
- * IMPORTANT: importing this module registers these primitives via the
- * `circuit()` side effect. `packages/core/package.json` marks this file
- * as having side effects so bundlers cannot drop that registration.
  */
 
 import { bit, bus, mem } from '../circuit/bit-bus.js';
@@ -367,7 +363,7 @@ export function Dlatch(opts: { width: number; enPolarity: number }): Circuit {
  *
  * The primitive name encodes the shape (read/write port counts, address/data
  * widths, depth) so every instance of a shape shares a fixed set of port names
- * — the eval registry keys behaviour by name. Ports are per-lane and narrow
+ * : a compile's behaviour table keys behaviour by name. Ports are per-lane and narrow
  * (`rd_addr_i`, `wr_addr_i`, `wr_data_i`, `wr_en_i`, `rd_data_i`), so the
  * importer slices yosys's wide packed `RD_ADDR`/`WR_DATA`/… bit arrays into
  * lanes rather than materializing a >32-bit port.

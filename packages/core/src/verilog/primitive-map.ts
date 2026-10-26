@@ -13,7 +13,7 @@
  * All operations are unsigned. Signed tracking is a future enhancement.
  */
 
-import { getCircuitBehavior } from '../circuit/behavior-registry.js';
+import type { BehaviourTable } from '../circuit/behaviour.js';
 import type { ArgumentValue } from '../ir/circuit-ir.js';
 
 /**
@@ -52,6 +52,8 @@ export interface StateInit {
 }
 
 export interface PrimitiveContext {
+  /** Behaviour by primitive name, for eval-synth when there is no mapping. */
+  behaviours: BehaviourTable;
   nodeId: string;
   primitiveType: string;
   args: Record<string, ArgumentValue>;
@@ -977,7 +979,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
 
     // ── Unknown — try eval-synth auto-transpilation ────────────────
     default: {
-      const synthResult = tryEmitFromEval(ctx, getCircuitBehavior);
+      const synthResult = tryEmitFromEval(ctx, (name) => ctx.behaviours.get(name));
       if (synthResult) return synthResult;
       return {
         lines: [`// ${UNSUPPORTED_MARKER} "${primitiveType}" (${id})`],

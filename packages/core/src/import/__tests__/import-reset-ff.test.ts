@@ -32,9 +32,9 @@ const netlist = JSON.parse(fix('syncfifo.json')) as YosysNetlist;
 const golden = JSON.parse(fix('syncfifo.golden.json')) as Golden;
 
 function importDesign(netlistJson: YosysNetlist, topName: string) {
-  const { top, library } = importNetlist(netlistJson, topName);
+  const { top, library, behaviours } = importNetlist(netlistJson, topName);
   const deps = [...library.values()].filter((c) => c.name !== top.name);
-  return { top, deps };
+  return { top, deps, behaviours };
 }
 
 function importFifo() {
@@ -42,12 +42,8 @@ function importFifo() {
 }
 
 /** Run every golden vector through the imported circuit and assert it matches. */
-function assertMatchesGolden(
-  top: Parameters<typeof buildFromIR>[0],
-  deps: Parameters<typeof buildFromIR>[1],
-  g: Golden,
-) {
-  const sim = simulate(buildFromIR(top, deps));
+function assertMatchesGolden(design: ReturnType<typeof importDesign>, g: Golden) {
+  const sim = simulate(buildFromIR(design.top, design.deps, design.behaviours));
   g.vectors.forEach((v, cycle) => {
     sim.set(v.in);
     sim.tick();
@@ -69,8 +65,7 @@ describe('reset/enable flip-flop import ($adff → Register.rst)', () => {
   });
 
   it('simulates identically to the iverilog golden (reset, flags, defined data)', () => {
-    const { top, deps } = importFifo();
-    assertMatchesGolden(top, deps, golden);
+    assertMatchesGolden(importFifo(), golden);
   });
 });
 
@@ -90,7 +85,6 @@ describe('non-zero reset import ($adff with preset value → Register + Mux + Co
   });
 
   it('simulates identically to the iverilog golden', () => {
-    const { top, deps } = importDesign(cntNetlist, 'counter4bit');
-    assertMatchesGolden(top, deps, cntGolden);
+    assertMatchesGolden(importDesign(cntNetlist, 'counter4bit'), cntGolden);
   });
 });

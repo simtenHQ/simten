@@ -4,7 +4,12 @@
  * Tests Screen component reading RAM via sequential state (DMA-like behavior).
  */
 
-import { type CircuitLibrary, createEngine, elaborate } from '@simten/core/internal';
+import {
+  type CircuitLibrary,
+  createEngine,
+  elaborate,
+  getStdBehaviours,
+} from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
@@ -56,7 +61,10 @@ describe('Screen Integration', () => {
 
     const simLibrary = getLibrary();
 
-    const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+    const sim = createEngine(elaborate(circuit, simLibrary), {
+      componentLibrary: simLibrary,
+      behaviours: getStdBehaviours(),
+    });
     const result = sim.runCombinational();
 
     expect(result.error).toBeUndefined();
@@ -100,7 +108,10 @@ describe('Screen Integration', () => {
 
     const simLibrary = getLibrary();
 
-    const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+    const sim = createEngine(elaborate(circuit, simLibrary), {
+      componentLibrary: simLibrary,
+      behaviours: getStdBehaviours(),
+    });
     const result = sim.runCombinational();
 
     expect(result.error).toBeUndefined();
@@ -152,7 +163,10 @@ describe('Screen Integration', () => {
 
     // Run simulation - should not error
     const simLibrary = getLibrary();
-    const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+    const sim = createEngine(elaborate(circuit, simLibrary), {
+      componentLibrary: simLibrary,
+      behaviours: getStdBehaviours(),
+    });
     const result = sim.runCombinational();
     expect(result.error).toBeUndefined();
   });
