@@ -44,19 +44,19 @@ import { hasSynth, synthesizeVerilog } from './synth.js';
 
 // ---- helpers ----------------------------------------------------------------
 
-type BuiltCircuit = {
+type CircuitLike = {
   circuit: import('../../ir/circuit-ir.js').CircuitIR;
   _dependencies: Map<string, { circuit: import('../../ir/circuit-ir.js').CircuitIR }>;
 };
 
-function makeLib(top: BuiltCircuit, name: string): CircuitLibrary {
+function makeLib(top: CircuitLike, name: string): CircuitLibrary {
   return {
     resolveCircuit: (n) => (n === name ? top.circuit : top._dependencies.get(n)?.circuit),
     getAllPrimitiveNames: () => [...top._dependencies.keys()],
   };
 }
 
-async function synthComponent(top: BuiltCircuit, name: string) {
+async function synthComponent(top: CircuitLike, name: string) {
   const result = exportVerilog(top.circuit, makeLib(top, name), { target: 'synthesis' });
   const resp = await synthesizeVerilog(result, name);
   if (!resp.success)

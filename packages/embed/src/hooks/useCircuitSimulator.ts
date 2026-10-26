@@ -124,7 +124,7 @@ export interface UseCircuitSimulatorOptions {
  * Returns empty object if the circuit's evals aren't registered in this frame
  * (e.g. editor case where evals live only in the sandbox from prior compile).
  */
-function extractEvalSources(circuit: Circuit): Record<string, BehaviorSource> {
+function extractBehaviorSources(circuit: Circuit): Record<string, BehaviorSource> {
   const sources: Record<string, BehaviorSource> = {};
   const visited = new Set<string>();
 
@@ -334,7 +334,7 @@ export function useCircuitSimulator(
       if (cancelled) return;
 
       // Extract eval sources from the Circuit and its dependencies
-      const evalSources = extractEvalSources(circuit);
+      const evalSources = extractBehaviorSources(circuit);
 
       // Collect all library circuits (stdlib + user).
       // The harnessed circuit references the raw circuit as "dut" by name, so we

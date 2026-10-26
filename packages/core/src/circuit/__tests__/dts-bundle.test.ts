@@ -97,10 +97,10 @@ describe('dist/editor-globals.dts.txt', () => {
 
   it('does not leak non-stdlib root exports as globals', () => {
     // executeCircuitCode only injects stdlib + the 6 fixed names. Things
-    // like `elaborate`, `createSimulator`, `executeCircuitCode` itself are
+    // like `elaborate`, `createEngine`, `executeCircuitCode` itself are
     // root exports but must NOT appear in the editor's global scope.
     expect(globals).not.toMatch(/\bconst elaborate:/);
-    expect(globals).not.toMatch(/\bconst createSimulator:/);
+    expect(globals).not.toMatch(/\bconst createEngine:/);
     expect(globals).not.toMatch(/\bconst executeCircuitCode:/);
   });
 });

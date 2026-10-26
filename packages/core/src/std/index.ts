@@ -144,7 +144,7 @@ import * as RV32ICpu from './rv32i-cpu.js';
 import * as Sequential from './sequential.js';
 import * as Reconstruction from './wiring.js';
 
-const isBuiltCircuit = (v: unknown): v is Circuit => !!v && typeof v === 'object' && 'circuit' in v;
+const isCircuit = (v: unknown): v is Circuit => !!v && typeof v === 'object' && 'circuit' in v;
 
 const _allExports: unknown[] = [
   ...Object.values(Logic),
@@ -166,11 +166,11 @@ const _allExports: unknown[] = [
 // editor/library has a concrete `Circuit` to register for each one.
 // Singletons pass through unchanged.
 const _materialize = (v: unknown): Circuit | null => {
-  if (isBuiltCircuit(v)) return v;
+  if (isCircuit(v)) return v;
   if (typeof v === 'function') {
     try {
       const built = (v as () => unknown)();
-      return isBuiltCircuit(built) ? built : null;
+      return isCircuit(built) ? built : null;
     } catch {
       return null;
     }

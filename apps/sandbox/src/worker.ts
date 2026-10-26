@@ -252,7 +252,7 @@ function serializable(c: CircuitIR): CircuitIR {
   return JSON.parse(JSON.stringify(c));
 }
 
-function registerEvalSources(evalSources: Record<string, BehaviorSource>) {
+function registerBehaviorSources(evalSources: Record<string, BehaviorSource>) {
   for (const [name, info] of Object.entries(evalSources)) {
     if (STDLIB_EVAL_NAMES.has(name)) continue;
     try {
@@ -347,7 +347,7 @@ async function compile(source: string, slotId: string = DEFAULT_SLOT): Promise<S
  */
 function compileIR(req: Extract<SandboxRequest, { type: 'compile-ir' }>): SandboxResult {
   if (req.evalSources) {
-    registerEvalSources(req.evalSources);
+    registerBehaviorSources(req.evalSources);
     restoreEvals(STDLIB_EVALS);
   }
 

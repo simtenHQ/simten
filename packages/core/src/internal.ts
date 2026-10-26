@@ -35,3 +35,4 @@ export {
   type SimulationTrace,
 } from './simulator/trace-analysis.js';
 export * from './tools/index.js';
+export { slugify } from './util/test-name.js';

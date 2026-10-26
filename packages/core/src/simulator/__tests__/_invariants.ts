@@ -57,12 +57,12 @@ import type { FlatCircuit, FlatNode } from '../types.js';
 // need .circuit and (optionally) ._dependencies here.
 // `_dependencies` is a ReadonlyMap on the real `Circuit`; declaring it
 // mutable here made every genuine Circuit unassignable to this helper.
-type BuiltCircuitLike = {
+type CircuitLike = {
   circuit: CircuitIR;
   _dependencies?: ReadonlyMap<string, { circuit: CircuitIR }>;
 };
 
-export function elaborateBuilt(built: BuiltCircuitLike): FlatCircuit {
+export function elaborateBuilt(built: CircuitLike): FlatCircuit {
   const circuitMap = new Map<string, CircuitIR>();
   const library: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
     resolveCircuit: (name) => circuitMap.get(name),

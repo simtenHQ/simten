@@ -40,20 +40,9 @@ import { registerSimtenSnippets } from './snippets';
  * acquisition of the published package: slow, and broken offline. Re-export the
  * bundle under each subpath so they resolve deterministically. Over-broad on
  * exports (every subpath appears to export everything), but correct for every
- * symbol that actually exists. `sim`, `simulator` and `api` are no longer
- * package entry points; they stay here so saved source that still imports them
- * keeps its completions (the sandbox strips imports, so it runs either way).
+ * symbol that actually exists.
  */
-const CORE_SUBPATHS = [
-  'circuit',
-  'std',
-  'verilog',
-  'verify',
-  'examples',
-  'sim',
-  'simulator',
-  'api',
-];
+const CORE_SUBPATHS = ['circuit', 'std', 'verilog', 'verify', 'examples'];
 
 /**
  * Module-not-found diagnostics, suppressed because type acquisition is async and

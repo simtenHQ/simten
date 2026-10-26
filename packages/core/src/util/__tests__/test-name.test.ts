@@ -1,8 +1,5 @@
-import { resolve } from 'node:path';
-import { pathToFileURL } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { findRepoRoot } from './repo-root.js';
-import { slugify } from './test-name.js';
+import { slugify } from '../test-name.js';
 
 describe('slugify', () => {
   it('passes alphanumerics, underscore, and hyphen through unchanged', () => {
@@ -30,27 +27,5 @@ describe('slugify', () => {
     expect(slugify('   ')).toBe('unnamed');
     expect(slugify('!!!')).toBe('unnamed');
     expect(slugify('___')).toBe('unnamed');
-  });
-});
-
-describe('slugify matches the writer in hardware/ulx3s', () => {
-  // verify.ts writes VCDs under its slug and read_waveform looks them up under
-  // ours, so any drift breaks test_name lookups.
-  it('agrees on every sample', async () => {
-    const writerPath = resolve(findRepoRoot(), 'hardware/ulx3s/projects/cpu/test-name.ts');
-    const writer = (await import(pathToFileURL(writerPath).href)) as {
-      slugify: (name: string) => string;
-    };
-    const samples = [
-      'R-Type ADD basic',
-      'R-Type_ADD_basic',
-      'a   b...c',
-      '!!both!!',
-      '',
-      '___',
-      'LUI / AUIPC (upper imm)',
-      'SB+LB sign-extend',
-    ];
-    for (const s of samples) expect(writer.slugify(s), s).toBe(slugify(s));
   });
 });

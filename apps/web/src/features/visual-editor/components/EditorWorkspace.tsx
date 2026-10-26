@@ -189,7 +189,7 @@ export function EditorWorkspace({
   // Build a Circuit-like object from the compile result for useCircuitSimulator.
   // When the editor's source was compiled via sandbox.compile(), evals are already
   // registered in the sandbox, so no need to transfer them via evalSources.
-  const editorBuiltCircuit = useMemo<import('@simten/core/circuit').Circuit | null>(() => {
+  const editorCircuit = useMemo<import('@simten/core/circuit').Circuit | null>(() => {
     if (!compiler.result || !circuit) return null;
     return builtFromIR(circuit, [...compiler.result.libraryCircuits, ...compiler.result.circuits]);
   }, [compiler.result, circuit]);
@@ -329,8 +329,8 @@ export function EditorWorkspace({
   // The editor already compiled source via sandbox.compile(), so evals exist in the sandbox.
   // useCircuitSimulator sends the harnessed Circuit IR to the sandbox via compileIR.
   // Cast needed because useCircuitSimulator requires a Circuit; we always
-  // provide one once the editor has compiled (see editorBuiltCircuit guard).
-  const sim = useCircuitSimulator(editorBuiltCircuit, { autoHarness: false });
+  // provide one once the editor has compiled (see editorCircuit guard).
+  const sim = useCircuitSimulator(editorCircuit, { autoHarness: false });
   const showClockControls = sim.isSequential;
 
   // Keyboard scan code input for Input nodes (e.g. keyboard-driven CPU demos)

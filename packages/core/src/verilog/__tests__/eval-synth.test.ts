@@ -13,7 +13,7 @@ import '../../std/index.js';
 import {
   checkSynthesizable,
   emitVerilogFromEval,
-  parseEvalSource,
+  parseBehaviorSource,
   tryEmitFromEval,
   validateSynthAST,
 } from '../eval-synth.js';
@@ -61,10 +61,10 @@ function libraryFor(c: { circuit: any; _dependencies: ReadonlyMap<string, any> }
 
 // ── Parser ───────────────────────────────────────────────────────────────
 
-describe('parseEvalSource', () => {
+describe('parseBehaviorSource', () => {
   it('parses simple arrow expression', () => {
     const fn = ({ a, b }: any) => ({ out: a & b });
-    const parsed = parseEvalSource(fn);
+    const parsed = parseBehaviorSource(fn);
     expect(parsed).not.toBeNull();
     expect(parsed!.paramNames).toEqual(['a', 'b']);
   });
@@ -74,14 +74,14 @@ describe('parseEvalSource', () => {
       const result = a + b;
       return { sum: result & 0xff };
     };
-    const parsed = parseEvalSource(fn);
+    const parsed = parseBehaviorSource(fn);
     expect(parsed).not.toBeNull();
     expect(parsed!.paramNames).toEqual(['a', 'b']);
   });
 
   it('parses destructuring rename', () => {
     const fn = ({ in: a }: any) => ({ out: a ? 0 : 1 });
-    const parsed = parseEvalSource(fn);
+    const parsed = parseBehaviorSource(fn);
     expect(parsed).not.toBeNull();
     expect(parsed!.paramNames).toEqual(['a']);
   });
@@ -101,13 +101,13 @@ describe('parseEvalSource', () => {
       }
       return { out: result };
     };
-    const parsed = parseEvalSource(fn);
+    const parsed = parseBehaviorSource(fn);
     expect(parsed).not.toBeNull();
     expect(parsed!.paramNames).toEqual(['a', 'op']);
   });
 
   it('returns null for non-function', () => {
-    expect(parseEvalSource(42 as any)).toBeNull();
+    expect(parseBehaviorSource(42 as any)).toBeNull();
   });
 });
 
@@ -116,21 +116,21 @@ describe('parseEvalSource', () => {
 describe('validateSynthAST', () => {
   it('accepts bitwise operations', () => {
     const fn = ({ a, b }: any) => ({ out: (a & b) | (a ^ b) });
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const result = validateSynthAST(parsed, ['a', 'b'], ['out']);
     expect(result.valid).toBe(true);
   });
 
   it('accepts arithmetic', () => {
     const fn = ({ a, b }: any) => ({ sum: a + b, diff: a - b });
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const result = validateSynthAST(parsed, ['a', 'b'], ['sum', 'diff']);
     expect(result.valid).toBe(true);
   });
 
   it('accepts ternary', () => {
     const fn = ({ a, b, sel }: any) => ({ out: sel ? a : b });
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const result = validateSynthAST(parsed, ['a', 'b', 'sel'], ['out']);
     expect(result.valid).toBe(true);
   });
@@ -140,7 +140,7 @@ describe('validateSynthAST', () => {
       const sum = a + b;
       return { out: sum & 0xff };
     };
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const result = validateSynthAST(parsed, ['a', 'b'], ['out']);
     expect(result.valid).toBe(true);
   });
@@ -160,7 +160,7 @@ describe('validateSynthAST', () => {
       }
       return { out: result };
     };
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const result = validateSynthAST(parsed, ['op', 'a', 'b'], ['out']);
     expect(result.valid).toBe(true);
   });
@@ -171,21 +171,21 @@ describe('validateSynthAST', () => {
       lt: a < b ? 1 : 0,
       gt: a > b ? 1 : 0,
     });
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const result = validateSynthAST(parsed, ['a', 'b'], ['eq', 'lt', 'gt']);
     expect(result.valid).toBe(true);
   });
 
   it('accepts logical operators', () => {
     const fn = ({ a, b }: any) => ({ out: a && b ? 1 : 0 });
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const result = validateSynthAST(parsed, ['a', 'b'], ['out']);
     expect(result.valid).toBe(true);
   });
 
   it('accepts unary operators', () => {
     const fn = ({ a }: any) => ({ out: ~a, neg: !a });
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const result = validateSynthAST(parsed, ['a'], ['out', 'neg']);
     expect(result.valid).toBe(true);
   });
@@ -194,7 +194,7 @@ describe('validateSynthAST', () => {
 
   it('rejects function calls', () => {
     const fn = ({ a }: any) => ({ out: Math.min(a, 255) });
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const result = validateSynthAST(parsed, ['a'], ['out']);
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.includes('not synthesizable'))).toBe(true);
@@ -202,7 +202,7 @@ describe('validateSynthAST', () => {
 
   it('rejects member expressions', () => {
     const fn = ({ a }: any) => ({ out: a.toString() });
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const result = validateSynthAST(parsed, ['a'], ['out']);
     expect(result.valid).toBe(false);
   });
@@ -217,7 +217,7 @@ describe('validateSynthAST', () => {
       }
       return { out: sum };
     };
-    const parsed = parseEvalSource(fn);
+    const parsed = parseBehaviorSource(fn);
     if (parsed) {
       const result = validateSynthAST(parsed, ['a'], ['out']);
       expect(result.valid).toBe(false);
@@ -230,7 +230,7 @@ describe('validateSynthAST', () => {
       const m = new Map();
       return { out: a };
     };
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const result = validateSynthAST(parsed, ['a'], ['out']);
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.includes('new'))).toBe(true);
@@ -242,7 +242,7 @@ describe('validateSynthAST', () => {
       var x = a + 1;
       return { out: x };
     };
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const result = validateSynthAST(parsed, ['a'], ['out']);
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.includes('var'))).toBe(true);
@@ -251,7 +251,7 @@ describe('validateSynthAST', () => {
   it('rejects await', () => {
     // Async arrow function
     const fn = async ({ a }: any) => ({ out: await a });
-    const parsed = parseEvalSource(fn);
+    const parsed = parseBehaviorSource(fn);
     if (parsed) {
       const result = validateSynthAST(parsed, ['a'], ['out']);
       expect(result.valid).toBe(false);
@@ -260,7 +260,7 @@ describe('validateSynthAST', () => {
 
   it('rejects string literals', () => {
     const fn = ({ a }: any) => ({ out: 'hello' as any });
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const result = validateSynthAST(parsed, ['a'], ['out']);
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.includes('string'))).toBe(true);
@@ -269,7 +269,7 @@ describe('validateSynthAST', () => {
   it('rejects references to undeclared identifiers', () => {
     const fn = ({ a }: any) => ({ out: a + globalVar });
     // globalVar doesn't exist so fn.toString() includes it
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const result = validateSynthAST(parsed, ['a'], ['out']);
     expect(result.valid).toBe(false);
     expect(result.errors.some((e) => e.includes('globalVar'))).toBe(true);
@@ -298,7 +298,7 @@ describe('checkSynthesizable', () => {
 describe('emitVerilogFromEval', () => {
   it('transpiles simple AND', () => {
     const fn = ({ a, b }: any) => ({ out: a & b });
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const ctx = makeCtx('MyAnd', { a: 'w_a', b: 'w_b' }, { out: 'w_out' });
     const result = emitVerilogFromEval(parsed, fn, ctx, ['a', 'b'], ['out']);
     expect(result.lines.some((l) => l.includes('assign w_out'))).toBe(true);
@@ -310,7 +310,7 @@ describe('emitVerilogFromEval', () => {
       eq: a === b ? 1 : 0,
       lt: a < b ? 1 : 0,
     });
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const ctx = makeCtx('MyCmp', { a: 'w_a', b: 'w_b' }, { eq: 'w_eq', lt: 'w_lt' });
     const result = emitVerilogFromEval(parsed, fn, ctx, ['a', 'b'], ['eq', 'lt']);
     expect(result.lines.some((l) => l.includes('assign w_eq'))).toBe(true);
@@ -322,7 +322,7 @@ describe('emitVerilogFromEval', () => {
       const result = a + b + carry_in;
       return { sum: result & 0xff, carry_out: (result >> 8) & 1 };
     };
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const ctx = makeCtx(
       'MyAdd',
       { a: 'w_a', b: 'w_b', carry_in: 'w_cin' },
@@ -357,7 +357,7 @@ describe('emitVerilogFromEval', () => {
       }
       return { out: result };
     };
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const ctx = makeCtx(
       'MyALU',
       { a: 'w_a', b: 'w_b', op: 'w_op' },
@@ -374,7 +374,7 @@ describe('emitVerilogFromEval', () => {
 
   it('strips >>> 0 unsigned coercion', () => {
     const fn = ({ a, b }: any) => ({ out: (a + b) >>> 0 });
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const ctx = makeCtx('MyAdd', { a: 'w_a', b: 'w_b' }, { out: 'w_out' });
     const result = emitVerilogFromEval(parsed, fn, ctx, ['a', 'b'], ['out']);
     const text = result.lines.join('\n');
@@ -387,7 +387,7 @@ describe('emitVerilogFromEval', () => {
 
   it('handles destructuring rename ({ in: a })', () => {
     const fn = ({ in: a }: any) => ({ out: a ? 0 : 1 });
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const ctx = makeCtx('MyNot', { in: 'w_in' }, { out: 'w_out' });
     const result = emitVerilogFromEval(parsed, fn, ctx, ['in'], ['out']);
     expect(result.lines.some((l) => l.includes('w_in'))).toBe(true);
@@ -398,7 +398,7 @@ describe('emitVerilogFromEval', () => {
     // Note: V8 normalizes 0xFF to 255 in fn.toString(), so hex is lost.
     // The transpiler emits decimal. This is correct — Verilog accepts decimal.
     const fn = ({ a }: any) => ({ out: a & 0xff });
-    const parsed = parseEvalSource(fn)!;
+    const parsed = parseBehaviorSource(fn)!;
     const ctx = makeCtx('MyMask', { a: 'w_a' }, { out: 'w_out' });
     const result = emitVerilogFromEval(parsed, fn, ctx, ['a'], ['out']);
     const text = result.lines.join('\n');

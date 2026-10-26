@@ -19,6 +19,6 @@ Public entry points: `@simten/core` (`circuit`, `bit`, `bus`, `reg`, `mem`, `sim
 | `@simten/core/simulator`, `/api`, `/import` | `@simten/core/internal` |
 | `@simten/core/examples/catalog` | `@simten/core/examples` |
 | `@simten/core/rtl` | removed (Verilog-import cells, used internally) |
-| `@simten/core/util/test-name` (`slugify`) | removed |
+| `@simten/core/util/test-name` (`slugify`) | `@simten/core/internal` |
 | `executeCircuitCode`, `buildFromIR`, `circuitToSource`, `autoHarness`, `isSequentialCircuit` and the other non-builder exports of `/circuit` | `@simten/core/internal` |
 | `getGrammarHandler`, `getCircuitAPISummary` | removed; the text lives in the MCP `get_grammar` tool |

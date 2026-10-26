@@ -167,7 +167,7 @@ export function stripExports(code: string): string {
  * `nodes: { r: Register }` does too, so the diagram matches what wiring it up
  * would give you.
  */
-function asBuiltCircuit(value: unknown): Circuit | null {
+function asCircuit(value: unknown): Circuit | null {
   const built = value as Circuit | undefined;
   if (built?.circuit?.name) return built;
 
@@ -305,7 +305,7 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
     // bare function is called with no arguments to get its default instance.
     const defined = new Set(circuits.map((c) => c.name));
     for (const value of exportedValues) {
-      const built = asBuiltCircuit(value);
+      const built = asCircuit(value);
       if (!built || defined.has(built.circuit.name)) continue;
       defined.add(built.circuit.name);
       exportedCircuits.push(built.circuit);

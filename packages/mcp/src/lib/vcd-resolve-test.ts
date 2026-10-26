@@ -4,14 +4,14 @@
  * verify.ts (hardware/ulx3s/projects/cpu/verify.ts) writes per-test VCDs to
  *   <repo>/hardware/ulx3s/projects/cpu/.vcd/<slugify(test_name)>.vcd
  *
- * `slugify` must match the writer's byte-for-byte (see test-name.ts). Any drift
- * between the two would break test_name lookups.
+ * Both sides use the one `slugify` in `@simten/core/internal`, so the read path
+ * matches the write path byte-for-byte.
  */
 
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { slugify } from '@simten/core/internal';
 import { findRepoRoot } from './repo-root.js';
-import { slugify } from './test-name.js';
 
 export const VCD_PROJECT_DIR_SUFFIX = 'hardware/ulx3s/projects/cpu/.vcd';
 
