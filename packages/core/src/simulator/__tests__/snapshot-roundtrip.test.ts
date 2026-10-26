@@ -30,14 +30,11 @@
  *      We do not test pure-combinational round-trip here because the
  *      property is vacuous.
  *
- *   2. `engine.snapshot()` captures *engine state* only. It does NOT
- *      capture externally-driven input port values (those live above
- *      the engine boundary), and it does NOT revert the
- *      `SimulationSession`-level cycle counter on restore. Tests below
- *      account for both: they re-drive inputs after every restore and
- *      they assert on output traces, not on `sim.cycle`. If those
- *      semantics ever change, these tests should be tightened to assert
- *      on cycle and input restoration too.
+ *   2. `engine.snapshot()` captures top-level inputs and Switch/Input
+ *      values along with engine state (see simulation-model.test.ts), but
+ *      it does NOT revert the `SimulationSession`-level cycle counter on
+ *      restore. Tests below re-drive inputs after every restore anyway and
+ *      assert on output traces, not on `sim.cycle`.
  */
 
 import { describe, expect, it } from 'vitest';

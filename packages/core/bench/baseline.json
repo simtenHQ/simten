@@ -3,34 +3,34 @@
   "node": "v22.23.4",
   "results": {
     "rule30": {
-      "fingerprint": "ae3a7e5855b53dc4",
+      "fingerprint": "34be5eda287d8dc4",
       "evalsPerTick": 49.4,
       "compileMs": 2.7,
-      "ticksPerSec": 115802
+      "ticksPerSec": 117447
     },
     "hack-alu": {
-      "fingerprint": "1221ad28b315e212",
+      "fingerprint": "e817a750f6eb4df7",
       "evalsPerTick": 20,
-      "compileMs": 0.9,
-      "ticksPerSec": 174445
+      "compileMs": 1.1,
+      "ticksPerSec": 174847
     },
     "snake": {
-      "fingerprint": "a021b1ba996ba683",
+      "fingerprint": "ecd86a1842dacd52",
       "evalsPerTick": 100.8,
       "compileMs": 4.5,
-      "ticksPerSec": 27706
+      "ticksPerSec": 28918
     },
     "rv32i-computer": {
-      "fingerprint": "77db695ab28add21",
+      "fingerprint": "f03edc121183e493",
       "evalsPerTick": 213.4,
-      "compileMs": 5.6,
-      "ticksPerSec": 14093
+      "compileMs": 4.4,
+      "ticksPerSec": 14061
     },
     "6502-computer": {
-      "fingerprint": "53eddd6d542ad329",
+      "fingerprint": "1ad7334e247dc924",
       "evalsPerTick": 117.7,
-      "compileMs": 1.9,
-      "ticksPerSec": 28946
+      "compileMs": 4.8,
+      "ticksPerSec": 30472
     }
   }
 }

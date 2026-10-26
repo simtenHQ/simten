@@ -182,7 +182,6 @@ export {
   seedStateOutputNodes,
   setDebugStateUpdate,
   toFlatPortValueMap,
-  updateClockStates,
   updateSequentialStates,
 } from './propagate.js';
 
@@ -193,11 +192,18 @@ export { tracePropagation } from './trace.js';
 // Simulator Engine Implementation
 // ============================================================================
 
-import type { BitValue, BusValue, Circuit, CircuitLibrary } from '../types/circuit.js';
+import type {
+  ArgumentValue,
+  BitValue,
+  BusValue,
+  Circuit,
+  CircuitLibrary,
+} from '../types/circuit.js';
 import { getDefaultValue, TOP_LEVEL_NODE } from '../types/circuit.js';
 import type {
   CombinationalResult,
   FlatCircuit,
+  FlatNode,
   FlatSequentialState,
   InitOptions,
   PrimitiveState,
@@ -226,7 +232,6 @@ import {
   seedInitialQueue,
   seedStateOutputNodes,
   toFlatPortValueMap,
-  updateClockStates,
   updateSequentialStates,
 } from './propagate.js';
 import { initializeFlatSequentialState } from './sequential-init.js';
@@ -251,6 +256,12 @@ class SimulatorEngineImpl implements SimulatorEngine {
 
   // Top-level input values (for API compatibility)
   private topLevelInputs: Map<string, BitValue | BusValue> = new Map();
+
+  // Nodes whose `value` argument setNode has written (Switch, Input), with the
+  // value each had before the first write. snapshot()/restore() carry these so
+  // a rewind puts the switches back too.
+  private originalNodeValues: Map<string, ArgumentValue | undefined> = new Map();
+  private nodesById: Map<string, FlatNode> = new Map();
 
   // Cached flat state (lazily computed on getState())
   private cachedFlatSeqState: FlatSequentialState | null = null;
@@ -282,6 +293,8 @@ class SimulatorEngineImpl implements SimulatorEngine {
 
     // Initialize top-level inputs
     this.topLevelInputs = new Map();
+    this.originalNodeValues = new Map();
+    this.nodesById = new Map(circuit.nodes.map((n) => [n.id, n]));
     for (const input of circuit.topLevelInputs) {
       const key = `${TOP_LEVEL_NODE}.${input.name}`;
       this.topLevelInputs.set(key, getDefaultValue(input.portType));
@@ -346,6 +359,9 @@ class SimulatorEngineImpl implements SimulatorEngine {
     // Otherwise → write arguments (Switch, Input). `PrimitiveState` excludes
     // boolean, so callers pass 0/1; there is no coercion here on purpose.
     if (typeof value === 'number' || typeof value === 'string') {
+      if (!this.originalNodeValues.has(node.id)) {
+        this.originalNodeValues.set(node.id, node.arguments.value);
+      }
       node.arguments = { ...node.arguments, value };
       this.cacheValid = false;
     }
@@ -368,10 +384,7 @@ class SimulatorEngineImpl implements SimulatorEngine {
       this.topLevelInputs,
     );
 
-    // Phase 2: Clock HIGH
-    updateClockStates(this.numericCircuit, this.numericSeqState);
-
-    // Phase 3: Capture sequential inputs and compute next state
+    // Phase 2: Capture sequential inputs and compute next state
     updateSequentialStates(
       this.numericCircuit,
       this.numericValues,
@@ -379,10 +392,10 @@ class SimulatorEngineImpl implements SimulatorEngine {
       this.topLevelInputs,
     );
 
-    // Phase 4: Commit state (registers update)
+    // Phase 3: Commit state (registers update)
     commitSequentialState(this.numericSeqState);
 
-    // Phase 5: Full propagation with committed (post-edge) state
+    // Phase 4: Full propagation with committed (post-edge) state
     this.eventQueue.clear();
     seedStateOutputNodes(this.numericCircuit, this.eventQueue);
 
@@ -394,7 +407,7 @@ class SimulatorEngineImpl implements SimulatorEngine {
       this.topLevelInputs,
     );
 
-    // ── Observable snapshot: post-commit (Phase 5) ──
+    // ── Observable snapshot: post-commit (Phase 4) ──
     //
     // Each tick() = one completed clock cycle.
     // Returned values reflect the settled state AFTER the clock edge,
@@ -538,15 +551,31 @@ class SimulatorEngineImpl implements SimulatorEngine {
     propagateToTopLevelOutputs(this.numericCircuit, this.numericValues, portValues);
     const seqState = toFlatSequentialState(this.numericCircuit, this.numericSeqState);
 
+    const nodeValues = new Map<string, ArgumentValue | undefined>();
+    for (const id of this.originalNodeValues.keys()) {
+      nodeValues.set(id, this.nodesById.get(id)?.arguments.value);
+    }
+
     return {
       portValues,
       sequentialState: seqState,
       cycleCount: this.numericSeqState.cycleCount,
+      inputs: new Map(this.topLevelInputs),
+      nodeValues,
     };
   }
 
   restore(snapshot: SimulatorSnapshot): void {
     if (!this.numericCircuit || !this.numericValues) return;
+
+    // Restore what drives the circuit from outside: top-level inputs and the
+    // values setNode wrote into Switch/Input arguments.
+    if (snapshot.inputs) {
+      for (const [key, value] of snapshot.inputs) {
+        if (this.topLevelInputs.has(key)) this.topLevelInputs.set(key, value);
+      }
+    }
+    if (snapshot.nodeValues) this.restoreNodeValues(snapshot.nodeValues);
 
     // Restore sequential state
     this.numericSeqState = createNumericSequentialState(
@@ -567,6 +596,17 @@ class SimulatorEngineImpl implements SimulatorEngine {
     // registers (read via port values) rewound fine. The tick and reset paths
     // already null this; restore must too.
     this.cachedFlatSeqState = null;
+  }
+
+  /** A node written after the snapshot goes back to its value from before any write. */
+  private restoreNodeValues(saved: ReadonlyMap<string, ArgumentValue | undefined>): void {
+    for (const [id, original] of this.originalNodeValues) {
+      const node = this.nodesById.get(id);
+      if (!node) continue;
+      const value = saved.has(id) ? saved.get(id) : original;
+      const { value: _old, ...rest } = node.arguments;
+      node.arguments = value === undefined ? rest : { ...rest, value };
+    }
   }
 
   reset(): void {

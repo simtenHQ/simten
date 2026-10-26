@@ -11,19 +11,13 @@ If you hit something not listed here, please file an issue at [simtenHQ/simten](
 
 ### Elaboration edge cases surfaced by audit [#140](https://github.com/simtenHQ/simten/issues/140)
 
-A focused audit of `elaboration.ts` (after fixing [#138](https://github.com/simtenHQ/simten/issues/138)) surfaced five narrow-but-real silent-correctness gaps. They are deferred to post-beta because they only bite specific unusual patterns; none affect typical circuits (gates, adders, registers, regular composites with internal nodes and gated outputs). Each is locked in by an `it.fails(...)` test in `composite-patterns.test.ts` that flips green when the fix lands.
+A focused audit of `elaboration.ts` (after fixing [#138](https://github.com/simtenHQ/simten/issues/138)) surfaced five narrow-but-real silent-correctness gaps; the width ones ([#144](https://github.com/simtenHQ/simten/issues/144), [#145](https://github.com/simtenHQ/simten/issues/145)) are fixed. They are deferred to post-beta because they only bite specific unusual patterns; none affect typical circuits (gates, adders, registers, regular composites with internal nodes and gated outputs). Each is locked in by an `it.fails(...)` test in `composite-patterns.test.ts` that flips green when the fix lands.
 
 #### Post-stitch multi-driver silently accepted ([#143](https://github.com/simtenHQ/simten/issues/143))
 
 The multi-driver check runs per-circuit at `circuit()` definition time, not on the flattened netlist. If two primitives end up driving the same target through a feedthrough boundary, the conflict surfaces only after stitching and isn't caught.
 
 **How to recognize it:** wrong outputs in a circuit that drives a composite's output port from outside the composite (e.g. `inputs.B.to(p.y)` where `y` is `p`'s output). **Workaround:** don't drive a composite output port externally; the convention is that composite outputs are produced by the composite, not consumed as targets. The TS port-direction guard and the per-circuit multi-driver check together steer you away from this shape; the runtime gap only matters at API edge cases.
-
-#### Width mismatches silently accepted at elaboration ([#144](https://github.com/simtenHQ/simten/issues/144), [#145](https://github.com/simtenHQ/simten/issues/145))
-
-Elaboration never validates port-type or width compatibility between source and target. A `bit` source driving a `bus(N)` target (#144) or a `bus(M)` source driving a `bus(N)` target with M ≠ N (#145) passes silently; downstream evaluators coerce inconsistently.
-
-**How to recognize it:** wrong values when a `Constant({ value: 1 })` (default width 1) drives a wider bus, or a narrower bus drives a wider one. **Workaround:** the TypeScript port-direction types reject these mismatches at compile time in typical use, and the runtime gap mostly bites hand-constructed IR or `as any` escapes. Use the `width` argument on `Constant` (e.g. `Constant({ value: 1, width: 8 })`) and prefer width-matching primitives so the source and target agree.
 
 #### Deeply nested feedthrough composites produce a malformed netlist ([#146](https://github.com/simtenHQ/simten/issues/146))
 
@@ -180,15 +174,15 @@ The `/circuit` editor type-checks with TypeScript's full default lib, which incl
 
 ## Simulator limits
 
-### 10 000-iteration propagation cap
+### Propagation cap
 
-Each `set()` / clock tick drives an event-driven propagation queue. After 10 000 node evaluations in a single propagation pass, the simulator throws:
+Each `set()` / clock tick drives an event-driven propagation queue. After 64 node evaluations per node in the circuit (at least 10 000) in a single propagation pass, the simulator throws, naming the nodes that are still changing:
 
 ```
-Propagation did not stabilize after 10000 iterations. Possible unstable feedback loop in circuit.
+Propagation did not stabilize after 10000 evaluations: a combinational loop is oscillating. Still changing: n1, n2.
 ```
 
-This is a safety net for **combinational feedback loops with no register breaking them** (an inverter whose output feeds its own input, etc.). It is not a depth/size limit; feed-forward circuits of any practical size settle well below the cap.
+This is a safety net for **combinational feedback loops with no register breaking them** (an inverter whose output feeds its own input, etc.). It scales with the circuit, so it is not a depth or size limit.
 
 **How to recognize it:** the error message above. **Workaround:** find the combinational loop; break it with a `Register` or `DFlipFlop`.
 
@@ -200,7 +194,7 @@ This is a safety net for **combinational feedback loops with no register breakin
 
 ### Buses wider than 32 bits don't simulate
 
-The numeric engine stores every net in an `Int32Array` and evaluates with JavaScript bitwise operators, both 32-bit. A bus wider than 32 bits simulates to wrong values with no error: inputs truncate to their low 32 bits, a `Slice` at offset ≥ 32 aliases back to the low bits (JS shift counts wrap mod 32), and wide `Concat`/arithmetic overflow to 0. Export, import, and FPGA synthesis are unaffected: they carry the full width; only the in-engine simulator has the ceiling.
+The numeric engine stores every net as an unsigned 32-bit value and evaluates with JavaScript bitwise operators. Compiling a circuit with a port wider than 32 bits for simulation is an error naming the port. Export, import, and FPGA synthesis are unaffected: they carry the full width; only the in-engine simulator has the ceiling.
 
-**How to recognize it:** a circuit with a port or internal net wider than 32 bits (a 512-bit input, a 64-bit datapath) reads plausible-but-wrong values (or 0) from `simulate()` / `verify_circuit`, while its exported Verilog checks out. Quick tell: a `Slice` at offset 32 returns the same bits as the same slice at offset 0. This is why imports of wide-bus designs (e.g. a matrix-vector unit) lift and export fine but can't be run through the TS simulator. **Workaround:** none in-engine; keep simulated buses ≤ 32 bits (split wide datapaths into ≤ 32-bit lanes), or verify wide designs through the Verilog path (export and cross-check against Icarus Verilog) instead of the TS simulator. A real fix means representing wide nets as `BigInt` or word arrays through the engine and evaluators.
+**How to recognize it:** `simulate()` / `verify_circuit` fails with `... is bus(64); buses must be 1 to 32 bits wide`. This is why imports of wide-bus designs (e.g. a matrix-vector unit) lift and export fine but can't be run through the TS simulator. **Workaround:** keep simulated buses at 32 bits or fewer (split wide datapaths into lanes), or verify wide designs through the Verilog path (export and cross-check against Icarus Verilog) instead of the TS simulator. A real fix means representing wide nets as `BigInt` or word arrays through the engine and evaluators.
 
