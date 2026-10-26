@@ -1,4 +1,5 @@
 import { lazy, Suspense } from 'react';
+import { ClientOnly } from '@/components/ClientOnly';
 
 const BreakoutDemo = lazy(() =>
   import('../BreakoutDemo').then((m) => ({ default: m.BreakoutDemo })),
@@ -11,17 +12,6 @@ function BreakoutDemoLoader() {
       <span className="text-sm">Loading Breakout simulator...</span>
     </div>
   );
-}
-
-function ClientOnly({
-  children,
-  fallback,
-}: {
-  children: React.ReactNode;
-  fallback: React.ReactNode;
-}) {
-  if (typeof window === 'undefined') return <>{fallback}</>;
-  return <>{children}</>;
 }
 
 export function BreakoutSection() {
