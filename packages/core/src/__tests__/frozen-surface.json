@@ -1,0 +1,481 @@
+{
+  "importPaths": ["@simten/core/circuit", "@simten/core/std"],
+  "circuitApi": ["bit", "bus", "circuit"],
+  "std": {
+    "Adder": {
+      "inputs": ["a", "b", "carry_in"],
+      "outputs": ["carry_out", "sum"]
+    },
+    "AddressCombiner": {
+      "inputs": ["hi", "lo"],
+      "outputs": ["out"]
+    },
+    "And": {
+      "inputs": ["a", "b"],
+      "outputs": ["out"]
+    },
+    "BitSlice": {
+      "inputs": ["in"],
+      "outputs": ["out"]
+    },
+    "Buffer": {
+      "inputs": ["in"],
+      "outputs": ["out"]
+    },
+    "BusAnd": {
+      "inputs": ["a", "b"],
+      "outputs": ["out"]
+    },
+    "BusNot": {
+      "inputs": ["in"],
+      "outputs": ["out"]
+    },
+    "BusOr": {
+      "inputs": ["a", "b"],
+      "outputs": ["out"]
+    },
+    "BusXnor": {
+      "inputs": ["a", "b"],
+      "outputs": ["out"]
+    },
+    "BusXor": {
+      "inputs": ["a", "b"],
+      "outputs": ["out"]
+    },
+    "Combiner": {
+      "inputs": ["bit0", "bit1", "bit2", "bit3", "bit4", "bit5", "bit6", "bit7"],
+      "outputs": ["out"]
+    },
+    "Combiner8to8": {
+      "inputs": ["bit0", "bit1", "bit2", "bit3", "bit4", "bit5", "bit6", "bit7"],
+      "outputs": ["out"]
+    },
+    "Comparator": {
+      "inputs": ["a", "b"],
+      "outputs": ["eq", "ge", "gt", "le", "lt", "ne"]
+    },
+    "Concat": {
+      "inputs": ["high", "low"],
+      "outputs": ["out"]
+    },
+    "Console": {
+      "inputs": ["data", "we"],
+      "outputs": []
+    },
+    "Constant": {
+      "inputs": [],
+      "outputs": ["out"]
+    },
+    "Decoder": {
+      "inputs": ["in"],
+      "outputs": ["out0", "out1", "out2", "out3"]
+    },
+    "DFlipFlop": {
+      "inputs": ["d"],
+      "outputs": ["q", "q_bar"]
+    },
+    "Divider": {
+      "inputs": ["a", "b"],
+      "outputs": ["out"]
+    },
+    "DualPortRAM": {
+      "inputs": ["addrA", "addrB", "dataA", "weA"],
+      "outputs": ["outA", "outB"]
+    },
+    "DualPortROM": {
+      "inputs": ["addrA", "addrB"],
+      "outputs": ["dataA", "dataB"]
+    },
+    "DynamicSlice": {
+      "inputs": ["in", "shift"],
+      "outputs": ["out"]
+    },
+    "Eth_AddrClassifier": {
+      "inputs": ["dst_mac_hi", "dst_mac_lo"],
+      "outputs": ["is_broadcast", "is_multicast", "is_unicast"]
+    },
+    "Eth_CRC32": {
+      "inputs": ["data", "data_valid", "reset", "tkeep", "tlast"],
+      "outputs": ["crc", "crc_ok"]
+    },
+    "Eth_FrameInput": {
+      "inputs": ["enable", "reset"],
+      "outputs": ["byte_offset", "tdata", "tkeep", "tlast", "tvalid"]
+    },
+    "Eth_FrameParser": {
+      "inputs": ["tdata", "tkeep", "tlast", "tvalid"],
+      "outputs": [
+        "dst_mac_hi",
+        "dst_mac_lo",
+        "dst_mac_valid",
+        "ethertype",
+        "ethertype_valid",
+        "frame_done",
+        "frame_length",
+        "has_vlan",
+        "parse_state",
+        "payload_valid",
+        "src_mac_hi",
+        "src_mac_lo",
+        "src_mac_valid",
+        "vlan_tci",
+        "vlan_valid"
+      ]
+    },
+    "Eth_ProtocolDecoder": {
+      "inputs": ["ethertype"],
+      "outputs": ["is_arp", "is_ipv4", "is_ipv6", "is_mpls", "is_vlan"]
+    },
+    "FullAdder": {
+      "inputs": ["a", "b", "carry_in"],
+      "outputs": ["carry_out", "sum"]
+    },
+    "HexDisplay": {
+      "inputs": ["in"],
+      "outputs": []
+    },
+    "Incrementer": {
+      "inputs": ["in"],
+      "outputs": ["out"]
+    },
+    "Input": {
+      "inputs": [],
+      "outputs": ["out"]
+    },
+    "Led": {
+      "inputs": ["in"],
+      "outputs": []
+    },
+    "LeftShifter": {
+      "inputs": ["shift", "value"],
+      "outputs": ["result"]
+    },
+    "LogicAnd": {
+      "inputs": ["a", "b"],
+      "outputs": ["out"]
+    },
+    "LogicNot": {
+      "inputs": ["a"],
+      "outputs": ["out"]
+    },
+    "LogicOr": {
+      "inputs": ["a", "b"],
+      "outputs": ["out"]
+    },
+    "MemBusMux": {
+      "inputs": [
+        "addr",
+        "funct3",
+        "mem_read",
+        "mem_write",
+        "read_data_0",
+        "read_data_1",
+        "read_data_2",
+        "read_data_3",
+        "read_data_4",
+        "write_data"
+      ],
+      "outputs": [
+        "funct3_out",
+        "local_addr",
+        "p0_read",
+        "p0_write",
+        "p1_read",
+        "p1_write",
+        "p2_read",
+        "p2_write",
+        "p3_read",
+        "p3_write",
+        "p4_read",
+        "p4_write",
+        "read_data",
+        "write_data_out"
+      ]
+    },
+    "Modulo": {
+      "inputs": ["a", "b"],
+      "outputs": ["out"]
+    },
+    "MOS6502_ALU": {
+      "inputs": ["a", "b", "cin", "decimal", "op"],
+      "outputs": ["c", "n", "result", "v", "z"]
+    },
+    "MOS6502_Core": {
+      "inputs": ["data_in", "irq", "nmi", "reset"],
+      "outputs": ["addr", "data_out", "rw", "sync"]
+    },
+    "Multiplier": {
+      "inputs": ["a", "b"],
+      "outputs": ["product"]
+    },
+    "Mux": {
+      "inputs": ["in0", "in1", "sel"],
+      "outputs": ["out"]
+    },
+    "Nand": {
+      "inputs": ["a", "b"],
+      "outputs": ["out"]
+    },
+    "NibbleSplitter": {
+      "inputs": ["in"],
+      "outputs": ["out0", "out1"]
+    },
+    "NIC_FIFO": {
+      "inputs": [
+        "net_rx_data",
+        "net_rx_frame",
+        "net_rx_valid",
+        "rx_addr",
+        "rx_mem_read",
+        "rx_mem_write",
+        "tx_addr",
+        "tx_mem_read",
+        "tx_mem_write",
+        "tx_write_data"
+      ],
+      "outputs": ["net_tx_data", "net_tx_frame", "net_tx_valid", "rx_read_data", "tx_read_data"]
+    },
+    "Nor": {
+      "inputs": ["a", "b"],
+      "outputs": ["out"]
+    },
+    "Not": {
+      "inputs": ["in"],
+      "outputs": ["out"]
+    },
+    "Or": {
+      "inputs": ["a", "b"],
+      "outputs": ["out"]
+    },
+    "Output": {
+      "inputs": ["in"],
+      "outputs": []
+    },
+    "Probe": {
+      "inputs": ["in"],
+      "outputs": ["out"]
+    },
+    "RAM": {
+      "inputs": ["addr", "data_in", "we"],
+      "outputs": ["data_out"]
+    },
+    "RasterDisplay": {
+      "inputs": ["dataIn"],
+      "outputs": ["addrB", "hblank", "scanX", "scanY", "vblank"]
+    },
+    "ReduceAnd": {
+      "inputs": ["a"],
+      "outputs": ["out"]
+    },
+    "ReduceOr": {
+      "inputs": ["a"],
+      "outputs": ["out"]
+    },
+    "ReduceXnor": {
+      "inputs": ["a"],
+      "outputs": ["out"]
+    },
+    "ReduceXor": {
+      "inputs": ["a"],
+      "outputs": ["out"]
+    },
+    "Register": {
+      "inputs": ["data", "rst", "we"],
+      "outputs": ["q"]
+    },
+    "RightShifter": {
+      "inputs": ["shift", "value"],
+      "outputs": ["result"]
+    },
+    "ROM": {
+      "inputs": ["addr"],
+      "outputs": ["data_out"]
+    },
+    "RV32I_ALU": {
+      "inputs": ["a", "alu_op", "b"],
+      "outputs": ["result", "zero"]
+    },
+    "RV32I_BranchComp": {
+      "inputs": ["a", "b", "funct3"],
+      "outputs": ["take_branch"]
+    },
+    "RV32I_Control": {
+      "inputs": ["funct3", "funct7_bit", "opcode"],
+      "outputs": [
+        "alu_op",
+        "alu_src",
+        "auipc",
+        "branch",
+        "is_jalr",
+        "jump",
+        "lui",
+        "mem_read",
+        "mem_to_reg",
+        "mem_write",
+        "reg_write"
+      ]
+    },
+    "RV32I_Core": {
+      "inputs": ["data_read", "instruction", "net_rx_data", "net_rx_frame", "net_rx_valid"],
+      "outputs": [
+        "data_addr",
+        "data_funct3",
+        "data_mem_read",
+        "data_mem_write",
+        "data_write",
+        "instr_addr",
+        "net_tx_data",
+        "net_tx_frame",
+        "net_tx_valid",
+        "pc_out"
+      ]
+    },
+    "RV32I_DataMem": {
+      "inputs": ["addr", "funct3", "mem_read", "mem_write", "write_data"],
+      "outputs": ["misalign", "read_data"]
+    },
+    "RV32I_Decode": {
+      "inputs": ["instruction"],
+      "outputs": ["funct3", "funct7", "opcode", "rd", "rs1", "rs2"]
+    },
+    "RV32I_ForwardingUnit": {
+      "inputs": ["ex_rd", "ex_reg_write", "id_rs1", "id_rs2", "mem_rd", "mem_reg_write"],
+      "outputs": ["forward_a", "forward_b"]
+    },
+    "RV32I_HazardUnit": {
+      "inputs": ["branch_taken", "id_mem_read", "id_rd", "if_rs1", "if_rs2", "jump"],
+      "outputs": ["flush", "stall"]
+    },
+    "RV32I_ImmGen": {
+      "inputs": ["instruction"],
+      "outputs": ["immediate"]
+    },
+    "RV32I_InstrMem": {
+      "inputs": ["addr"],
+      "outputs": ["instruction"]
+    },
+    "RV32I_LoadAlign": {
+      "inputs": ["data", "funct3"],
+      "outputs": ["out"]
+    },
+    "RV32I_LoadAlignFull": {
+      "inputs": ["byte_offset", "data", "funct3"],
+      "outputs": ["out"]
+    },
+    "RV32I_NextPCMux": {
+      "inputs": [
+        "branch",
+        "branch_target",
+        "is_jalr",
+        "jal_target",
+        "jalr_target",
+        "jump",
+        "pc_plus4",
+        "take_branch"
+      ],
+      "outputs": ["next_pc"]
+    },
+    "RV32I_RegisterFile": {
+      "inputs": ["debug_rs", "rd", "rs1", "rs2", "we", "write_data"],
+      "outputs": ["debug_read", "read1", "read2"]
+    },
+    "RV32I_WBBypass": {
+      "inputs": ["rs_addr", "rs_val", "wb_rd", "wb_val", "wb_we"],
+      "outputs": ["out"]
+    },
+    "RV32I_WritebackMux": {
+      "inputs": [
+        "alu_result",
+        "auipc",
+        "immediate",
+        "jump",
+        "load_data",
+        "lui",
+        "mem_to_reg",
+        "pc_plus4",
+        "pc_plus_imm"
+      ],
+      "outputs": ["write_data"]
+    },
+    "Screen": {
+      "inputs": ["dataIn"],
+      "outputs": ["addrB"]
+    },
+    "SevenSegment": {
+      "inputs": ["in"],
+      "outputs": []
+    },
+    "SignedAdder": {
+      "inputs": ["a", "b", "carry_in"],
+      "outputs": ["carry_out", "overflow", "sum"]
+    },
+    "SignedComparator": {
+      "inputs": ["a", "b"],
+      "outputs": ["eq", "ge", "gt", "gte", "le", "lt", "lte", "ne"]
+    },
+    "SignedDivider": {
+      "inputs": ["a", "b"],
+      "outputs": ["out"]
+    },
+    "SignedModulo": {
+      "inputs": ["a", "b"],
+      "outputs": ["out"]
+    },
+    "SignedMultiplier": {
+      "inputs": ["a", "b"],
+      "outputs": ["product"]
+    },
+    "SignedRightShifter": {
+      "inputs": ["shift", "value"],
+      "outputs": ["result"]
+    },
+    "SignExtend": {
+      "inputs": ["in"],
+      "outputs": ["out"]
+    },
+    "Slice": {
+      "inputs": ["in"],
+      "outputs": ["out"]
+    },
+    "Splitter": {
+      "inputs": ["in"],
+      "outputs": ["bit0", "bit1", "bit2", "bit3", "bit4", "bit5", "bit6", "bit7"]
+    },
+    "Splitter8to8": {
+      "inputs": ["in"],
+      "outputs": ["bit0", "bit1", "bit2", "bit3", "bit4", "bit5", "bit6", "bit7"]
+    },
+    "Subtractor": {
+      "inputs": ["a", "b", "borrow_in"],
+      "outputs": ["borrow_out", "difference"]
+    },
+    "Switch": {
+      "inputs": [],
+      "outputs": ["out"]
+    },
+    "UART_RX": {
+      "inputs": ["rx"],
+      "outputs": ["data", "valid"]
+    },
+    "UART_TX": {
+      "inputs": ["addr", "mem_read", "mem_write", "write_data"],
+      "outputs": ["read_data"]
+    },
+    "WrappingMultiplier": {
+      "inputs": ["a", "b"],
+      "outputs": ["out"]
+    },
+    "Xnor": {
+      "inputs": ["a", "b"],
+      "outputs": ["out"]
+    },
+    "Xor": {
+      "inputs": ["a", "b"],
+      "outputs": ["out"]
+    },
+    "ZeroExtend": {
+      "inputs": ["in"],
+      "outputs": ["out"]
+    }
+  }
+}
