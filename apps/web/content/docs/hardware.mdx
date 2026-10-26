@@ -142,7 +142,7 @@ nodes: {
 
 With 8-bit constants, the Mux propagation correctly infers 8-bit outputs for `deltaXTemp` and `deltaYTemp`, and `minus1` (255) correctly acts as −1 in modular arithmetic.
 
-The fix highlights a general rule for synthesis: the simulator is lenient about width mismatches (it operates on JavaScript numbers), but the Verilog exporter must be explicit about every wire width or synthesis will silently truncate values.
+The fix highlights a general rule for synthesis: the simulator was lenient about width mismatches (it operated on JavaScript numbers), but the Verilog exporter must be explicit about every wire width or synthesis will silently truncate values. The simulator has since closed that gap: it masks every value to its port width, `Constant({ value: 255 })` without a width is an error, and an 8-bit bus into a 1-bit Mux input fails to build.
 
 ---
 

@@ -167,6 +167,10 @@ export interface NumericCircuit {
   /** 1 if bus, 0 if bit (for default values) */
   portIsBus: Uint8Array;
 
+  /** Bit mask for each port's declared width (1 for a bit, 2^n - 1 for bus(n)).
+   *  Every value written to a port is ANDed with this. */
+  portMask: Uint32Array;
+
   // ============================================================================
   // Node Classification
   // ============================================================================

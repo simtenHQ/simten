@@ -191,6 +191,10 @@ export interface SimulatorSnapshot {
   portValues: FlatPortValueMap;
   sequentialState: FlatSequentialState;
   cycleCount: number;
+  /** Top-level input values at snapshot time. */
+  inputs?: FlatPortValueMap;
+  /** `value` arguments of the nodes setNode has written (Switch, Input), by node id. */
+  nodeValues?: ReadonlyMap<string, ArgumentValue | undefined>;
 }
 
 /**

@@ -25,7 +25,7 @@ export type PortType = BitType | BusType;
 
 /**
  * A single-bit value. Bits are 0 or 1, matching the simulator's numeric
- * storage (`Int32Array`) and what stdlib `eval` functions already return
+ * storage (`Uint32Array`, masked to the port width) and what stdlib `eval` functions already return
  * (`out: a && b ? 1 : 0`). Booleans are accepted at API boundaries and
  * coerced, but are not part of the value domain.
  */

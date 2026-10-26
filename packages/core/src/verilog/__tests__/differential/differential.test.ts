@@ -103,9 +103,6 @@ interface Case {
 // Known bugs. The filed ones name their issue; "unfiled" ones were found by
 // this test and still need an issue.
 const BUG = {
-  mask: '#427: writeOutput does not mask to the port width',
-  signed32: '#427: 32-bit values read back signed, so a shift of 2^31 or more is negative',
-  constWidth: '#427: a Constant or Mux without a width carries a multi-bit value on a 1-bit port',
   logicalAnd: '#429: && on buses is emitted as bitwise &',
   logicalOps: '#429: && and ! on buses are emitted as bitwise & and ~',
   signedShift: '#429: JS >> is emitted as logical >>',
@@ -117,7 +114,7 @@ const BUG = {
   noMapping: 'unfiled: no Verilog mapping, exported as an UNSUPPORTED comment',
   cmpPorts: 'unfiled: Comparator ne/le/ge (and SignedComparator ne/le/ge) are never assigned',
   combiner: 'unfiled: Combiner bit inputs driven by internal nets get width-wide wires',
-  switches: 'unfiled: Switch nodes export as undriven wires',
+  switches: 'unfiled: Switch and Input nodes export as undriven wires',
   dualPortRom: 'unfiled: DualPortROM exports reads of a memory it never declares',
   memArray: 'unfiled: ROM/DualPortRAM drop memory contents given as an array',
   ramInit: 'unfiled: RAM drops its memory contents on export',
@@ -242,8 +239,8 @@ for (const w of [8, 16]) {
   std(`LeftShifter w${w}`, () => LeftShifter({ width: w }));
   std(`RightShifter w${w}`, () => RightShifter({ width: w }));
 }
-std('LeftShifter w32', () => LeftShifter({ width: 32 }), { bug: BUG.signed32 });
-std('RightShifter w32', () => RightShifter({ width: 32 }), { bug: BUG.signed32 });
+std('LeftShifter w32', () => LeftShifter({ width: 32 }));
+std('RightShifter w32', () => RightShifter({ width: 32 }));
 std('LeftShifter w32, shift < 32', () => LeftShifter({ width: 32 }), {
   opts: { inputMask: { shift: 31 } },
 });
@@ -423,7 +420,6 @@ evalCase(
     outputs: { sum: bus(8) },
     eval: ({ a, b }) => ({ sum: a + b }),
   }),
-  BUG.mask,
 );
 evalCase(
   'eval && and ! on buses',
@@ -489,8 +485,8 @@ for (const [id, cycles, bug] of [
   ['rule30', 64, undefined],
   ['half-adder', 32, BUG.switches],
   ['alu', 64, BUG.switches],
-  ['tpu-3x3', 64, BUG.constWidth],
-  ['snake', 200, BUG.constWidth],
+  ['tpu-3x3', 64, BUG.switches],
+  ['snake', 200, BUG.switches],
   ['rv32i-computer', 300, BUG.dualPortRom],
 ] as const) {
   cases.push({ name: `example ${id}`, target: () => example(id), opts: { cycles }, bug });

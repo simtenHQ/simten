@@ -5,8 +5,8 @@
  * This is a one-time operation during initialization.
  */
 
-import type { CircuitLibrary } from '../types/circuit.js';
-import type { FlatCircuit, PrimitiveState } from '../types/simulator.js';
+import type { Circuit, CircuitLibrary, PortType } from '../types/circuit.js';
+import type { FlatCircuit, FlatNode, PrimitiveState } from '../types/simulator.js';
 import { TOP_LEVEL_NODE } from '../types/simulator.js';
 import { ensureEvaluatorRegistered } from './eval-bridge.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
@@ -70,6 +70,7 @@ export function compileForSimulation(
   const indexToPortKey: string[] = new Array(totalPortsWithTopLevel);
   const portIsOutput = new Uint8Array(totalPortsWithTopLevel);
   const portIsBus = new Uint8Array(totalPortsWithTopLevel);
+  const portMask = new Uint32Array(totalPortsWithTopLevel);
   const inputPortNames: string[] = new Array(totalPortsWithTopLevel);
 
   // Add top-level inputs first (they act as sources for nodes)
@@ -80,6 +81,7 @@ export function compileForSimulation(
     indexToPortKey[topLevelPortIdx] = key;
     portIsOutput[topLevelPortIdx] = 1; // Top-level inputs are outputs from the boundary
     portIsBus[topLevelPortIdx] = input.portType.kind === 'bus' ? 1 : 0;
+    portMask[topLevelPortIdx] = maskFor(input.portType, `input '${input.name}'`);
     topLevelPortIdx++;
   }
 
@@ -90,6 +92,7 @@ export function compileForSimulation(
     indexToPortKey[topLevelPortIdx] = key;
     portIsOutput[topLevelPortIdx] = 0; // Top-level outputs are inputs to the boundary
     portIsBus[topLevelPortIdx] = output.portType.kind === 'bus' ? 1 : 0;
+    portMask[topLevelPortIdx] = maskFor(output.portType, `output '${output.name}'`);
     topLevelPortIdx++;
   }
 
@@ -104,6 +107,7 @@ export function compileForSimulation(
       indexToPortKey[portIdx] = key;
       portIsOutput[portIdx] = 0;
       portIsBus[portIdx] = input.portType.kind === 'bus' ? 1 : 0;
+      portMask[portIdx] = maskFor(input.portType, `port '${key}'`);
       inputPortNames[portIdx] = input.name;
       portIdx++;
     }
@@ -136,6 +140,7 @@ export function compileForSimulation(
         }
       }
       portIsBus[portIdx] = isBus ? 1 : 0;
+      portMask[portIdx] = maskFor(output.portType, `port '${key}'`);
       portIdx++;
     }
   }
@@ -229,6 +234,7 @@ export function compileForSimulation(
 
     // Has state: check if the component has state blocks
     const resolvedComp = library.resolveCircuit(node.primitiveType);
+    if (resolvedComp) checkClocking(node, resolvedComp);
     if (resolvedComp?.state && resolvedComp.state.length > 0) {
       hasState[i] = 1;
       // Any node with state needs re-evaluation after clock edge
@@ -261,12 +267,64 @@ export function compileForSimulation(
     inputPortNames,
     portIsOutput,
     portIsBus,
+    portMask,
     isSourceNode,
     isStateOutputNode,
     hasState,
     readsTopLevelInput,
     flatCircuit,
   };
+}
+
+/** Widest bus the simulator stores. Values live in a Uint32Array. */
+export const MAX_BUS_WIDTH = 32;
+
+/**
+ * The mask every value written to a port of this type is ANDed with. Throws for
+ * a width the simulator can't hold, so a too-wide bus fails at compile time
+ * rather than losing its high bits on the first write.
+ */
+function maskFor(portType: PortType, where: string): number {
+  if (portType.kind !== 'bus') return 1;
+  const width = portType.width;
+  if (!Number.isInteger(width) || width < 1 || width > MAX_BUS_WIDTH) {
+    throw new Error(
+      `${where} is bus(${width}); buses must be 1 to ${MAX_BUS_WIDTH} bits wide. ` +
+        `Split a wider value into several buses of ${MAX_BUS_WIDTH} bits or fewer.`,
+    );
+  }
+  return width === MAX_BUS_WIDTH ? 0xffffffff : 2 ** width - 1;
+}
+
+/**
+ * The simulator has one global clock and every state block updates on its
+ * rising edge. A component that asks for anything else (a falling edge, a
+ * clock of its own, or a second clock) would otherwise be run on that rising
+ * edge without a word, so it is rejected here, naming the node.
+ */
+function checkClocking(node: FlatNode, component: Circuit): void {
+  const where = `Node '${node.id}' (${node.primitiveType})`;
+  const clockNames = (component.clocks ?? []).map((c) => c.name);
+  if (clockNames.length > 1) {
+    throw new Error(
+      `${where} declares ${clockNames.length} clocks (${clockNames.join(', ')}). ` +
+        `The simulator runs one global rising-edge clock; multiple clock domains are not supported.`,
+    );
+  }
+  for (const block of component.state ?? []) {
+    if (block.edge !== undefined && block.edge !== 'rising') {
+      throw new Error(
+        `${where} updates state '${block.name}' on the ${block.edge} clock edge. ` +
+          `The simulator only supports the rising edge of the one global clock.`,
+      );
+    }
+    if (block.clockRef !== undefined && !clockNames.includes(block.clockRef)) {
+      throw new Error(
+        `${where} clocks state '${block.name}' from '${block.clockRef}', which is not its clock. ` +
+          `Gated or derived clocks are not supported; use an enable input on the global clock instead.`,
+      );
+    }
+  }
 }
 
 /**
@@ -306,7 +364,7 @@ export function createNumericSequentialState(
   return {
     currentState,
     nextState,
-    clocks: flatState.clocks, // Keep clocks as Map (low count, rarely accessed)
+    clocks: copyClocks(flatState.clocks),
     cycleCount: flatState.cycleCount,
   };
 }
@@ -339,7 +397,16 @@ export function toFlatSequentialState(
   return {
     currentState,
     nextState,
-    clocks: numericState.clocks,
+    clocks: copyClocks(numericState.clocks),
     cycleCount: numericState.cycleCount,
   };
+}
+
+type ClockMap = Map<string, { value: boolean; edge: 'rising' | 'falling' | 'none' }>;
+
+/** Clock entries are mutable objects; a snapshot has to own its copy. */
+function copyClocks(clocks: ClockMap): ClockMap {
+  const copy: ClockMap = new Map();
+  for (const [key, state] of clocks) copy.set(key, { ...state });
+  return copy;
 }

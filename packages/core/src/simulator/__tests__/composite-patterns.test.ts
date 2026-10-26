@@ -8,26 +8,24 @@
  *   3. Runs `assertFlatCircuitInvariants` on the elaboration output so the
  *      structural net runs on every pattern too.
  *
- * Confirmed-Fail patterns ([#143](.../issues/143), [#144](.../issues/144)) get
- * a behavioural `it.fails(...)` test pinned by regex to the specific throw the
- * future fix is expected to produce. The structural side is included when it's
- * meaningful (invariant 3 catches the post-stitch multi-drive shape); for the
- * width cases the structural net does not apply (width validation is a
- * connection-level rule, not a structural property), so the structural test is
- * intentionally omitted there.
+ * Confirmed-Fail patterns ([#143](.../issues/143)) get a behavioural
+ * `it.fails(...)` test pinned by regex to the specific throw the future fix is
+ * expected to produce. The structural side is included when it's meaningful
+ * (invariant 3 catches the post-stitch multi-drive shape); for the width cases
+ * the structural net does not apply (width validation is a connection-level
+ * rule, not a structural property), so the structural test is intentionally
+ * omitted there.
  *
- * #145 is no longer a Confirmed-Fail: circuit() now rejects a truncating
- * bus(M) -> bus(N) connection outright and warns on a widening one, so those
- * tests assert real behaviour. #144 (bit -> bus) stays deferred — crossing
- * bit<->bus is a kind change, not a width mismatch, and remains a documented
- * affordance (see SourcePortRef).
+ * #144 and #145 are no longer Confirmed-Fail: circuit() rejects a truncating
+ * connection outright and warns on a widening one, counting `bit` as `bus(1)`,
+ * so those tests assert real behaviour.
  */
 
 import { describe, expect, it, vi } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import type { SinkPortRef } from '../../circuit/types.js';
 import { simulate } from '../../sim/simulate.js';
-import { Adder, Constant, Not, Register } from '../../std/index.js';
+import { Adder, BusNot, Constant, Not, Register } from '../../std/index.js';
 import { assertFlatCircuitInvariants, elaborateBuilt } from './_invariants.js';
 
 // ╔════════════════════════════════════════════════════════════════════════╗
@@ -38,12 +36,10 @@ describe('P-bus-feedthrough-chain — bus(N) feedthrough across chained composit
   const BusPass = circuit('BusPass', {
     inputs: { x: bus(8) },
     outputs: { y: bus(8) },
-    nodes: { d: Not }, // dummy gate (Not is bit-wide but unused — kept to avoid degenerate-empty-composite shape)
+    nodes: { d: BusNot({ width: 8 }) }, // dummy gate, output unused: avoids the degenerate empty-composite shape
     connect: ({ inputs, outputs, nodes: { d } }) => [
       inputs.x.to(outputs.y),
-      // Tap one bit into a dummy gate so the composite isn't node-less. The
-      // gate's input takes the bus-as-bit (silent truncation on first bit,
-      // which is fine for this test — we care about the bus feedthrough).
+      // Tap the bus into a dummy gate so the composite isn't node-less.
       inputs.x.to(d.in),
     ],
   });
@@ -595,17 +591,35 @@ describe('P-self-loop-feedback-through-composite — register feedback crossing 
 // ║ Group: Width                                                            ║
 // ╚════════════════════════════════════════════════════════════════════════╝
 
-describe('P-width-bit-bus — bit source driving bus(N) target silently accepted (#144)', () => {
-  // Structural side intentionally omitted: invariants don't validate width
-  // (width validation is a missing feature, not a structural property). The
-  // behavioural it.fails() pins the future elaborate-time throw.
-  const Bad = circuit('BadWidthBitBus', {
-    outputs: { out: bus(8) },
-    nodes: { one: Constant({ value: 1 }) }, // bit-wide
-    connect: ({ outputs, nodes: { one } }) => [one.out.to(outputs.out)],
+describe('P-width-bit-bus — bit counts as bus(1) in the width check (#144)', () => {
+  it('behavioral: bus(N) into bit truncates and throws, suggesting Slice', () => {
+    expect(() =>
+      circuit('BadWidthBusBit', {
+        outputs: { out: bit },
+        nodes: { wide: Constant({ value: 0xaa, width: 8 }) },
+        connect: ({ outputs, nodes: { wide } }) => [wide.out.to(outputs.out)],
+      }),
+    ).toThrow(/truncates.*bus\(8\).*into out bit.*Slice/i);
   });
-  it.fails('behavioral: elaborate(Bad) throws naming bit→bus(N) width mismatch — currently silent, see #144', () => {
-    expect(() => elaborateBuilt(Bad)).toThrow(/width|bit.*bus/i);
+
+  it('behavioral: bit into bus(N) widens with a warning and zero-extends', () => {
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    try {
+      const Widen = circuit(`WidenBitBus${Math.random().toString(36).slice(2)}`, {
+        outputs: { out: bus(8) },
+        nodes: { one: Constant({ value: 1 }) }, // bit-wide
+        connect: ({ outputs, nodes: { one } }) => [one.out.to(outputs.out)],
+      });
+      expect(warn).toHaveBeenCalledWith(expect.stringMatching(/widens.*one\.out bit.*bus\(8\)/i));
+      const sim = simulate(Widen);
+      try {
+        expect(sim.get('out')).toBe(1);
+      } finally {
+        sim.dispose();
+      }
+    } finally {
+      warn.mockRestore();
+    }
   });
 });
 
