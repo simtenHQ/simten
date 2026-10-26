@@ -24,6 +24,8 @@ import { importFactoryName, isKnownSerializablePrimitive } from '../import/compo
 import type {
   ArgumentValue,
   CircuitIR,
+  MemoryContents,
+  MemoryValue,
   Node,
   PortDescriptor,
   PortType,
@@ -178,13 +180,9 @@ function emitState(state: StateBlock[], circuitName: string): string {
         : `${s.name}: reg(${s.stateType.width}, ${init})`;
     }
     if (s.stateType.kind === 'memory') {
-      const mem = s.initialValue as {
-        data: Map<number, number>;
-        addressWidth: number;
-        dataWidth: number;
-      };
+      const { data } = s.initialValue as MemoryValue;
       const depth = 1 << s.stateType.addressWidth;
-      const initArg = mem.data.size > 0 ? `, ${emitInitMap(mem.data)}` : '';
+      const initArg = Object.keys(data).length > 0 ? `, ${emitContents(data)}` : '';
       return `${s.name}: mem(${depth}, ${s.stateType.dataWidth}${initArg})`;
     }
     throw new CircuitToSourceError(
@@ -194,9 +192,11 @@ function emitState(state: StateBlock[], circuitName: string): string {
   return `{ ${entries.join(', ')} }`;
 }
 
-function emitInitMap(data: Map<number, number>): string {
-  const entries = [...data.entries()].sort((a, b) => a[0] - b[0]).map(([k, v]) => `[${k}, ${v}]`);
-  return `new Map([${entries.join(', ')}])`;
+function emitContents(data: MemoryContents): string {
+  const entries = Object.entries(data)
+    .sort((a, b) => Number(a[0]) - Number(b[0]))
+    .map(([k, v]) => `${k}: ${v}`);
+  return `{ ${entries.join(', ')} }`;
 }
 
 // Soft callable convention: parameterized stdlib components must be called
@@ -273,8 +273,7 @@ function jsLiteral(v: ArgumentValue | boolean): string {
   if (typeof v === 'boolean') return v ? 'true' : 'false';
   if (typeof v === 'number') return String(v);
   if (typeof v === 'string') return JSON.stringify(v);
-  if (Array.isArray(v)) return `[${v.join(', ')}]`;
-  // Sparse object map like ROM init.
+  // Memory contents, `{ address: value }`.
   const entries = Object.entries(v).map(([k, val]) => `${k}: ${val}`);
   return `{ ${entries.join(', ')} }`;
 }

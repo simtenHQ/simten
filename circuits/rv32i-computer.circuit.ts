@@ -20,6 +20,7 @@ import {
   MemBusMux,
   RV32I_Core,
   RV32I_DataMem,
+  romFromBytes,
   UART_TX,
 } from '@simten/core/std';
 
@@ -127,7 +128,7 @@ const Memory = circuit('Memory', {
 // The computer: program → CPU → memory → console.
 export const RV32I_Computer = circuit('RV32I_Computer', {
   nodes: {
-    program: DualPortROM({ memory: PROGRAM }),
+    program: DualPortROM({ memory: romFromBytes(PROGRAM) }),
     cpu: CPU,
     memory: Memory,
     console: UART_TX,

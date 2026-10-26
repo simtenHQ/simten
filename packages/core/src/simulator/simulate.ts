@@ -20,8 +20,10 @@ import type {
   BusValue,
   CircuitIR,
   CircuitLibrary,
+  MemoryContents,
   MutableCircuitLibrary,
 } from '../ir/circuit-ir.js';
+import { memoryContentsShapeError, memoryContentsToMap } from '../ir/memory-contents.js';
 import { createEngine, elaborate } from './index.js';
 import { SimulationSession } from './simulation-session.js';
 import type { SimulatorSnapshot } from './types.js';
@@ -80,8 +82,12 @@ export interface SimulationHandle<Ins extends PortMap = PortMap, Outs extends Po
   /** Subscribe to a specific output port. Returns unsubscribe function. */
   watchPort<K extends keyof Outs & string>(name: K, callback: (value: number) => void): () => void;
 
-  /** Set a node's internal state (ROM data, register value, switch toggle). */
-  setNode(nodeId: string, value: any): void;
+  /**
+   * Set a node's internal state: a number for a register or switch, or
+   * `{ address: value }` contents for a memory (ROM data). Memory contents
+   * replace the memory's current contents.
+   */
+  setNode(nodeId: string, value: BitValue | BusValue | MemoryContents): void;
 
   /** Access the underlying session (for advanced use). */
   readonly session: SimulationSession;
@@ -186,9 +192,9 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
     read() {
       const result: Record<string, number> = {};
       for (const name of outputNames) {
-        result[name] = handle.get(name as any);
+        result[name] = handle.get(name);
       }
-      return result as any;
+      return result as { [K in keyof Outs]: number };
     },
 
     tick() {
@@ -245,7 +251,7 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
     watchPort(name, callback) {
       let lastValue: number | undefined;
       return session.subscribe(() => {
-        const current = handle.get(name as any);
+        const current = handle.get(name);
         if (current !== lastValue) {
           lastValue = current;
           callback(current);
@@ -254,7 +260,13 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
     },
 
     setNode(nodeId, value) {
-      engine.setNode(nodeId, value);
+      if (typeof value === 'number') {
+        engine.setNode(nodeId, value);
+        return;
+      }
+      const shapeError = memoryContentsShapeError(value);
+      if (shapeError) throw new Error(`setNode('${nodeId}'): ${shapeError}`);
+      engine.setNode(nodeId, memoryContentsToMap(value));
     },
 
     get session() {

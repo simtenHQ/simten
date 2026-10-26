@@ -534,7 +534,7 @@ const Memory = circuit('Memory', {
 // The computer: program → CPU → memory → console.
 const RV32I_Computer = circuit('RV32I_Computer', {
   nodes: {
-    program: DualPortROM({ memory: PROGRAM }),
+    program: DualPortROM({ memory: romFromBytes(PROGRAM) }),
     cpu: CPU,
     memory: Memory,
     console: UART_TX,

@@ -5,35 +5,35 @@
  * State types: reg(n), mem(depth, width) — describe stateful storage.
  */
 
-import type { BitType, BusType, PortType } from '../ir/circuit-ir.js';
+import type { BitType, BusType, MemoryContents, PortType } from '../ir/circuit-ir.js';
 
 // ============================================================================
 // State type constructors
 // ============================================================================
 
-/** Marker for a scalar register state field */
-export interface RegState {
+/** Declaration of a register state field: its width and starting value. */
+export interface RegDecl {
   readonly __stateKind: 'reg';
   readonly width: number;
   /** Initial value (defaults to 0) */
   readonly initial: number;
 }
 
-/** Marker for an addressable memory state field.
+/** Declaration of a memory state field: its depth, width and starting contents.
  *  Has index signature [addr: number] → number so eval/onTick can use mem[addr] syntax.
  *  At runtime, mem() state is wrapped in a Proxy that supports this indexing. */
-export interface MemState {
+export interface MemDecl {
   readonly __stateKind: 'mem';
   readonly depth: number;
   readonly width: number;
-  /** Initial data (sparse, defaults to empty) */
-  readonly initial: Map<number, number>;
+  /** Starting contents, `{ address: value }` (sparse, defaults to empty) */
+  readonly initial: MemoryContents;
   /** Runtime index signature — Proxy provides this at runtime */
   [addr: number]: number;
 }
 
 /** Any state field type */
-export type StateFieldType = RegState | MemState;
+export type StateFieldType = RegDecl | MemDecl;
 
 /**
  * Declare a scalar register state field.
@@ -42,7 +42,7 @@ export type StateFieldType = RegState | MemState;
  *   state: { value: reg(8) }           // 8-bit register, initial 0
  *   state: { counter: reg(32, 100) }   // 32-bit register, initial 100
  */
-export function reg(width: number, initial: number = 0): RegState {
+export function reg(width: number, initial: number = 0): RegDecl {
   if (width < 1 || !Number.isInteger(width)) {
     throw new Error(`Register width must be a positive integer, got ${width}`);
   }
@@ -55,25 +55,34 @@ export function reg(width: number, initial: number = 0): RegState {
  * Usage:
  *   state: { mem: mem(256, 8) }     // 256 entries x 8-bit
  *   state: { regs: mem(32, 32) }    // 32 entries x 32-bit (register file)
+ *   state: { lut: mem(4, 8, { 0: 0x3e, 3: 0x07 }) }  // starting contents
+ *
+ * Starting contents are `{ address: value }`; build dense ones with
+ * `romFromBytes` / `romFromWords`. An address outside `0..depth-1` or a value
+ * wider than `width` is a compile error.
  */
-export function mem(depth: number, width: number, initial?: Map<number, number>): MemState {
+export function mem(depth: number, width: number, initial?: MemoryContents): MemDecl {
   if (depth < 1 || !Number.isInteger(depth)) {
     throw new Error(`Memory depth must be a positive integer, got ${depth}`);
   }
   if (width < 1 || !Number.isInteger(width)) {
     throw new Error(`Memory width must be a positive integer, got ${width}`);
   }
-  return { __stateKind: 'mem', depth, width, initial: initial ?? new Map() };
+  return { __stateKind: 'mem', depth, width, initial: initial ?? {} };
 }
 
-/** Check if a value is a RegState */
-export function isRegState(v: unknown): v is RegState {
-  return v != null && typeof v === 'object' && (v as any).__stateKind === 'reg';
+/** Check if a value is a RegDecl */
+export function isRegDecl(v: unknown): v is RegDecl {
+  return (
+    v != null && typeof v === 'object' && (v as { __stateKind?: unknown }).__stateKind === 'reg'
+  );
 }
 
-/** Check if a value is a MemState */
-export function isMemState(v: unknown): v is MemState {
-  return v != null && typeof v === 'object' && (v as any).__stateKind === 'mem';
+/** Check if a value is a MemDecl */
+export function isMemDecl(v: unknown): v is MemDecl {
+  return (
+    v != null && typeof v === 'object' && (v as { __stateKind?: unknown }).__stateKind === 'mem'
+  );
 }
 
 // ============================================================================
