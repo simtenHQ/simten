@@ -4,11 +4,11 @@
  * Tests Screen component reading RAM via sequential state (DMA-like behavior).
  */
 
-import { type CircuitLibrary, createSimulatorFromCircuit } from '@simten/core/simulator';
+import { type CircuitLibrary, createEngine, elaborate } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
-import { bitType, busType, type Circuit } from '../../types/circuit';
+import { bitType, busType, type CircuitIR } from '../../types/circuit';
 
 const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
   (c) => c.implementation.kind === 'primitive',
@@ -32,7 +32,7 @@ describe('Screen Integration', () => {
   });
 
   it('should work with empty circuit (no RAM)', () => {
-    const circuit: Circuit = {
+    const circuit: CircuitIR = {
       version: 1,
       name: 'EmptyScreenTest',
       inputs: [],
@@ -54,14 +54,16 @@ describe('Screen Integration', () => {
       implementation: { kind: 'composite' },
     };
 
-    const sim = createSimulatorFromCircuit(circuit, getLibrary());
+    const simLibrary = getLibrary();
+
+    const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
     const result = sim.runCombinational();
 
     expect(result.error).toBeUndefined();
   });
 
   it('should work with RAM in circuit', () => {
-    const circuit: Circuit = {
+    const circuit: CircuitIR = {
       version: 1,
       name: 'ScreenWithRAM',
       inputs: [],
@@ -96,7 +98,9 @@ describe('Screen Integration', () => {
       implementation: { kind: 'composite' },
     };
 
-    const sim = createSimulatorFromCircuit(circuit, getLibrary());
+    const simLibrary = getLibrary();
+
+    const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
     const result = sim.runCombinational();
 
     expect(result.error).toBeUndefined();
@@ -104,7 +108,7 @@ describe('Screen Integration', () => {
 
   it('should verify Screen component exists in circuit', () => {
     // Create circuit with RAM and Screen
-    const circuit: Circuit = {
+    const circuit: CircuitIR = {
       version: 1,
       name: 'ScreenTest',
       inputs: [],
@@ -147,7 +151,8 @@ describe('Screen Integration', () => {
     expect(screenNode?.outputs.length).toBe(0);
 
     // Run simulation - should not error
-    const sim = createSimulatorFromCircuit(circuit, getLibrary());
+    const simLibrary = getLibrary();
+    const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
     const result = sim.runCombinational();
     expect(result.error).toBeUndefined();
   });

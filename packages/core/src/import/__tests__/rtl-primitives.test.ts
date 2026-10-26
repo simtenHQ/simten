@@ -9,10 +9,10 @@
 
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
+import type { Circuit } from '../../circuit/builder-types.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { BuiltCircuit } from '../../circuit/types.js';
-import * as rtl from '../../rtl/index.js';
-import { simulate } from '../../sim/index.js';
+import { simulate } from '../../simulator/simulate.js';
+import * as rtl from '../primitives.js';
 
 let uid = 0;
 const port = (w: number) => (w === 1 ? bit : bus(w));
@@ -20,7 +20,7 @@ const mask = (w: number) => (w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0;
 const sext = (v: number, w: number) => (v >>> 0 >= 2 ** (w - 1) ? (v >>> 0) - 2 ** w : v >>> 0);
 
 /** Evaluate a combinational primitive with inputs {a,b?,s?}, return `out`. */
-function run(prim: BuiltCircuit, outW: number, ins: { a: number; b?: number; s?: number }): number {
+function run(prim: Circuit, outW: number, ins: { a: number; b?: number; s?: number }): number {
   // Mirror the primitive's own port widths; a fixed 32 would mismatch narrower parts.
   const portOf = (name: string) =>
     prim.circuit.inputs.find((p) => p.name === name)?.portType ?? port(32);
@@ -50,7 +50,7 @@ const u8 = fc.integer({ min: 0, max: 255 });
 const u32 = fc.integer({ min: 0, max: 0xffffffff }).map((n) => n >>> 0);
 
 describe('rtl bitwise', () => {
-  const cases: [BuiltCircuit, (a: number, b: number) => number][] = [
+  const cases: [Circuit, (a: number, b: number) => number][] = [
     [rtl.RtlAnd({ aWidth: 8, bWidth: 8, yWidth: 8 }), (a, b) => a & b],
     [rtl.RtlOr({ aWidth: 8, bWidth: 8, yWidth: 8 }), (a, b) => a | b],
     [rtl.RtlXor({ aWidth: 8, bWidth: 8, yWidth: 8 }), (a, b) => (a ^ b) & 0xff],

@@ -1,23 +1,15 @@
 /**
- * Circuit definition API — public exports
+ * `@simten/core/circuit`: the circuit() builder.
  *
- * Usage:
  *   import { circuit, bit, bus } from '@simten/core/circuit'
+ *
+ * The same names are exported from `@simten/core`.
  */
 
-export { autoHarness } from './auto-harness.js';
 export type { MemState, RegState, StateFieldType } from './bit-bus.js';
 export { bit, bus, mem, reg } from './bit-bus.js';
-export { buildFromIR } from './build-from-ir.js';
-export { circuit } from './circuit.js';
-export { type CircuitNameSite, circuitNameSites, firstCircuitName } from './circuit-names.js';
-export { CircuitToSourceError, circuitToSource } from './circuit-to-source.js';
-export type { EvalEntry } from './eval-registry.js';
-export { getAllCircuitEvals, getCircuitEval, registerCircuitEval } from './eval-registry.js';
-export { type ExecuteResult, executeCircuitCode, executeJsCode, stripTypes } from './execute.js';
-export { isSequentialCircuit } from './is-sequential.js';
 export type {
-  BuiltCircuit,
+  Circuit,
   CircuitConfig,
   CircuitMeta,
   CircuitShape,
@@ -29,4 +21,5 @@ export type {
   SinkPortRef,
   SourcePortRef,
   StateShape,
-} from './types.js';
+} from './builder-types.js';
+export { circuit } from './circuit.js';

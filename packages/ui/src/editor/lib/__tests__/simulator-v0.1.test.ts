@@ -5,11 +5,11 @@
  * Focus on end-to-end circuit simulation, edge cases, and critical behaviors.
  */
 
-import { type CircuitLibrary, createSimulatorFromCircuit } from '@simten/core/simulator';
+import { type CircuitLibrary, createEngine, elaborate } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
-import { bitType, busType, type Circuit } from '../../types/circuit';
+import { bitType, busType, type CircuitIR } from '../../types/circuit';
 
 const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
   (c) => c.implementation.kind === 'primitive',
@@ -35,7 +35,7 @@ describe('Simulator', () => {
   describe('Basic Combinational Simulation', () => {
     it('should simulate a simple Switch → LED circuit', () => {
       // This test would have caught the Switch → LED bug!
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'SwitchLED',
         inputs: [],
@@ -73,7 +73,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const result = sim.runCombinational();
 
       // Check that Switch outputs 1
@@ -88,7 +90,7 @@ describe('Simulator', () => {
     });
 
     it('should simulate Switch (OFF) → LED circuit', () => {
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'SwitchLED',
         inputs: [],
@@ -126,7 +128,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const result = sim.runCombinational();
 
       expect(result.portValues.get('switch1.out')).toBe(0);
@@ -135,7 +139,7 @@ describe('Simulator', () => {
     });
 
     it('should simulate Switch → AND → LED circuit', () => {
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'AndGate',
         inputs: [],
@@ -206,7 +210,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const result = sim.runCombinational();
 
       // true AND true = true
@@ -216,7 +222,7 @@ describe('Simulator', () => {
     });
 
     it('should handle OR gate logic correctly', () => {
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'OrGate',
         inputs: [],
@@ -272,7 +278,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const result = sim.runCombinational();
 
       // true OR false = true
@@ -281,7 +289,7 @@ describe('Simulator', () => {
     });
 
     it('should handle NOT gate logic correctly', () => {
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'NotGate',
         inputs: [],
@@ -319,7 +327,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const result = sim.runCombinational();
 
       // NOT true = false
@@ -329,7 +339,7 @@ describe('Simulator', () => {
 
     it('should handle multi-level logic (chained gates)', () => {
       // (A AND B) OR (C AND D)
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'ChainedGates',
         inputs: [],
@@ -451,7 +461,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const result = sim.runCombinational();
 
       // (true AND false) OR (true AND true) = false OR true = true
@@ -464,7 +476,7 @@ describe('Simulator', () => {
 
   describe('Edge Cases', () => {
     it('should handle empty circuit', () => {
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'Empty',
         inputs: [],
@@ -476,7 +488,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const result = sim.runCombinational();
 
       expect(result.portValues.size).toBe(0);
@@ -484,7 +498,7 @@ describe('Simulator', () => {
     });
 
     it('should handle circuit with only switches (no gates)', () => {
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'OnlySwitches',
         inputs: [],
@@ -515,7 +529,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const result = sim.runCombinational();
 
       expect(result.portValues.get('switch1.out')).toBe(1);
@@ -525,7 +541,7 @@ describe('Simulator', () => {
 
     it('should handle unconnected gate inputs (default to false)', () => {
       // AND gate with no inputs connected - should default to false
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'UnconnectedInputs',
         inputs: [],
@@ -550,7 +566,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const result = sim.runCombinational();
 
       // Unconnected inputs should default to false, so false AND false = false
@@ -560,7 +578,7 @@ describe('Simulator', () => {
 
     it('should handle disconnected components', () => {
       // Two separate circuits: switch1→led1 and switch2→led2 (no connection between them)
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'Disconnected',
         inputs: [],
@@ -622,7 +640,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const result = sim.runCombinational();
 
       // Both circuits should work independently
@@ -634,7 +654,7 @@ describe('Simulator', () => {
 
   describe('Sequential Simulation', () => {
     it('should initialize sequential state for DFlipFlop', () => {
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'DFFTest',
         inputs: [],
@@ -659,7 +679,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const seqState = sim.getState();
 
       // Should initialize state for DFF
@@ -673,7 +695,7 @@ describe('Simulator', () => {
     });
 
     it('should initialize sequential state for Register', () => {
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'RegisterTest',
         inputs: [],
@@ -698,7 +720,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const seqState = sim.getState();
 
       // Should initialize state for Register
@@ -712,7 +736,7 @@ describe('Simulator', () => {
 
     it('should run a full simulation tick', () => {
       // Simple circuit with a DFF: Switch → DFF → LED
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'DFFCircuit',
         inputs: [],
@@ -783,7 +807,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const result = sim.tick();
 
       // After one tick with d=true and rising clock edge, q should be true
@@ -795,7 +821,7 @@ describe('Simulator', () => {
   describe('Port Value Storage', () => {
     it('should store both input and output port values', () => {
       // This is critical for visualization - LED needs its input value stored
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'PortStorage',
         inputs: [],
@@ -857,7 +883,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const result = sim.runCombinational();
 
       // Check that output ports are stored
@@ -880,7 +908,7 @@ describe('Simulator', () => {
 
   describe('Initialization Support', () => {
     it('should initialize Register with custom initial value', () => {
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'RegisterInitTest',
         inputs: [],
@@ -921,7 +949,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const seqState = sim.getState();
 
       // Should initialize with custom value
@@ -934,7 +964,7 @@ describe('Simulator', () => {
     });
 
     it('should initialize RAM with object-based init data', () => {
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'RAMInitTest',
         inputs: [],
@@ -978,7 +1008,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const seqState = sim.getState();
 
       // Should initialize with Map containing the init data
@@ -995,7 +1027,7 @@ describe('Simulator', () => {
     });
 
     it('should initialize RAM with array-based init data', () => {
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'RAMInitArrayTest',
         inputs: [],
@@ -1039,7 +1071,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const seqState = sim.getState();
 
       // Should initialize with Map containing the array data
@@ -1057,7 +1091,7 @@ describe('Simulator', () => {
     });
 
     it('should use default initialization when no init argument provided', () => {
-      const circuit: Circuit = {
+      const circuit: CircuitIR = {
         version: 1,
         name: 'RAMDefaultInitTest',
         inputs: [],
@@ -1099,7 +1133,9 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const sim = createSimulatorFromCircuit(circuit, getLibrary());
+      const simLibrary = getLibrary();
+
+      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
       const seqState = sim.getState();
 
       // Should initialize with empty Map

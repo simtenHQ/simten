@@ -9,9 +9,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type { BuiltCircuit } from '../../circuit/index.js';
+import type { Circuit } from '../../circuit/index.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import { simulate } from '../../sim/simulate.js';
 import {
   Adder,
   BusAnd,
@@ -28,9 +27,10 @@ import {
   Subtractor,
   Xor,
 } from '../../std/index.js';
+import { simulate } from '../simulate.js';
 
 /** Helper: simulate a 1-tick combinational circuit, return output values */
-function sim<C extends BuiltCircuit>(
+function sim<C extends Circuit>(
   built: C,
   inputs: Record<string, number | boolean>,
 ): Record<string, number | boolean> {

@@ -33,7 +33,7 @@ describe('dist/bundle.d.ts', () => {
     ['declare const Adder'],
     ['declare const Register'],
     ['declare function romFromBytes'],
-    ['interface BuiltCircuit'],
+    ['interface Circuit<'],
     ['interface CircuitConfig'],
   ])('contains public symbol: %s', (needle) => {
     expect(bundle).toContain(needle);
@@ -55,12 +55,12 @@ describe('dist/bundle.d.ts', () => {
     // four import-reconstruction components (Slice/Concat/SignExtend/ZeroExtend),
     // then 110 → 112 KB for the divide/remainder family (Divider/Modulo +
     // Signed*), then 112 → 116 KB for `PortOutputValues` — after trimming the
-    // JSDoc that came with it and with `registerCircuitEval`, which together
+    // JSDoc that came with it and with `registerCircuitBehavior`, which together
     // pushed past 112 and, having landed in separate PRs, were each measured
     // against a base without the other. Trim JSDoc before bumping further.
     //
     // 116 → 118 KB when `HexDisplay` became width-parameterized: it turned from
-    // a bare `BuiltCircuit` into a factory carrying an options type, which the
+    // a bare `Circuit` into a factory carrying an options type, which the
     // width check required (a fixed bus(8) sink cannot accept a 16-bit
     // accumulator without silently truncating it). Trimming its JSDoc first got
     // the bundle to 5 bytes under the old cap, which is not a real margin.

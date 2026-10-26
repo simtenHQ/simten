@@ -7,7 +7,7 @@
  * shape of the bodies; this checks the code they produce.
  */
 
-import { executeCircuitCode } from '@simten/core';
+import { executeCircuitCode } from '@simten/core/internal';
 import { describe, expect, it } from 'vitest';
 import { SIMTEN_SNIPPETS } from '../snippets';
 

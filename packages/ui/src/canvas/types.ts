@@ -5,7 +5,10 @@
 
 // --- Inspector types (used by the canvas-level drill-down inspector) ---
 
-import type { CircuitLibrary as CircuitLibraryType, Circuit as CircuitType } from '@simten/core';
+import type {
+  CircuitLibrary as CircuitLibraryType,
+  CircuitIR as CircuitType,
+} from '@simten/core/internal';
 
 export interface InspectorFrame {
   componentName: string;
@@ -60,12 +63,12 @@ export interface MetadataState {
  * position on the canvas. Pass to CircuitCanvas / CircuitEmbed via the
  * `layout` prop to bypass the runtime layout engine entirely.
  *
- * When parameterised by a `BuiltCircuit`, the keys are constrained at compile
+ * When parameterised by a `Circuit`, the keys are constrained at compile
  * time to the union of input names, output names, and node labels.
  */
-import type { BuiltCircuit } from '@simten/core';
+import type { Circuit } from '@simten/core';
 
-export type CircuitLayout<C extends BuiltCircuit | undefined = undefined> =
-  C extends BuiltCircuit<infer Ins, infer Outs, infer Ns>
+export type CircuitLayout<C extends Circuit | undefined = undefined> =
+  C extends Circuit<infer Ins, infer Outs, infer Ns>
     ? Record<keyof Ins | keyof Outs | keyof Ns, { x: number; y: number }>
     : Record<string, { x: number; y: number }>;

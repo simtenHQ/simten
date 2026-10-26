@@ -6,11 +6,11 @@
  */
 
 import { create } from 'zustand';
-import type { Circuit } from '../types/circuit';
+import type { CircuitIR } from '../types/circuit';
 
 export interface CircuitStore {
-  circuit: Circuit | null;
-  setCircuit: (circuit: Circuit) => void;
+  circuit: CircuitIR | null;
+  setCircuit: (circuit: CircuitIR) => void;
   clearCircuit: () => void;
 }
 

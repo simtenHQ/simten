@@ -20,7 +20,7 @@
 
 import type {
   ArgumentValue,
-  Circuit,
+  CircuitIR,
   CircuitMetadata,
   CircuitTiming,
   ClockDescriptor,
@@ -30,11 +30,15 @@ import type {
   PortDescriptor,
   PortType,
   StateBlock,
-} from '../types/circuit.js';
+} from '../ir/circuit-ir.js';
+import {
+  type BehaviorEntry,
+  noteDefinition,
+  registerCircuitBehavior,
+} from './behavior-registry.js';
 import { isMemState, isRegState, normalizePortType } from './bit-bus.js';
-import { type EvalEntry, noteDefinition, registerCircuitEval } from './eval-registry.js';
 import type {
-  BuiltCircuit,
+  Circuit,
   CircuitConfig,
   CircuitMeta,
   ConnectArg,
@@ -44,7 +48,7 @@ import type {
   SinkPortRef,
   SourcePortRef,
   StateShape,
-} from './types.js';
+} from './builder-types.js';
 
 // ============================================================================
 // Port reference creation (for connect callbacks)
@@ -130,9 +134,9 @@ function createNodeProxy(
  *
  * `name` is the circuit's identifier; the second arg is either:
  * - A configuration object (for unparameterized circuits) — returns a
- *   `BuiltCircuit` directly.
+ *   `Circuit` directly.
  * - A factory function `(opts) => config` (for parameterized circuits) —
- *   returns a callable `(opts?) => BuiltCircuit`. Call it to specialize:
+ *   returns a callable `(opts?) => Circuit`. Call it to specialize:
  *   `Register({ width: 16, value: 100 })`.
  *
  * Singletons are used bare: `nodes: { g: And }`. Parameterized components
@@ -185,7 +189,7 @@ export function circuit<
 >(
   name: string,
   factory: (opts?: Opts) => CircuitConfig<Ins, Outs, Nodes, S>,
-): (opts?: Opts) => BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>, Nodes>;
+): (opts?: Opts) => Circuit<NormalizePorts<Ins>, NormalizePorts<Outs>, Nodes>;
 export function circuit<
   Ins extends Record<string, PortType | number> = Record<never, never>,
   Outs extends Record<string, PortType | number> = Record<never, never>,
@@ -194,11 +198,11 @@ export function circuit<
 >(
   name: string,
   config?: CircuitConfig<Ins, Outs, Nodes, S>,
-): BuiltCircuit<NormalizePorts<Ins>, NormalizePorts<Outs>, Nodes>;
+): Circuit<NormalizePorts<Ins>, NormalizePorts<Outs>, Nodes>;
 export function circuit(
   name: string,
   configOrFactory: AnyCircuitConfig | CircuitFactory = {},
-): BuiltCircuit | ((opts?: FactoryOptions) => BuiltCircuit) {
+): Circuit | ((opts?: FactoryOptions) => Circuit) {
   assertCircuitName(name);
   if (typeof configOrFactory === 'function') return specializeFactory(name, configOrFactory);
   return buildCircuit(name, configOrFactory);
@@ -244,16 +248,16 @@ function assertCircuitName(name: unknown): asserts name is string {
 }
 
 /**
- * Factory form: return a callable that builds a per-instance BuiltCircuit
+ * Factory form: return a callable that builds a per-instance Circuit
  * with `_args` attached. The factory closes over the original `name`, so
  * every specialized instance shares the same component name (and registry
  * entry) — shape can differ per call (e.g. port widths), but the eval/
  * onTick logic is parameter-agnostic and registers equivalently each time.
  */
 function specializeFactory(name: string, factory: CircuitFactory) {
-  return (opts?: FactoryOptions): BuiltCircuit => {
+  return (opts?: FactoryOptions): Circuit => {
     const built = buildCircuit(name, factory(opts)) as {
-      -readonly [K in keyof BuiltCircuit]: BuiltCircuit[K];
+      -readonly [K in keyof Circuit]: Circuit[K];
     };
     built._args = withResolvedStateInitials(built.circuit.state, opts ?? {});
     resetStateInitials(built.circuit.state);
@@ -289,7 +293,7 @@ function withResolvedStateInitials(state: StateBlock[], opts: FactoryOptions): F
 /**
  * Strip per-instance state initials baked in by ES6-shorthand
  * declarations like `state: { value }`. Dep-merging (`collectDependencies`)
- * picks the FIRST node's BuiltCircuit as the canonical
+ * picks the FIRST node's Circuit as the canonical
  * library entry; if state initials varied per instance, every
  * instance without an explicit args override would inherit whichever
  * value happened to come first. Per-instance values flow through
@@ -321,7 +325,7 @@ function resetStateInitials(state: StateBlock[]): void {
 }
 
 /** Object form: validate the config, then build its IR and register its behaviour. */
-function buildCircuit(name: string, config: AnyCircuitConfig): BuiltCircuit {
+function buildCircuit(name: string, config: AnyCircuitConfig): Circuit {
   const ports = normalizePorts(config);
   const declaredNodes = (config.nodes ?? {}) as Record<string, NodeEntry>;
   const errors: string[] = [];
@@ -367,15 +371,15 @@ function normalizePorts(config: AnyCircuitConfig): Ports {
 function expandNodes(
   declaredNodes: Record<string, NodeEntry>,
   errors: string[],
-): Record<string, BuiltCircuit> {
-  const nodes: Record<string, BuiltCircuit> = {};
+): Record<string, Circuit> {
+  const nodes: Record<string, Circuit> = {};
   for (const [key, entry] of Object.entries(declaredNodes)) {
     if (!Array.isArray(entry)) {
       if (key in nodes) errors.push(`Node name '${key}' is declared twice`);
-      nodes[key] = entry as BuiltCircuit;
+      nodes[key] = entry as Circuit;
       continue;
     }
-    entry.forEach((comp: BuiltCircuit, i: number) => {
+    entry.forEach((comp: Circuit, i: number) => {
       const id = `${key}${i}`;
       // An expanded id can land on a name someone also wrote by hand. Silent
       // overwrite would drop a node from the netlist with nothing to show for
@@ -439,7 +443,7 @@ function evaluateConnect(
 ): ConnectionDef[] {
   if (!config.connect) return [];
 
-  const refsFor = (nodeId: string, comp: BuiltCircuit) => {
+  const refsFor = (nodeId: string, comp: Circuit) => {
     const allPorts = new Map<string, PortType>();
     for (const pd of comp.circuit.inputs) allPorts.set(pd.name, pd.portType);
     for (const pd of comp.circuit.outputs) allPorts.set(pd.name, pd.portType);
@@ -451,8 +455,8 @@ function evaluateConnect(
   const nodeRefs: Record<string, unknown> = {};
   for (const [key, entry] of Object.entries(declaredNodes)) {
     nodeRefs[key] = Array.isArray(entry)
-      ? entry.map((comp: BuiltCircuit, i: number) => refsFor(`${key}${i}`, comp))
-      : refsFor(key, entry as BuiltCircuit);
+      ? entry.map((comp: Circuit, i: number) => refsFor(`${key}${i}`, comp))
+      : refsFor(key, entry as Circuit);
   }
 
   const arg = {
@@ -531,7 +535,7 @@ function validateNetlist(
   name: string,
   defs: ConnectionDef[],
   { inputs, outputs }: Ports,
-  nodes: Record<string, BuiltCircuit>,
+  nodes: Record<string, Circuit>,
   errors: string[],
 ): ConnectionDef[] {
   // Validate connection port references, then their direction
@@ -607,7 +611,7 @@ function checkBusWidths(
   connectionDefs: ConnectionDef[],
   inputs: Map<string, PortType>,
   outputs: Map<string, PortType>,
-  nodes: Record<string, BuiltCircuit>,
+  nodes: Record<string, Circuit>,
   errors: string[],
 ): void {
   // Bus width validation, split by direction because the two directions are not
@@ -671,15 +675,15 @@ function checkBusWidths(
   }
 }
 
-/** Assemble the Circuit IR and the BuiltCircuit wrapper around it. */
+/** Assemble the Circuit IR and the Circuit wrapper around it. */
 function buildIR(
   name: string,
   config: AnyCircuitConfig,
   { inputs, outputs }: Ports,
-  nodes: Record<string, BuiltCircuit>,
+  nodes: Record<string, Circuit>,
   connectionDefs: ConnectionDef[],
-  dependencies: Map<string, BuiltCircuit>,
-): BuiltCircuit {
+  dependencies: Map<string, Circuit>,
+): Circuit {
   const inputDescs: PortDescriptor[] = Array.from(inputs, ([n, t]) => ({ name: n, portType: t }));
   const outputDescs: PortDescriptor[] = Array.from(outputs, ([n, t]) => ({ name: n, portType: t }));
   const { implementation, timing } = classifyImplementation(config, nodes);
@@ -690,7 +694,7 @@ function buildIR(
   }
 
   const irNodes = buildIrNodes(nodes);
-  const circuitIR: Circuit = {
+  const circuitIR: CircuitIR = {
     version: 1,
     name,
     inputs: inputDescs,
@@ -716,7 +720,7 @@ function buildIR(
     outputs: outputsByName,
     nodes: nodesById,
     _dependencies: dependencies,
-  } as unknown as BuiltCircuit;
+  } as unknown as Circuit;
 
   // Map serializes as `{}` by default — define a non-enumerable toJSON so
   // JSON.stringify emits dependencies as a plain object without polluting
@@ -734,7 +738,7 @@ function buildIR(
 
 function classifyImplementation(
   config: AnyCircuitConfig,
-  nodes: Record<string, BuiltCircuit>,
+  nodes: Record<string, Circuit>,
 ): { implementation: Implementation; timing: CircuitTiming } {
   const hasEval = config.eval != null;
   const hasNodes = Object.keys(nodes).length > 0;
@@ -816,7 +820,7 @@ function buildStateBlocks(name: string, state: StateShape | undefined): StateBlo
   return stateBlocks;
 }
 
-function buildIrNodes(nodes: Record<string, BuiltCircuit>): Node[] {
+function buildIrNodes(nodes: Record<string, Circuit>): Node[] {
   const irNodes: Node[] = [];
   for (const [nodeId, comp] of Object.entries(nodes)) {
     irNodes.push({
@@ -883,7 +887,7 @@ function buildMetadata(timing: CircuitTiming, meta: CircuitMeta | undefined): Ci
 }
 
 /**
- * Sub-circuit definitions for the direct BuiltCircuit → simulator path, keyed
+ * Sub-circuit definitions for the direct Circuit → simulator path, keyed
  * by component name. The library this feeds holds one definition per name and
  * composites are flattened from it, so two composites under one name with
  * different insides would both simulate as whichever was seen first (#428).
@@ -891,12 +895,12 @@ function buildMetadata(timing: CircuitTiming, meta: CircuitMeta | undefined): Ci
  * carries its own port widths and arguments.
  */
 function collectDependencies(
-  nodes: Record<string, BuiltCircuit>,
+  nodes: Record<string, Circuit>,
   errors: string[],
-): Map<string, BuiltCircuit> {
-  const deps = new Map<string, BuiltCircuit>();
+): Map<string, Circuit> {
+  const deps = new Map<string, Circuit>();
   const reported = new Set<string>();
-  const add = (depName: string, depComp: BuiltCircuit) => {
+  const add = (depName: string, depComp: Circuit) => {
     const existing = deps.get(depName);
     if (!existing) {
       deps.set(depName, depComp);
@@ -928,20 +932,20 @@ function collectDependencies(
  * simulator's eval-bridge can dispatch through them instead of falling
  * into evaluateNodeFallback and throwing "no registered evaluator".
  */
-function registerBehaviour(name: string, config: AnyCircuitConfig, circuitIR: Circuit): void {
-  const entry: EvalEntry = {
+function registerBehaviour(name: string, config: AnyCircuitConfig, circuitIR: CircuitIR): void {
+  const entry: BehaviorEntry = {
     inputNames: circuitIR.inputs.map((p) => p.name),
     outputNames: circuitIR.outputs.map((p) => p.name),
-    evalFn: (config.eval ?? (() => ({}))) as EvalEntry['evalFn'],
+    evalFn: (config.eval ?? (() => ({}))) as BehaviorEntry['evalFn'],
     stateKeys: config.state ? Object.keys(config.state) : undefined,
-    onTickFn: config.onTick as EvalEntry['onTickFn'],
+    onTickFn: config.onTick as BehaviorEntry['onTickFn'],
   };
   // Only a primitive's behaviour comes from this entry; a composite is
   // flattened from its IR, and `collectDependencies` checks those.
   if (circuitIR.implementation.kind === 'primitive') {
     noteDefinition(name, () => definitionKey(entry));
   }
-  registerCircuitEval(name, entry);
+  registerCircuitBehavior(name, entry);
 }
 
 /**
@@ -949,7 +953,7 @@ function registerBehaviour(name: string, config: AnyCircuitConfig, circuitIR: Ci
  * state names and the behaviour's source text. Port widths are left out, since
  * specialisations of one factory differ there and nowhere else.
  */
-function definitionKey(entry: EvalEntry): string {
+function definitionKey(entry: BehaviorEntry): string {
   return JSON.stringify([
     entry.inputNames,
     entry.outputNames,
@@ -979,7 +983,7 @@ function resolvePortRef(
   ref: PortPath,
   inputs: Map<string, PortType>,
   outputs: Map<string, PortType>,
-  nodes: Record<string, BuiltCircuit>,
+  nodes: Record<string, Circuit>,
 ): PortType | undefined {
   if (ref.nodeId === '') {
     return inputs.get(ref.portName) ?? outputs.get(ref.portName);
@@ -997,7 +1001,7 @@ function validatePortRef(
   ref: PortPath,
   inputs: Map<string, PortType>,
   outputs: Map<string, PortType>,
-  nodes: Record<string, BuiltCircuit>,
+  nodes: Record<string, Circuit>,
   errors: string[],
 ): boolean {
   if (ref.nodeId === '') {
@@ -1029,7 +1033,7 @@ function validatePortRef(
 function portSides(
   ref: PortPath,
   inputs: Map<string, PortType>,
-  nodes: Record<string, BuiltCircuit>,
+  nodes: Record<string, Circuit>,
 ): { drives: boolean; driven: boolean } {
   if (ref.nodeId === '') {
     const isInput = inputs.has(ref.portName);
@@ -1043,7 +1047,7 @@ function portSides(
 }
 
 /** e.g. "circuit output `q`" or "input `a` of node 'n' (Not)", for errors. */
-function portLabel(ref: PortPath, isInput: boolean, nodes: Record<string, BuiltCircuit>): string {
+function portLabel(ref: PortPath, isInput: boolean, nodes: Record<string, Circuit>): string {
   const side = isInput ? 'input' : 'output';
   if (ref.nodeId === '') return `circuit ${side} \`${ref.portName}\``;
   return `${side} \`${ref.portName}\` of node '${ref.nodeId}' (${nodes[ref.nodeId].circuit.name})`;
@@ -1059,7 +1063,7 @@ function checkDirection(
   source: PortPath,
   target: PortPath,
   inputs: Map<string, PortType>,
-  nodes: Record<string, BuiltCircuit>,
+  nodes: Record<string, Circuit>,
   errors: string[],
 ): void {
   const from = portSides(source, inputs, nodes);
@@ -1083,17 +1087,17 @@ function checkDirection(
 }
 
 /** Whether two IRs under one name can share a library entry. */
-function sameStructure(a: Circuit, b: Circuit): boolean {
+function sameStructure(a: CircuitIR, b: CircuitIR): boolean {
   if (a === b) return true;
   if (a.implementation.kind !== 'composite' && b.implementation.kind !== 'composite') return true;
   return structureKey(a) === structureKey(b);
 }
 
 /** Memoised per IR object: composites are compared often and rebuilt rarely. */
-const structureKeys = new WeakMap<Circuit, string>();
+const structureKeys = new WeakMap<CircuitIR, string>();
 
 /** The parts of a composite's IR that flattening reads: its ports, nodes and wiring. */
-function structureKey(ir: Circuit): string {
+function structureKey(ir: CircuitIR): string {
   let key = structureKeys.get(ir);
   if (key === undefined) {
     key = JSON.stringify([
@@ -1108,7 +1112,7 @@ function structureKey(ir: Circuit): string {
   return key;
 }
 
-function detectSequential(nodes: Record<string, BuiltCircuit>, state?: StateShape | null): boolean {
+function detectSequential(nodes: Record<string, Circuit>, state?: StateShape | null): boolean {
   if (state != null) return true;
   for (const comp of Object.values(nodes)) {
     if (comp.circuit.clocks.length > 0 || comp.circuit.state.length > 0) return true;

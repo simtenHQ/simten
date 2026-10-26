@@ -13,13 +13,13 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { createSimulator, elaborate } from '../../../simulator/index.js';
-import type { Circuit, PortType } from '../../../types/circuit.js';
-import type { CircuitLibrary } from '../../../types/simulator.js';
+import type { CircuitIR, PortType } from '../../../ir/circuit-ir.js';
+import { createEngine, elaborate } from '../../../simulator/index.js';
+import type { CircuitLibrary } from '../../../simulator/types.js';
 import { exportVerilog } from '../../exporter.js';
 
 export interface DiffTarget {
-  top: Circuit;
+  top: CircuitIR;
   library: CircuitLibrary;
 }
 
@@ -99,7 +99,7 @@ function pick(next: () => number, w: number): number {
   return (next() & mask) >>> 0;
 }
 
-export function makeVectors(top: Circuit, opts: DiffOptions): Record<string, number>[] {
+export function makeVectors(top: CircuitIR, opts: DiffOptions): Record<string, number>[] {
   const { cycles, seed = 1, nonZero = [], inputMask = {} } = opts;
   const next = rng(seed);
   const vectors: Record<string, number>[] = [];
@@ -116,7 +116,7 @@ export function makeVectors(top: Circuit, opts: DiffOptions): Record<string, num
   return vectors;
 }
 
-function topSignals(top: Circuit): Signal[] {
+function topSignals(top: CircuitIR): Signal[] {
   return top.outputs
     .filter((p) => widthOf(p.portType) <= 32)
     .map((p) => ({
@@ -156,7 +156,7 @@ function runSimulator(
   vectors: Record<string, number>[],
   signals: Signal[],
 ): (number | undefined)[][] {
-  const engine = createSimulator(elaborate(target.top, target.library), {
+  const engine = createEngine(elaborate(target.top, target.library), {
     componentLibrary: target.library,
   });
   const trace: (number | undefined)[][] = [];
@@ -180,7 +180,7 @@ function runSimulator(
  * reset arm fires before the first sampled cycle.
  */
 function testbench(
-  top: Circuit,
+  top: CircuitIR,
   moduleName: string,
   clockPorts: string[],
   vectors: Record<string, number>[],

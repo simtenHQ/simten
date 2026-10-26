@@ -3,14 +3,14 @@
  *
  * The load-bearing one is the containment suite. `STDLIB_CIRCUITS` materializes
  * every exported function in the std modules by calling it with no arguments
- * and keeping whatever returns a `BuiltCircuit` (see `_materialize` in
+ * and keeping whatever returns a `Circuit` (see `_materialize` in
  * `std/index.ts`). A `MADE_OF` builder called with no arguments returns exactly
  * that, so exporting one bare from a std module — or adding `made-of.js` to
  * `_allExports` — would silently register a second, structurally different
  * "Adder" in the stdlib. Nothing else would fail; the canvas and the exporter
  * would just start disagreeing about what an Adder is.
  *
- * Also spawns `made-of.verify.ts` so the equivalence proof runs in CI. It lives
+ * Also spawns `made-of-equivalence.verify.ts` so the equivalence proof runs in CI. It lives
  * in a subprocess because the verify harness is a module singleton — one
  * testbench per process.
  */
@@ -41,7 +41,7 @@ describe('MADE_OF containment', () => {
   it('exports nothing that survives _materialize', () => {
     // The real guard. What makes a leak possible is not where the module sits
     // in the import graph — it is whether the module exports a bare function
-    // that returns a BuiltCircuit when called with no arguments. This is
+    // that returns a Circuit when called with no arguments. This is
     // `_materialize`'s exact predicate, applied to this module's public
     // surface, so it fails the moment someone exports a builder directly
     // (`export function adderMadeOf(...)`) whether or not index.ts changes.
@@ -59,7 +59,7 @@ describe('MADE_OF containment', () => {
 
   it('produces exactly the circuits a bare export would leak', () => {
     // Pin the mechanism the guard above protects against: these builders really
-    // do return a BuiltCircuit when called with no arguments, which is what
+    // do return a Circuit when called with no arguments, which is what
     // `_materialize` does to every exported function.
     for (const name of MADE_OF_NAMES) {
       const built = MADE_OF[name]({}) as { circuit?: { name?: string } };
@@ -146,7 +146,7 @@ describe('FullAdder', () => {
   });
 });
 
-describe('made-of.verify.ts', () => {
+describe('made-of-equivalence.verify.ts', () => {
   it('proves every reference build equivalent to its primitive', { timeout: 120_000 }, () => {
     // Strip VITEST so the harness runs in its real tsx mode (emit JSON +
     // exit code) rather than vitest mode (throw).
@@ -156,7 +156,7 @@ describe('made-of.verify.ts', () => {
     delete env.VITEST_WORKER_ID;
     const r = spawnSync(
       resolve(repoRoot, 'node_modules/.bin/tsx'),
-      [resolve(stdDir, 'made-of.verify.ts')],
+      [resolve(here, 'made-of-equivalence.verify.ts')],
       { cwd: repoRoot, env, encoding: 'utf8' },
     );
     expect(r.stdout, r.stderr).toContain('"testbench_passed": true');

@@ -5,7 +5,7 @@
  * State types: reg(n), mem(depth, width) — describe stateful storage.
  */
 
-import type { BitType, BusType, PortType } from '../types/circuit.js';
+import type { BitType, BusType, PortType } from '../ir/circuit-ir.js';
 
 // ============================================================================
 // State type constructors

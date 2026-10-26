@@ -10,7 +10,7 @@ export type {
   BitValue,
   BusType,
   BusValue,
-  Circuit,
+  CircuitIR,
   CircuitMetadata,
   ClockDescriptor,
   ClockInstance,

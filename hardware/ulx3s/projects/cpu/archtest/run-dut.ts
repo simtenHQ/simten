@@ -19,7 +19,7 @@
 
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { simulate } from '@simten/core/sim';
+import { simulate } from '@simten/core';
 import { buildCPUCore } from '../index.js';
 
 // Must match link.ld: IMEM 4M @ 0x0, DMEM 1M @ 0x400000. IMEM is large because

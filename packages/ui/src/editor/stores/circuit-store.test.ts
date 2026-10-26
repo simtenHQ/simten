@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it } from 'vitest';
-import type { Circuit } from '../types/circuit';
+import type { CircuitIR } from '../types/circuit';
 import { useCircuitStore } from './circuit-store';
 
-const testCircuit: Circuit = {
+const testCircuit: CircuitIR = {
   version: 1,
   name: 'TestCircuit',
   inputs: [],

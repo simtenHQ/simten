@@ -7,8 +7,7 @@
  * Run: pnpm --filter @simten/demos sin-wave
  */
 
-import { createCircuitLibrary, createSimulatorFromCircuit, TOP_LEVEL_NODE } from '@simten/core';
-import { bus, circuit } from '@simten/core/circuit';
+import { bus, circuit, simulate } from '@simten/core';
 import { Adder, Constant, Register, ROM, romFromBytes } from '@simten/core/std';
 
 // ── Circuit ──────────────────────────────────────────────────────────────────
@@ -40,16 +39,9 @@ const SinWave = circuit('SinWave', {
   ],
 });
 
-// ── Library + Simulator ───────────────────────────────────────────────────────
+// ── Simulator ─────────────────────────────────────────────────────────────────
 
-// Build library from SinWave's transitive dependencies
-const circuits: import('@simten/core').Circuit[] = [SinWave.circuit];
-for (const [, dep] of SinWave._dependencies) {
-  if (dep?.circuit) circuits.push(dep.circuit);
-}
-const lib = createCircuitLibrary(circuits);
-
-const sim = createSimulatorFromCircuit(SinWave.circuit, lib);
+const sim = simulate(SinWave);
 
 // ── Rendering ─────────────────────────────────────────────────────────────────
 
@@ -141,9 +133,8 @@ process.on('SIGINT', () => {
 });
 
 const interval = setInterval(() => {
-  const result = sim.tick();
-  const value = (result.portValues.get(`${TOP_LEVEL_NODE}.value`) as number) ?? 0;
-  const addr = (result.portValues.get(`${TOP_LEVEL_NODE}.addr`) as number) ?? 0;
+  sim.tick();
+  const { value, addr } = sim.read();
 
   history.push(value);
   render(history.map((v, i) => v)); // addr tracked separately via portValues

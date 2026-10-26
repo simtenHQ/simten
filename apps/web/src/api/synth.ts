@@ -9,8 +9,12 @@
  * Local dev:  falls back to the synth container on localhost:8792.
  */
 
-import { buildFromIR, circuitToSource } from '@simten/core/circuit';
-import { importNetlist, type YosysNetlist } from '@simten/core/import';
+import {
+  buildFromIR,
+  circuitToSource,
+  importNetlist,
+  type YosysNetlist,
+} from '@simten/core/internal';
 
 interface SynthContainerResponse {
   success: boolean;

@@ -18,11 +18,13 @@
 
 import { readFileSync } from 'node:fs';
 import { afterAll, describe, expect, it } from 'vitest';
-import { compileSource } from '../../../api/compile-source.js';
-import { bit, buildFromIR, bus, circuit } from '../../../circuit/index.js';
-import type { BuiltCircuit, SinkPortRef, SourcePortRef } from '../../../circuit/types.js';
+import type { Circuit, SinkPortRef, SourcePortRef } from '../../../circuit/builder-types.js';
+import { bit, bus, circuit } from '../../../circuit/index.js';
 import { EXAMPLES } from '../../../examples/catalog.js';
 import { importNetlist, type YosysNetlist } from '../../../import/index.js';
+import { buildFromIR } from '../../../internal.js';
+import type { CircuitIR, PortType } from '../../../ir/circuit-ir.js';
+import type { CircuitLibrary } from '../../../simulator/types.js';
 import {
   Adder,
   AddressCombiner,
@@ -80,8 +82,7 @@ import {
   Xor,
   ZeroExtend,
 } from '../../../std/index.js';
-import type { Circuit, PortType } from '../../../types/circuit.js';
-import type { CircuitLibrary } from '../../../types/simulator.js';
+import { compileSource } from '../../../tools/compile-source.js';
 import {
   type DiffOptions,
   type DiffTarget,
@@ -121,9 +122,9 @@ const BUG = {
 } as const;
 
 /** Top circuit plus every transitive dependency, so elaboration can resolve. */
-function libraryFor(top: BuiltCircuit): CircuitLibrary {
-  const byName = new Map<string, Circuit>();
-  const add = (b: { circuit?: Circuit; _dependencies?: ReadonlyMap<string, unknown> }) => {
+function libraryFor(top: Circuit): CircuitLibrary {
+  const byName = new Map<string, CircuitIR>();
+  const add = (b: { circuit?: CircuitIR; _dependencies?: ReadonlyMap<string, unknown> }) => {
     if (!b?.circuit || byName.has(b.circuit.name)) return;
     byName.set(b.circuit.name, b.circuit);
     for (const dep of b._dependencies?.values() ?? []) add(dep as typeof b);
@@ -135,7 +136,7 @@ function libraryFor(top: BuiltCircuit): CircuitLibrary {
   };
 }
 
-function target(top: BuiltCircuit): DiffTarget {
+function target(top: Circuit): DiffTarget {
   return { top: top.circuit, library: libraryFor(top) };
 }
 
@@ -143,7 +144,7 @@ function target(top: BuiltCircuit): DiffTarget {
  * One instance of `inner` with its ports brought out to top-level ports of the
  * same names (only `outputs`, if given).
  */
-function wrap(name: string, inner: BuiltCircuit, outputs?: readonly string[]): DiffTarget {
+function wrap(name: string, inner: Circuit, outputs?: readonly string[]): DiffTarget {
   const ports = (list: readonly { name: string; portType: PortType }[]) =>
     Object.fromEntries(list.map((p) => [p.name, p.portType]));
   const ins = ports(inner.circuit.inputs);
@@ -183,7 +184,7 @@ function imported(module: string): DiffTarget {
 }
 
 const cases: Case[] = [];
-const std = (name: string, inner: () => BuiltCircuit, extra: Omit<Case, 'name' | 'target'> = {}) =>
+const std = (name: string, inner: () => Circuit, extra: Omit<Case, 'name' | 'target'> = {}) =>
   cases.push({ name, target: () => wrap(name, inner()), ...extra });
 
 // ── std combinational ───────────────────────────────────────────────────
@@ -402,7 +403,7 @@ cases.push({
 });
 
 // ── user eval / onTick, exported through eval-synth ─────────────────────
-const evalCase = (name: string, built: BuiltCircuit, bug?: string) =>
+const evalCase = (name: string, built: Circuit, bug?: string) =>
   cases.push({ name, target: () => wrap(name, built), bug });
 
 evalCase(

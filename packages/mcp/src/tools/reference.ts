@@ -10,17 +10,18 @@
  */
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getGrammarHandler, getLibrary, getPrimitivesHandler } from '@simten/core/api';
+import { getLibrary, getPrimitivesHandler } from '@simten/core/internal';
 import {
   annotatePrimitivesWithOptions,
   getFactoryOptionSignatures,
 } from '../lib/primitive-params.js';
+import { GRAMMAR } from './grammar.js';
 
 // Static reference, built once. The grammar is the circuit() builder API +
 // worked examples; the component list is every primitive with its ports and
 // constructor options (e.g. `Register ctor({ width?, value? })`) — ports alone
 // don't reveal factory options.
-const grammar = getGrammarHandler();
+const grammar = GRAMMAR;
 const components = annotatePrimitivesWithOptions(
   getPrimitivesHandler({ compact: true }, getLibrary()),
   getFactoryOptionSignatures(),
@@ -33,7 +34,7 @@ const components = annotatePrimitivesWithOptions(
 const VERIFY_API = `Writing a .verify.ts testbench — a sibling file to your circuit, run on the host via tsx (full npm resolution, no sandbox).
 
 SHAPE
-  import { simulate } from '@simten/core/sim';
+  import { simulate } from '@simten/core';
   import { verify, declareOracle } from '@simten/core/verify';
   import * as fc from 'fast-check';                       // only if you use verify.check
   import { MyCircuit } from './my_circuit.circuit.js';     // your DUT — must be exported

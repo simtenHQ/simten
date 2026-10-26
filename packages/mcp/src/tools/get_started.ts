@@ -4,7 +4,7 @@
  * A new user who installs the MCP is met with nothing: every other tool wants
  * a circuit file that doesn't exist yet. This tool fills that gap — a short
  * orientation plus the bundled example catalog (canonical in
- * `@simten/core/examples/catalog`, shared with the web editor), and a way to
+ * `@simten/core/examples`, shared with the web editor), and a way to
  * drop any example into `circuits/` ready for `show_circuit`. Everything here
  * runs in-process: no `setup_project`, no npm install.
  *
@@ -22,7 +22,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { EXAMPLES, type Example } from '@simten/core/examples/catalog';
+import { EXAMPLES, type Example } from '@simten/core/examples';
 import * as std from '@simten/core/std';
 import { z } from 'zod';
 

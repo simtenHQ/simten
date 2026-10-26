@@ -9,8 +9,8 @@
  */
 import { describe, expect, it } from 'vitest';
 import { bit, circuit } from '../../circuit/index.js';
-import { simulate } from '../../sim/simulate.js';
 import { Not } from '../../std/index.js';
+import { simulate } from '../simulate.js';
 import { assertFlatCircuitInvariants, elaborateBuilt } from './_invariants.js';
 
 // Composite whose output is a DIRECT wire from its input (plus a dummy gate so

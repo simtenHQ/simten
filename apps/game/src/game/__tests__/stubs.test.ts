@@ -8,7 +8,7 @@
  * `levels.test.ts`.
  */
 
-import { executeCircuitCode } from '@simten/core';
+import { executeCircuitCode } from '@simten/core/internal';
 import { describe, expect, it } from 'vitest';
 import { LEVELS } from '../levels';
 

@@ -23,7 +23,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import { simulate } from '../../sim/index.js';
+import { simulate } from '../../simulator/simulate.js';
 import { Adder, Subtractor } from '../arithmetic.js';
 import { Concat } from '../routing.js';
 

@@ -18,9 +18,8 @@ npm install @simten/core
 ## Usage
 
 ```ts
-import { circuit, bit } from '@simten/core/circuit';
+import { circuit, bit, simulate } from '@simten/core';
 import { Xor, And } from '@simten/core/std';
-import { simulate } from '@simten/core/sim';
 
 const HalfAdder = circuit('HalfAdder', {
   inputs:  { a: bit, b: bit },
@@ -65,14 +64,13 @@ npx tsx halfadder.mts
 
 | Subpath | What's in it |
 |---|---|
-| `@simten/core` | Core types and re-exports |
-| `@simten/core/circuit` | `circuit()` factory, `bit`, `bus` |
+| `@simten/core` | `circuit()`, `bit`, `bus`, `simulate()` and the `Circuit` type |
+| `@simten/core/circuit` | `circuit()`, `bit`, `bus` (the same names, kept for existing code) |
 | `@simten/core/std` | Standard library components (gates, registers, RAM, ROM, adders, ALU, …) |
-| `@simten/core/sim` | `simulate()` runtime |
-| `@simten/core/api` | High-level entry points: `checkCircuit`, `simulateCircuit` |
-| `@simten/core/verify` | Testbench harness — `declareOracle()`, `verify.check()`, `verify.run()` |
+| `@simten/core/verify` | Testbench harness: `declareOracle()`, `verify.check()`, `verify.run()` |
 | `@simten/core/verilog` | Verilog exporter |
-| `@simten/core/simulator` | Low-level simulator internals |
+| `@simten/core/examples` | Complete example circuits and the example catalog |
+| `@simten/core/internal` | Engine, IR and tool handlers used by Simten's own packages. No stability promise |
 
 ## Docs
 

@@ -13,7 +13,7 @@
  * Requires a `SandboxProvider` ancestor.
  */
 
-import type { Circuit } from '@simten/core';
+import type { CircuitIR } from '@simten/core/internal';
 import { useMemo, useRef } from 'react';
 import { type UseCircuitCompilerOptions, useCircuitCompiler } from './useCircuitCompiler';
 import {
@@ -31,7 +31,7 @@ export interface UseCompiledCircuitOptions
    * Choose which circuit to simulate when the source defines more than one.
    * @default the last circuit defined
    */
-  select?: (circuits: Circuit[]) => Circuit | undefined;
+  select?: (circuits: CircuitIR[]) => CircuitIR | undefined;
 }
 
 export type CompiledCircuitState = SimulatorState &
@@ -42,7 +42,7 @@ export type CompiledCircuitState = SimulatorState &
     compiling: boolean;
   };
 
-const selectLast = (circuits: Circuit[]): Circuit | undefined => circuits[circuits.length - 1];
+const selectLast = (circuits: CircuitIR[]): CircuitIR | undefined => circuits[circuits.length - 1];
 
 export function useCompiledCircuit(
   source: string,

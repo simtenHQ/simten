@@ -5,9 +5,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type { BuiltCircuit } from '../../circuit/index.js';
+import type { Circuit } from '../../circuit/index.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import { simulate } from '../../sim/simulate.js';
 import {
   Eth_AddrClassifier,
   Eth_CRC32,
@@ -15,9 +14,10 @@ import {
   Eth_FrameParser,
   Eth_ProtocolDecoder,
 } from '../../std/index.js';
+import { simulate } from '../simulate.js';
 
 /** Helper: simulate combinational circuit, return output values */
-function sim<C extends BuiltCircuit>(
+function sim<C extends Circuit>(
   built: C,
   inputs: Record<string, number | boolean> = {},
 ): Record<string, number | boolean> {
@@ -36,7 +36,7 @@ function sim<C extends BuiltCircuit>(
 }
 
 /** Helper: simulate multi-tick with constant inputs, return per-tick output values */
-function simTicks<C extends BuiltCircuit>(
+function simTicks<C extends Circuit>(
   built: C,
   ticks: number,
   inputs: Record<string, number | boolean> = {},

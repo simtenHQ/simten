@@ -13,15 +13,14 @@
  * composite at BOTH ends to be a real regression test.
  */
 
-import type { Circuit } from '@simten/core';
-import type { FlatPortValueMap } from '@simten/core/simulator';
+import type { CircuitIR, FlatPortValueMap } from '@simten/core/internal';
 import { describe, expect, it } from 'vitest';
 import { projectCircuitToReactFlow } from '../projection';
 
 const TRUE = '#22c55e';
 const UNDEFINED = '#cbd5e1';
 
-const halfAdder: Circuit = {
+const halfAdder: CircuitIR = {
   name: 'HalfAdder',
   inputs: [
     { name: 'a', portType: { kind: 'bit' } },
@@ -70,10 +69,10 @@ const halfAdder: Circuit = {
     },
   ],
   implementation: { kind: 'composite' },
-} as unknown as Circuit;
+} as unknown as CircuitIR;
 
 /** Two half adders wired carry → a. Both endpoints are composite boundaries. */
-const top: Circuit = {
+const top: CircuitIR = {
   name: 'Top',
   inputs: [],
   outputs: [],
@@ -104,11 +103,11 @@ const top: Circuit = {
     },
   ],
   implementation: { kind: 'composite' },
-} as unknown as Circuit;
+} as unknown as CircuitIR;
 
 const library = {
   resolveCircuit: (name: string) =>
-    name === 'HalfAdder' ? halfAdder : ({ implementation: { kind: 'primitive' } } as Circuit),
+    name === 'HalfAdder' ? halfAdder : ({ implementation: { kind: 'primitive' } } as CircuitIR),
   getAllPrimitiveNames: () => ['Xor', 'And'],
 };
 
@@ -158,7 +157,7 @@ describe('a wire between two composites', () => {
       nodes: [node('g', 'And', ['a'], ['out'])],
       connections: [wire('i1w', ['g', 'out'], ['', 'out'])],
       implementation: { kind: 'composite' },
-    } as unknown as Circuit;
+    } as unknown as CircuitIR;
 
     const mid = {
       name: 'Mid',
@@ -167,7 +166,7 @@ describe('a wire between two composites', () => {
       nodes: [node('i1', 'Inner', ['a'], ['out'])],
       connections: [wire('m1w', ['i1', 'out'], ['', 'out'])],
       implementation: { kind: 'composite' },
-    } as unknown as Circuit;
+    } as unknown as CircuitIR;
 
     const nestedTop = {
       name: 'Top',
@@ -176,7 +175,7 @@ describe('a wire between two composites', () => {
       nodes: [node('m1', 'Mid', ['a'], ['out']), node('m2', 'Mid', ['a'], ['out'])],
       connections: [wire('w', ['m1', 'out'], ['m2', 'a'])],
       implementation: { kind: 'composite' },
-    } as unknown as Circuit;
+    } as unknown as CircuitIR;
 
     const nestedLibrary = {
       resolveCircuit: (name: string) =>
@@ -184,7 +183,7 @@ describe('a wire between two composites', () => {
           ? mid
           : name === 'Inner'
             ? inner
-            : ({ implementation: { kind: 'primitive' } } as Circuit),
+            : ({ implementation: { kind: 'primitive' } } as CircuitIR),
       getAllPrimitiveNames: () => ['And'],
     };
 
@@ -208,7 +207,7 @@ describe('a wire between two composites', () => {
           portType: { kind: 'bit' },
         },
       ],
-    } as unknown as Circuit;
+    } as unknown as CircuitIR;
 
     const loopLibrary = { ...library, resolveCircuit: () => looped };
     expect(() => projectCircuitToReactFlow(top, metadata, loopLibrary, new Map())).not.toThrow();

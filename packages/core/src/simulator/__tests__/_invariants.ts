@@ -42,29 +42,29 @@
  *     circuits the project already depends on)
  */
 
-import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
-import { TOP_LEVEL_NODE } from '../../types/circuit.js';
-import type { FlatCircuit, FlatNode } from '../../types/simulator.js';
+import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
+import { TOP_LEVEL_NODE } from '../../ir/circuit-ir.js';
 import { elaborate } from '../elaboration.js';
+import type { FlatCircuit, FlatNode } from '../types.js';
 
 /**
- * Build a library from a BuiltCircuit and elaborate it in one call. Mirrors
- * what `simulate()` does internally (`packages/core/src/sim/simulate.ts:115-126`)
+ * Build a library from a Circuit and elaborate it in one call. Mirrors
+ * what `simulate()` does internally (`packages/core/src/simulator/simulate.ts:115-126`)
  * so tests can elaborate directly without going through the simulator. Pure
  * test convenience — never call from product code.
  */
-// Loose type — BuiltCircuit lives in circuit.ts as a structural shape; we only
+// Loose type — Circuit lives in circuit.ts as a structural shape; we only
 // need .circuit and (optionally) ._dependencies here.
-// `_dependencies` is a ReadonlyMap on the real `BuiltCircuit`; declaring it
-// mutable here made every genuine BuiltCircuit unassignable to this helper.
+// `_dependencies` is a ReadonlyMap on the real `Circuit`; declaring it
+// mutable here made every genuine Circuit unassignable to this helper.
 type BuiltCircuitLike = {
-  circuit: Circuit;
-  _dependencies?: ReadonlyMap<string, { circuit: Circuit }>;
+  circuit: CircuitIR;
+  _dependencies?: ReadonlyMap<string, { circuit: CircuitIR }>;
 };
 
 export function elaborateBuilt(built: BuiltCircuitLike): FlatCircuit {
-  const circuitMap = new Map<string, Circuit>();
-  const library: CircuitLibrary & { addCircuit(c: Circuit): void } = {
+  const circuitMap = new Map<string, CircuitIR>();
+  const library: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
     resolveCircuit: (name) => circuitMap.get(name),
     getAllPrimitiveNames: () =>
       [...circuitMap.entries()]

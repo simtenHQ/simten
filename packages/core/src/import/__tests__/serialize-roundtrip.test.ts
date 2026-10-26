@@ -20,12 +20,12 @@ import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
+import type { Circuit } from '../../circuit/builder-types.js';
 import { circuitToSource } from '../../circuit/circuit-to-source.js';
 import { executeJsCode } from '../../circuit/execute.js';
-import { bit, buildFromIR, bus, circuit } from '../../circuit/index.js';
-import type { BuiltCircuit } from '../../circuit/types.js';
-import { Mem } from '../../rtl/index.js';
-import { simulate } from '../../sim/index.js';
+import { bit, bus, circuit } from '../../circuit/index.js';
+import { buildFromIR } from '../../internal.js';
+import { simulate } from '../../simulator/simulate.js';
 import {
   Adder,
   Comparator,
@@ -38,6 +38,7 @@ import {
   ZeroExtend,
 } from '../../std/index.js';
 import { importNetlist, type YosysNetlist } from '../index.js';
+import { Mem } from '../primitives.js';
 
 const fix = (name: string) =>
   readFileSync(fileURLToPath(new URL(`../__fixtures__/${name}`, import.meta.url)), 'utf8');
@@ -63,7 +64,7 @@ const INJECT: Record<string, unknown> = {
 };
 
 /** Compile sandbox-style source and return the entry (last-declared) circuit. */
-function recompile(source: string): BuiltCircuit {
+function recompile(source: string): Circuit {
   // Entry = the last `const <id> = circuit(...)` — robust to reserved-name
   // remapping (the `top` module is emitted as `const top_`).
   const decls = [...source.matchAll(/const (\w+) = circuit\(/g)];
@@ -72,10 +73,10 @@ function recompile(source: string): BuiltCircuit {
   const names = Object.keys(INJECT);
   // biome-ignore lint/security/noGlobalEval: sandbox-equivalent script-body eval
   const fn = new Function(...names, `${source}\nreturn ${entry};`);
-  return fn(...names.map((n) => INJECT[n])) as BuiltCircuit;
+  return fn(...names.map((n) => INJECT[n])) as Circuit;
 }
 
-function importedTop(): BuiltCircuit {
+function importedTop(): Circuit {
   const { top, library } = importNetlist(netlist, 'top');
   const deps = [...library.values()].filter((c) => c.name !== top.name);
   return buildFromIR(top, deps);
@@ -109,7 +110,7 @@ describe('memory contents survive the round trip through generated source', () =
     const entry = res.builtCircuits.find((c) => c.circuit.name === 'RomProbe');
     expect(entry).toBeDefined();
 
-    const sim = simulate(entry as BuiltCircuit);
+    const sim = simulate(entry as Circuit);
     for (const [addr, want] of Object.entries(image)) {
       sim.set({ addr: Number(addr) });
       sim.tick();
@@ -172,7 +173,7 @@ describe('real design (RV32I_CPU_Core) serializes fully clean and re-simulates',
     expect(res.error, res.error ?? '').toBeNull();
     const entry = res.builtCircuits.find((c) => c.circuit.name === 'RV32I_CPU_Core');
     expect(entry).toBeDefined();
-    const sim = simulate(entry as BuiltCircuit);
+    const sim = simulate(entry as Circuit);
     sim.tick();
     sim.tick();
     sim.dispose();

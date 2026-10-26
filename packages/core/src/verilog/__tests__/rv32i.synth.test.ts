@@ -24,6 +24,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import type { CircuitLibrary } from '../../ir/circuit-ir.js';
 import {
   RV32I_ALU,
   RV32I_BranchComp,
@@ -38,15 +39,14 @@ import {
   RV32I_WBBypass,
   RV32I_WritebackMux,
 } from '../../std/index.js';
-import type { CircuitLibrary } from '../../types/circuit.js';
 import { exportVerilog } from '../exporter.js';
 import { hasSynth, synthesizeVerilog } from './synth.js';
 
 // ---- helpers ----------------------------------------------------------------
 
 type BuiltCircuit = {
-  circuit: import('../../types/circuit.js').Circuit;
-  _dependencies: Map<string, { circuit: import('../../types/circuit.js').Circuit }>;
+  circuit: import('../../ir/circuit-ir.js').CircuitIR;
+  _dependencies: Map<string, { circuit: import('../../ir/circuit-ir.js').CircuitIR }>;
 };
 
 function makeLib(top: BuiltCircuit, name: string): CircuitLibrary {

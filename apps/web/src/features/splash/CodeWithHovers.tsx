@@ -36,14 +36,14 @@ type HoverEntry = {
 };
 
 // Tooltip dictionary. Signatures match the real types defined in
-// packages/core/src/circuit/types.ts so what readers see here lines up
+// packages/core/src/circuit/builder-types.ts so what readers see here lines up
 // with what Monaco shows on /circuit when they hover the same word.
 // Keep these in sync if the public CircuitConfig API changes.
 const HOVER_DICT: Record<string, HoverEntry> = {
   circuit: {
-    signature: 'circuit(name, config): BuiltCircuit',
+    signature: 'circuit(name, config): Circuit',
     description:
-      'Defines a reusable hardware component. The returned BuiltCircuit can be used as a node inside other circuits.',
+      'Defines a reusable hardware component. The returned Circuit can be used as a node inside other circuits.',
   },
   inputs: {
     signature: 'inputs?: Record<string, PortType>',
@@ -55,9 +55,9 @@ const HOVER_DICT: Record<string, HoverEntry> = {
     description: 'Output ports, same shape as inputs.',
   },
   nodes: {
-    signature: 'nodes?: Record<string, BuiltCircuit>',
+    signature: 'nodes?: Record<string, Circuit>',
     description:
-      'Sub-components used inside this circuit. Map a local name to a BuiltCircuit, then wire them in connect.',
+      'Sub-components used inside this circuit. Map a local name to a Circuit, then wire them in connect.',
   },
   connect: {
     signature: 'connect?: (arg) => ConnectionDef[]',
@@ -70,23 +70,23 @@ const HOVER_DICT: Record<string, HoverEntry> = {
       'A single-bit signal type. Use bus(N) for multi-bit, or pass a raw number N as shorthand.',
   },
   Xor: {
-    signature: 'const Xor: BuiltCircuit',
+    signature: 'const Xor: Circuit',
     description: 'Built-in XOR gate. Output is 1 when exactly one input is 1.',
   },
   And: {
-    signature: 'const And: BuiltCircuit',
+    signature: 'const And: Circuit',
     description: 'Built-in AND gate. Output is 1 when both inputs are 1.',
   },
   Or: {
-    signature: 'const Or: BuiltCircuit',
+    signature: 'const Or: Circuit',
     description: 'Built-in OR gate. Output is 1 when either input is 1.',
   },
   Not: {
-    signature: 'const Not: BuiltCircuit',
+    signature: 'const Not: Circuit',
     description: 'Built-in NOT gate. Inverts the input bit.',
   },
   DFlipFlop: {
-    signature: 'DFlipFlop(opts?: { value?: boolean | number }): BuiltCircuit',
+    signature: 'DFlipFlop(opts?: { value?: boolean | number }): Circuit',
     description:
       'Edge-triggered D flip-flop. Captures d on every rising clock edge; q holds the captured value, q_bar is the inverse.',
   },

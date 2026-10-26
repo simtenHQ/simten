@@ -12,7 +12,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import { simulate } from '../../sim/index.js';
+import { simulate } from '../simulate.js';
 
 describe('onTick receives node arguments', () => {
   it('reads a construction argument by its plain name (parity with eval)', () => {

@@ -8,7 +8,7 @@
  * this share the one implementation.
  */
 
-import { firstCircuitName } from '@simten/core/circuit';
+import { firstCircuitName } from '@simten/core/internal';
 
 export function extractCircuitName(source: string): string | null {
   try {

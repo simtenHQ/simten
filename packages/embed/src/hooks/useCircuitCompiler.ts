@@ -16,7 +16,7 @@
  * iframe, never the main frame.
  */
 
-import type { Circuit } from '@simten/core';
+import type { CircuitIR } from '@simten/core/internal';
 import { type CompileResult, type SimSlot, useSandboxContext } from '@simten/ui/sandbox';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -35,7 +35,7 @@ export interface CompileDiagnostic {
 
 /** A minimal component-lookup built from a compile result. */
 export interface CompiledLibrary {
-  resolveCircuit: (name: string) => Circuit | undefined;
+  resolveCircuit: (name: string) => CircuitIR | undefined;
   getAllPrimitiveNames: () => string[];
   getAllCircuitNames: () => string[];
 }

@@ -5,14 +5,14 @@
  * Hot path uses evaluator table lookup — no switch statements, no Map allocations.
  */
 
-import type { BitValue, BusValue } from '../types/circuit.js';
-import type { FlatPortValueMap, PrimitiveState } from '../types/simulator.js';
-import { TOP_LEVEL_NODE } from '../types/simulator.js';
+import type { BitValue, BusValue } from '../ir/circuit-ir.js';
 import { getOnTickFunction } from './eval-bridge.js';
 import { EVALUATORS, type EvalContext } from './evaluators/index.js';
 import type { NumericEventQueue } from './numeric-event-queue.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 import type { NumericPortValues } from './numeric-values.js';
+import type { FlatPortValueMap, PrimitiveState } from './types.js';
+import { TOP_LEVEL_NODE } from './types.js';
 
 /**
  * Node evaluations one propagate call may make before it gives up and reports
@@ -474,7 +474,7 @@ export function toFlatPortValueMap(
 
     // Values are numeric regardless of width; the port type carries bit-ness,
     // not the value. (Bits used to be reported as booleans here, which made
-    // callers infer width from the JS type — see api/vcd.ts inferWidth.)
+    // callers infer width from the JS type — see tools/vcd.ts inferWidth.)
     result.set(key, numVal);
   }
 

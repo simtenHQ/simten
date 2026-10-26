@@ -7,9 +7,9 @@
 
 import fc from 'fast-check';
 import { describe, it } from 'vitest';
+import type { Circuit } from '../../circuit/builder-types.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { BuiltCircuit } from '../../circuit/types.js';
-import { simulate } from '../../sim/index.js';
+import { simulate } from '../../simulator/simulate.js';
 import { LogicAnd, LogicNot, LogicOr, ReduceAnd, ReduceOr, ReduceXor } from '../logic.js';
 
 let uid = 0;
@@ -26,10 +26,10 @@ const parity = (a: number) => {
 };
 
 /** The wrapper's ports must match the part under test, not a fixed 32 bits. */
-const portOf = (prim: BuiltCircuit, name: string) =>
+const portOf = (prim: Circuit, name: string) =>
   prim.circuit.inputs.find((p) => p.name === name)?.portType ?? bus(32);
 
-function unary(prim: BuiltCircuit, v: number): number {
+function unary(prim: Circuit, v: number): number {
   const w = circuit(`U${uid++}`, {
     inputs: { a: portOf(prim, 'a') } as any,
     outputs: { out: bit } as any,
@@ -43,7 +43,7 @@ function unary(prim: BuiltCircuit, v: number): number {
   return out;
 }
 
-function binary(prim: BuiltCircuit, a: number, b: number): number {
+function binary(prim: Circuit, a: number, b: number): number {
   const w = circuit(`B${uid++}`, {
     inputs: { a: portOf(prim, 'a'), b: portOf(prim, 'b') } as any,
     outputs: { out: bit } as any,

@@ -5,7 +5,7 @@
  * drawn over whatever the layout had put beneath it.
  */
 
-import type { Circuit } from '@simten/core';
+import type { CircuitIR } from '@simten/core/internal';
 import { describe, expect, it } from 'vitest';
 import { PIN_PITCH, pinColumnHeight, pinLabelGutter } from '../../nodes/BaseNode';
 import { computeDagreLayout } from '../dagre-layout';
@@ -45,7 +45,7 @@ const circuit = {
     portType: { kind: 'bit' },
   })),
   implementation: { kind: 'composite' },
-} as unknown as Circuit;
+} as unknown as CircuitIR;
 
 describe('pin sizing', () => {
   it('gives each pin its own slot', () => {

@@ -8,7 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { circuitToSource } from '../../circuit/circuit-to-source.js';
 import { bus, circuit } from '../../circuit/index.js';
-import { simulate } from '../../sim/index.js';
+import { simulate } from '../../simulator/simulate.js';
 import { emitPrimitive } from '../../verilog/primitive-map.js';
 import { Combiner, Splitter } from '../routing.js';
 

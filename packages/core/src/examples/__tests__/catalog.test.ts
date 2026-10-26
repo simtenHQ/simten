@@ -7,9 +7,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { checkCircuit } from '../../api/check.js';
 import { executeCircuitCode } from '../../circuit/execute.js';
-import { simulate } from '../../sim/simulate.js';
+import { simulate } from '../../simulator/simulate.js';
+import { checkCircuit } from '../../tools/check.js';
 import { EXAMPLES } from '../catalog.js';
 
 // Examples that import a non-@simten package (e.g. figlet) resolve via esm.sh

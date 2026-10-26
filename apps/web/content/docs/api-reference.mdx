@@ -49,7 +49,7 @@ circuit(name, {
   outputs?:  Record<string, PortType>          // named output ports
   meta?:     { description?: string }          // shown in palette / used by Claude
   // Composite (structural):
-  nodes?:    Record<string, BuiltCircuit>      // node label → component instance (call factory to specialize)
+  nodes?:    Record<string, Circuit>           // node label → component instance (call factory to specialize)
   connect?:  (refs) => Connection[]            // wiring
   // Behavioral (eval):
   eval?:     (inputs & state) => outputs       // combinational output function

@@ -1,5 +1,5 @@
 // Passing testbench: HalfAdder against a plain-JS reference, exhaustive.
-import { simulate } from '@simten/core/sim';
+import { simulate } from '@simten/core';
 import { declareOracle, describe, verify } from '@simten/core/verify';
 import { HalfAdder } from './half-adder.circuit.js';
 

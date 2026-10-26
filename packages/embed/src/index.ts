@@ -26,3 +26,4 @@ export type {
 } from './hooks/useCompiledCircuit';
 export { useCompiledCircuit } from './hooks/useCompiledCircuit';
 export { type ShareCircuitFn, ShareCircuitProvider, useShareCircuit } from './share-context';
+export type { FlatPortValueMap } from './types';

@@ -4,7 +4,7 @@
 
 import { beforeEach, describe, expect, it } from 'vitest';
 import { BOUNDARY_IN_PREFIX, BOUNDARY_OUT_PREFIX } from '../../../canvas/drill-down-view';
-import type { Circuit } from '../../types/circuit';
+import type { CircuitIR } from '../../types/circuit';
 import { useCircuitLibraryStore } from '../circuit-library-store';
 import { useCircuitPreviewStore } from '../circuit-preview-store';
 import { useCircuitStore } from '../circuit-store';
@@ -13,7 +13,7 @@ import { useCircuitStore } from '../circuit-store';
 const getState = () => useCircuitPreviewStore.getState();
 
 // Helper: create a primitive component definition
-function makePrimitive(name: string, inputs: string[], outputs: string[]): Circuit {
+function makePrimitive(name: string, inputs: string[], outputs: string[]): CircuitIR {
   return {
     version: 1,
     name,
@@ -28,7 +28,7 @@ function makePrimitive(name: string, inputs: string[], outputs: string[]): Circu
 }
 
 // Helper: create a composite HalfAdder definition
-function makeHalfAdderDef(): Circuit {
+function makeHalfAdderDef(): CircuitIR {
   return {
     version: 1,
     name: 'HalfAdder',
@@ -111,7 +111,7 @@ function makeHalfAdderDef(): Circuit {
 }
 
 // Helper: create a top-level FullAdder circuit that uses HalfAdder
-function makeFullAdder(): Circuit {
+function makeFullAdder(): CircuitIR {
   return {
     version: 1,
     name: 'FullAdder',
