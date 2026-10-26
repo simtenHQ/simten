@@ -1,6 +1,6 @@
 // Forgot verify.run(): the beforeExit safety net must emit a phase:'contract'
 // error instead of exiting 0 with no JSON block.
-import { simulate } from '@simten/core/sim';
+import { simulate } from '@simten/core';
 import { declareOracle, verify } from '@simten/core/verify';
 import { HalfAdder } from './half-adder.circuit.js';
 

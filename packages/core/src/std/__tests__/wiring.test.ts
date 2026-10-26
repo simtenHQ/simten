@@ -12,11 +12,11 @@
 
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
+import type { Circuit } from '../../circuit/builder-types.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { BuiltCircuit } from '../../circuit/types.js';
-import { simulate } from '../../sim/index.js';
-import { SignExtend, Slice, ZeroExtend } from '../reconstruction.js';
+import { simulate } from '../../simulator/simulate.js';
 import { Concat } from '../routing.js';
+import { SignExtend, Slice, ZeroExtend } from '../wiring.js';
 
 let uid = 0;
 const port = (w: number) => (w === 1 ? bit : bus(w));
@@ -25,7 +25,7 @@ const sext = (v: number, w: number) => (v >>> 0 >= 2 ** (w - 1) ? (v >>> 0) - 2 
 const uOf = (w: number) => fc.integer({ min: 0, max: mask(w) }).map((n) => n >>> 0);
 
 /** One-input `in → out` primitive. */
-function run1(prim: BuiltCircuit, inW: number, outW: number, v: number): number {
+function run1(prim: Circuit, inW: number, outW: number, v: number): number {
   const w = circuit(`W${uid++}`, {
     inputs: { in: port(inW) } as any,
     outputs: { out: port(outW) } as any,
@@ -40,7 +40,7 @@ function run1(prim: BuiltCircuit, inW: number, outW: number, v: number): number 
 }
 
 /** Two-input `high, low → out` (Concat). */
-function run2(prim: BuiltCircuit, hiW: number, loW: number, hi: number, lo: number): number {
+function run2(prim: Circuit, hiW: number, loW: number, hi: number, lo: number): number {
   const w = circuit(`W${uid++}`, {
     inputs: { high: port(hiW), low: port(loW) } as any,
     outputs: { out: port(hiW + loW) } as any,

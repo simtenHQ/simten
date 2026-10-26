@@ -9,7 +9,7 @@
  * and then used for all simulation ticks.
  */
 
-import type { FlatCircuit, PrimitiveState } from '../types/simulator.js';
+import type { FlatCircuit, PrimitiveState } from './types.js';
 
 /**
  * Primitive type index constants for fast switching.

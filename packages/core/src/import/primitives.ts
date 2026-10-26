@@ -1,5 +1,5 @@
 /**
- * RTL import primitives (`@simten/core/rtl`)
+ * Verilog-import primitives
  *
  * Low-level cells that back the Verilog-import path. They are NOT part of the
  * curated authoring stdlib — they exist so an imported netlist's bit-vector
@@ -10,7 +10,7 @@
  *
  * N-way concatenation and sign-extension (MSB replication) are expressed as a
  * fold of `RtlConcat2`, so every instance shares a fixed set of port NAMES
- * (`in`/`out`, `hi`/`lo`/`out`) — a hard requirement of the eval registry,
+ * (`in`/`out`, `hi`/`lo`/`out`) — a hard requirement of the behavior registry,
  * which keys behaviour by circuit name and varies only widths per instance
  * (same contract as `Adder`/`Register` in std).
  *
@@ -18,13 +18,13 @@
  * chars, so a `$`-named primitive would silently collide on export.
  *
  * IMPORTANT: importing this module registers these primitives via the
- * `circuit()` side effect. `packages/core/package.json` marks `./src/rtl/**`
+ * `circuit()` side effect. `packages/core/package.json` marks this file
  * as having side effects so bundlers cannot drop that registration.
  */
 
 import { bit, bus, mem } from '../circuit/bit-bus.js';
+import type { ArgumentValue, Circuit } from '../circuit/builder-types.js';
 import { circuit } from '../circuit/circuit.js';
-import type { ArgumentValue, BuiltCircuit } from '../circuit/types.js';
 
 /** width===1 → bit port, else bus(width). Mirrors the std convention
  *  (Mux/Constant) so 1-bit nets stay `bit` end to end. */
@@ -265,7 +265,7 @@ export const RtlSshr = circuit(
  * `sWidth` candidates of `width` bits each. Output is the candidate whose `s`
  * bit is set (lowest index wins if several), else the default `a`.
  */
-export function Pmux(opts: { width: number; sWidth: number }): BuiltCircuit {
+export function Pmux(opts: { width: number; sWidth: number }): Circuit {
   const { width, sWidth } = opts;
   const name = `Pmux_${width}w_${sWidth}s`;
   // Per-lane candidate ports (b_0..b_{sWidth-1}), each ≤ width bits — NOT one
@@ -298,7 +298,7 @@ export function Pmux(opts: { width: number; sWidth: number }): BuiltCircuit {
       // biome-ignore lint/suspicious/noExplicitAny: dynamic inputs shape
     } as any),
     { width, sWidth },
-  ) as unknown as BuiltCircuit;
+  ) as unknown as Circuit;
 }
 
 /**
@@ -328,7 +328,7 @@ export const RtlConcat2 = circuit(
  * Shape-parameterized (width + polarity baked into the name and closure) rather
  * than arg-driven — same pattern as Mem/Pmux.
  */
-export function Dlatch(opts: { width: number; enPolarity: number }): BuiltCircuit {
+export function Dlatch(opts: { width: number; enPolarity: number }): Circuit {
   const { width, enPolarity } = opts;
   const name = `Dlatch_${width}w_ep${enPolarity}`;
   return withArgs(
@@ -355,7 +355,7 @@ export function Dlatch(opts: { width: number; enPolarity: number }): BuiltCircui
       // biome-ignore lint/suspicious/noExplicitAny: fixed-shape config
     } as any),
     { width, enPolarity },
-  ) as unknown as BuiltCircuit;
+  ) as unknown as Circuit;
 }
 
 // ---------------------------------------------------------------------------
@@ -394,7 +394,7 @@ export function Mem(opts: {
    * shows, and a CPU fetches zeros instead of its program.
    */
   store?: Record<number, number>;
-}): BuiltCircuit {
+}): Circuit {
   const { rdPorts, wrPorts, abits, width, size, store } = opts;
   const addrW = Math.max(1, Math.ceil(Math.log2(Math.max(2, size))));
   const depth = 1 << addrW;
@@ -461,5 +461,5 @@ export function Mem(opts: {
     store
       ? { rdPorts, wrPorts, abits, width, size, store }
       : { rdPorts, wrPorts, abits, width, size },
-  ) as unknown as BuiltCircuit;
+  ) as unknown as Circuit;
 }

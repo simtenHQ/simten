@@ -14,8 +14,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import type { CircuitLibrary } from '../../ir/circuit-ir.js';
 import { Adder, Constant, Mux, Or, Register } from '../../std/index.js';
-import type { CircuitLibrary } from '../../types/circuit.js';
 import { exportVerilog } from '../exporter.js';
 import { buildBitstream, hasBuild } from './build.js';
 import { hasSynth, synthesizeVerilog } from './synth.js';

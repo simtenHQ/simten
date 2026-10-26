@@ -8,9 +8,9 @@
 
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
+import type { Circuit } from '../../circuit/builder-types.js';
 import { bus, circuit } from '../../circuit/index.js';
-import type { BuiltCircuit } from '../../circuit/types.js';
-import { simulate } from '../../sim/index.js';
+import { simulate } from '../../simulator/simulate.js';
 import { Comparator, SignedComparator } from '../arithmetic.js';
 
 let uid = 0;
@@ -18,7 +18,7 @@ const mask = (w: number) => (w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0;
 const sext = (v: number, w: number) => (v >>> 0 >= 2 ** (w - 1) ? (v >>> 0) - 2 ** w : v >>> 0);
 const uOf = (w: number) => fc.integer({ min: 0, max: mask(w) }).map((n) => n >>> 0);
 
-function flags(prim: BuiltCircuit, w: number, a: number, b: number): Record<string, number> {
+function flags(prim: Circuit, w: number, a: number, b: number): Record<string, number> {
   const wrap = circuit(`C${uid++}`, {
     inputs: { a: bus(w), b: bus(w) } as any,
     outputs: { eq: 1, ne: 1, lt: 1, le: 1, gt: 1, ge: 1 } as any,

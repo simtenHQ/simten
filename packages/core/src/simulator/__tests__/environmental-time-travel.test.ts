@@ -18,10 +18,10 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, circuit } from '../../circuit/index.js';
+import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
 import { DFlipFlop, Switch } from '../../std/index.js';
-import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
-import type { FlatCircuit } from '../../types/simulator.js';
-import { captureEnvironmentalState, createSimulator, elaborate } from '../index.js';
+import { captureEnvironmentalState, createEngine, elaborate } from '../index.js';
+import type { FlatCircuit } from '../types.js';
 
 /**
  * Walk a FlatCircuit's nodes and capture every interactive-arg value (Switch/
@@ -47,8 +47,8 @@ const SwitchedFF = circuit('SwitchedFF', {
 });
 
 function buildSim() {
-  const circuitMap = new Map<string, Circuit>();
-  const library: CircuitLibrary & { addCircuit(c: Circuit): void } = {
+  const circuitMap = new Map<string, CircuitIR>();
+  const library: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
     resolveCircuit: (name) => circuitMap.get(name),
     getAllPrimitiveNames: () =>
       [...circuitMap.entries()]
@@ -66,11 +66,11 @@ function buildSim() {
   }
 
   const flat = elaborate(SwitchedFF.circuit, library);
-  const sim = createSimulator(flat, { componentLibrary: library });
+  const sim = createEngine(flat, { componentLibrary: library });
   return { sim, flat, library };
 }
 
-function qOut(sim: ReturnType<typeof createSimulator>): boolean {
+function qOut(sim: ReturnType<typeof createEngine>): boolean {
   // Top-level output 'q' is wired to dff.q. The simulator exposes it via the
   // top-level alias under __top__.
   const v = sim.getOutput('__top__', 'q');
@@ -92,7 +92,7 @@ describe('environmental state time-travel', () => {
     // reads componentRef and finds nothing. This is the behaviour that broke
     // the sandbox; assert it so future refactors don't mistakenly believe the
     // core helper works on FlatCircuits.
-    const wrongWay = captureEnvironmentalState(flat as unknown as Circuit, library);
+    const wrongWay = captureEnvironmentalState(flat as unknown as CircuitIR, library);
     expect(wrongWay.size).toBe(0);
 
     // The correct walk (primitiveType, the pattern in our captureFlatEnv

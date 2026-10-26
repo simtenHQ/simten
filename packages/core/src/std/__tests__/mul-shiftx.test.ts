@@ -7,9 +7,9 @@
 import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import { bus, circuit } from '../../circuit/index.js';
-import { simulate } from '../../sim/index.js';
+import { simulate } from '../../simulator/simulate.js';
 import { WrappingMultiplier } from '../arithmetic.js';
-import { DynamicSlice } from '../reconstruction.js';
+import { DynamicSlice } from '../wiring.js';
 
 let uid = 0;
 const mask = (w: number) => (w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0;

@@ -7,9 +7,9 @@
  * All circuits are equal — no primitives/standard/user split.
  */
 
-import type { CircuitLibrary } from '@simten/core/simulator';
+import type { CircuitLibrary } from '@simten/core/internal';
 import { create } from 'zustand';
-import type { Circuit } from '../types/circuit';
+import type { CircuitIR } from '../types/circuit';
 
 interface CircuitLibraryStore {
   // Stable CircuitLibrary reference — changes identity only when circuits change.
@@ -18,25 +18,25 @@ interface CircuitLibraryStore {
 
   // Set all circuits from a compiled result (production path)
   setLibrary: (lib: {
-    resolveCircuit(name: string): Circuit | undefined;
+    resolveCircuit(name: string): CircuitIR | undefined;
     getAllCircuitNames(): string[];
   }) => void;
 
   // Add circuits directly (used by tests)
-  addCircuit: (circuit: Circuit) => void;
-  addCircuits: (circuits: Circuit[]) => void;
+  addCircuit: (circuit: CircuitIR) => void;
+  addCircuits: (circuits: CircuitIR[]) => void;
 
   // Clear all circuits
   clear: () => void;
 
   // Consumer interface — delegates to library
-  resolveCircuit: (name: string) => Circuit | undefined;
+  resolveCircuit: (name: string) => CircuitIR | undefined;
   getAllPrimitiveNames: () => string[];
 }
 
 export type { CircuitLibraryStore };
 
-function buildLibrary(circuits: Map<string, Circuit>): CircuitLibrary {
+function buildLibrary(circuits: Map<string, CircuitIR>): CircuitLibrary {
   // Snapshot the map so the library is immutable after creation
   const snapshot = new Map(circuits);
   return {
@@ -50,7 +50,7 @@ function buildLibrary(circuits: Map<string, Circuit>): CircuitLibrary {
 
 export const useCircuitLibraryStore = create<CircuitLibraryStore>()((set, get) => {
   // Mutable backing map — not in Zustand state to avoid serialization overhead
-  const _circuits = new Map<string, Circuit>();
+  const _circuits = new Map<string, CircuitIR>();
 
   return {
     library: null,
@@ -59,7 +59,7 @@ export const useCircuitLibraryStore = create<CircuitLibraryStore>()((set, get) =
       _circuits.clear();
       for (const name of lib.getAllCircuitNames()) {
         const c = lib.resolveCircuit(name);
-        if (c) _circuits.set(name, c as Circuit);
+        if (c) _circuits.set(name, c as CircuitIR);
       }
       set({ library: buildLibrary(_circuits) });
     },
@@ -79,7 +79,7 @@ export const useCircuitLibraryStore = create<CircuitLibraryStore>()((set, get) =
       set({ library: null });
     },
 
-    resolveCircuit: (name) => get().library?.resolveCircuit(name) as Circuit | undefined,
+    resolveCircuit: (name) => get().library?.resolveCircuit(name) as CircuitIR | undefined,
 
     getAllPrimitiveNames: () => get().library?.getAllPrimitiveNames() ?? [],
   };

@@ -7,7 +7,7 @@
  * state (switch positions, input values) must be restored separately via callbacks.
  */
 
-import type { ArgumentValue, Circuit, CircuitLibrary, Node } from '../types/circuit.js';
+import type { ArgumentValue, CircuitIR, CircuitLibrary, Node } from '../ir/circuit-ir.js';
 
 /**
  * Allowed environmental state value types.
@@ -27,7 +27,7 @@ export type EnvironmentalStateValue =
  * user-interactive arguments (Switch value, Input value, etc.).
  */
 export function captureEnvironmentalState(
-  circuit: Circuit,
+  circuit: CircuitIR,
   library?: CircuitLibrary,
 ): Map<string, EnvironmentalStateValue> {
   const result = new Map<string, EnvironmentalStateValue>();
@@ -49,7 +49,7 @@ export function captureEnvironmentalState(
  * The updateNode callback should update the node in whatever store owns it.
  */
 export function restoreEnvironmentalState(
-  circuit: Circuit,
+  circuit: CircuitIR,
   environmentalState: Map<string, EnvironmentalStateValue>,
   updateNode: (nodeId: string, updates: Partial<Node>) => void,
   library?: CircuitLibrary,

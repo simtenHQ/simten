@@ -20,7 +20,7 @@ dispatch. Both are well-established in production digital logic simulators, thou
 event-driven vs compiled-code choice splits the field.
 
 Circuits are authored as hierarchical TypeScript values, composites containing sub-nodes
-and port connections (`Circuit` in `packages/core/src/types/circuit.ts`). Before simulation,
+and port connections (`CircuitIR` in `packages/core/src/ir/circuit-ir.ts`). Before simulation,
 elaboration (`packages/core/src/simulator/elaboration.ts`) recursively flattens the
 hierarchy; the result is then compiled to a `NumericCircuit`
 (`packages/core/src/simulator/numeric-types.ts`): typed arrays of port indices, dependency
@@ -349,7 +349,7 @@ state sharing between cycles.
 
 
 ```typescript
-const engine = createSimulator(flatCircuit, {
+const engine = createEngine(flatCircuit, {
   componentLibrary,
   initialMemory,   // Map<pattern, Map<address, value>>
 });

@@ -9,8 +9,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type { BuiltCircuit } from '../../circuit/types.js';
-import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
+import type { Circuit } from '../../circuit/builder-types.js';
+import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
 import {
   Adder,
   AddressCombiner,
@@ -65,7 +65,7 @@ import {
 // ============================================================================
 
 describe('stdlib circuits load', () => {
-  const allCircuits: [string, BuiltCircuit][] = [
+  const allCircuits: [string, Circuit][] = [
     // Logic
     ['And', And],
     ['Or', Or],
@@ -210,8 +210,8 @@ describe('circuit._dependencies', () => {
 
   it('building a library from deps resolves all needed components', () => {
     // Adder is composite — it has And, Or, Xor, etc. in _dependencies
-    const circuitMap = new Map<string, Circuit>();
-    const lib: CircuitLibrary & { addCircuit(c: Circuit): void } = {
+    const circuitMap = new Map<string, CircuitIR>();
+    const lib: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
       resolveCircuit: (name) => circuitMap.get(name),
       getAllPrimitiveNames: () =>
         [...circuitMap.entries()]

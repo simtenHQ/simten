@@ -11,7 +11,7 @@
  *   `define SAMPLE_DELAY 1     — delay after posedge before sampling
  */
 
-import type { Circuit, PortType } from '../types/circuit.js';
+import type { CircuitIR, PortType } from '../ir/circuit-ir.js';
 import type { TestVector, VerilogTestbenchOptions } from './types.js';
 
 function sanitizeId(id: string): string {
@@ -49,7 +49,7 @@ const DEFAULT_OPTIONS: Required<VerilogTestbenchOptions> = {
  * Each test vector sets inputs, waits for settling, and samples outputs.
  */
 export function generateTestbench(
-  circuit: Circuit,
+  circuit: CircuitIR,
   testVectors: TestVector[],
   options?: VerilogTestbenchOptions,
 ): string {
@@ -251,7 +251,7 @@ export interface SequentialTestVector {
  * samples `done` at cycle 50.
  */
 export function generateSequentialTestbench(
-  circuit: Circuit,
+  circuit: CircuitIR,
   vectors: SequentialTestVector[],
   options?: VerilogTestbenchOptions,
 ): string {
@@ -369,7 +369,7 @@ export function generateSequentialTestbench(
  * Tests all input combinations if total input bits <= maxBits.
  */
 export function generateExhaustiveVectors(
-  circuit: Circuit,
+  circuit: CircuitIR,
   maxBits: number = 16,
 ): TestVector[] | null {
   const totalBits = circuit.inputs.reduce((sum, p) => sum + portWidth(p.portType), 0);

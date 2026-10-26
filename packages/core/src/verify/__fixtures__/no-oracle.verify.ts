@@ -1,7 +1,7 @@
 // Contract violation: real checks, but no oracle declared. The gate must refuse
 // to emit a passed result (phase:'contract') — UNLESS an oracle is injected via
 // SIMTEN_VERIFY_ORACLE (the verify_circuit tool's path), which then passes.
-import { simulate } from '@simten/core/sim';
+import { simulate } from '@simten/core';
 import { verify } from '@simten/core/verify';
 import { HalfAdder } from './half-adder.circuit.js';
 

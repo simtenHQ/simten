@@ -13,8 +13,8 @@
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
-import { buildFromIR, circuitToSource } from '../../circuit/index.js';
-import { simulate } from '../../sim/index.js';
+import { buildFromIR, circuitToSource } from '../../internal.js';
+import { simulate } from '../../simulator/simulate.js';
 import { importNetlist, type YosysNetlist } from '../index.js';
 
 const fix = (name: string) =>

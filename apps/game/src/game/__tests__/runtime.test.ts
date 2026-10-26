@@ -2,7 +2,7 @@
  * The port-key contract.
  *
  * `GradeRuntime.evaluate` must return BARE port names. The sandbox namespaces
- * top-level ports under `__top__.` while `@simten/core/sim` returns them bare,
+ * top-level ports under `__top__.` while `@simten/core` returns them bare,
  * and because the interface never said which, the sandbox adapter shipped the
  * prefixed keys straight through. Grading then read `undefined` for every
  * output and, thanks to a `?? 0` fallback, scored it 0, which silently passes

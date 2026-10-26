@@ -17,15 +17,15 @@
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { buildSnake } from '../../examples/snake.js';
-import type { Circuit, CircuitLibrary } from '../../index.js';
+import type { CircuitIR, CircuitLibrary } from '../../internal.js';
 import { BitSlice, Register, SignExtend, ZeroExtend } from '../../std/index.js';
 import { exportVerilog } from '../index.js';
 
 /** Top circuit plus every transitive dependency, so elaboration can resolve. */
-function libraryFor(top: { circuit: Circuit; _dependencies?: ReadonlyMap<string, unknown> }) {
-  const byName = new Map<string, Circuit>();
+function libraryFor(top: { circuit: CircuitIR; _dependencies?: ReadonlyMap<string, unknown> }) {
+  const byName = new Map<string, CircuitIR>();
   const add = (c: unknown) => {
-    const b = c as { circuit?: Circuit; _dependencies?: ReadonlyMap<string, unknown> };
+    const b = c as { circuit?: CircuitIR; _dependencies?: ReadonlyMap<string, unknown> };
     if (!b?.circuit || byName.has(b.circuit.name)) return;
     byName.set(b.circuit.name, b.circuit);
     for (const dep of b._dependencies?.values() ?? []) add(dep);
@@ -96,8 +96,8 @@ describe('width adaptation exports to Verilog', () => {
   it('Snake exports with no unsupported primitives', () => {
     const built = buildSnake() as Record<string, unknown>;
     const top = Object.values(built).find(
-      (v) => (v as { circuit?: Circuit })?.circuit?.name === 'Snake',
-    ) as { circuit: Circuit };
+      (v) => (v as { circuit?: CircuitIR })?.circuit?.name === 'Snake',
+    ) as { circuit: CircuitIR };
     expect(top, 'Snake top not found in buildSnake()').toBeDefined();
     const res = exportVerilog(top.circuit, libraryFor(top)) as { unsupported?: unknown };
     expect(res.unsupported ?? null).toBeNull();

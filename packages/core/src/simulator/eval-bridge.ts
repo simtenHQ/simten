@@ -14,8 +14,8 @@
  * 4. Write output object properties back to typed arrays by index
  */
 
-import type { EvalEntry } from '../circuit/eval-registry.js';
-import { getAllCircuitEvals, getCircuitEval } from '../circuit/eval-registry.js';
+import type { BehaviorEntry } from '../circuit/behavior-registry.js';
+import { getAllCircuitBehaviors, getCircuitBehavior } from '../circuit/behavior-registry.js';
 import { EVALUATORS } from './evaluators/index.js';
 import type { EvalContext, NumericEvaluator } from './evaluators/types.js';
 import { readInput, writeOutput } from './evaluators/types.js';
@@ -199,18 +199,18 @@ export function generateEvalWrapper(
 }
 
 // ============================================================================
-// EVALUATORS population from eval-registry
+// EVALUATORS population from behavior registry
 // ============================================================================
 
 /**
  * The registry entry each compiled evaluator was built from, so a redefinition
  * can be detected. Keyed by type index, matching EVALUATORS.
  */
-const evaluatorSource = new Map<number, EvalEntry>();
+const evaluatorSource = new Map<number, BehaviorEntry>();
 
 /**
  * Ensure the EVALUATORS table has an entry for the given component name.
- * Reads from the eval-registry (populated at circuit() definition time).
+ * Reads from the behavior registry (populated at circuit() definition time).
  *
  * The compiled wrapper closes over the entry's `evalFn`, so it has to be
  * regenerated when that function changes — otherwise redefining a primitive
@@ -223,13 +223,13 @@ const evaluatorSource = new Map<number, EvalEntry>();
 export function ensureEvaluatorRegistered(name: string): number {
   const idx = getOrAllocateTypeIndex(name);
 
-  const entry = getCircuitEval(name);
+  const entry = getCircuitBehavior(name);
   if (!entry) {
     // Evaluators registered directly through registerEvalFunction have no
     // registry entry; keep whatever is already compiled.
     if (EVALUATORS[idx] != null) return idx;
     console.warn(`[eval-bridge] No eval-registry entry for '${name}' — getAllCircuitEvals:`, [
-      ...(getAllCircuitEvals() as Map<string, any>).keys(),
+      ...(getAllCircuitBehaviors() as Map<string, any>).keys(),
     ]);
     return idx;
   }
@@ -269,7 +269,7 @@ const onTickRegistry = new Map<string, OnTickEntry>();
 export function getOnTickFunction(name: string): OnTickEntry | undefined {
   if (onTickRegistry.has(name)) return onTickRegistry.get(name);
 
-  const entry = getCircuitEval(name);
+  const entry = getCircuitBehavior(name);
   if (!entry?.onTickFn) return undefined;
 
   const onTickEntry: OnTickEntry = {

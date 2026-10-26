@@ -1,6 +1,6 @@
 #!/usr/bin/env tsx
 /**
- * made-of.verify.ts — Tier-B testbench: every gate-level reference build in
+ * made-of-equivalence.verify.ts — Tier-B testbench: every gate-level reference build in
  * `MADE_OF` computes exactly what the primitive it explains computes.
  *
  * The risk this removes is drift. `MADE_OF.Adder` and `Adder` are two
@@ -17,19 +17,19 @@
  * what synthesis emits, and this says nothing about gate count or timing — see
  * the header of `made-of.ts`.
  *
- * Run: tsx packages/core/src/std/made-of.verify.ts
+ * Run: tsx packages/core/src/std/__tests__/made-of-equivalence.verify.ts
  * (also spawned by `std/__tests__/made-of.test.ts` so CI covers it)
  */
 
 import * as fc from 'fast-check';
-import { circuit } from '../circuit/circuit.js';
-import type { BuiltCircuit } from '../circuit/types.js';
-import { simulate } from '../sim/index.js';
-import type { SimulationHandle } from '../sim/simulate.js';
-import { declareOracle, describe, verify } from '../verify/index.js';
-import { Adder, Comparator, Incrementer, Subtractor } from './arithmetic.js';
-import { MADE_OF } from './made-of.js';
-import { Mux } from './routing.js';
+import type { Circuit } from '../../circuit/builder-types.js';
+import { circuit } from '../../circuit/circuit.js';
+import type { SimulationHandle } from '../../simulator/simulate.js';
+import { simulate } from '../../simulator/simulate.js';
+import { declareOracle, describe, verify } from '../../verify/harness.js';
+import { Adder, Comparator, Incrementer, Subtractor } from '../arithmetic.js';
+import { MADE_OF } from '../made-of.js';
+import { Mux } from '../routing.js';
 
 describe('MADE_OF');
 declareOracle({
@@ -57,7 +57,7 @@ const track = <T extends SimulationHandle>(h: T): T => {
  * would silently fall back to the literal default (see Adder's eval comment),
  * so wrap it in a pass-through composite to get the real behaviour.
  */
-function wrapPrimitive(prim: BuiltCircuit, name: string): BuiltCircuit {
+function wrapPrimitive(prim: Circuit, name: string): Circuit {
   const ins = Object.fromEntries(
     Object.entries(prim.inputs).map(([k, d]) => [k, (d as { portType: unknown }).portType]),
   );
@@ -74,7 +74,7 @@ function wrapPrimitive(prim: BuiltCircuit, name: string): BuiltCircuit {
       ...Object.keys(ins).map((k) => inputs[k].to(p[k])),
       ...Object.keys(outs).map((k) => p[k].to(outputs[k])),
     ],
-  } as never) as unknown as BuiltCircuit;
+  } as never) as unknown as Circuit;
 }
 
 /** The shape `connect` receives for a wrapper built from arbitrary ports. */
@@ -93,17 +93,17 @@ function spaceOf(d: unknown): number {
 
 interface Subject {
   label: string;
-  made: BuiltCircuit;
-  ref: BuiltCircuit;
+  made: Circuit;
+  ref: Circuit;
   inputNames: string[];
   spaces: number[];
 }
 
-function subject(label: string, made: unknown, prim: BuiltCircuit): Subject {
+function subject(label: string, made: unknown, prim: Circuit): Subject {
   const ref = wrapPrimitive(prim, `${label.replace(/[^A-Za-z0-9]/g, '_')}_ref`);
   return {
     label,
-    made: made as BuiltCircuit,
+    made: made as Circuit,
     ref,
     inputNames: Object.keys(prim.inputs),
     spaces: Object.values(prim.inputs).map(spaceOf),
@@ -160,20 +160,20 @@ const EXHAUSTIVE_WIDTHS = [1, 2, 8];
 
 const subjects: Subject[] = [
   ...EXHAUSTIVE_WIDTHS.flatMap((w) => [
-    subject(`Adder(${w})`, MADE_OF.Adder({ width: w }), Adder({ width: w }) as BuiltCircuit),
+    subject(`Adder(${w})`, MADE_OF.Adder({ width: w }), Adder({ width: w }) as Circuit),
     subject(
       `Subtractor(${w})`,
       MADE_OF.Subtractor({ width: w }),
-      Subtractor({ width: w }) as BuiltCircuit,
+      Subtractor({ width: w }) as Circuit,
     ),
     subject(
       `Comparator(${w})`,
       MADE_OF.Comparator({ width: w }),
-      Comparator({ width: w }) as BuiltCircuit,
+      Comparator({ width: w }) as Circuit,
     ),
-    subject(`Mux(${w})`, MADE_OF.Mux({ width: w }), Mux({ width: w }) as BuiltCircuit),
+    subject(`Mux(${w})`, MADE_OF.Mux({ width: w }), Mux({ width: w }) as Circuit),
   ]),
-  subject('Incrementer', MADE_OF.Incrementer({}), Incrementer as BuiltCircuit),
+  subject('Incrementer', MADE_OF.Incrementer({}), Incrementer as Circuit),
 ];
 
 for (const s of subjects) proveExhaustive(s);
@@ -183,14 +183,14 @@ for (const s of subjects) proveExhaustive(s);
 // masking and carry-chain bugs that only bite above 8 bits show up here.
 for (const w of [16]) {
   proveSampled(
-    subject(`Adder(${w})`, MADE_OF.Adder({ width: w }), Adder({ width: w }) as BuiltCircuit),
+    subject(`Adder(${w})`, MADE_OF.Adder({ width: w }), Adder({ width: w }) as Circuit),
     300,
   );
   proveSampled(
     subject(
       `Subtractor(${w})`,
       MADE_OF.Subtractor({ width: w }),
-      Subtractor({ width: w }) as BuiltCircuit,
+      Subtractor({ width: w }) as Circuit,
     ),
     300,
   );
@@ -198,14 +198,11 @@ for (const w of [16]) {
     subject(
       `Comparator(${w})`,
       MADE_OF.Comparator({ width: w }),
-      Comparator({ width: w }) as BuiltCircuit,
+      Comparator({ width: w }) as Circuit,
     ),
     300,
   );
-  proveSampled(
-    subject(`Mux(${w})`, MADE_OF.Mux({ width: w }), Mux({ width: w }) as BuiltCircuit),
-    300,
-  );
+  proveSampled(subject(`Mux(${w})`, MADE_OF.Mux({ width: w }), Mux({ width: w }) as Circuit), 300);
 }
 
 // Every entry in the table must be covered by at least one subject above — a

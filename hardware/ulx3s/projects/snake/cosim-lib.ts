@@ -9,8 +9,8 @@
  * before simulation and asserts the comparison throws.
  */
 
-import { simulate } from '@simten/core/sim';
-import type { Circuit } from '@simten/core/simulator';
+import { simulate } from '@simten/core';
+import type { CircuitIR } from '@simten/core/internal';
 import { buildSnake } from './index.js';
 import { FB_SIZE, GRID, SnakeRefModel } from './ref-model.js';
 
@@ -36,7 +36,7 @@ export function setNodeArg(
   key: string,
   value: number,
 ): void {
-  const circuit: Circuit | undefined =
+  const circuit: CircuitIR | undefined =
     built.circuit.name === circuitName
       ? built.circuit
       : built._dependencies.get(circuitName)?.circuit;

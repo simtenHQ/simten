@@ -7,7 +7,6 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import { simulate } from '../../sim/simulate.js';
 import {
   Eth_AddrClassifier,
   Eth_CRC32,
@@ -15,6 +14,7 @@ import {
   Eth_FrameParser,
   Eth_ProtocolDecoder,
 } from '../../std/index.js';
+import { simulate } from '../simulate.js';
 
 // ============================================================================
 // CRC-32 computation (for building test frames)

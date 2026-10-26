@@ -3,13 +3,13 @@
 // autocomplete/type-checking on circuit(), bit, bus, reg, mem, and every
 // stdlib component — without maintaining a hand-rolled mirror.
 //
-// Input:  dist/index.d.ts (produced by `tsc -b`)
+// Input:  dist/editor-types.d.ts (produced by `tsc -b`): the root API plus std
 // Output: dist/bundle.d.ts (consumed by apps/web via `@simten/core/bundle?raw`)
 
 import { dts } from 'rollup-plugin-dts';
 
 export default {
-  input: 'dist/index.d.ts',
+  input: 'dist/editor-types.d.ts',
   output: {
     file: 'dist/bundle.d.ts',
     format: 'es',

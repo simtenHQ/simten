@@ -19,12 +19,12 @@
 // They stop at Xor/And/Or/Not. The game already teaches NAND -> gates level by
 // level; this covers gates -> arithmetic. No overlap.
 //
-// Each entry is checked against its primitive's `eval` by `made-of.verify.ts`,
+// Each entry is checked against its primitive's `eval` by `made-of-equivalence.verify.ts`,
 // so a diagram cannot drift from the thing it explains.
 //
 // NOTE: this module is deliberately absent from `_allExports` in `index.ts`.
 // `STDLIB_CIRCUITS` materializes exported functions by calling them with no
-// arguments and keeping anything that returns a `BuiltCircuit`, so a builder
+// arguments and keeping anything that returns a `Circuit`, so a builder
 // exported bare from a std module could be silently registered as a duplicate
 // stdlib circuit. `std/__tests__/made-of.test.ts` guards that.
 //
@@ -34,12 +34,12 @@
 
 import { bit, bus } from '../circuit/bit-bus.js';
 import { circuit } from '../circuit/circuit.js';
-import type { ArgumentValue } from '../types/circuit.js';
+import type { ArgumentValue } from '../ir/circuit-ir.js';
 import { FullAdder } from './arithmetic.js';
 import { Constant } from './io.js';
 import { And, Not, Or, Xnor, Xor } from './logic.js';
-import { Slice } from './reconstruction.js';
 import { Concat } from './routing.js';
+import { Slice } from './wiring.js';
 
 /** A gate-level build of a primitive, specialized to that node's arguments. */
 export type MadeOfBuilder = (args: Record<string, ArgumentValue>) => unknown;
@@ -342,7 +342,7 @@ function comparatorMadeOf(args: Record<string, ArgumentValue>) {
 // ============================================================================
 
 // Deliberately not a mutable registry: the set is fixed at build time and
-// nothing registers into it at runtime, unlike `eval-registry`, which exists
+// nothing registers into it at runtime, unlike `behavior registry`, which exists
 // because user code defines evals dynamically.
 /** Gate-level reference builds, keyed by primitive name. Display only. */
 export const MADE_OF: Readonly<Record<string, MadeOfBuilder>> = Object.freeze({

@@ -62,7 +62,7 @@ const std = await import(join(here, '..', 'dist', 'std', 'index.js'));
 
 // Mirror executeCircuitCode's scope construction (circuit/execute.ts:55-73):
 //   - Fixed core API: circuit, component (alias), bit, bus, reg, mem
-//   - Every stdlib BuiltCircuit injects under value.circuit.name
+//   - Every stdlib Circuit injects under value.circuit.name
 //   - Every stdlib function injects under its export name
 //
 // For each runtime name, we emit `declare const <runtimeName>: typeof core.<exportKey>`.
@@ -155,15 +155,15 @@ const B = '{ kind: "bus"; width: number }';
 lines.push('  // Import-namespace factories (from generated Verilog imports)');
 lines.push('  /** One-hot parallel mux — synthesized from a full `case`. */');
 lines.push(
-  `  const Pmux: (opts: { width: number; sWidth: number }) => core.BuiltCircuit<Record<\`a\` | \`s\` | \`b_\${number}\`, ${B}>, { out: ${B} }>;`,
+  `  const Pmux: (opts: { width: number; sWidth: number }) => core.Circuit<Record<\`a\` | \`s\` | \`b_\${number}\`, ${B}>, { out: ${B} }>;`,
 );
 lines.push('  /** Multi-port memory — from a `$mem_v2` cell. `store` seeds ROM/init data. */');
 lines.push(
-  `  const Mem: (opts: { rdPorts: number; wrPorts: number; abits: number; width: number; size: number; store?: Record<number, number> }) => core.BuiltCircuit<Record<\`rd_addr_\${number}\` | \`wr_addr_\${number}\` | \`wr_data_\${number}\` | \`wr_en_\${number}\`, ${B}>, Record<\`rd_data_\${number}\`, ${B}>>;`,
+  `  const Mem: (opts: { rdPorts: number; wrPorts: number; abits: number; width: number; size: number; store?: Record<number, number> }) => core.Circuit<Record<\`rd_addr_\${number}\` | \`wr_addr_\${number}\` | \`wr_data_\${number}\` | \`wr_en_\${number}\`, ${B}>, Record<\`rd_data_\${number}\`, ${B}>>;`,
 );
 lines.push('  /** Inferred level-sensitive D-latch. */');
 lines.push(
-  `  const Dlatch: (opts: { width: number; enPolarity: number }) => core.BuiltCircuit<{ en: ${B}; d: ${B} }, { q: ${B} }>;`,
+  `  const Dlatch: (opts: { width: number; enPolarity: number }) => core.Circuit<{ en: ${B}; d: ${B} }, { q: ${B} }>;`,
 );
 
 lines.push('}');

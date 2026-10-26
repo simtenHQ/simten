@@ -12,19 +12,19 @@
  *   sim.get('sum')  // 0
  */
 
+import type { Circuit, PortMap } from '../circuit/builder-types.js';
 import { isSequentialCircuit } from '../circuit/is-sequential.js';
-import type { BuiltCircuit, PortMap } from '../circuit/types.js';
-import { createSimulatorFromCircuit } from '../simulator/index.js';
-import { SimulationSession } from '../simulator/simulation-session.js';
 import type {
   ArgumentValue,
   BitValue,
   BusValue,
-  Circuit,
+  CircuitIR,
   CircuitLibrary,
   MutableCircuitLibrary,
-} from '../types/circuit.js';
-import type { SimulatorSnapshot } from '../types/simulator.js';
+} from '../ir/circuit-ir.js';
+import { createEngine, elaborate } from './index.js';
+import { SimulationSession } from './simulation-session.js';
+import type { SimulatorSnapshot } from './types.js';
 
 function isMutable(lib: CircuitLibrary): lib is MutableCircuitLibrary {
   return 'addCircuit' in lib && typeof (lib as MutableCircuitLibrary).addCircuit === 'function';
@@ -97,11 +97,11 @@ export interface SimulationHandle<Ins extends PortMap = PortMap, Outs extends Po
 /**
  * Create a simulation from a component.
  *
- * @param comp - A BuiltCircuit (from circuit().build() or stdlib)
+ * @param comp - A Circuit (from circuit().build() or stdlib)
  * @param options - Optional: custom library, initial memory data
  */
 export function simulate<Ins extends PortMap, Outs extends PortMap>(
-  comp: BuiltCircuit<Ins, Outs>,
+  comp: Circuit<Ins, Outs>,
   options?: {
     library?: CircuitLibrary;
   },
@@ -109,8 +109,8 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
   const rawCircuit = comp.circuit;
 
   // Build component library from the circuit + all transitive dependencies
-  const circuitMap = new Map<string, Circuit>();
-  const defaultLibrary: CircuitLibrary & { addCircuit(c: Circuit): void } = {
+  const circuitMap = new Map<string, CircuitIR>();
+  const defaultLibrary: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
     resolveCircuit: (name) => circuitMap.get(name),
     getAllPrimitiveNames: () =>
       [...circuitMap.entries()]
@@ -138,7 +138,7 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
   const isSequential = isSequentialCircuit(circuit, library.resolveCircuit);
 
   // Create engine and session
-  const engine = createSimulatorFromCircuit(circuit, library);
+  const engine = createEngine(elaborate(circuit, library), { componentLibrary: library });
 
   // Run initial combinational propagation
   engine.runCombinational();
@@ -280,7 +280,7 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
  * The wrapper's node carries the instance's arguments, as a parent's would, so
  * `simulate(Register({ value: 5 }))` starts at 5 (#428).
  */
-function wrapIfPrimitive(circuit: Circuit, args: Record<string, ArgumentValue>): Circuit {
+function wrapIfPrimitive(circuit: CircuitIR, args: Record<string, ArgumentValue>): CircuitIR {
   if (circuit.implementation.kind !== 'primitive') return circuit;
 
   const nodeId = '_inner';
@@ -307,7 +307,7 @@ function wrapIfPrimitive(circuit: Circuit, args: Record<string, ArgumentValue>):
   ];
 
   // Wire circuit inputs → node inputs, node outputs → circuit outputs
-  const connections: import('../types/circuit.js').Connection[] = [];
+  const connections: import('../ir/circuit-ir.js').Connection[] = [];
   let connIdx = 0;
   for (const p of circuit.inputs) {
     connections.push({

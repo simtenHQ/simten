@@ -18,8 +18,17 @@
  * Follows auto-harness.ts: pure Circuit IR construction, no code execution.
  */
 
-import type { BuiltCircuit } from '../circuit/types.js';
-import { Dlatch, Mem, Pmux } from '../rtl/index.js';
+import type { Circuit } from '../circuit/builder-types.js';
+import type {
+  ArgumentValue,
+  CircuitIR,
+  Connection,
+  Node,
+  PortDescriptor,
+  PortInstance,
+  PortType,
+} from '../ir/circuit-ir.js';
+import { bitType, busType } from '../ir/circuit-ir.js';
 import {
   Adder,
   BusAnd,
@@ -55,17 +64,8 @@ import {
   WrappingMultiplier,
   ZeroExtend,
 } from '../std/index.js';
-import type {
-  ArgumentValue,
-  Circuit,
-  Connection,
-  Node,
-  PortDescriptor,
-  PortInstance,
-  PortType,
-} from '../types/circuit.js';
-import { bitType, busType } from '../types/circuit.js';
 import { type BitDriver, type Segment, segmentBits, type YosysBit } from './net-map.js';
+import { Dlatch, Mem, Pmux } from './primitives.js';
 
 // ---------------------------------------------------------------------------
 // Yosys JSON shape
@@ -123,7 +123,7 @@ interface LiftRule {
    *  (lift-to-stdlib) rule before the general (rtl-primitive) fallback. */
   when?: (cell: YosysCell) => boolean;
   /** Build the component instance from the cell's parameters. */
-  comp: (cell: YosysCell) => BuiltCircuit;
+  comp: (cell: YosysCell) => Circuit;
   /** cell input port → component input port. */
   inMap: Record<string, string>;
   /** cell output port → component output port. */
@@ -149,11 +149,11 @@ interface LiftRule {
 // A/B/Y width bundle and signedness — read straight off the cell parameters.
 
 /** binary A,B → Y (rtl primitive). */
-const bin = (comp: (c: YosysCell) => BuiltCircuit): LiftRule[] => [
+const bin = (comp: (c: YosysCell) => Circuit): LiftRule[] => [
   { comp, inMap: { A: 'a', B: 'b' }, outMap: { Y: 'out' } },
 ];
 /** unary A → Y (rtl primitive). */
-const un = (comp: (c: YosysCell) => BuiltCircuit): LiftRule[] => [
+const un = (comp: (c: YosysCell) => Circuit): LiftRule[] => [
   { comp, inMap: { A: 'a' }, outMap: { Y: 'out' } },
 ];
 
@@ -512,7 +512,7 @@ function makeIdSanitizer(): (raw: string) => string {
 }
 
 // ---------------------------------------------------------------------------
-// Node construction from a BuiltCircuit (harvest exact port descriptors)
+// Node construction from a Circuit (harvest exact port descriptors)
 // ---------------------------------------------------------------------------
 
 function instancesFrom(descs: readonly PortDescriptor[], nodeId: string): PortInstance[] {
@@ -520,13 +520,13 @@ function instancesFrom(descs: readonly PortDescriptor[], nodeId: string): PortIn
 }
 
 /** Width of a built component's input port (1 for a bit port). */
-function portWidth(built: BuiltCircuit, portName: string): number {
+function portWidth(built: Circuit, portName: string): number {
   const p = built.circuit.inputs.find((d) => d.name === portName);
   if (!p) throw new Error(`${built.circuit.name}: no input port '${portName}'`);
   return p.portType.kind === 'bus' ? p.portType.width : 1;
 }
 
-function nodeFromBuilt(id: string, built: BuiltCircuit, args: Record<string, ArgumentValue>): Node {
+function nodeFromBuilt(id: string, built: Circuit, args: Record<string, ArgumentValue>): Node {
   const c = built.circuit;
   return {
     id,
@@ -538,8 +538,8 @@ function nodeFromBuilt(id: string, built: BuiltCircuit, args: Record<string, Arg
   };
 }
 
-/** Collect a BuiltCircuit's circuit + transitive dependency circuits. */
-function collectDeps(built: BuiltCircuit, into: Map<string, Circuit>): void {
+/** Collect a Circuit's circuit + transitive dependency circuits. */
+function collectDeps(built: Circuit, into: Map<string, CircuitIR>): void {
   if (!into.has(built.circuit.name)) into.set(built.circuit.name, built.circuit);
   for (const [, dep] of built._dependencies) collectDeps(dep, into);
 }
@@ -861,10 +861,10 @@ function translateModule(
   mod: YosysModule,
   shapes: Map<string, ModuleShape>,
   netlist: YosysNetlist,
-  libDeps: Map<string, Circuit>,
+  libDeps: Map<string, CircuitIR>,
   moduleNameOf: (raw: string) => string,
   warnings: string[],
-): Circuit {
+): CircuitIR {
   const shape = shapes.get(name)!;
   assertSingleClockDomain(name, mod, shape);
 
@@ -873,12 +873,8 @@ function translateModule(
   let helperId = 0;
   let connId = 0;
 
-  /** Create a node from a BuiltCircuit and register its dependency circuits. */
-  const pushBuilt = (
-    id: string,
-    built: BuiltCircuit,
-    args: Record<string, ArgumentValue>,
-  ): void => {
+  /** Create a node from a Circuit and register its dependency circuits. */
+  const pushBuilt = (id: string, built: Circuit, args: Record<string, ArgumentValue>): void => {
     collectDeps(built, libDeps);
     nodes.push(nodeFromBuilt(id, built, args));
   };
@@ -1328,9 +1324,9 @@ function translateModule(
 
 export interface ImportResult {
   /** The chosen top module's circuit. */
-  top: Circuit;
+  top: CircuitIR;
   /** Every module circuit + every stdlib/rtl dependency circuit, by name. */
-  library: Map<string, Circuit>;
+  library: Map<string, CircuitIR>;
   /** Non-fatal notes about the import (e.g. undriven nets tied to 0). */
   warnings: string[];
 }
@@ -1375,7 +1371,7 @@ function makeModuleNameSanitizer(netlist: YosysNetlist): (raw: string) => string
 export function importNetlist(netlist: YosysNetlist, topName?: string): ImportResult {
   const shapes = moduleShapes(netlist);
   const moduleNameOf = makeModuleNameSanitizer(netlist);
-  const library = new Map<string, Circuit>();
+  const library = new Map<string, CircuitIR>();
   const warnings: string[] = [];
 
   for (const [name, mod] of Object.entries(netlist.modules)) {

@@ -6,17 +6,17 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import type { Circuit } from '../../circuit/builder-types.js';
 import { bit, bus, circuit, mem, reg } from '../../circuit/index.js';
-import type { BuiltCircuit } from '../../circuit/types.js';
-import { simulate } from '../../sim/simulate.js';
+import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
 import { Buffer, DFlipFlop, Nand, Not, Switch } from '../../std/index.js';
-import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
-import { createSimulator, elaborate } from '../index.js';
+import { createEngine, elaborate } from '../index.js';
+import { simulate } from '../simulate.js';
 
 /** Library of a built circuit and everything it depends on. */
-function libraryOf(top: BuiltCircuit): CircuitLibrary {
-  const byName = new Map<string, Circuit>();
-  const add = (b: { circuit?: Circuit; _dependencies?: ReadonlyMap<string, unknown> }) => {
+function libraryOf(top: Circuit): CircuitLibrary {
+  const byName = new Map<string, CircuitIR>();
+  const add = (b: { circuit?: CircuitIR; _dependencies?: ReadonlyMap<string, unknown> }) => {
     if (!b?.circuit || byName.has(b.circuit.name)) return;
     byName.set(b.circuit.name, b.circuit);
     for (const dep of b._dependencies?.values() ?? []) add(dep as typeof b);
@@ -28,9 +28,9 @@ function libraryOf(top: BuiltCircuit): CircuitLibrary {
   };
 }
 
-function engineFor(top: BuiltCircuit) {
+function engineFor(top: Circuit) {
   const library = libraryOf(top);
-  return createSimulator(elaborate(top.circuit, library), { componentLibrary: library });
+  return createEngine(elaborate(top.circuit, library), { componentLibrary: library });
 }
 
 describe('outputs are masked to their port width', () => {

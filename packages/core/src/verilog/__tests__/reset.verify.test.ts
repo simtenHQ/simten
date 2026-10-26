@@ -22,9 +22,9 @@
 
 import { describe, expect, it } from 'vitest';
 import { bus, circuit } from '../../circuit/index.js';
-import { createSimulatorFromCircuit } from '../../simulator/index.js';
+import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
+import { createEngine, elaborate } from '../../simulator/index.js';
 import { Adder, Constant, Register } from '../../std/index.js';
-import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { buildNaiveTraceAcrossReset, buildParityTraceAcrossReset } from './parity-helpers.js';
@@ -50,7 +50,7 @@ function buildCounter() {
     ],
   });
 
-  const map = new Map<string, Circuit>();
+  const map = new Map<string, CircuitIR>();
   map.set(Counter.circuit.name, Counter.circuit);
   for (const [, dep] of Counter._dependencies) map.set(dep.circuit.name, dep.circuit);
   const lib: CircuitLibrary = {
@@ -84,7 +84,7 @@ function buildResetVectors(): SequentialTestVector[] {
   return vectors;
 }
 
-function readCount(sim: ReturnType<typeof createSimulatorFromCircuit>): number {
+function readCount(sim: ReturnType<typeof createEngine>): number {
   const v = sim.getPortValues().get('__top__.count');
   return typeof v === 'number' ? (v >>> 0) & 0xff : 0;
 }
@@ -112,7 +112,7 @@ d('reset — JS simulator vs iverilog co-simulation under rst_n', () => {
     timeout: 30000,
   }, async () => {
     const { circuit, lib } = buildCounter();
-    const sim = createSimulatorFromCircuit(circuit, lib);
+    const sim = createEngine(elaborate(circuit, lib), { componentLibrary: lib });
 
     const simOutputs = buildParityTraceAcrossReset(sim, PRE, POST, () => readCount(sim));
     const veriOutputs = await runVerilogTrace();
@@ -147,7 +147,7 @@ d('reset — JS simulator vs iverilog co-simulation under rst_n', () => {
     timeout: 30000,
   }, async () => {
     const { circuit, lib } = buildCounter();
-    const sim = createSimulatorFromCircuit(circuit, lib);
+    const sim = createEngine(elaborate(circuit, lib), { componentLibrary: lib });
 
     const naiveOutputs = buildNaiveTraceAcrossReset(sim, PRE, POST, () => readCount(sim));
     const veriOutputs = await runVerilogTrace();

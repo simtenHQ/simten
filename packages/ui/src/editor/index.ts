@@ -5,4 +5,4 @@ export {
   captureEnvironmentalState,
   type EnvironmentalStateValue,
   restoreEnvironmentalState,
-} from '@simten/core/simulator';
+} from '@simten/core/internal';

@@ -33,7 +33,7 @@
  *    the `srcNodeIdx === -1` branch) reads it **raw** to build `onTick`'s
  *    inputs, bypassing the `Int32Array` — so a boolean there lands directly in
  *    sequential state. The end-to-end case below caught exactly that: `set()`
- *    in `sim/simulate.ts` used to do `Boolean(value)` for bit ports, a
+ *    in `simulator/simulate.ts` used to do `Boolean(value)` for bit ports, a
  *    leftover from when `BitValue` was `boolean`, and every bit-driven
  *    `onTick` produced boolean state as a result.
  *
@@ -44,10 +44,10 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, circuit } from '../../circuit/index.js';
-import { simulate } from '../../sim/simulate.js';
+import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
 import { DFlipFlop } from '../../std/index.js';
-import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
-import { createSimulator, elaborate } from '../index.js';
+import { createEngine, elaborate } from '../index.js';
+import { simulate } from '../simulate.js';
 
 /** Every boolean reachable in `value`, reported by path. Maps are opaque leaves. */
 function findBooleans(label: string, value: unknown, out: string[] = []): string[] {
@@ -79,7 +79,7 @@ const Top = circuit('Top', {
   connect: ({ inputs, outputs, nodes: { ff } }) => [inputs.a.to(ff.d), ff.q.to(outputs.q)],
 });
 
-function libraryFor(circuits: Circuit[]): CircuitLibrary {
+function libraryFor(circuits: CircuitIR[]): CircuitLibrary {
   const byName = new Map(circuits.map((c) => [c.name, c]));
   return {
     resolveCircuit: (name) => byName.get(name),
@@ -106,7 +106,7 @@ describe('no booleans in the value domain', () => {
     (ff.state[0] as { initialValue: unknown }).initialValue = false;
 
     const library = libraryFor([ff, Top.circuit]);
-    const sim = createSimulator(elaborate(Top.circuit, library), { componentLibrary: library });
+    const sim = createEngine(elaborate(Top.circuit, library), { componentLibrary: library });
     sim.runCombinational();
 
     const found: string[] = [];

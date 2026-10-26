@@ -8,8 +8,8 @@
  * 3. Scope port values so internal node IDs match simulation keys
  */
 
-import type { BitValue, BusValue, Circuit, Connection, Node } from '@simten/core';
-import type { FlatPortValueMap } from '@simten/core/simulator';
+import type { BitValue, BusValue } from '@simten/core';
+import type { CircuitIR, Connection, FlatPortValueMap, Node } from '@simten/core/internal';
 
 /** Prefix for synthetic boundary input nodes */
 export const BOUNDARY_IN_PREFIX = '__boundary_in_';
@@ -23,7 +23,7 @@ export const BOUNDARY_OUT_PREFIX = '__boundary_out_';
  * ports use `nodeId: ""`. We replace those with synthetic Switch/Input (for inputs)
  * and Led (for outputs) boundary nodes, so the canvas renders them naturally.
  */
-export function createDrillDownViewCircuit(composite: Circuit): Circuit {
+export function createDrillDownViewCircuit(composite: CircuitIR): CircuitIR {
   const boundaryNodes: Node[] = [];
   const rewrittenConnections: Connection[] = [];
 
@@ -122,7 +122,7 @@ export function createDrillDownViewCircuit(composite: Circuit): Circuit {
 export function scopePortValues(
   portValues: FlatPortValueMap,
   prefix: string,
-  composite?: Circuit,
+  composite?: CircuitIR,
 ): FlatPortValueMap {
   if (!prefix) return portValues;
 

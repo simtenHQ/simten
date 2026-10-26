@@ -1,6 +1,6 @@
-import type { Circuit, CircuitLibrary } from '@simten/core';
 import { bit, circuit } from '@simten/core/circuit';
-import { elaborate, type PropagationStep, tracePropagation } from '@simten/core/simulator';
+import type { CircuitIR, CircuitLibrary } from '@simten/core/internal';
+import { elaborate, type PropagationStep, tracePropagation } from '@simten/core/internal';
 import { And, Led, Switch, Xor } from '@simten/core/std';
 import { useCircuitSimulator } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
@@ -80,8 +80,8 @@ export function PropagationDemo() {
   // Run the real propagation trace
   const trace = useMemo((): PropagationStep[] => {
     try {
-      const circuitMap = new Map<string, Circuit>();
-      const library: CircuitLibrary & { addCircuit(c: Circuit): void } = {
+      const circuitMap = new Map<string, CircuitIR>();
+      const library: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
         resolveCircuit: (name) => circuitMap.get(name),
         getAllPrimitiveNames: () =>
           [...circuitMap.entries()]

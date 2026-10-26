@@ -5,7 +5,7 @@
 import fc from 'fast-check';
 import { describe, it } from 'vitest';
 import { bus, circuit } from '../../circuit/index.js';
-import { simulate } from '../../sim/index.js';
+import { simulate } from '../../simulator/simulate.js';
 import { BusXnor } from '../arithmetic.js';
 
 let uid = 0;

@@ -6,13 +6,13 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
 import { And, DFlipFlop, Or, RAM, Register, ROM, Xor } from '../../std/index.js';
-import type { Circuit, CircuitLibrary } from '../../types/circuit.js';
 import { exportVerilog } from '../exporter.js';
 
 function libraryFor(c: { circuit: any; _dependencies: ReadonlyMap<string, any> }) {
-  const circuitMap = new Map<string, Circuit>();
-  const lib: CircuitLibrary & { addCircuit(c: Circuit): void } = {
+  const circuitMap = new Map<string, CircuitIR>();
+  const lib: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
     resolveCircuit: (name) => circuitMap.get(name),
     getAllPrimitiveNames: () =>
       [...circuitMap.entries()]
@@ -136,7 +136,7 @@ describe('exportVerilog', () => {
 
       // Build a custom library with preloaded RAM state (deliberately
       // out-of-order to verify we sort on emission).
-      const ramDefWithData: Circuit = {
+      const ramDefWithData: CircuitIR = {
         ...RAM().circuit,
         state: [
           {
@@ -153,7 +153,7 @@ describe('exportVerilog', () => {
           },
         ],
       };
-      const circuitMap = new Map<string, Circuit>([
+      const circuitMap = new Map<string, CircuitIR>([
         [RamUser.circuit.name, RamUser.circuit],
         ['RAM', ramDefWithData],
       ]);
@@ -195,7 +195,7 @@ describe('exportVerilog', () => {
       // for a unit test.
       for (let i = 0; i < 10; i++) bigData.set(i, i * 3 + 1);
 
-      const ramDefWithData: Circuit = {
+      const ramDefWithData: CircuitIR = {
         ...RAM().circuit,
         state: [
           {
@@ -204,7 +204,7 @@ describe('exportVerilog', () => {
           },
         ],
       };
-      const circuitMap = new Map<string, Circuit>([
+      const circuitMap = new Map<string, CircuitIR>([
         [RamUser.circuit.name, RamUser.circuit],
         ['RAM', ramDefWithData],
       ]);

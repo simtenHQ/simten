@@ -16,14 +16,14 @@
  * source in the main frame would defeat the sandbox.
  */
 
-import type { Circuit } from '@simten/core';
-import { createSimulatorFromCircuit, executeCircuitCode } from '@simten/core';
+import type { CircuitIR } from '@simten/core/internal';
+import { createEngine, elaborate, executeCircuitCode } from '@simten/core/internal';
 import type { GradeRuntime } from '../runtime';
 import { RuntimeFailure, readOutputs } from '../runtime';
 
 export function localRuntime(): GradeRuntime {
-  let library: Circuit[] = [];
-  let engine: ReturnType<typeof createSimulatorFromCircuit> | null = null;
+  let library: CircuitIR[] = [];
+  let engine: ReturnType<typeof createEngine> | null = null;
 
   return {
     async compile(source) {
@@ -32,19 +32,20 @@ export function localRuntime(): GradeRuntime {
       library = result.library
         .getAllCircuitNames()
         .map((n) => result.library.resolveCircuit(n))
-        .filter((c): c is Circuit => c != null);
+        .filter((c): c is CircuitIR => c != null);
       return { circuits: result.circuits, libraryCircuits: library };
     },
 
     async select(target, all) {
       const byName = new Map([...library, ...all].map((c) => [c.name, c]));
-      engine = createSimulatorFromCircuit(target, {
+      const lib = {
         resolveCircuit: (name: string) => byName.get(name),
         getAllPrimitiveNames: () =>
           [...byName.values()]
             .filter((c) => c.implementation?.kind === 'primitive')
             .map((c) => c.name),
-      });
+      };
+      engine = createEngine(elaborate(target, lib), { componentLibrary: lib });
     },
 
     async evaluate(inputs, outputs) {

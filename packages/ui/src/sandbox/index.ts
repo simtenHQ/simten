@@ -1,12 +1,11 @@
 export type {
+  BehaviorSource,
   CompileIRResult,
   CompileResult,
-  EvalSource,
   ResetResult,
   SandboxError,
   SetNodeResult,
   SimSlot,
-  SimulateResult,
   TickResult,
 } from './protocol.js';
 export { SandboxProvider, useSandboxContext } from './SandboxProvider.js';

@@ -16,8 +16,8 @@
  * see `runtime.ts`. In the browser it is the sandbox iframe, never this frame.
  */
 
-import type { Circuit, FlatCircuit } from '@simten/core';
-import { elaborate } from '@simten/core';
+import type { CircuitIR, FlatCircuit } from '@simten/core/internal';
+import { elaborate } from '@simten/core/internal';
 import { type GradeRuntime, RuntimeFailure } from './runtime';
 import type { GradeFailure, GradeResult, Level } from './types';
 
@@ -60,12 +60,12 @@ function permittedName(primitiveType: string): string {
  * that name? Both shapes are valid; which one a level uses is a curriculum
  * decision, not something the grader needs to know.
  */
-function exposes(circuit: Circuit, name: string, side: 'inputs' | 'outputs'): boolean {
+function exposes(circuit: CircuitIR, name: string, side: 'inputs' | 'outputs'): boolean {
   if (circuit[side].some((p) => p.name === name)) return true;
   return circuit.nodes.some((n) => n.id === name);
 }
 
-function interfaceProblems(circuit: Circuit, level: Level): string[] {
+function interfaceProblems(circuit: CircuitIR, level: Level): string[] {
   const problems: string[] = [];
   for (const name of level.inputs) {
     if (!exposes(circuit, name, 'inputs')) problems.push(`no input signal \`${name}\``);

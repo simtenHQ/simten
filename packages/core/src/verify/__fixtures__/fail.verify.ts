@@ -1,6 +1,6 @@
 // Failing testbench: a wrong reference (claims carry is always 0) so the gate
 // reports testbench_passed:false with a shrunk counterexample.
-import { simulate } from '@simten/core/sim';
+import { simulate } from '@simten/core';
 import { declareOracle, verify } from '@simten/core/verify';
 import * as fc from 'fast-check';
 import { HalfAdder } from './half-adder.circuit.js';

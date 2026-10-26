@@ -6,14 +6,13 @@
  * doesn't handle is a type error.
  */
 
-import type { Circuit } from '@simten/core';
-import type { RLEValue } from '@simten/core/api';
+import type { CircuitIR } from '@simten/core/internal';
 
 /** Slot ids are arbitrary strings; each slot is an independent simulation. */
 export type SimSlot = string;
 
 /** An eval or onTick function sent as source text (compile-ir) and rebuilt with `new Function`. */
-export interface EvalSource {
+export interface BehaviorSource {
   evalSource: string;
   onTickSource?: string;
   inputNames: string[];
@@ -37,10 +36,10 @@ export type SandboxRequest =
   | {
       id: string;
       type: 'compile-ir';
-      circuit: Circuit;
-      libraryCircuits: Circuit[];
+      circuit: CircuitIR;
+      libraryCircuits: CircuitIR[];
       slot: SimSlot;
-      evalSources?: Record<string, EvalSource>;
+      evalSources?: Record<string, BehaviorSource>;
       snapshot?: boolean;
     }
   | { id: string; type: 'tick'; inputs?: Inputs; slot?: SimSlot; snapshot?: boolean }
@@ -61,15 +60,6 @@ export type SandboxRequest =
       count: number;
       slot?: SimSlot;
     }
-  | {
-      id: string;
-      type: 'simulate';
-      source?: string;
-      ticks: number;
-      inputs?: Inputs;
-      memoryData?: Record<string, Record<string, number>>;
-      slot?: SimSlot;
-    }
   | { id: string; type: 'reset'; slot?: SimSlot }
   | {
       id: string;
@@ -87,8 +77,8 @@ export type SandboxRequest =
 // ── Iframe → page ───────────────────────────────────────────────────────────
 
 export interface CompileResult {
-  circuits: Circuit[];
-  libraryCircuits: Circuit[];
+  circuits: CircuitIR[];
+  libraryCircuits: CircuitIR[];
   portValues: Record<string, number>;
   peripheralState?: PeripheralState;
 }
@@ -106,14 +96,6 @@ export interface TickResult {
   peripheralState?: PeripheralState;
   /** Snapshot id, when the tick was requested with `{ snapshot: true }`. */
   snapshotId?: number;
-}
-
-export interface SimulateResult {
-  circuitName: string;
-  signals: Record<string, RLEValue[]>;
-  vcd: string;
-  ticks: number;
-  steadyStateAt?: number;
 }
 
 export interface ResetResult {
@@ -151,7 +133,6 @@ export type SandboxResult =
   | ({ type: 'ticked-n' } & TickResult)
   | { type: 'scanned-port'; values: number[] }
   | { type: 'rendered-samples'; samples: number[]; cycle: number }
-  | ({ type: 'simulated' } & SimulateResult)
   | ({ type: 'reset' } & ResetResult)
   | ({ type: 'node-set' } & SetNodeResult)
   | ({ type: 'snapshotted' } & SnapshotResult)

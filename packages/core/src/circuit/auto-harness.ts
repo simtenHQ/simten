@@ -16,20 +16,20 @@
  * No code execution — pure Circuit IR construction.
  */
 
-import type { ArgumentValue, Circuit, Connection, Node } from '../types/circuit.js';
-import { TOP_LEVEL_NODE } from '../types/circuit.js';
+import type { ArgumentValue, CircuitIR, Connection, Node } from '../ir/circuit-ir.js';
+import { TOP_LEVEL_NODE } from '../ir/circuit-ir.js';
 
 /** A port reference belongs to the circuit's own edge, not to a child node. */
 const isCircuitPort = (nodeId: string) => nodeId === '' || nodeId === TOP_LEVEL_NODE;
 
 export function autoHarness(
-  circuit: Circuit,
+  circuit: CircuitIR,
   library: {
-    resolveCircuit: (name: string) => Circuit | undefined;
-    addCircuit: (c: Circuit) => void;
+    resolveCircuit: (name: string) => CircuitIR | undefined;
+    addCircuit: (c: CircuitIR) => void;
   },
   initialInputs?: Record<string, number | boolean>,
-): Circuit {
+): CircuitIR {
   // No ports = already a self-contained harness
   if (circuit.inputs.length === 0 && circuit.outputs.length === 0) {
     return circuit;

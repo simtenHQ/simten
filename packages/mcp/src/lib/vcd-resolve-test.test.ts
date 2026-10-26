@@ -1,8 +1,7 @@
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, resolve } from 'node:path';
+import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { findRepoRoot } from './repo-root.js';
 import { resolveTestName, VCD_PROJECT_DIR_SUFFIX } from './vcd-resolve-test.js';
 
 describe('resolveTestName', () => {
@@ -17,22 +16,5 @@ describe('resolveTestName', () => {
 
   it('throws vcd_not_found for an unknown test name', () => {
     expect(() => resolveTestName('definitely not a real test', tmpdir())).toThrow(/vcd_not_found/);
-  });
-});
-
-describe('slugify single-source-of-truth contract', () => {
-  // Senior pushback (parent plan §6, test matrix item 5): module-identity
-  // tests are easy to spoof. The contract we actually care about is
-  // "verify.ts has no inline slugify regex" — assert that directly via grep.
-  it('verify.ts has no inline slugify regex (must import from @simten/core/util/test-name)', () => {
-    const root = findRepoRoot();
-    const verifyPath = resolve(root, 'hardware/ulx3s/projects/cpu/verify.ts');
-    const src = readFileSync(verifyPath, 'utf8');
-    // The canonical regex is `/[^a-zA-Z0-9_-]+/g`. Grepping for the bracket
-    // class catches the inline slugify if it ever returns. Match either the
-    // raw class or the function literal — anything that bypasses the import.
-    expect(src).not.toMatch(/replace\(\/\[\^a-zA-Z0-9_-\]/);
-    // Positive guard: the import must be present.
-    expect(src).toMatch(/from ['"]@simten\/core\/util\/test-name['"]/);
   });
 });

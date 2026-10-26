@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { simulate } from '../../sim/simulate.js';
+import { simulate } from '../../simulator/simulate.js';
 import { RV32I_Core } from '../rv32i-cpu.js';
 
 const NOP = 0x00000013; // addi x0, x0, 0

@@ -1,7 +1,7 @@
 /**
  * Redefining a primitive replaces its behaviour.
  *
- * Component behaviour is cached in two places keyed by name: the eval-registry
+ * Component behaviour is cached in two places keyed by name: the behavior registry
  * (written by `circuit()` at definition time) and the compiled EVALUATORS table
  * (built from a registry entry at compile time). Both used to keep the *first*
  * value for a given name and silently drop later ones.
@@ -18,7 +18,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit, reg } from '../../circuit/index.js';
-import { simulate } from '../../sim/index.js';
+import { simulate } from '../simulate.js';
 import '../../std/index.js';
 
 function evaluate(

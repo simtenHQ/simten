@@ -42,7 +42,7 @@ import { registerSimtenSnippets } from './snippets';
  * exports (every subpath appears to export everything), but correct for every
  * symbol that actually exists.
  */
-const CORE_SUBPATHS = ['circuit', 'std', 'verilog', 'sim', 'simulator', 'api', 'verify'];
+const CORE_SUBPATHS = ['circuit', 'std', 'verilog', 'verify', 'examples'];
 
 /**
  * Module-not-found diagnostics, suppressed because type acquisition is async and

@@ -6,11 +6,11 @@
  */
 
 import { executeCircuitCode } from '../circuit/execute.js';
-import type { Circuit, CircuitLibrary } from '../types/circuit.js';
+import type { CircuitIR, CircuitLibrary } from '../ir/circuit-ir.js';
 
 export interface CompileSourceResult {
-  circuits: Circuit[];
-  library: CircuitLibrary & { addCircuit(c: Circuit): void };
+  circuits: CircuitIR[];
+  library: CircuitLibrary & { addCircuit(c: CircuitIR): void };
   error: string | null;
 }
 

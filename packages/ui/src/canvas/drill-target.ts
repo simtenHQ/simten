@@ -7,7 +7,7 @@
  * - An eval-only primitive with an entry in `MADE_OF` has no internal
  *   structure at all — `Adder({ width: 8 })` computes `a + b + carry_in` in one
  *   step. Opening it shows a gate-level build of the same function, proven
- *   equivalent to it by `made-of.verify.ts`.
+ *   equivalent to it by `made-of-equivalence.verify.ts`.
  *
  * The reference build is never elaborated into the running netlist; it is
  * constructed here, on demand, for display in a dialog that runs its own
@@ -20,19 +20,19 @@
  * dialog renders the boundary ports and nothing in between.
  */
 
-import type { Circuit, CircuitLibrary } from '@simten/core';
+import type { CircuitIR, CircuitLibrary } from '@simten/core/internal';
 import { MADE_OF } from '@simten/core/std';
 import type { NodeData } from '../nodes';
 import type { InspectorFrame } from './types';
 
 /** The shape `circuit()` returns: the IR plus its transitive dependencies. */
 interface BuiltLike {
-  circuit: Circuit;
-  _dependencies?: Map<string, { circuit?: Circuit } | undefined>;
+  circuit: CircuitIR;
+  _dependencies?: Map<string, { circuit?: CircuitIR } | undefined>;
 }
 
 /** A library that answers from `extra` first, then falls back to `base`. */
-function layer(base: CircuitLibrary, extra: Map<string, Circuit>): CircuitLibrary {
+function layer(base: CircuitLibrary, extra: Map<string, CircuitIR>): CircuitLibrary {
   return {
     resolveCircuit: (name) => extra.get(name) ?? base.resolveCircuit(name),
     getAllPrimitiveNames: () => {
@@ -79,7 +79,7 @@ export function resolveDrillTarget(
     return null;
   }
 
-  const extra = new Map<string, Circuit>([[built.circuit.name, built.circuit]]);
+  const extra = new Map<string, CircuitIR>([[built.circuit.name, built.circuit]]);
   for (const dep of built._dependencies?.values() ?? []) {
     if (dep?.circuit) extra.set(dep.circuit.name, dep.circuit);
   }

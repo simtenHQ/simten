@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { buildFromIR, circuitToSource } from '../../circuit/index.js';
+import { buildFromIR, circuitToSource } from '../../internal.js';
 import { importNetlist, type YosysNetlist } from '../index.js';
 
 describe('undriven nets tie to 0 with a warning (not a hard error)', () => {

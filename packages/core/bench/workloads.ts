@@ -1,7 +1,7 @@
-import { compileSource } from '../src/api/compile-source.js';
 import { EXAMPLES } from '../src/examples/catalog.js';
-import { createSimulator, elaborate } from '../src/simulator/index.js';
-import type { SimulatorEngine } from '../src/types/simulator.js';
+import { createEngine, elaborate } from '../src/simulator/index.js';
+import type { SimulatorEngine } from '../src/simulator/types.js';
+import { compileSource } from '../src/tools/compile-source.js';
 
 export interface Workload {
   id: string;
@@ -33,7 +33,7 @@ export function load(workload: Workload): Loaded {
   const compiled = compileSource(example.code);
   if (compiled.error) throw new Error(`${workload.id}: ${compiled.error}`);
   const top = compiled.circuits[compiled.circuits.length - 1];
-  const engine = createSimulator(elaborate(top, compiled.library), {
+  const engine = createEngine(elaborate(top, compiled.library), {
     componentLibrary: compiled.library,
   });
 

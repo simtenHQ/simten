@@ -7,14 +7,14 @@
  * For circuit/simulation types (the actual IR), use @/core/simulator.
  */
 
-import type { Circuit } from '@simten/core';
+import type { CircuitIR } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 
 // Build lookup structures from stdlib exports. `STDLIB_CIRCUITS` materializes
 // parameterized factories (Register, Switch, etc.) with their default options
-// so they appear here as concrete `BuiltCircuit` instances alongside the
+// so they appear here as concrete `Circuit` instances alongside the
 // singleton primitives.
-const STD_CIRCUIT_MAP: Map<string, Circuit> = new Map(
+const STD_CIRCUIT_MAP: Map<string, CircuitIR> = new Map(
   STDLIB_CIRCUITS.map((b) => [b.circuit.name, b.circuit]),
 );
 const PRIMITIVE_NAMES: Set<string> = new Set(

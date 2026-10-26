@@ -18,8 +18,10 @@
  * there is no `eval`, so the sandbox is not involved and does not need to be.
  */
 
-import type { Circuit } from '@simten/core';
-import { And, Constant, circuit, createSimulatorFromCircuit, Led, Switch } from '@simten/core';
+import { circuit } from '@simten/core';
+import type { CircuitIR } from '@simten/core/internal';
+import { createEngine, elaborate } from '@simten/core/internal';
+import { And, Constant, Led, Switch } from '@simten/core/std';
 import { MAP_REQUIRES, MAP_ROWS } from './map';
 
 /** Node ids must be identifier-safe; level ids contain hyphens. */
@@ -107,14 +109,15 @@ export interface MapState {
 export function simulateMap(solved: ReadonlySet<string> = new Set()): MapState {
   const built = buildMapCircuit();
 
-  const byName = new Map<string, Circuit>([[built.circuit.name, built.circuit]]);
+  const byName = new Map<string, CircuitIR>([[built.circuit.name, built.circuit]]);
   for (const [, dep] of built._dependencies) byName.set(dep.circuit.name, dep.circuit);
 
-  const engine = createSimulatorFromCircuit(built.circuit, {
+  const library = {
     resolveCircuit: (name: string) => byName.get(name),
     getAllPrimitiveNames: () =>
       [...byName.values()].filter((c) => c.implementation?.kind === 'primitive').map((c) => c.name),
-  });
+  };
+  const engine = createEngine(elaborate(built.circuit, library), { componentLibrary: library });
 
   const levelIds = MAP_ROWS.flat();
   for (const levelId of levelIds) engine.setNode(switchId(levelId), solved.has(levelId) ? 1 : 0);

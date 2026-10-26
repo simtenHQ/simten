@@ -21,8 +21,8 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import type { Circuit } from '../circuit/builder-types.js';
 import { executeCircuitCode } from '../circuit/execute.js';
-import type { BuiltCircuit } from '../circuit/types.js';
 
 interface ComponentSurface {
   /** The name source code uses in the sandbox, when it differs from the export name. */
@@ -42,11 +42,11 @@ const SNAPSHOT_PATH = join(here, 'frozen-surface.json');
 const PACKAGE_JSON_PATH = join(here, '../../package.json');
 const BREAKS = 'This breaks saved circuits; see decision 0003.';
 
-const isBuilt = (v: unknown): v is BuiltCircuit => !!v && typeof v === 'object' && 'circuit' in v;
+const isBuilt = (v: unknown): v is Circuit => !!v && typeof v === 'object' && 'circuit' in v;
 
 /** A std export as source sees it: a component, or a factory called with its defaults. */
 function describeExport(exportName: string, value: unknown): ComponentSurface | null {
-  let built: BuiltCircuit | null = null;
+  let built: Circuit | null = null;
   let scopeName = exportName;
   if (isBuilt(value)) {
     built = value;

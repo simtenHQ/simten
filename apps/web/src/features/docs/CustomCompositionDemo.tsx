@@ -8,7 +8,7 @@
  */
 
 import { bit, circuit } from '@simten/core/circuit';
-import type { FlatPortValueMap } from '@simten/core/simulator';
+import type { FlatPortValueMap } from '@simten/core/internal';
 import { And, Xor } from '@simten/core/std';
 import { CircuitEmbed, useCircuitSimulator } from '@simten/embed';
 import { useState } from 'react';

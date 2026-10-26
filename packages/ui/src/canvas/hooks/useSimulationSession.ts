@@ -14,7 +14,7 @@ import type {
   SessionSnapshot,
   SimulationSession,
   SimulationSessionState,
-} from '@simten/core/simulator';
+} from '@simten/core/internal';
 import { useCallback, useMemo, useSyncExternalStore } from 'react';
 
 const EMPTY_STATE: SimulationSessionState = {

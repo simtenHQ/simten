@@ -10,7 +10,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { getCircuitEval, registerCircuitEval } from '../../../circuit/eval-registry.js';
+import { getCircuitBehavior, registerCircuitBehavior } from '../../../circuit/behavior-registry.js';
 import { createHarteRunner, type HarteCase } from './harte.js';
 
 type Eval = (inputs: Record<string, unknown>) => Record<string, unknown>;
@@ -67,9 +67,9 @@ const FAULTS: Fault[] = [
 
 let blind = 0;
 for (const fault of FAULTS) {
-  const entry = getCircuitEval(fault.component);
+  const entry = getCircuitBehavior(fault.component);
   if (!entry) throw new Error(`no eval registered for ${fault.component}`);
-  registerCircuitEval(fault.component, { ...entry, evalFn: fault.wrap(entry.evalFn as Eval) });
+  registerCircuitBehavior(fault.component, { ...entry, evalFn: fault.wrap(entry.evalFn as Eval) });
   try {
     const runner = createHarteRunner();
     let caught = 0;
@@ -86,7 +86,7 @@ for (const fault of FAULTS) {
     console.log(`${caught ? 'caught' : 'MISSED'}  ${fault.name}: ${caught}/${total} cases fail`);
     if (!caught) blind++;
   } finally {
-    registerCircuitEval(fault.component, entry);
+    registerCircuitBehavior(fault.component, entry);
   }
 }
 process.exit(blind ? 1 : 0);

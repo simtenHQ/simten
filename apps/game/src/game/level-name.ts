@@ -12,7 +12,7 @@
  * that lives here.
  */
 
-import { circuitNameSites } from '@simten/core/circuit';
+import { circuitNameSites } from '@simten/core/internal';
 
 export interface NameDiagnostic {
   message: string;

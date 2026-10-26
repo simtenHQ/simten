@@ -15,9 +15,9 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { bit, circuit } from '../../circuit/index.js';
-import { simulate } from '../../sim/index.js';
 import { Register } from '../../std/index.js';
 import { setDebugStateUpdate } from '../index.js';
+import { simulate } from '../simulate.js';
 
 const Dut = circuit('DebugFlagDut', {
   inputs: { d: bit, we: bit },

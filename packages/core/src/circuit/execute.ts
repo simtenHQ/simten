@@ -23,13 +23,13 @@
  */
 
 import { transform } from 'sucrase';
-import { Dlatch, Mem, Pmux } from '../rtl/index.js';
+import { Dlatch, Mem, Pmux } from '../import/primitives.js';
+import type { CircuitIR, CircuitLibrary } from '../ir/circuit-ir.js';
 import * as std from '../std/index.js';
-import type { Circuit, CircuitLibrary } from '../types/circuit.js';
+import { beginDefinitionScope } from './behavior-registry.js';
 import { bit, bus, mem, reg } from './bit-bus.js';
+import type { Circuit } from './builder-types.js';
 import { circuit } from './circuit.js';
-import { beginDefinitionScope } from './eval-registry.js';
-import type { BuiltCircuit } from './types.js';
 
 // ============================================================================
 // Execution result
@@ -37,9 +37,9 @@ import type { BuiltCircuit } from './types.js';
 
 export interface ExecuteResult {
   /** The last/main circuit found in the code (built) */
-  circuit: Circuit | null;
+  circuit: CircuitIR | null;
   /** All circuits found (if code defines multiple) */
-  circuits: Circuit[];
+  circuits: CircuitIR[];
   /**
    * Circuits the code exported without defining, e.g. `export default FullAdder`.
    *
@@ -48,11 +48,11 @@ export interface ExecuteResult {
    * but it is a reasonable thing to want to look at, so a renderer can fall
    * back to this rather than reporting an empty source.
    */
-  exportedCircuits: Circuit[];
-  /** All BuiltCircuits found */
-  builtCircuits: BuiltCircuit[];
+  exportedCircuits: CircuitIR[];
+  /** All Circuits found */
+  builtCircuits: Circuit[];
   /** The circuit library (stdlib + user-defined circuits) */
-  library: CircuitLibrary & { addCircuit(c: Circuit): void; getAllCircuitNames(): string[] };
+  library: CircuitLibrary & { addCircuit(c: CircuitIR): void; getAllCircuitNames(): string[] };
   /** Error message if execution failed */
   error: string | null;
 }
@@ -77,7 +77,7 @@ function buildScope(): { names: string[]; values: unknown[] } {
   // helper functions inject by their export name (romFromBytes, …).
   for (const [exportName, value] of Object.entries(std)) {
     if (value && typeof value === 'object' && 'circuit' in value) {
-      scope.set((value as BuiltCircuit).circuit.name, value);
+      scope.set((value as Circuit).circuit.name, value);
     } else if (typeof value === 'function') {
       scope.set(exportName, value);
     }
@@ -167,13 +167,13 @@ export function stripExports(code: string): string {
  * `nodes: { r: Register }` does too, so the diagram matches what wiring it up
  * would give you.
  */
-function asBuiltCircuit(value: unknown): BuiltCircuit | null {
-  const built = value as BuiltCircuit | undefined;
+function asCircuit(value: unknown): Circuit | null {
+  const built = value as Circuit | undefined;
   if (built?.circuit?.name) return built;
 
   if (typeof value === 'function') {
     try {
-      const made = (value as () => BuiltCircuit)();
+      const made = (value as () => Circuit)();
       if (made?.circuit?.name) return made;
     } catch {
       // Not a component factory, or one that needs arguments. Nothing to show.
@@ -232,22 +232,24 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
   const allNames = extraScope ? [...names, ...Object.keys(extraScope)] : names;
   const allValues = extraScope ? [...values, ...Object.values(extraScope)] : values;
 
-  const circuitMap = new Map<string, Circuit>();
-  const library: CircuitLibrary & { addCircuit(c: Circuit): void; getAllCircuitNames(): string[] } =
-    {
-      resolveCircuit: (name) => circuitMap.get(name),
-      getAllPrimitiveNames: () =>
-        [...circuitMap.entries()]
-          .filter(([, c]) => c.implementation.kind === 'primitive')
-          .map(([n]) => n),
-      addCircuit: (c) => {
-        circuitMap.set(c.name, c);
-      },
-      getAllCircuitNames: () => [...circuitMap.keys()],
-    };
-  const builtCircuits: BuiltCircuit[] = [];
-  const circuits: Circuit[] = [];
-  const exportedCircuits: Circuit[] = [];
+  const circuitMap = new Map<string, CircuitIR>();
+  const library: CircuitLibrary & {
+    addCircuit(c: CircuitIR): void;
+    getAllCircuitNames(): string[];
+  } = {
+    resolveCircuit: (name) => circuitMap.get(name),
+    getAllPrimitiveNames: () =>
+      [...circuitMap.entries()]
+        .filter(([, c]) => c.implementation.kind === 'primitive')
+        .map(([n]) => n),
+    addCircuit: (c) => {
+      circuitMap.set(c.name, c);
+    },
+    getAllCircuitNames: () => [...circuitMap.keys()],
+  };
+  const builtCircuits: Circuit[] = [];
+  const circuits: CircuitIR[] = [];
+  const exportedCircuits: CircuitIR[] = [];
 
   try {
     // new Function bodies can't contain import/export — strip both defensively
@@ -280,7 +282,7 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
 
     const fn = new Function(...allNames, wrappedCode);
     const { collected, exported: exportedValues } = fn(...allValues) as {
-      collected: BuiltCircuit[];
+      collected: Circuit[];
       exported: unknown[];
     };
 
@@ -303,7 +305,7 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
     // bare function is called with no arguments to get its default instance.
     const defined = new Set(circuits.map((c) => c.name));
     for (const value of exportedValues) {
-      const built = asBuiltCircuit(value);
+      const built = asCircuit(value);
       if (!built || defined.has(built.circuit.name)) continue;
       defined.add(built.circuit.name);
       exportedCircuits.push(built.circuit);

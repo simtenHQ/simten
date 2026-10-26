@@ -12,15 +12,15 @@
 import { describe, expect, it } from 'vitest';
 import {
   bitType,
-  type Circuit,
+  type CircuitIR,
   createCircuitLibrary,
-  createSimulator,
+  createEngine,
   elaborate,
 } from '../index.js';
 
 // Define test circuits using only core types (no store dependencies)
-function createTestPrimitives(): Circuit[] {
-  const andGate: Circuit = {
+function createTestPrimitives(): CircuitIR[] {
+  const andGate: CircuitIR = {
     version: 1,
     name: 'And',
 
@@ -37,7 +37,7 @@ function createTestPrimitives(): Circuit[] {
     metadata: { timing: 'combinational' },
   };
 
-  const orGate: Circuit = {
+  const orGate: CircuitIR = {
     version: 1,
     name: 'Or',
 
@@ -54,7 +54,7 @@ function createTestPrimitives(): Circuit[] {
     metadata: { timing: 'combinational' },
   };
 
-  const notGate: Circuit = {
+  const notGate: CircuitIR = {
     version: 1,
     name: 'Not',
 
@@ -68,7 +68,7 @@ function createTestPrimitives(): Circuit[] {
     metadata: { timing: 'combinational' },
   };
 
-  const switchPrim: Circuit = {
+  const switchPrim: CircuitIR = {
     version: 1,
     name: 'Switch',
 
@@ -82,7 +82,7 @@ function createTestPrimitives(): Circuit[] {
     metadata: { timing: 'combinational' },
   };
 
-  const register: Circuit = {
+  const register: CircuitIR = {
     version: 1,
     name: 'Register',
 
@@ -118,7 +118,7 @@ describe('Core Simulator Standalone', () => {
     const library = createCircuitLibrary(primitives);
 
     // Create a simple AND gate circuit
-    const circuit: Circuit = {
+    const circuit: CircuitIR = {
       version: 1,
       name: 'SimpleAnd',
 
@@ -194,7 +194,7 @@ describe('Core Simulator Standalone', () => {
     const primitives = createTestPrimitives();
     const library = createCircuitLibrary(primitives);
 
-    const circuit: Circuit = {
+    const circuit: CircuitIR = {
       version: 1,
       name: 'SwitchAnd',
 
@@ -255,7 +255,7 @@ describe('Core Simulator Standalone', () => {
     };
 
     const flatCircuit = elaborate(circuit, library);
-    const sim = createSimulator(flatCircuit, { componentLibrary: library });
+    const sim = createEngine(flatCircuit, { componentLibrary: library });
 
     // Both switches are on, so AND should output 1
     const result = sim.runCombinational();

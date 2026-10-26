@@ -1,11 +1,7 @@
 /**
- * Core Circuit IR Types
+ * The circuit IR: `CircuitIR` and the types it is built from.
  *
- * Consolidated from:
- * - src/core/simulator/types.ts (canonical simulator types)
- * - src/features/visual-editor/types/circuit.ts (IR types with helpers)
- *
- * These types are environment-agnostic (no browser/Zustand/React dependencies).
+ * Plain JSON with no behaviour and no browser, Zustand or React dependencies.
  */
 
 // ============================================================================
@@ -48,7 +44,7 @@ export interface CircuitLibrary {
    * Resolve a circuit by name.
    * Returns the Circuit definition or undefined if not found.
    */
-  resolveCircuit(name: string): Circuit | undefined;
+  resolveCircuit(name: string): CircuitIR | undefined;
 
   /**
    * Get all registered primitive names.
@@ -57,7 +53,7 @@ export interface CircuitLibrary {
 }
 
 export interface MutableCircuitLibrary extends CircuitLibrary {
-  addCircuit(circuit: Circuit): void;
+  addCircuit(circuit: CircuitIR): void;
   getAllCircuitNames(): string[];
 }
 
@@ -263,7 +259,7 @@ export interface CircuitMetadata {
 // Circuit (Top Level)
 // ============================================================================
 
-export interface Circuit {
+export interface CircuitIR {
   /** Schema version for the Circuit IR. Bumped on breaking shape changes. */
   version: 1;
   name: string;

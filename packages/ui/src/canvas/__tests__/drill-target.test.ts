@@ -4,8 +4,8 @@
  * so this is where "can this node be opened, and into what" is decided.
  */
 
-import type { Circuit, CircuitLibrary } from '@simten/core';
 import { bit, circuit } from '@simten/core/circuit';
+import type { CircuitIR, CircuitLibrary } from '@simten/core/internal';
 import { And, Xor } from '@simten/core/std';
 import { describe, expect, it } from 'vitest';
 import type { NodeData } from '../../nodes';
@@ -23,7 +23,7 @@ const HalfAdder = circuit('HalfAdder', {
   ],
 });
 
-function libraryOf(...circuits: Circuit[]): CircuitLibrary {
+function libraryOf(...circuits: CircuitIR[]): CircuitLibrary {
   const byName = new Map(circuits.map((c) => [c.name, c]));
   return {
     resolveCircuit: (name) => byName.get(name),
