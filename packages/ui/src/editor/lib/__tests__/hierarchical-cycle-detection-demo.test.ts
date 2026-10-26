@@ -6,10 +6,10 @@
 
 import {
   type Behavior,
-  type CircuitLibrary,
+  type CircuitDefinitions,
   createEngine,
   elaborate,
-  getStdDesign,
+  getStdLibrary,
 } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -22,7 +22,7 @@ import { bitType, busType, type CircuitIR } from '../../types/circuit';
 // simulator silently zeroed outputs for unknown primitives, which let this
 // test pass on a fluke while computing nonsense.)
 const BEHAVIORS = new Map<string, Behavior>([
-  ...getStdDesign().behaviors,
+  ...getStdLibrary().behaviors,
   [
     'Add',
     {
@@ -37,7 +37,7 @@ const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
   (c) => c.implementation.kind === 'primitive',
 );
 
-function storeLibrary(): CircuitLibrary {
+function storeDefinitions(): CircuitDefinitions {
   const store = useCircuitLibraryStore.getState();
   return {
     resolveCircuit: (name) => store.resolveCircuit(name),
@@ -257,10 +257,9 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
 
     // Before the fix: This would fail with "Cycle detected in circuit"
     // After the fix: This should succeed because registers break the paths
-    const simLibrary = storeLibrary();
-    const sim = createEngine(elaborate(system, simLibrary), {
-      componentLibrary: simLibrary,
-      behaviors: BEHAVIORS,
+    const definitions = storeDefinitions();
+    const sim = createEngine(elaborate(system, definitions), {
+      library: { definitions, behaviors: BEHAVIORS },
     });
     const result = sim.runCombinational();
 
@@ -501,10 +500,9 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
 
     // OLD BEHAVIOR: Would falsely detect cycle
     // NEW BEHAVIOR: Correctly recognizes registers break the path
-    const simLibrary = storeLibrary();
-    const sim = createEngine(elaborate(network, simLibrary), {
-      componentLibrary: simLibrary,
-      behaviors: BEHAVIORS,
+    const definitions = storeDefinitions();
+    const sim = createEngine(elaborate(network, definitions), {
+      library: { definitions, behaviors: BEHAVIORS },
     });
     const result = sim.runCombinational();
 

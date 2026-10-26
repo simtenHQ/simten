@@ -40,7 +40,7 @@ if (!playable) {
   process.exit(1);
 }
 
-const sim = simulate(playable as Parameters<typeof simulate>[0], { library: result.library });
+const sim = simulate(playable);
 const model = new SnakeRefModel();
 
 function readFb(): Uint8Array {

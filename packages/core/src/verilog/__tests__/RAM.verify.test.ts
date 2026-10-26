@@ -14,10 +14,10 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { CircuitLibrary } from '../../ir/circuit-ir.js';
+import type { CircuitDefinitions } from '../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
-import { getStdDesign } from '../../std/design.js';
 import { RAM } from '../../std/index.js';
+import { getStdLibrary } from '../../std/library.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { hasVerifier, verifyVerilog } from './verify.js';
@@ -52,20 +52,19 @@ function buildRam() {
     ],
   });
 
-  const lib: CircuitLibrary = {
+  const definitions: CircuitDefinitions = {
     resolveCircuit: (name) =>
       name === 'RamWrapper' ? RamWrapper.circuit : name === 'RAM' ? Ram.circuit : undefined,
     getAllPrimitiveNames: () => ['RAM'],
   };
 
-  return { circuit: RamWrapper.circuit, lib };
+  return { circuit: RamWrapper.circuit, definitions };
 }
 
 function runSimulator(steps: Step[]): number[] {
-  const { circuit, lib } = buildRam();
-  const sim = createEngine(elaborate(circuit, lib), {
-    componentLibrary: lib,
-    behaviors: getStdDesign().behaviors,
+  const { circuit, definitions } = buildRam();
+  const sim = createEngine(elaborate(circuit, definitions), {
+    library: { definitions, behaviors: getStdLibrary().behaviors },
   });
   const outputs: number[] = [];
 
@@ -96,8 +95,8 @@ d('RAM — JS simulator vs iverilog co-simulation', () => {
   it('agrees cycle-for-cycle on a write-then-read sequence', { timeout: 30000 }, async () => {
     const simOutputs = runSimulator(SEQUENCE);
 
-    const { circuit, lib } = buildRam();
-    const { verilog } = exportVerilog(circuit, lib);
+    const { circuit, definitions } = buildRam();
+    const { verilog } = exportVerilog(circuit, definitions);
     const testbench = generateSequentialTestbench(circuit, buildVectors(SEQUENCE));
 
     const result = await verifyVerilog(verilog, testbench);

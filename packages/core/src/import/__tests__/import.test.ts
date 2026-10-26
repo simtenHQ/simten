@@ -51,8 +51,8 @@ describe('fixture integrity (hard paths survived yosys proc/opt_clean)', () => {
 
 describe('end-to-end: imported IR simulates to the iverilog golden', () => {
   it('matches all golden vectors', () => {
-    const { top, library, behaviors } = importNetlist(netlist, 'top');
-    const deps = [...library.values()].filter((c) => c.name !== 'top');
+    const { top, definitions, behaviors } = importNetlist(netlist, 'top');
+    const deps = [...definitions.values()].filter((c) => c.name !== 'top');
     const sim = simulate(buildFromIR(top, deps, behaviors));
     for (const v of golden.vectors) {
       sim.set(v.in);
@@ -65,17 +65,17 @@ describe('end-to-end: imported IR simulates to the iverilog golden', () => {
 });
 
 describe('hierarchy is load-bearing (not decorative)', () => {
-  it('structural: the top instantiates sub and the library defines it', () => {
-    const { top, library } = importNetlist(netlist, 'top');
+  it('structural: the top instantiates sub and the definitions defines it', () => {
+    const { top, definitions } = importNetlist(netlist, 'top');
     const subNode = top.nodes.find((n) => n.componentRef === 'sub');
     expect(subNode, 'top must contain a node referencing sub').toBeDefined();
-    expect(library.has('sub'), 'library must define sub').toBe(true);
+    expect(definitions.has('sub'), 'definitions must define sub').toBe(true);
   });
 
   it('failure differential: removing sub breaks simulation', () => {
-    const { top, library, behaviors } = importNetlist(netlist, 'top');
+    const { top, definitions, behaviors } = importNetlist(netlist, 'top');
     // drop the submodule dependency — regd depends on it, so this must fail.
-    const depsWithoutSub = [...library.values()].filter(
+    const depsWithoutSub = [...definitions.values()].filter(
       (c) => c.name !== 'top' && c.name !== 'sub',
     );
     expect(() => {

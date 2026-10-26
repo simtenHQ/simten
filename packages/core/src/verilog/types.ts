@@ -28,7 +28,7 @@ export interface VerilogExportOptions {
   /**
    * Behavior (eval/onTick) by primitive name, for primitives with no
    * hand-written Verilog mapping: their eval is transpiled. Collect it with
-   * the library (`designOf` in `@simten/core/internal`). Defaults to the
+   * `libraryOf(top).behaviors` from `@simten/core/internal`. Defaults to the
    * standard library's behavior.
    */
   behaviors?: BehaviorTable;

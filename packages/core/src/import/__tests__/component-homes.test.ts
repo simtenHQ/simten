@@ -45,9 +45,9 @@ describe('completeness against a real import', () => {
   const netlist = JSON.parse(fix('demo.json')) as YosysNetlist;
 
   it('every emitted node is a classified primitive or an instantiated submodule', () => {
-    const { library } = importNetlist(netlist, 'top');
-    const moduleNames = new Set(library.keys());
-    for (const c of library.values()) {
+    const { definitions } = importNetlist(netlist, 'top');
+    const moduleNames = new Set(definitions.keys());
+    for (const c of definitions.values()) {
       for (const n of c.nodes) {
         const ref = n.componentRef;
         const ok = classify(ref) !== undefined || moduleNames.has(ref);

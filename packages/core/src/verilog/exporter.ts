@@ -15,8 +15,13 @@ import type { BehaviorTable } from '../circuit/behavior.js';
 import type { CircuitIR, MemoryValue, PortType } from '../ir/circuit-ir.js';
 import { memoryContentsToMap } from '../ir/memory-contents.js';
 import { elaborate } from '../simulator/elaboration.js';
-import type { CircuitLibrary, FlatCircuit, FlatConnection, FlatNode } from '../simulator/types.js';
-import { getStdDesign } from '../std/design.js';
+import type {
+  CircuitDefinitions,
+  FlatCircuit,
+  FlatConnection,
+  FlatNode,
+} from '../simulator/types.js';
+import { getStdLibrary } from '../std/library.js';
 import {
   emitPrimitive,
   isSequentialPrimitive,
@@ -55,15 +60,18 @@ function portTypeToVerilog(pt: PortType): string {
 
 /**
  * Collect preloaded memory state from the component definition for a flat
- * node. Looks up `node.primitiveType` in the library and extracts memory
+ * node. Looks up `node.primitiveType` in the definitions and extracts memory
  * state blocks that have non-empty `initialValue.data` contents. Returned
  * array is handed to primitive-map via `PrimitiveContext.stateInits` so
  * each primitive can emit `initial begin …` using its own reg-name
  * convention. Circuits without memory state (or with empty init) yield
  * `undefined`, which primitives treat as a no-op.
  */
-function collectStateInits(node: FlatNode, library: CircuitLibrary): StateInit[] | undefined {
-  const def = library.resolveCircuit(node.primitiveType);
+function collectStateInits(
+  node: FlatNode,
+  definitions: CircuitDefinitions,
+): StateInit[] | undefined {
+  const def = definitions.resolveCircuit(node.primitiveType);
   if (!def?.state || def.state.length === 0) return undefined;
 
   const inits: StateInit[] = [];
@@ -85,16 +93,16 @@ function collectStateInits(node: FlatNode, library: CircuitLibrary): StateInit[]
  */
 export function exportVerilogFlat(
   circuit: CircuitIR,
-  library: CircuitLibrary,
+  definitions: CircuitDefinitions,
   options?: VerilogExportOptions,
 ): ExportResult {
   const opts: ResolvedOptions = {
     ...DEFAULT_OPTIONS,
     ...options,
-    behaviors: options?.behaviors ?? getStdDesign().behaviors,
+    behaviors: options?.behaviors ?? getStdLibrary().behaviors,
   };
-  const flatCircuit = elaborate(circuit, library, false, { expandReferences: true });
-  return emitFlatModule(circuit, flatCircuit, library, opts);
+  const flatCircuit = elaborate(circuit, definitions, false, { expandReferences: true });
+  return emitFlatModule(circuit, flatCircuit, definitions, opts);
 }
 
 /**
@@ -107,11 +115,11 @@ export function exportVerilogFlat(
  */
 export function exportVerilog(
   circuit: CircuitIR,
-  library: CircuitLibrary,
+  definitions: CircuitDefinitions,
   options?: VerilogExportOptions,
 ): ExportResult {
   // TODO: hierarchical mode (emit sub-modules). For now every mode is flat.
-  return exportVerilogFlat(circuit, library, options);
+  return exportVerilogFlat(circuit, definitions, options);
 }
 
 // ── Flat module emission ────────────────────────────────────────────────
@@ -119,7 +127,7 @@ export function exportVerilog(
 function emitFlatModule(
   circuit: CircuitIR,
   flat: FlatCircuit,
-  library: CircuitLibrary,
+  definitions: CircuitDefinitions,
   opts: ResolvedOptions,
 ): ExportResult {
   const moduleName = opts.topModuleName || sanitizeId(circuit.name);
@@ -352,7 +360,7 @@ function emitFlatModule(
       clockName: opts.clockName,
       resetName: RESET_NAME,
       target: opts.target,
-      stateInits: collectStateInits(node, library),
+      stateInits: collectStateInits(node, definitions),
       inlineMemoryThreshold,
       sidecarFiles,
       moduleName,

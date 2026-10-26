@@ -32,8 +32,8 @@ const netlist = JSON.parse(fix('syncfifo.json')) as YosysNetlist;
 const golden = JSON.parse(fix('syncfifo.golden.json')) as Golden;
 
 function importDesign(netlistJson: YosysNetlist, topName: string) {
-  const { top, library, behaviors } = importNetlist(netlistJson, topName);
-  const deps = [...library.values()].filter((c) => c.name !== top.name);
+  const { top, definitions, behaviors } = importNetlist(netlistJson, topName);
+  const deps = [...definitions.values()].filter((c) => c.name !== top.name);
   return { top, deps, behaviors };
 }
 

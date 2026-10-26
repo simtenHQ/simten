@@ -6,16 +6,17 @@
 
 export { autoHarness } from './circuit/auto-harness.js';
 export {
-  addToDesign,
+  addToLibrary,
   type Behavior,
   type BehaviorFn,
   type BehaviorTable,
   type BehaviorValues,
   behaviorOf,
-  createLibrary,
-  type Design,
-  designOf,
-  emptyDesign,
+  createDefinitions,
+  emptyLibrary,
+  type Library,
+  libraryOf,
+  type MutableLibrary,
 } from './circuit/behavior.js';
 export { buildFromIR } from './circuit/build-from-ir.js';
 export {
@@ -40,6 +41,6 @@ export {
   type SignalMetrics,
   type SimulationTrace,
 } from './simulator/trace-analysis.js';
-export { getStdDesign } from './std/design.js';
+export { getStdLibrary } from './std/library.js';
 export * from './tools/index.js';
 export { slugify } from './util/test-name.js';

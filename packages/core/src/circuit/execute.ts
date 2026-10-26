@@ -24,9 +24,9 @@
 
 import { transform } from 'sucrase';
 import { Dlatch, Mem, Pmux } from '../import/primitives.js';
-import type { CircuitIR, MutableCircuitLibrary } from '../ir/circuit-ir.js';
+import type { CircuitIR } from '../ir/circuit-ir.js';
 import * as std from '../std/index.js';
-import { addToDesign, type Behavior, emptyDesign } from './behavior.js';
+import { addToLibrary, emptyLibrary, type MutableLibrary } from './behavior.js';
 import { bit, bus, mem, reg } from './bit-bus.js';
 import type { Circuit } from './builder-types.js';
 import { circuit } from './circuit.js';
@@ -51,13 +51,12 @@ export interface ExecuteResult {
   exportedCircuits: CircuitIR[];
   /** All Circuits found */
   builtCircuits: Circuit[];
-  /** The circuit library (stdlib + user-defined circuits) */
-  library: MutableCircuitLibrary;
   /**
-   * Behavior (eval/onTick) for the primitives in `library`, by name. Owned by
-   * this run: nothing the code defines is visible to any other compile.
+   * Every circuit the code built, with its dependencies (std and user-defined),
+   * and their behavior (eval/onTick). Owned by this run: nothing the code
+   * defines is visible to any other compile.
    */
-  behaviors: Map<string, Behavior>;
+  library: MutableLibrary;
   /** Error message if execution failed */
   error: string | null;
 }
@@ -235,8 +234,7 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
   const allNames = extraScope ? [...names, ...Object.keys(extraScope)] : names;
   const allValues = extraScope ? [...values, ...Object.values(extraScope)] : values;
 
-  const design = emptyDesign();
-  const { library, behaviors } = design;
+  const library = emptyLibrary();
   const builtCircuits: Circuit[] = [];
   const circuits: CircuitIR[] = [];
   const exportedCircuits: CircuitIR[] = [];
@@ -281,7 +279,7 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
         builtCircuits.push(built);
         circuits.push(built.circuit);
         // The circuit and all its transitive dependencies (stdlib + user-defined)
-        addToDesign(design, built);
+        addToLibrary(library, built);
       }
     }
 
@@ -294,7 +292,7 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
       if (!built || defined.has(built.circuit.name)) continue;
       defined.add(built.circuit.name);
       exportedCircuits.push(built.circuit);
-      addToDesign(design, built);
+      addToLibrary(library, built);
     }
 
     return {
@@ -308,7 +306,6 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
       exportedCircuits,
       builtCircuits,
       library,
-      behaviors,
       error: null,
     };
   } catch (e) {
@@ -318,7 +315,6 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
       exportedCircuits: [],
       builtCircuits: [],
       library,
-      behaviors,
       error: e instanceof Error ? e.message : String(e),
     };
   }

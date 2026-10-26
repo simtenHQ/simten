@@ -17,9 +17,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { designOf } from '../../circuit/behavior.js';
+import { libraryOf } from '../../circuit/behavior.js';
 import { bit, circuit } from '../../circuit/index.js';
-import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
+import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import { DFlipFlop, Switch } from '../../std/index.js';
 import { captureEnvironmentalState, createEngine, elaborate } from '../index.js';
 import type { FlatCircuit } from '../types.js';
@@ -30,10 +30,10 @@ import type { FlatCircuit } from '../types.js';
  * post-elaboration FlatNode (`primitiveType`) instead of pre-elaboration Node
  * (`componentRef`). This is the pattern the sandbox uses.
  */
-function captureFlatEnv(flat: FlatCircuit, library: CircuitLibrary): Map<string, unknown> {
+function captureFlatEnv(flat: FlatCircuit, definitions: CircuitDefinitions): Map<string, unknown> {
   const result = new Map<string, unknown>();
   for (const node of flat.nodes) {
-    const def = library.resolveCircuit(node.primitiveType);
+    const def = definitions.resolveCircuit(node.primitiveType);
     const interactiveArg = def?.metadata?.interactiveArg;
     if (!interactiveArg) continue;
     result.set(node.id, node.arguments[interactiveArg]);
@@ -49,7 +49,7 @@ const SwitchedFF = circuit('SwitchedFF', {
 
 function buildSim() {
   const circuitMap = new Map<string, CircuitIR>();
-  const library: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
+  const definitions: CircuitDefinitions & { addCircuit(c: CircuitIR): void } = {
     resolveCircuit: (name) => circuitMap.get(name),
     getAllPrimitiveNames: () =>
       [...circuitMap.entries()]
@@ -59,19 +59,18 @@ function buildSim() {
       circuitMap.set(c.name, c);
     },
   };
-  library.addCircuit(SwitchedFF.circuit);
-  library.addCircuit(Switch.circuit);
-  library.addCircuit(DFlipFlop().circuit);
+  definitions.addCircuit(SwitchedFF.circuit);
+  definitions.addCircuit(Switch.circuit);
+  definitions.addCircuit(DFlipFlop().circuit);
   for (const [, dep] of SwitchedFF._dependencies) {
-    library.addCircuit(dep.circuit);
+    definitions.addCircuit(dep.circuit);
   }
 
-  const flat = elaborate(SwitchedFF.circuit, library);
+  const flat = elaborate(SwitchedFF.circuit, definitions);
   const sim = createEngine(flat, {
-    componentLibrary: library,
-    behaviors: designOf(SwitchedFF).behaviors,
+    library: { definitions, behaviors: libraryOf(SwitchedFF).behaviors },
   });
-  return { sim, flat, library };
+  return { sim, flat, definitions };
 }
 
 function qOut(sim: ReturnType<typeof createEngine>): boolean {
@@ -88,7 +87,7 @@ describe('environmental state time-travel', () => {
   // returned map was empty, so restore re-applied nothing and the UI's Switch
   // stayed stuck at whatever it was before rewind. This pins the mismatch.
   it('captureEnvironmentalState on a FlatCircuit silently returns empty (regression)', () => {
-    const { sim, flat, library } = buildSim();
+    const { sim, flat, definitions } = buildSim();
     sim.setNode('sw', 1);
     sim.tick();
 
@@ -96,12 +95,12 @@ describe('environmental state time-travel', () => {
     // reads componentRef and finds nothing. This is the behavior that broke
     // the sandbox; assert it so future refactors don't mistakenly believe the
     // core helper works on FlatCircuits.
-    const wrongWay = captureEnvironmentalState(flat as unknown as CircuitIR, library);
+    const wrongWay = captureEnvironmentalState(flat as unknown as CircuitIR, definitions);
     expect(wrongWay.size).toBe(0);
 
     // The correct walk (primitiveType, the pattern in our captureFlatEnv
     // helper and now in the sandbox) captures the switch state.
-    const rightWay = captureFlatEnv(flat, library);
+    const rightWay = captureFlatEnv(flat, definitions);
     expect(rightWay.get('sw')).toBe(1);
   });
 
@@ -134,12 +133,12 @@ describe('environmental state time-travel', () => {
   });
 
   it('engine + environmental restore reproduces the trace', () => {
-    const { sim, flat, library } = buildSim();
+    const { sim, flat, definitions } = buildSim();
     try {
       // Tick with switch OFF, capture BOTH halves.
       sim.tick();
       const simSnap = sim.snapshot();
-      const envSnap = captureFlatEnv(flat, library);
+      const envSnap = captureFlatEnv(flat, definitions);
       expect(qOut(sim)).toBe(false);
 
       // Flip switch, tick — circuit follows a different trajectory.
@@ -163,7 +162,7 @@ describe('environmental state time-travel', () => {
       // These rules are replicated in apps/sandbox/src/main.ts handleRestore.
       sim.restore(simSnap);
       for (const node of flat.nodes) {
-        const def = library.resolveCircuit(node.primitiveType);
+        const def = definitions.resolveCircuit(node.primitiveType);
         const interactiveArg = def?.metadata?.interactiveArg;
         if (!interactiveArg) continue;
         const saved = envSnap.get(node.id);

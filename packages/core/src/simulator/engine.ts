@@ -5,13 +5,7 @@
  * numeric indices in the hot loop.
  */
 
-import type {
-  ArgumentValue,
-  BitValue,
-  BusValue,
-  CircuitIR,
-  CircuitLibrary,
-} from '../ir/circuit-ir.js';
+import type { ArgumentValue, BitValue, BusValue } from '../ir/circuit-ir.js';
 import { getDefaultValue, TOP_LEVEL_NODE } from '../ir/circuit-ir.js';
 import {
   compileForSimulation,
@@ -88,14 +82,10 @@ class DefaultSimulatorEngine implements SimulatorEngine {
     this.options = options;
 
     // Compile circuit to numeric representation
-    this.numericCircuit = compileForSimulation(
-      circuit,
-      options.componentLibrary,
-      options.behaviors,
-    );
+    this.numericCircuit = compileForSimulation(circuit, options.library);
 
     // Initialize flat sequential state (memory data loaded later via setNode)
-    const flatSeqState = initializeFlatSequentialState(circuit, options.componentLibrary);
+    const flatSeqState = initializeFlatSequentialState(circuit, options.library.definitions);
 
     // Convert to numeric sequential state
     this.numericSeqState = createNumericSequentialState(this.numericCircuit, flatSeqState);
@@ -430,7 +420,7 @@ class DefaultSimulatorEngine implements SimulatorEngine {
     // Re-initialize flat sequential state
     const flatSeqState = initializeFlatSequentialState(
       this.flatCircuit,
-      this.options.componentLibrary,
+      this.options.library.definitions,
       this.options.initialMemory,
     );
 
@@ -471,9 +461,9 @@ class DefaultSimulatorEngine implements SimulatorEngine {
  *
  * Uses a numeric simulator with typed arrays for optimal performance.
  *
- * **Behavior:** the engine runs `options.behaviors` and nothing else. Every
- * primitive type in the flattened circuit needs an entry there; `designOf`
- * collects the library and the table from a built circuit tree. A primitive
+ * **Behavior:** the engine runs the behavior in `options.library` and nothing
+ * else. Every primitive type in the flattened circuit needs an entry there;
+ * `libraryOf` collects the library for a built circuit tree. A primitive
  * with no entry throws on its first dispatch, naming it.
  *
  * @param circuit - The flattened circuit to simulate
@@ -484,30 +474,4 @@ export function createEngine(circuit: FlatCircuit, options: InitOptions): Simula
   const engine = new DefaultSimulatorEngine();
   engine.initialize(circuit, options);
   return engine;
-}
-
-/**
- * Create a simple circuit library from a list of circuits.
- *
- * This is a convenience function for creating a CircuitLibrary
- * from an array of Circuit definitions (e.g., primitives + composites).
- *
- * @param circuits - Array of circuit definitions
- * @returns A CircuitLibrary implementation
- */
-export function createCircuitLibrary(circuits: CircuitIR[]): CircuitLibrary {
-  const circuitMap = new Map<string, CircuitIR>();
-
-  for (const circuit of circuits) {
-    circuitMap.set(circuit.name, circuit);
-  }
-
-  return {
-    resolveCircuit: (name: string) => circuitMap.get(name),
-    getAllPrimitiveNames: () => {
-      return Array.from(circuitMap.entries())
-        .filter(([_, c]) => c.implementation.kind === 'primitive')
-        .map(([name]) => name);
-    },
-  };
 }

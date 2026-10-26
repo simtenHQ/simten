@@ -7,8 +7,8 @@
 import type {
   BitValue,
   BusValue,
+  CircuitDefinitions,
   CircuitIR,
-  CircuitLibrary,
   FlatPortValueMap,
   FlatSequentialState,
   PortPath,
@@ -89,7 +89,7 @@ function getNodeTypeForComponent(
 function projectCircuitToNodes(
   circuit: CircuitIR,
   metadata: MetadataState,
-  library: CircuitLibrary,
+  definitions: CircuitDefinitions,
   portValues?: FlatPortValueMap,
   seqState?: FlatSequentialState,
 ): ReactFlowNode<NodeData>[] {
@@ -104,7 +104,7 @@ function projectCircuitToNodes(
       continue;
     }
 
-    const componentDef = library.resolveCircuit(node.componentRef);
+    const componentDef = definitions.resolveCircuit(node.componentRef);
     if (!componentDef) continue;
 
     const inputCount = node.inputs.length;
@@ -343,7 +343,7 @@ function projectCircuitToNodes(
 function resolvePortValue(
   path: PortPath,
   circuit: CircuitIR,
-  library: CircuitLibrary,
+  definitions: CircuitDefinitions,
   portValues: FlatPortValueMap,
   prefix = '',
   seen = new Set<string>(),
@@ -358,7 +358,7 @@ function resolvePortValue(
   const node = circuit.nodes.find((n) => n.id === path.nodeId);
   if (!node) return undefined;
 
-  const inner = library.resolveCircuit(node.componentRef);
+  const inner = definitions.resolveCircuit(node.componentRef);
   if (!inner || inner.implementation?.kind === 'primitive') return undefined;
 
   const innerPrefix = prefix ? `${prefix}.${node.id}` : node.id;
@@ -367,11 +367,25 @@ function resolvePortValue(
   // driven by an internal source; an input drives internal targets.
   for (const conn of inner.connections) {
     if (conn.target.nodeId === '' && conn.target.portName === path.portName) {
-      const value = resolvePortValue(conn.source, inner, library, portValues, innerPrefix, seen);
+      const value = resolvePortValue(
+        conn.source,
+        inner,
+        definitions,
+        portValues,
+        innerPrefix,
+        seen,
+      );
       if (value !== undefined) return value;
     }
     if (conn.source.nodeId === '' && conn.source.portName === path.portName) {
-      const value = resolvePortValue(conn.target, inner, library, portValues, innerPrefix, seen);
+      const value = resolvePortValue(
+        conn.target,
+        inner,
+        definitions,
+        portValues,
+        innerPrefix,
+        seen,
+      );
       if (value !== undefined) return value;
     }
   }
@@ -385,7 +399,7 @@ function resolvePortValue(
  */
 function projectCircuitToEdges(
   circuit: CircuitIR,
-  library: CircuitLibrary,
+  definitions: CircuitDefinitions,
   portValues?: FlatPortValueMap,
 ): Edge[] {
   const edges: Edge[] = [];
@@ -394,8 +408,8 @@ function projectCircuitToEdges(
     let edgeColor = WIRE_COLORS.UNDEFINED;
     if (portValues) {
       const value =
-        resolvePortValue(connection.source, circuit, library, portValues) ??
-        resolvePortValue(connection.target, circuit, library, portValues);
+        resolvePortValue(connection.source, circuit, definitions, portValues) ??
+        resolvePortValue(connection.target, circuit, definitions, portValues);
       if (value !== undefined) {
         edgeColor = (typeof value === 'boolean' ? value : value !== 0)
           ? WIRE_COLORS.TRUE
@@ -429,14 +443,14 @@ function projectCircuitToEdges(
 export function projectCircuitToReactFlow(
   circuit: CircuitIR | null,
   metadata: MetadataState,
-  library: CircuitLibrary,
+  definitions: CircuitDefinitions,
   portValues?: FlatPortValueMap,
   seqState?: FlatSequentialState,
 ) {
   if (!circuit) return { nodes: [], edges: [] };
 
   return {
-    nodes: projectCircuitToNodes(circuit, metadata, library, portValues, seqState),
-    edges: projectCircuitToEdges(circuit, library, portValues),
+    nodes: projectCircuitToNodes(circuit, metadata, definitions, portValues, seqState),
+    edges: projectCircuitToEdges(circuit, definitions, portValues),
   };
 }

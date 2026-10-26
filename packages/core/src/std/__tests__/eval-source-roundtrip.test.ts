@@ -27,7 +27,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { getStdDesign } from '../../internal.js';
+import { getStdLibrary } from '../../internal.js';
 
 /**
  * Evals that cannot be rebuilt from their own source because they close over a
@@ -62,7 +62,7 @@ function survivesRoundTrip(entry: {
 
 describe('stdlib evals rebuilt from source', () => {
   const closureDeps: string[] = [];
-  for (const [name, entry] of getStdDesign().behaviors) {
+  for (const [name, entry] of getStdLibrary().behaviors) {
     const result = survivesRoundTrip(entry);
     if (!result.ok && result.reference) closureDeps.push(name);
   }
@@ -87,7 +87,7 @@ describe('stdlib evals rebuilt from source', () => {
   });
 
   it('rebuilds the majority of stdlib evals cleanly', () => {
-    const total = [...getStdDesign().behaviors].length;
+    const total = [...getStdLibrary().behaviors].length;
     expect(total).toBeGreaterThan(50);
     expect(closureDeps.length).toBeLessThan(total / 2);
   });

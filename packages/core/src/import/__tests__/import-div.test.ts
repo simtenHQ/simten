@@ -26,8 +26,8 @@ const golden = JSON.parse(fix('divtest.golden.json')) as {
 };
 
 function importDiv() {
-  const { top, library, behaviors } = importNetlist(netlist, 'divtest');
-  const deps = [...library.values()].filter((c) => c.name !== top.name);
+  const { top, definitions, behaviors } = importNetlist(netlist, 'divtest');
+  const deps = [...definitions.values()].filter((c) => c.name !== top.name);
   return { top, deps, behaviors };
 }
 

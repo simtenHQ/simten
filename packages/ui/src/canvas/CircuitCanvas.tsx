@@ -17,8 +17,8 @@ import {
 import '@xyflow/react/dist/style.css';
 
 import type {
+  CircuitDefinitions,
   CircuitIR,
-  CircuitLibrary,
   FlatPortValueMap,
   FlatSequentialState,
 } from '@simten/core/internal';
@@ -96,7 +96,7 @@ function CanvasControls() {
 
 export interface CircuitCanvasProps {
   circuit?: CircuitIR | null;
-  componentLibrary?: CircuitLibrary;
+  componentLibrary?: CircuitDefinitions;
   portValues?: FlatPortValueMap | null;
   sequentialState?: FlatSequentialState | null;
   draggable?: boolean;
@@ -151,12 +151,12 @@ export interface CircuitCanvasProps {
   panOnMobile?: boolean;
 }
 
-// Default library — created once, reused
-let _defaultLibrary: CircuitLibrary | null = null;
-function getDefaultLibrary(): CircuitLibrary {
-  if (!_defaultLibrary) {
+// Default definitions — created once, reused
+let _defaultDefinitions: CircuitDefinitions | null = null;
+function getDefaultDefinitions(): CircuitDefinitions {
+  if (!_defaultDefinitions) {
     const circuitMap = new Map<string, CircuitIR>();
-    _defaultLibrary = {
+    _defaultDefinitions = {
       resolveCircuit: (name) => circuitMap.get(name),
       getAllPrimitiveNames: () =>
         [...circuitMap.entries()]
@@ -165,9 +165,9 @@ function getDefaultLibrary(): CircuitLibrary {
       addCircuit: (c: CircuitIR) => {
         circuitMap.set(c.name, c);
       },
-    } as CircuitLibrary & { addCircuit(c: CircuitIR): void };
+    } as CircuitDefinitions & { addCircuit(c: CircuitIR): void };
   }
-  return _defaultLibrary;
+  return _defaultDefinitions;
 }
 
 /** Below this zoom an 11px pin label is too small to read, so the canvas drops them. */
@@ -207,7 +207,7 @@ function CircuitCanvasInner({
   const pinLabelsReadable = useStore((s) => s.transform[2] >= PIN_LABEL_MIN_ZOOM);
   const resolvedNodeTypes = nodeTypesOverride ?? NODE_TYPES;
   const resolvedEdgeTypes = edgeTypesOverride ?? EDGE_TYPES;
-  const library = componentLibrary ?? getDefaultLibrary();
+  const definitions = componentLibrary ?? getDefaultDefinitions();
 
   const focusLabels = useMemo(() => {
     if (!focus) return null;
@@ -244,7 +244,7 @@ function CircuitCanvasInner({
     const projected = projectCircuitToReactFlow(
       cleanedCircuit,
       metadata,
-      library,
+      definitions,
       portValues ?? undefined,
       sequentialState ?? undefined,
     );
@@ -317,7 +317,7 @@ function CircuitCanvasInner({
   }, [
     cleanedCircuit,
     metadata,
-    library,
+    definitions,
     portValues,
     sequentialState,
     onToggleNode,
@@ -484,10 +484,10 @@ function CircuitCanvasInner({
   const defaultNodeDoubleClick = useCallback(
     (nodeData: NodeData) => {
       if (!nodeData.isComposite && !nodeData.hasReference) return;
-      const frame = resolveDrillTarget(nodeData, library);
+      const frame = resolveDrillTarget(nodeData, definitions);
       if (frame) setInspectorStack([frame]);
     },
-    [library],
+    [definitions],
   );
 
   // Use caller's handler if provided, otherwise use built-in inspector
@@ -567,7 +567,7 @@ function CircuitCanvasInner({
       {!onNodeDoubleClickProp && inspectorStack.length > 0 && (
         <CompositeInspectorDialog
           stack={inspectorStack}
-          componentLibrary={library}
+          componentLibrary={definitions}
           theme={theme}
           onClose={closeInspector}
           onPopLevel={popInspectorLevel}

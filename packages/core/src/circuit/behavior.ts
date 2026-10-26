@@ -9,7 +9,7 @@
  * other's circuits and importing a module registers nothing.
  */
 
-import type { CircuitIR, MutableCircuitLibrary } from '../ir/circuit-ir.js';
+import type { CircuitDefinitions, CircuitIR, MutableCircuitDefinitions } from '../ir/circuit-ir.js';
 import type { Circuit } from './builder-types.js';
 
 /** Named values in and out of an `eval` or `onTick`. */
@@ -74,56 +74,63 @@ export function definitionKey(behavior: Behavior): string {
   return key;
 }
 
-/** A name-keyed library over the circuits added to it. */
-export function createLibrary(): MutableCircuitLibrary {
-  const circuits = new Map<string, CircuitIR>();
+/** Circuit definitions keyed by name, starting from `circuits` (later ones win). */
+export function createDefinitions(circuits: Iterable<CircuitIR> = []): MutableCircuitDefinitions {
+  const byName = new Map<string, CircuitIR>();
+  for (const c of circuits) byName.set(c.name, c);
   return {
-    resolveCircuit: (name) => circuits.get(name),
+    resolveCircuit: (name) => byName.get(name),
     getAllPrimitiveNames: () =>
-      [...circuits.values()]
-        .filter((c) => c.implementation.kind === 'primitive')
-        .map((c) => c.name),
+      [...byName.values()].filter((c) => c.implementation.kind === 'primitive').map((c) => c.name),
     addCircuit: (c) => {
-      circuits.set(c.name, c);
+      byName.set(c.name, c);
     },
-    getAllCircuitNames: () => [...circuits.keys()],
+    getAllCircuitNames: () => [...byName.keys()],
   };
 }
 
-/** What one compile works from: circuit definitions and their behavior, by name. */
-export interface Design {
-  library: MutableCircuitLibrary;
+/**
+ * A library: circuit definitions and their behavior, by name. It is what a
+ * compile runs from, whether that is one user circuit tree or all of std.
+ */
+export interface Library {
+  definitions: CircuitDefinitions;
+  behaviors: BehaviorTable;
+}
+
+/** A library that circuits can still be added to. */
+export interface MutableLibrary extends Library {
+  definitions: MutableCircuitDefinitions;
   behaviors: Map<string, Behavior>;
 }
 
-export function emptyDesign(): Design {
-  return { library: createLibrary(), behaviors: new Map() };
+export function emptyLibrary(): MutableLibrary {
+  return { definitions: createDefinitions(), behaviors: new Map() };
 }
 
 /**
- * Add a circuit and its dependencies to a design.
+ * Add a circuit and its dependencies to a library.
  *
  * One rule for names: within one circuit tree, and within std, a name means one
  * circuit, and two different circuits under it are an error (`circuit()` and
- * `getStdDesign` throw). Across trees added to one design, a later circuit
+ * `getStdLibrary` throw). Across trees added to one library, a later circuit
  * replaces an earlier one of the same name. That is how source that redefines a
  * circuit, or names one like a std component, gets its own definition.
  */
-export function addToDesign(design: Design, top: Circuit): void {
+export function addToLibrary(library: MutableLibrary, top: Circuit): void {
   for (const c of [top, ...top._dependencies.values()]) {
-    design.library.addCircuit(c.circuit);
+    library.definitions.addCircuit(c.circuit);
     const behavior = behaviorOf(c);
-    if (behavior) design.behaviors.set(c.circuit.name, behavior);
+    if (behavior) library.behaviors.set(c.circuit.name, behavior);
   }
 }
 
 /**
- * The library and behavior table for exactly one circuit tree. `circuit()`
- * rejects two different circuits under one name in a tree, so each name here
- * has one definition.
+ * The library for exactly one circuit tree. `circuit()` rejects two different
+ * circuits under one name in a tree, so each name here has one definition.
  */
-export function designOf(top: Circuit): Design {
-  const design = emptyDesign();
-  addToDesign(design, top);
-  return design;
+export function libraryOf(top: Circuit): MutableLibrary {
+  const library = emptyLibrary();
+  addToLibrary(library, top);
+  return library;
 }

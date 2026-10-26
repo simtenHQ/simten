@@ -1,23 +1,27 @@
 /**
- * The standard library as one Design: every std circuit and its dependencies,
- * with their behavior. It is built once and shared, so treat it as read-only:
- * a compile that adds its own circuits copies the library and table first.
+ * The standard library as one Library: every std circuit and its dependencies,
+ * with their behavior. It is built once and shared, so it is typed read-only:
+ * a compile that adds its own circuits copies the definitions and table first.
  *
  * A name in std means one circuit. Specialisations of one factory (an 8-bit and
  * a 16-bit Register) are the same definition and share an entry; two different
  * circuits under one name are a bug in std and building it throws.
  */
 
-import { type Behavior, behaviorOf, createLibrary, type Design } from '../circuit/behavior.js';
+import {
+  behaviorOf,
+  emptyLibrary,
+  type Library,
+  type MutableLibrary,
+} from '../circuit/behavior.js';
 import type { Circuit } from '../circuit/builder-types.js';
 import { sameDefinition } from '../circuit/circuit.js';
 import { STDLIB_CIRCUITS } from './index.js';
 
-let cached: Design | null = null;
+let cached: Library | null = null;
 
-function buildStdDesign(): Design {
-  const library = createLibrary();
-  const behaviors = new Map<string, Behavior>();
+function buildStdLibrary(): MutableLibrary {
+  const library = emptyLibrary();
   const seen = new Map<string, Circuit>();
   for (const built of STDLIB_CIRCUITS) {
     for (const c of [built, ...built._dependencies.values()]) {
@@ -30,12 +34,12 @@ function buildStdDesign(): Design {
         continue;
       }
       seen.set(name, c);
-      library.addCircuit(c.circuit);
+      library.definitions.addCircuit(c.circuit);
       const behavior = behaviorOf(c);
-      if (behavior) behaviors.set(name, behavior);
+      if (behavior) library.behaviors.set(name, behavior);
     }
   }
-  return { library, behaviors };
+  return library;
 }
 
 /**
@@ -43,7 +47,7 @@ function buildStdDesign(): Design {
  * compile that only has IR (and perhaps behavior as source text), such as the
  * sandbox's compile-ir or a page-side canvas showing std components.
  */
-export function getStdDesign(): Design {
-  cached ??= buildStdDesign();
+export function getStdLibrary(): Library {
+  cached ??= buildStdLibrary();
   return cached;
 }

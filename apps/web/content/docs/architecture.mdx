@@ -240,7 +240,7 @@ The `/editor` page uses [Zustand](https://zustand-demo.pmnd.rs/) with Immer midd
 |-------|--------------|------------|---------|
 | `useCircuitPreviewStore` | List of compiled `CircuitIR` objects from the last successful compilation | The compile effect (fed by `useCircuitCompiler`) | Circuit selector UI |
 | `useCircuitStore` | The currently active `CircuitIR` (selected from the preview list) | Preview store / circuit selector | Canvas, ChatPanel, Verilog export, MCP state callbacks |
-| `useCircuitLibraryStore` | The `CircuitLibrary` that resolves component names to definitions | The compile effect (fed by `useCircuitCompiler`) | Canvas, ChatPanel, Verilog export |
+| `useCircuitLibraryStore` | The `CircuitDefinitions` that resolves component names to definitions | The compile effect (fed by `useCircuitCompiler`) | Canvas, ChatPanel, Verilog export |
 
 The data flows in one direction:
 
@@ -268,7 +268,7 @@ useCircuitStore         (the active circuit)
 | Import | Contents |
 |--------|----------|
 | `@simten/core` | `circuit`, `bit`, `bus`, `simulate`, `Circuit`: the public API. Components come from `@simten/core/std` |
-| `@simten/core/internal` | `elaborate`, `createEngine`, `SimulationSession`, `SimulatorEngine`, the IR types (`CircuitIR`), behavior tables (`designOf`, `behaviorOf`), `executeCircuitCode`, `captureEnvironmentalState`, `restoreEnvironmentalState`: for Simten's own packages, no stability promise |
+| `@simten/core/internal` | `elaborate`, `createEngine`, `SimulationSession`, `SimulatorEngine`, the IR types (`CircuitIR`), libraries of definitions and behavior (`libraryOf`, `behaviorOf`), `executeCircuitCode`, `captureEnvironmentalState`, `restoreEnvironmentalState`: for Simten's own packages, no stability promise |
 | `@simten/embed` | `CircuitViewer`, `CircuitEmbed`, `<circuit-embed>` web component: everything needed to embed a circuit |
 | `@simten/ui/canvas` | `CircuitCanvas`, `ClockControls`: shared simulation UI |
 | `@simten/ui/sandbox` | `useSandbox`, `SandboxProvider`: sandbox iframe context used by `useCircuitSimulator` |

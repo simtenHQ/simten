@@ -1,5 +1,5 @@
 import type { CircuitIR, FlatCircuit } from '@simten/core/internal';
-import { buildFromIR, compileForSimulation, elaborate, getStdDesign } from '@simten/core/internal';
+import { buildFromIR, compileForSimulation, elaborate, getStdLibrary } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { CircuitEmbed } from '@simten/embed';
 import { useSandboxContext } from '@simten/ui/sandbox';
@@ -113,20 +113,14 @@ export function PipelineVisualizer() {
           return;
         }
 
-        const flat = elaborate(fullAdder, {
-          resolveCircuit,
-          getAllPrimitiveNames: () => primNames,
-        });
+        const definitions = { resolveCircuit, getAllPrimitiveNames: () => primNames };
+        const flat = elaborate(fullAdder, definitions);
 
         // Stage 3: Compile to numeric
-        const numeric = compileForSimulation(
-          flat,
-          {
-            resolveCircuit,
-            getAllPrimitiveNames: () => primNames,
-          },
-          getStdDesign().behaviors,
-        );
+        const numeric = compileForSimulation(flat, {
+          definitions,
+          behaviors: getStdLibrary().behaviors,
+        });
 
         setCompiled({ circuits, fullAdder, flat, numeric });
       } catch (e) {

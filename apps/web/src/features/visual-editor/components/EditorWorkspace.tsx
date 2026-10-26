@@ -344,10 +344,10 @@ export function EditorWorkspace({
     ),
   );
 
-  // Build library interface for CircuitCanvas from store
+  // Circuit definitions for CircuitCanvas, from the store
   const resolveCircuit = useCircuitLibraryStore((s) => s.resolveCircuit);
   const getAllPrimitiveNames = useCircuitLibraryStore((s) => s.getAllPrimitiveNames);
-  const componentLibrary = useMemo(
+  const definitions = useMemo(
     () => ({
       resolveCircuit,
       getAllPrimitiveNames,
@@ -655,7 +655,7 @@ export function EditorWorkspace({
                     <ResizablePanel defaultSize={65} minSize={20} style={CLIP}>
                       <CircuitCanvas
                         circuit={circuit}
-                        componentLibrary={componentLibrary}
+                        componentLibrary={definitions}
                         theme={theme}
                         showControls
                         renderEmptyState={bootDone && codeEmpty ? renderEmptyState : undefined}
@@ -687,7 +687,7 @@ export function EditorWorkspace({
                 ) : (
                   <CircuitCanvas
                     circuit={circuit}
-                    componentLibrary={componentLibrary}
+                    componentLibrary={definitions}
                     theme={theme}
                     showControls
                     renderEmptyState={bootDone && codeEmpty ? renderEmptyState : undefined}

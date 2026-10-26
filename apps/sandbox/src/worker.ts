@@ -1,11 +1,11 @@
 /**
  * Sandbox worker. Runs all user code and owns all simulation state.
  *
- * Holds every slot's simulator, library and snapshots, and handles every
- * request type. `main.ts` only relays messages and watches for a hang: if a
- * request takes longer than 5s it terminates this worker, starts a new one and
- * recompiles each slot at cycle 0. Anything kept here (snapshots, cycle count,
- * switch positions) is lost on a restart.
+ * Holds every slot's simulator, definitions, behavior and snapshots, and
+ * handles every request type. `main.ts` only relays messages and watches for a
+ * hang: if a request takes longer than 5s it terminates this worker, starts a
+ * new one and recompiles each slot at cycle 0. Anything kept here (snapshots,
+ * cycle count, switch positions) is lost on a restart.
  *
  * compile, two modes:
  *   No imports  → executeCircuitCode() via new Function()
@@ -24,18 +24,18 @@
  */
 
 import type { BitValue, BusValue } from '@simten/core';
-import type { CircuitIR, CircuitLibrary, SimulatorSnapshot } from '@simten/core/internal';
+import type { CircuitDefinitions, CircuitIR, SimulatorSnapshot } from '@simten/core/internal';
 import {
   type Behavior,
   type BehaviorFn,
   type BehaviorTable,
   createEngine,
-  designOf,
   type EnvironmentalStateValue,
   elaborate,
   executeCircuitCode,
   executeJsCode,
-  getStdDesign,
+  getStdLibrary,
+  libraryOf,
   stripTypes,
 } from '@simten/core/internal';
 import type {
@@ -74,9 +74,9 @@ interface FullSnapshot {
   env: Map<string, EnvironmentalStateValue>;
 }
 
-type SlotLibrary = CircuitLibrary & { addCircuit(c: CircuitIR): void };
+type SlotDefinitions = CircuitDefinitions & { addCircuit(c: CircuitIR): void };
 
-function newLibrary(): SlotLibrary {
+function newDefinitions(): SlotDefinitions {
   const circuits = new Map<string, CircuitIR>();
   return {
     resolveCircuit: (name) => circuits.get(name),
@@ -98,7 +98,7 @@ interface FlatCircuitLike {
 
 interface SlotState {
   simulator: Simulator;
-  library: SlotLibrary;
+  definitions: SlotDefinitions;
   /** The behavior this slot's compile runs, by primitive name. */
   behaviors: BehaviorTable;
   /** Kept to capture/restore environmental state on snapshot/restore. */
@@ -120,18 +120,18 @@ const DEFAULT_SLOT = 'default';
 function installSlot(
   slotId: string,
   target: CircuitIR,
-  library: SlotLibrary,
+  definitions: SlotDefinitions,
   behaviors: BehaviorTable,
 ): SlotState {
-  const flatCircuit = elaborate(target, library);
-  const simulator = createEngine(flatCircuit, { componentLibrary: library, behaviors });
+  const flatCircuit = elaborate(target, definitions);
+  const simulator = createEngine(flatCircuit, { library: { definitions, behaviors } });
   // Recompile is a fresh timeline: prior snapshots refer to the old sim.
   const slot: SlotState = {
     simulator,
-    library,
+    definitions,
     behaviors,
     flatCircuit,
-    peripheralBusNodes: computePeripheralBusNodes(flatCircuit, library),
+    peripheralBusNodes: computePeripheralBusNodes(flatCircuit, definitions),
     snapshots: new Map(),
   };
   slots.set(slotId, slot);
@@ -139,7 +139,7 @@ function installSlot(
 }
 
 function interactiveArgOf(slot: SlotState, primitiveType: string): string | undefined {
-  const def = slot.library.resolveCircuit(primitiveType) as
+  const def = slot.definitions.resolveCircuit(primitiveType) as
     | { metadata?: { interactiveArg?: string } }
     | undefined;
   return def?.metadata?.interactiveArg;
@@ -170,11 +170,11 @@ function computePeripheralBusNodes(
     nodes: { id: string; primitiveType: string }[];
     connections: { source: { nodeId: string }; target: { nodeId: string } }[];
   },
-  library: CircuitLibrary,
+  definitions: CircuitDefinitions,
 ): Set<string> {
   const isPeripheral = (primitiveType: string | undefined): boolean =>
     primitiveType !== undefined &&
-    library.resolveCircuit(primitiveType)?.metadata?.synthesizable === false;
+    definitions.resolveCircuit(primitiveType)?.metadata?.synthesizable === false;
 
   const typeByNode = new Map<string, string>();
   for (const node of flatCircuit.nodes) typeByNode.set(node.id, node.primitiveType);
@@ -319,28 +319,28 @@ async function compile(source: string, slotId: string = DEFAULT_SLOT): Promise<S
 
   const circuits = renderable.map(serializable);
   const libraryCircuits: CircuitIR[] = [];
-  for (const name of result.library.getAllCircuitNames()) {
-    const c = result.library.resolveCircuit(name);
+  for (const name of result.library.definitions.getAllCircuitNames()) {
+    const c = result.library.definitions.resolveCircuit(name);
     if (c) libraryCircuits.push(serializable(c));
   }
 
   // Everything the source defined, with the simulated circuit's own tree on
   // top: where two circuits in one file share a name without meeting in one
   // design, the one this circuit uses is the one it runs.
-  const library = newLibrary();
-  for (const c of [...circuits, ...libraryCircuits]) library.addCircuit(c);
-  const behaviors = new Map(result.behaviors);
+  const definitions = newDefinitions();
+  for (const c of [...circuits, ...libraryCircuits]) definitions.addCircuit(c);
+  const behaviors = new Map(result.library.behaviors);
   const targetIR = renderable[renderable.length - 1];
   const built = result.builtCircuits.find((b) => b.circuit === targetIR);
   if (built) {
-    const design = designOf(built);
-    for (const name of design.library.getAllCircuitNames()) {
-      const c = design.library.resolveCircuit(name);
-      if (c) library.addCircuit(serializable(c));
+    const own = libraryOf(built);
+    for (const name of own.definitions.getAllCircuitNames()) {
+      const c = own.definitions.resolveCircuit(name);
+      if (c) definitions.addCircuit(serializable(c));
     }
-    for (const [name, b] of design.behaviors) behaviors.set(name, b);
+    for (const [name, b] of own.behaviors) behaviors.set(name, b);
   }
-  const slot = installSlot(slotId, circuits[circuits.length - 1], library, behaviors);
+  const slot = installSlot(slotId, circuits[circuits.length - 1], definitions, behaviors);
 
   return {
     type: 'compiled',
@@ -353,7 +353,7 @@ async function compile(source: string, slotId: string = DEFAULT_SLOT): Promise<S
 
 /**
  * Compile from Circuit IR rather than source, e.g. the auto-harnessed circuit
- * built on the page. Reuses the library and behavior of any slot compiled
+ * built on the page. Reuses the definitions and behavior of any slot compiled
  * from source, so it can reference that slot's components; std's behavior is
  * the base under both.
  */
@@ -363,17 +363,17 @@ function compileIR(req: Extract<SandboxRequest, { type: 'compile-ir' }>): Sandbo
     base = s;
     break;
   }
-  const lib = base?.library ?? newLibrary();
-  for (const c of req.libraryCircuits) lib.addCircuit(c);
-  lib.addCircuit(req.circuit);
+  const definitions = base?.definitions ?? newDefinitions();
+  for (const c of req.libraryCircuits) definitions.addCircuit(c);
+  definitions.addCircuit(req.circuit);
 
   const behaviors = new Map<string, Behavior>([
-    ...getStdDesign().behaviors,
+    ...getStdLibrary().behaviors,
     ...(base?.behaviors ?? []),
   ]);
   if (req.evalSources) addBehaviorSources(behaviors, req.evalSources);
 
-  const slot = installSlot(req.slot, req.circuit, lib, behaviors);
+  const slot = installSlot(req.slot, req.circuit, definitions, behaviors);
   return {
     type: 'compiled-ir',
     portValues: portValues(slot.simulator.getPortValues()),

@@ -15,9 +15,9 @@ import { describe, expect, it } from 'vitest';
 import type { CircuitIR } from '../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
 import { simulate } from '../../simulator/simulate.js';
-import { getStdDesign } from '../../std/design.js';
 import { Adder } from '../../std/index.js';
-import { createLibrary, designOf } from '../behavior.js';
+import { getStdLibrary } from '../../std/library.js';
+import { createDefinitions, libraryOf } from '../behavior.js';
 import { bit, bus } from '../bit-bus.js';
 import { circuit } from '../circuit.js';
 import { type ExecuteResult, executeCircuitCode } from '../execute.js';
@@ -26,9 +26,8 @@ import { type ExecuteResult, executeCircuitCode } from '../execute.js';
 function run(result: ExecuteResult, inputs: Record<string, number>): Record<string, number> {
   expect(result.error).toBeNull();
   const top = result.circuits[result.circuits.length - 1];
-  const engine = createEngine(elaborate(top, result.library), {
-    componentLibrary: result.library,
-    behaviors: result.behaviors,
+  const engine = createEngine(elaborate(top, result.library.definitions), {
+    library: result.library,
   });
   for (const [name, value] of Object.entries(inputs)) engine.setNode(name, value);
   engine.runCombinational();
@@ -220,21 +219,20 @@ describe('defining a circuit registers nothing', () => {
   };
 
   it('a fresh compile has no behavior for it', () => {
-    const library = createLibrary();
-    library.addCircuit(Probe.circuit);
-    library.addCircuit(wrapper);
+    const definitions = createDefinitions();
+    definitions.addCircuit(Probe.circuit);
+    definitions.addCircuit(wrapper);
     const engine = () =>
-      createEngine(elaborate(wrapper, library), {
-        componentLibrary: library,
-        behaviors: new Map(),
+      createEngine(elaborate(wrapper, definitions), {
+        library: { definitions, behaviors: new Map() },
       });
     expect(engine).toThrow(/'BTRegistersNothing' has no behavior in this compile/);
-    expect(executeCircuitCode('').behaviors.has('BTRegistersNothing')).toBe(false);
-    expect(getStdDesign().behaviors.has('BTRegistersNothing')).toBe(false);
+    expect(executeCircuitCode('').library.behaviors.has('BTRegistersNothing')).toBe(false);
+    expect(getStdLibrary().behaviors.has('BTRegistersNothing')).toBe(false);
   });
 
   it('the built circuit has it, so its own design runs', () => {
-    expect(designOf(Probe).behaviors.has('BTRegistersNothing')).toBe(true);
+    expect(libraryOf(Probe).behaviors.has('BTRegistersNothing')).toBe(true);
     const sim = simulate(Probe);
     sim.set({ a: 1 });
     expect(sim.get('y')).toBe(1);

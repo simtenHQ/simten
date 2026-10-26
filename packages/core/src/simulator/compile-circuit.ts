@@ -5,8 +5,8 @@
  * This is a one-time operation during initialization.
  */
 
-import type { BehaviorTable } from '../circuit/behavior.js';
-import type { CircuitIR, CircuitLibrary, PortType } from '../ir/circuit-ir.js';
+import type { Library } from '../circuit/behavior.js';
+import type { CircuitIR, PortType } from '../ir/circuit-ir.js';
 import { createDispatchTables, typeIndexFor } from './eval-bridge.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 import type { FlatCircuit, FlatNode, PrimitiveState } from './types.js';
@@ -16,15 +16,11 @@ import { TOP_LEVEL_NODE } from './types.js';
  * Compile a FlatCircuit to a NumericCircuit for fast simulation.
  *
  * @param flatCircuit - The flattened circuit to compile
- * @param library - Component library for resolving component definitions
- * @param behaviors - This compile's behavior, by primitive type name
+ * @param library - The definitions and behavior this compile runs
  * @returns Compiled numeric circuit
  */
-export function compileForSimulation(
-  flatCircuit: FlatCircuit,
-  library: CircuitLibrary,
-  behaviors: BehaviorTable,
-): NumericCircuit {
+export function compileForSimulation(flatCircuit: FlatCircuit, library: Library): NumericCircuit {
+  const { definitions, behaviors } = library;
   const nodeCount = flatCircuit.nodes.length;
 
   // ============================================================================
@@ -234,7 +230,7 @@ export function compileForSimulation(
     isSourceNode[i] = node.inputs.length === 0 ? 1 : 0;
 
     // Has state: check if the component has state blocks
-    const resolvedComp = library.resolveCircuit(node.primitiveType);
+    const resolvedComp = definitions.resolveCircuit(node.primitiveType);
     if (resolvedComp) checkClocking(node, resolvedComp);
     if (resolvedComp?.state && resolvedComp.state.length > 0) {
       hasState[i] = 1;

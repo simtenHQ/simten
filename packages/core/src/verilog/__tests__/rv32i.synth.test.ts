@@ -24,7 +24,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { CircuitLibrary } from '../../ir/circuit-ir.js';
+import type { CircuitDefinitions } from '../../ir/circuit-ir.js';
 import {
   RV32I_ALU,
   RV32I_BranchComp,
@@ -49,7 +49,7 @@ type CircuitLike = {
   _dependencies: Map<string, { circuit: import('../../ir/circuit-ir.js').CircuitIR }>;
 };
 
-function makeLib(top: CircuitLike, name: string): CircuitLibrary {
+function makeDefinitions(top: CircuitLike, name: string): CircuitDefinitions {
   return {
     resolveCircuit: (n) => (n === name ? top.circuit : top._dependencies.get(n)?.circuit),
     getAllPrimitiveNames: () => [...top._dependencies.keys()],
@@ -57,7 +57,7 @@ function makeLib(top: CircuitLike, name: string): CircuitLibrary {
 }
 
 async function synthComponent(top: CircuitLike, name: string) {
-  const result = exportVerilog(top.circuit, makeLib(top, name), { target: 'synthesis' });
+  const result = exportVerilog(top.circuit, makeDefinitions(top, name), { target: 'synthesis' });
   const resp = await synthesizeVerilog(result, name);
   if (!resp.success)
     console.error(

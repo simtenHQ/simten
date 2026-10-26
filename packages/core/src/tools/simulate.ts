@@ -62,13 +62,10 @@ export function traceSource(params: {
   }
 
   // Elaborate to flat circuit — needed for VCD hierarchy
-  const flatCircuit = elaborate(target, compiled.library);
+  const flatCircuit = elaborate(target, compiled.library.definitions);
 
   // Create simulator from flat circuit
-  const simulator = createEngine(flatCircuit, {
-    componentLibrary: compiled.library,
-    behaviors: compiled.behaviors,
-  });
+  const simulator = createEngine(flatCircuit, { library: compiled.library });
 
   // Load memory data if provided
   if (params.memoryData) {

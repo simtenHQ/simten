@@ -5,7 +5,12 @@
  * work correctly when instantiated as nodes within other circuits.
  */
 
-import { type CircuitLibrary, createEngine, elaborate, getStdDesign } from '@simten/core/internal';
+import {
+  type CircuitDefinitions,
+  createEngine,
+  elaborate,
+  getStdLibrary,
+} from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeAll, describe, expect, it } from 'vitest';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
@@ -15,7 +20,7 @@ const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
   (c) => c.implementation.kind === 'primitive',
 );
 
-function storeLibrary(): CircuitLibrary {
+function storeDefinitions(): CircuitDefinitions {
   const store = useCircuitLibraryStore.getState();
   return {
     resolveCircuit: (name) => store.resolveCircuit(name),
@@ -238,10 +243,9 @@ describe('Nested Sequential Components', () => {
     };
 
     // Create simulator
-    const simLibrary = storeLibrary();
-    const sim = createEngine(elaborate(wrapperCircuit, simLibrary), {
-      componentLibrary: simLibrary,
-      behaviors: getStdDesign().behaviors,
+    const definitions = storeDefinitions();
+    const sim = createEngine(elaborate(wrapperCircuit, definitions), {
+      library: { definitions, behaviors: getStdLibrary().behaviors },
     });
     const seqState = sim.getState();
 
@@ -297,10 +301,9 @@ describe('Nested Sequential Components', () => {
     };
 
     // Create simulator
-    const simLibrary = storeLibrary();
-    const sim = createEngine(elaborate(wrapperCircuit, simLibrary), {
-      componentLibrary: simLibrary,
-      behaviors: getStdDesign().behaviors,
+    const definitions = storeDefinitions();
+    const sim = createEngine(elaborate(wrapperCircuit, definitions), {
+      library: { definitions, behaviors: getStdLibrary().behaviors },
     });
     const seqState = sim.getState();
     expect(seqState?.cycleCount).toBe(0);

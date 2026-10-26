@@ -13,14 +13,14 @@
  * constructed here, on demand, for display in a dialog that runs its own
  * simulator. Drilling an Adder costs nothing until someone drills it.
  *
- * Frames carry their own library. A reference build introduces circuits the
+ * Frames carry their own circuit definitions. A reference build introduces circuits the
  * page has never heard of — FigletStream depends on `Adder`, not on the
  * `FullAdder`/`Slice`/`Concat`/`Xor` that explain it — and `projection.ts`
- * silently drops any node it cannot resolve. Without the layered library the
+ * silently drops any node it cannot resolve. Without the layered definitions the
  * dialog renders the boundary ports and nothing in between.
  */
 
-import type { CircuitIR, CircuitLibrary } from '@simten/core/internal';
+import type { CircuitDefinitions, CircuitIR } from '@simten/core/internal';
 import { MADE_OF } from '@simten/core/std';
 import type { NodeData } from '../nodes';
 import type { InspectorFrame } from './types';
@@ -31,8 +31,8 @@ interface BuiltLike {
   _dependencies?: Map<string, { circuit?: CircuitIR } | undefined>;
 }
 
-/** A library that answers from `extra` first, then falls back to `base`. */
-function layer(base: CircuitLibrary, extra: Map<string, CircuitIR>): CircuitLibrary {
+/** Definitions that answer from `extra` first, then fall back to `base`. */
+function layer(base: CircuitDefinitions, extra: Map<string, CircuitIR>): CircuitDefinitions {
   return {
     resolveCircuit: (name) => extra.get(name) ?? base.resolveCircuit(name),
     getAllPrimitiveNames: () => {
@@ -53,16 +53,16 @@ function layer(base: CircuitLibrary, extra: Map<string, CircuitIR>): CircuitLibr
  */
 export function resolveDrillTarget(
   nodeData: NodeData,
-  library: CircuitLibrary,
+  definitions: CircuitDefinitions,
 ): InspectorFrame | null {
   const { componentRef } = nodeData;
   const nodeLabel = nodeData.label ?? componentRef;
 
-  const componentDef = library.resolveCircuit(componentRef);
+  const componentDef = definitions.resolveCircuit(componentRef);
   if (componentDef?.implementation.kind === 'composite' && componentDef.nodes.length > 0) {
-    // Carry the library forward so a frame opened from inside a reference build
+    // Carry the definitions forward so a frame opened from inside a reference build
     // keeps seeing the gates that build introduced.
-    return { componentName: componentRef, componentDef, nodeLabel, library };
+    return { componentName: componentRef, componentDef, nodeLabel, library: definitions };
   }
 
   const build = MADE_OF[componentRef];
@@ -88,6 +88,6 @@ export function resolveDrillTarget(
     componentName: componentRef,
     componentDef: built.circuit,
     nodeLabel,
-    library: layer(library, extra),
+    library: layer(definitions, extra),
   };
 }

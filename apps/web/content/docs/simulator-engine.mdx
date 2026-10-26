@@ -190,7 +190,7 @@ class NumericEventQueue {
 
 ### Dispatch Table
 
-Every primitive's behavior is its `eval` (and `onTick`) from `circuit()`. A compile collects the behavior of the circuits it built into a table keyed by name, and `createEngine` is given that table. When the circuit is compiled, each primitive type it uses gets an index and a wrapper around its `eval` that reads the node's inputs from the typed arrays, calls the eval, and writes the outputs back:
+Every primitive's behavior is its `eval` (and `onTick`) from `circuit()`. A compile collects the circuits it built into a library: their definitions plus a behavior table keyed by name. `createEngine` runs that library. When the circuit is compiled, each primitive type it uses gets an index and a wrapper around its `eval` that reads the node's inputs from the typed arrays, calls the eval, and writes the outputs back:
 
 ```typescript
 circuit.evaluators[typeIdx] = generateEvalWrapper(inputNames, outputNames, evalFn, stateKeys);
@@ -339,7 +339,7 @@ state sharing between cycles.
 
 ```typescript
 const engine = createEngine(flatCircuit, {
-  componentLibrary,
+  library,         // definitions + behavior, e.g. libraryOf(top)
   initialMemory,   // Map<pattern, Map<address, value>>
 });
 

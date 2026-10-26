@@ -22,7 +22,7 @@ import type { Circuit, SinkPortRef, SourcePortRef } from '../../../circuit/build
 import { bit, bus, circuit } from '../../../circuit/index.js';
 import { EXAMPLES } from '../../../examples/catalog.js';
 import { importNetlist, type YosysNetlist } from '../../../import/index.js';
-import { buildFromIR, designOf } from '../../../internal.js';
+import { buildFromIR, libraryOf } from '../../../internal.js';
 import type { PortType } from '../../../ir/circuit-ir.js';
 import {
   Adder,
@@ -122,8 +122,7 @@ const BUG = {
 
 /** Top circuit plus every transitive dependency and their behavior. */
 function target(top: Circuit): DiffTarget {
-  const { library, behaviors } = designOf(top);
-  return { top: top.circuit, library, behaviors };
+  return { top: top.circuit, library: libraryOf(top) };
 }
 
 /**
@@ -159,7 +158,6 @@ function example(id: string): DiffTarget {
   return {
     top: compiled.circuits[compiled.circuits.length - 1],
     library: compiled.library,
-    behaviors: compiled.behaviors,
   };
 }
 
@@ -168,8 +166,8 @@ const fixture = (name: string) =>
 
 function imported(module: string): DiffTarget {
   const netlist = JSON.parse(fixture('imports.json')) as YosysNetlist;
-  const { top, library, behaviors } = importNetlist(netlist, module);
-  const deps = [...library.values()].filter((c) => c.name !== top.name);
+  const { top, definitions, behaviors } = importNetlist(netlist, module);
+  const deps = [...definitions.values()].filter((c) => c.name !== top.name);
   return target(buildFromIR(top, deps, behaviors));
 }
 

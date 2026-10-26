@@ -10,14 +10,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type { Behavior } from '../../circuit/behavior.js';
-import {
-  bitType,
-  type CircuitIR,
-  createCircuitLibrary,
-  createEngine,
-  elaborate,
-} from '../index.js';
+import { type Behavior, createDefinitions } from '../../circuit/behavior.js';
+import { bitType, type CircuitIR, createEngine, elaborate } from '../index.js';
 
 // Define test circuits using only core types (no store dependencies)
 function createTestPrimitives(): CircuitIR[] {
@@ -104,19 +98,19 @@ function createTestPrimitives(): CircuitIR[] {
 }
 
 describe('Core Simulator Standalone', () => {
-  it('should create a component library without browser dependencies', () => {
+  it('should create circuit definitions without browser dependencies', () => {
     const primitives = createTestPrimitives();
-    const library = createCircuitLibrary(primitives);
+    const definitions = createDefinitions(primitives);
 
-    expect(library.resolveCircuit('And')).toBeDefined();
-    expect(library.resolveCircuit('Or')).toBeDefined();
-    expect(library.resolveCircuit('Not')).toBeDefined();
-    expect(library.getAllPrimitiveNames()).toContain('And');
+    expect(definitions.resolveCircuit('And')).toBeDefined();
+    expect(definitions.resolveCircuit('Or')).toBeDefined();
+    expect(definitions.resolveCircuit('Not')).toBeDefined();
+    expect(definitions.getAllPrimitiveNames()).toContain('And');
   });
 
   it('should elaborate a simple circuit without browser dependencies', () => {
     const primitives = createTestPrimitives();
-    const library = createCircuitLibrary(primitives);
+    const definitions = createDefinitions(primitives);
 
     // Create a simple AND gate circuit
     const circuit: CircuitIR = {
@@ -166,7 +160,7 @@ describe('Core Simulator Standalone', () => {
       implementation: { kind: 'composite' },
     };
 
-    const flatCircuit = elaborate(circuit, library);
+    const flatCircuit = elaborate(circuit, definitions);
 
     expect(flatCircuit.nodes.length).toBe(1);
     expect(flatCircuit.nodes[0].primitiveType).toBe('And');
@@ -174,7 +168,7 @@ describe('Core Simulator Standalone', () => {
 
   // The engine runs the behavior table it is given and nothing else. A test
   // that builds raw Circuit IR, without circuit(), supplies that table itself.
-  // createCircuitLibrary + elaborate + createEngine still run without
+  // createDefinitions + elaborate + createEngine still run without
   // DOM/React/Zustand.
 
   it('should run a simulation from a behavior table built by hand', () => {
@@ -194,7 +188,7 @@ describe('Core Simulator Standalone', () => {
     ]);
 
     const primitives = createTestPrimitives();
-    const library = createCircuitLibrary(primitives);
+    const definitions = createDefinitions(primitives);
 
     const circuit: CircuitIR = {
       version: 1,
@@ -256,8 +250,8 @@ describe('Core Simulator Standalone', () => {
       implementation: { kind: 'composite' },
     };
 
-    const flatCircuit = elaborate(circuit, library);
-    const sim = createEngine(flatCircuit, { componentLibrary: library, behaviors });
+    const flatCircuit = elaborate(circuit, definitions);
+    const sim = createEngine(flatCircuit, { library: { definitions, behaviors } });
 
     // Both switches are on, so AND should output 1
     const result = sim.runCombinational();

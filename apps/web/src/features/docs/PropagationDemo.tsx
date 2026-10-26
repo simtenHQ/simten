@@ -1,5 +1,10 @@
 import { bit, circuit } from '@simten/core/circuit';
-import { designOf, elaborate, type PropagationStep, tracePropagation } from '@simten/core/internal';
+import {
+  elaborate,
+  libraryOf,
+  type PropagationStep,
+  tracePropagation,
+} from '@simten/core/internal';
 import { And, Led, Switch, Xor } from '@simten/core/std';
 import { useCircuitSimulator } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
@@ -79,9 +84,9 @@ export function PropagationDemo() {
   // Run the real propagation trace
   const trace = useMemo((): PropagationStep[] => {
     try {
-      const { library, behaviors } = designOf(HalfAdderDemo);
-      const flat = elaborate(HalfAdderDemo.circuit, library);
-      return tracePropagation(flat, library, behaviors);
+      const library = libraryOf(HalfAdderDemo);
+      const flat = elaborate(HalfAdderDemo.circuit, library.definitions);
+      return tracePropagation(flat, library);
     } catch (e) {
       console.error('Trace failed:', e);
       return [];

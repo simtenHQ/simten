@@ -20,8 +20,8 @@
 import type { BitValue, BusValue } from '@simten/core';
 import type { Circuit } from '@simten/core/circuit';
 import type {
+  CircuitDefinitions,
   CircuitIR,
-  CircuitLibrary,
   FlatPortValueMap,
   FlatSequentialState,
   SimulatorEngine,
@@ -54,7 +54,7 @@ export interface SimulatorState {
   circuit: CircuitIR | null;
   portValues: FlatPortValueMap | null;
   sequentialState: FlatSequentialState | null;
-  componentLibrary: CircuitLibrary | null;
+  componentLibrary: CircuitDefinitions | null;
   history: readonly { engineSnapshot: unknown; metadata?: unknown }[];
   historyIndex: number;
   isViewingPast: boolean;
@@ -214,10 +214,10 @@ export function useCircuitSimulator(
     [],
   );
 
-  // ── Build library + resolve circuit IR ──
+  // ── Build definitions + resolve circuit IR ──
   const { rawCircuit, componentLibrary } = useMemo(() => {
     const circuitMap = new Map<string, CircuitIR>();
-    const lib: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
+    const definitions: CircuitDefinitions & { addCircuit(c: CircuitIR): void } = {
       resolveCircuit: (name) => circuitMap.get(name),
       getAllPrimitiveNames: () =>
         [...circuitMap.entries()]
@@ -228,17 +228,17 @@ export function useCircuitSimulator(
       },
     };
     for (const c of [Switch, Led, Input(), Output, HexDisplay()]) {
-      lib.addCircuit(c.circuit);
+      definitions.addCircuit(c.circuit);
     }
     if (circuit) {
-      lib.addCircuit(circuit.circuit);
+      definitions.addCircuit(circuit.circuit);
       if (circuit._dependencies) {
         for (const [, dep] of circuit._dependencies) {
-          if (dep?.circuit) lib.addCircuit(dep.circuit);
+          if (dep?.circuit) definitions.addCircuit(dep.circuit);
         }
       }
     }
-    return { rawCircuit: circuit?.circuit ?? null, componentLibrary: lib };
+    return { rawCircuit: circuit?.circuit ?? null, componentLibrary: definitions };
   }, [circuit]);
 
   // ── Auto-harness (wrap with Switches/LEDs if enabled) ──

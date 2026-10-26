@@ -6,9 +6,9 @@
  * circuits with `simulate()` from `@simten/core`.
  *
  * ```typescript
- * const { library, behaviors } = designOf(top);
- * const flat = elaborate(top.circuit, library);
- * const engine = createEngine(flat, { componentLibrary: library, behaviors });
+ * const library = libraryOf(top);
+ * const flat = elaborate(top.circuit, library.definitions);
+ * const engine = createEngine(flat, { library });
  * engine.setNode('switch1', 1);
  * const result = engine.tick();
  * ```
@@ -27,10 +27,10 @@ export type {
   BitValue,
   BusType,
   BusValue,
+  // Circuit library
+  CircuitDefinitions,
   // Circuit types
   CircuitIR,
-  // Circuit library
-  CircuitLibrary,
   CircuitMetadata,
   CircuitTiming,
   ClockDescriptor,
@@ -40,7 +40,7 @@ export type {
   Implementation,
   MemoryType,
   MemoryValue,
-  MutableCircuitLibrary,
+  MutableCircuitDefinitions,
   Node,
   PortDescriptor,
   PortInstance,
@@ -165,4 +165,4 @@ export { tracePropagation } from './trace.js';
 // Engine
 // ============================================================================
 
-export { createCircuitLibrary, createEngine } from './engine.js';
+export { createEngine } from './engine.js';

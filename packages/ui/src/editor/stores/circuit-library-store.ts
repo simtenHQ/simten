@@ -7,14 +7,14 @@
  * All circuits are equal — no primitives/standard/user split.
  */
 
-import type { CircuitLibrary } from '@simten/core/internal';
+import type { CircuitDefinitions } from '@simten/core/internal';
 import { create } from 'zustand';
 import type { CircuitIR } from '../types/circuit';
 
 interface CircuitLibraryStore {
-  // Stable CircuitLibrary reference — changes identity only when circuits change.
+  // Stable CircuitDefinitions reference — changes identity only when circuits change.
   // null until first compile succeeds (or addCircuit is called).
-  library: CircuitLibrary | null;
+  library: CircuitDefinitions | null;
 
   // Set all circuits from a compiled result (production path)
   setLibrary: (lib: {
@@ -36,7 +36,7 @@ interface CircuitLibraryStore {
 
 export type { CircuitLibraryStore };
 
-function buildLibrary(circuits: Map<string, CircuitIR>): CircuitLibrary {
+function buildLibrary(circuits: Map<string, CircuitIR>): CircuitDefinitions {
   // Snapshot the map so the library is immutable after creation
   const snapshot = new Map(circuits);
   return {
