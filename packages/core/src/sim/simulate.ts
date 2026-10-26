@@ -17,6 +17,7 @@ import type { BuiltCircuit, PortMap } from '../circuit/types.js';
 import { createSimulatorFromCircuit } from '../simulator/index.js';
 import { SimulationSession } from '../simulator/simulation-session.js';
 import type {
+  ArgumentValue,
   BitValue,
   BusValue,
   Circuit,
@@ -131,7 +132,7 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
 
   // If the component is a primitive (leaf), wrap it in a composite shell
   // so the elaboration pipeline can handle it properly
-  const circuit = wrapIfPrimitive(rawCircuit, library);
+  const circuit = wrapIfPrimitive(rawCircuit, comp._args ?? {});
 
   // Detect sequential
   const isSequential = isSequentialCircuit(circuit, library.resolveCircuit);
@@ -276,8 +277,10 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
  * Wrap a primitive component in a composite shell for simulation.
  * The elaboration pipeline expects a composite top-level circuit with nodes.
  * Bare primitives need a wrapper that instantiates them and wires through.
+ * The wrapper's node carries the instance's arguments, as a parent's would, so
+ * `simulate(Register({ value: 5 }))` starts at 5 (#428).
  */
-function wrapIfPrimitive(circuit: Circuit, _library: CircuitLibrary): Circuit {
+function wrapIfPrimitive(circuit: Circuit, args: Record<string, ArgumentValue>): Circuit {
   if (circuit.implementation.kind !== 'primitive') return circuit;
 
   const nodeId = '_inner';
@@ -285,7 +288,7 @@ function wrapIfPrimitive(circuit: Circuit, _library: CircuitLibrary): Circuit {
     {
       id: nodeId,
       componentRef: circuit.name,
-      arguments: {},
+      arguments: args,
       inputs: circuit.inputs.map((p) => ({
         id: `${nodeId}.${p.name}`,
         name: p.name,

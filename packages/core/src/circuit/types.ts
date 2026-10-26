@@ -3,7 +3,7 @@
  *
  * Generic types that enable:
  * - Port name autocomplete in connect() callbacks
- * - Type errors on width mismatches
+ * - Port direction (`.to` only on a source, only sinks as targets)
  * - Typed sim.set() / sim.get()
  *
  * The object config pattern infers all types from a single object literal,
@@ -378,8 +378,16 @@ export interface CircuitConfig<
   eval?: (inputs: PortValues<Ins> & ResolvedState<S>) => PortOutputValues<Outs>;
   /** Sequential state. Map of named state fields, each a `reg(width)` or
    *  `mem(depth, width)` declaration (for synthesizable Verilog), or a raw
-   *  number / boolean / Map for simulation-only state. Read inside `eval`,
-   *  updated by `onTick`. */
+   *  number / Map for simulation-only state. Read inside `eval`, updated by
+   *  `onTick`.
+   *
+   *  A raw number does not say its width, so it is always a 32-bit bus, and a
+   *  raw Map is always a memory with 16-bit addresses and 8-bit data. Use
+   *  `reg(width)` and `mem(depth, width)` to choose the width.
+   *
+   *  In a factory, a field's initial value is the one the factory resolved,
+   *  defaults included: `({ value = 7 } = {}) => ({ state: { value } })`
+   *  starts at 7. */
   state?: S;
   /** Clock-edge state update — given inputs and current state, return the
    *  next state. Runs once per clock tick. Sequential components (registers,

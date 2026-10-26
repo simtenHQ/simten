@@ -377,22 +377,42 @@ describe('P-multi-drive-stitch — post-stitch multi-drive silently accepted (#1
     nodes: { d: Not },
     connect: ({ inputs, outputs, nodes: { d } }) => [inputs.x.to(outputs.y), inputs.x.to(d.in)],
   });
+  // circuit() now rejects the reversed connection (#428), so the fixture is
+  // built without it and the connection is added to the IR afterwards.
   const Bad = circuit('BadCircuit', {
     inputs: { A: bit, B: bit },
     outputs: { out: bit },
     nodes: { p: Pass },
     connect: ({ inputs, outputs, nodes: { p } }) => [
       inputs.A.to(p.x),
-      // Deliberately invalid: `y` is Pass's OUTPUT, so driving it from outside
-      // is meaningless — and that is the point. This fixture exists to produce
-      // a multi-driven top-level output after stitching (see #143). The
-      // direction types correctly reject it, so the cast is scoped to this one
-      // line rather than weakening the callback's typing.
-      inputs.B.to(p.y as unknown as SinkPortRef), // ← driver #1 of p.y at top
-      p.y.to(outputs.out), // ← p.y's downstream is outputs.out
+      p.y.to(outputs.out), // <- p.y's downstream is outputs.out
       // After stitching, A's feedthrough through Pass ALSO drives outputs.out
       // (via the resolved feedthrough chain). Multi-drive at outputs.out.
     ],
+  });
+  // Deliberately invalid: `y` is Pass's OUTPUT, so driving it from outside
+  // is meaningless, and that is the point. This fixture exists to produce
+  // a multi-driven top-level output after stitching (see #143).
+  Bad.circuit.connections.push({
+    id: 'conn_reversed',
+    source: { nodeId: '', portName: 'B' },
+    target: { nodeId: 'p', portName: 'y' },
+    portType: { kind: 'bit' },
+  });
+  it('circuit() rejects driving a node output from outside (#428)', () => {
+    expect(() =>
+      circuit('BadCircuit', {
+        inputs: { A: bit, B: bit },
+        outputs: { out: bit },
+        nodes: { p: Pass },
+        connect: ({ inputs, outputs, nodes: { p } }) => [
+          inputs.A.to(p.x),
+          // The direction types reject this; the cast stands in for untyped editor code.
+          inputs.B.to(p.y as unknown as SinkPortRef),
+          p.y.to(outputs.out),
+        ],
+      }),
+    ).toThrow(/Connection B -> p\.y runs the wrong way/);
   });
   it('structural: invariant 3 catches the multi-driven top output today (or elaborate throws post-fix)', () => {
     // Match either today's invariant message OR a future elaborate-time throw.
