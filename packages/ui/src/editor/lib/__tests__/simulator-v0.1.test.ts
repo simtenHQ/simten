@@ -1040,7 +1040,7 @@ describe('Simulator', () => {
             label: 'RAM',
             componentRef: 'RAM',
             arguments: {
-              memory: [10, 20, 30, 40], // Initialize addresses 0-3
+              memory: { 0: 10, 1: 20, 2: 30, 3: 40 }, // Initialize addresses 0-3
             },
             inputs: [
               { id: 'ram1.addr', name: 'addr', portType: busType(8) },

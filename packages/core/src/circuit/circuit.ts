@@ -26,22 +26,23 @@ import type {
   ClockDescriptor,
   Connection,
   Implementation,
+  MemoryValue,
   Node,
   PortDescriptor,
   PortType,
   StateBlock,
 } from '../ir/circuit-ir.js';
+import { checkMemoryContents } from '../ir/memory-contents.js';
 import {
   type BehaviorEntry,
   noteDefinition,
   registerCircuitBehavior,
 } from './behavior-registry.js';
-import { isMemState, isRegState, normalizePortType } from './bit-bus.js';
+import { isMemDecl, isRegDecl, type MemDecl, normalizePortType } from './bit-bus.js';
 import type {
   Circuit,
   CircuitConfig,
   CircuitMeta,
-  ConnectArg,
   ConnectionDef,
   NodeEntry,
   NormalizePorts,
@@ -56,7 +57,7 @@ import type {
 
 // IMPORTANT runtime/type asymmetry: every port object carries `.to` at
 // runtime, including the ones the type system presents as SinkPortRef
-// (via ConnectArg's mapped types). The type system catches a reversed
+// (via ConnectContext's mapped types). The type system catches a reversed
 // connection at edit time (#110), but the editor runs type-stripped code, so
 // `checkDirection` below rejects one at build time as well (#428).
 /** Which side of the circuit boundary a top-level port sits on, for advice. */
@@ -179,7 +180,7 @@ function createNodeProxy(
 // That is an OPEN INDEX SIGNATURE: `sw.banana` type-checks, and inside a
 // `connect` callback the editor can offer no completions on `sw.` because
 // every key is equally valid. `= {}` closes it, so port names autocomplete and
-// a typo is an error. See ConnectArg's note on the same hazard.
+// a typo is an error. See ConnectContext's note on the same hazard.
 export function circuit<
   Opts extends Record<string, ArgumentValue>,
   Ins extends Record<string, PortType | number> = Record<never, never>,
@@ -256,13 +257,39 @@ function assertCircuitName(name: unknown): asserts name is string {
  */
 function specializeFactory(name: string, factory: CircuitFactory) {
   return (opts?: FactoryOptions): Circuit => {
-    const built = buildCircuit(name, factory(opts)) as {
+    const config = factory(opts);
+    assertMemoryOptions(name, config, opts ?? {});
+    const built = buildCircuit(name, config) as {
       -readonly [K in keyof Circuit]: Circuit[K];
     };
     built._args = withResolvedStateInitials(built.circuit.state, opts ?? {});
     resetStateInitials(built.circuit.state);
     return built;
   };
+}
+
+/**
+ * A factory option named after a `mem()` state field (`ROM({ memory })`) is
+ * that memory's contents for this instance. Check it against the declared
+ * depth and width, as `validateConfig` does for `mem()`'s own contents.
+ */
+function assertMemoryOptions(name: string, config: AnyCircuitConfig, opts: FactoryOptions): void {
+  const errors: string[] = [];
+  for (const [key, decl] of Object.entries(config.state ?? {})) {
+    if (isMemDecl(decl) && opts[key] !== undefined) {
+      checkMemoryField(key, decl, opts[key], errors);
+    }
+  }
+  if (errors.length > 0) {
+    throw new Error(`Circuit '${name}' validation failed:\n  - ${errors.join('\n  - ')}`);
+  }
+}
+
+/** Errors for one memory field's contents, each naming the field. */
+function checkMemoryField(field: string, decl: MemDecl, contents: unknown, errors: string[]): void {
+  for (const problem of checkMemoryContents(contents, decl.depth, decl.width)) {
+    errors.push(`state '${field}': ${problem}`);
+  }
 }
 
 /**
@@ -281,8 +308,8 @@ function withResolvedStateInitials(state: StateBlock[], opts: FactoryOptions): F
     if (sb.name in args) continue;
     const iv = sb.initialValue;
     if (sb.stateType.kind === 'memory') {
-      const data = (iv as { data?: Map<number, number> } | undefined)?.data;
-      if (data && data.size > 0) args[sb.name] = Object.fromEntries(data);
+      const data = (iv as MemoryValue | undefined)?.data;
+      if (data && Object.keys(data).length > 0) args[sb.name] = { ...data };
     } else if (typeof iv === 'number' && iv !== 0) {
       args[sb.name] = iv;
     }
@@ -316,7 +343,7 @@ function resetStateInitials(state: StateBlock[]): void {
     } else if (sb.stateType.kind === 'memory') {
       const iv = sb.initialValue as { addressWidth: number; dataWidth: number } | undefined;
       sb.initialValue = {
-        data: new Map<number, number>(),
+        data: {},
         addressWidth: iv?.addressWidth ?? sb.stateType.addressWidth,
         dataWidth: iv?.dataWidth ?? sb.stateType.dataWidth,
       };
@@ -428,6 +455,11 @@ function validateConfig(
     }
   }
 
+  // mem() starting contents fit the declared depth and width
+  for (const [key, decl] of Object.entries(config.state ?? {})) {
+    if (isMemDecl(decl)) checkMemoryField(key, decl, decl.initial, errors);
+  }
+
   // onTick without state
   if (config.onTick && !config.state) {
     errors.push('.onTick() requires state to be defined');
@@ -467,7 +499,7 @@ function evaluateConnect(
 
   let result: unknown;
   try {
-    result = config.connect(arg as unknown as ConnectArg<any, any, any>);
+    result = config.connect(arg as unknown as Parameters<NonNullable<typeof config.connect>>[0]);
   } catch (e) {
     errors.push(e instanceof Error ? e.message : String(e));
     return [];
@@ -780,19 +812,19 @@ function buildStateBlocks(name: string, state: StateShape | undefined): StateBlo
   if (state == null) return stateBlocks;
   for (const [key, value] of Object.entries(state)) {
     const block = { id: `${name}-${key}`, name: key, clockRef: 'clk', edge: 'rising' } as const;
-    if (isMemState(value)) {
+    if (isMemDecl(value)) {
       // Declarative memory: mem(depth, width)
       const addrWidth = Math.ceil(Math.log2(value.depth)) || 1;
       stateBlocks.push({
         ...block,
         stateType: { kind: 'memory', addressWidth: addrWidth, dataWidth: value.width },
         initialValue: {
-          data: new Map(value.initial),
+          data: { ...value.initial },
           addressWidth: addrWidth,
           dataWidth: value.width,
         },
       });
-    } else if (isRegState(value)) {
+    } else if (isRegDecl(value)) {
       // Declarative register: reg(width)
       stateBlocks.push({
         ...block,
@@ -804,7 +836,7 @@ function buildStateBlocks(name: string, state: StateShape | undefined): StateBlo
       stateBlocks.push({
         ...block,
         stateType: { kind: 'memory', addressWidth: 16, dataWidth: 8 },
-        initialValue: { data: new Map(value), addressWidth: 16, dataWidth: 8 },
+        initialValue: { data: Object.fromEntries(value), addressWidth: 16, dataWidth: 8 },
       });
     } else if (typeof value === 'boolean') {
       // Defensive only: `StateFieldValue` no longer permits boolean, so this

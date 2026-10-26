@@ -68,7 +68,7 @@ export interface SinkPortRef<T extends PortType = PortType> {
 
 /** Unnarrowable at runtime by design — every port object carries `.to`,
  *  so duck-typing would silently invert direction. Refine via the
- *  `ConnectArg`-typed slots in your `connect` callback instead. */
+ *  `ConnectContext`-typed slots in your `connect` callback instead. */
 export type PortRef<T extends PortType = PortType> = SourcePortRef<T> | SinkPortRef<T>;
 
 /** A connection definition produced by SourcePortRef.to() */
@@ -132,7 +132,7 @@ export type NodeEntry = Circuit | readonly Circuit[];
  * default generic constraints — yielding an open index signature that made
  * `nodes.xor1.bogusPort` silently typecheck.
  */
-export type ConnectArg<
+export type ConnectContext<
   Ins extends Record<string, PortType | number>,
   Outs extends Record<string, PortType | number>,
   Nodes extends Record<string, NodeEntry>,
@@ -201,8 +201,8 @@ type StateFieldValue =
   | number
   | Map<number, number>
   | string
-  | import('./bit-bus.js').RegState
-  | import('./bit-bus.js').MemState;
+  | import('./bit-bus.js').RegDecl
+  | import('./bit-bus.js').MemDecl;
 
 /** State shape — plain object where each field is a state value */
 export type StateShape = Record<string, StateFieldValue>;
@@ -213,9 +213,9 @@ export type StateShape = Record<string, StateFieldValue>;
  * `reg(width)` and `mem(depth, width)` are *declarations* — they exist so the
  * Verilog exporter knows the widths. What `eval` reads and `onTick` returns is
  * the value they hold: a number for a reg, a Map for a mem. Without this,
- * `state: { value: reg(8) }` typed `eval`'s `value` as `RegState`, so the only
+ * `state: { value: reg(8) }` typed `eval`'s `value` as `RegDecl`, so the only
  * way to use it was `value as number` — a cast that does not even compile,
- * because `RegState` and `number` do not overlap. Every declarative-state test
+ * because `RegDecl` and `number` do not overlap. Every declarative-state test
  * carried one, and none of them was ever type-checked.
  */
 /**
@@ -228,9 +228,9 @@ export type StateShape = Record<string, StateFieldValue>;
  */
 type MemoryAccess = Map<number, number> & Record<number, number>;
 
-type ResolvedStateValue<T> = T extends import('./bit-bus.js').RegState
+type ResolvedStateValue<T> = T extends import('./bit-bus.js').RegDecl
   ? number
-  : T extends import('./bit-bus.js').MemState
+  : T extends import('./bit-bus.js').MemDecl
     ? MemoryAccess
     : T;
 
@@ -245,9 +245,9 @@ type ResolvedState<S> = { [K in keyof S]: ResolvedStateValue<S[K]> };
  * produces. `MemoryAccess` is assignable to `Map`, so handing back the received
  * value works too.
  */
-type ResolvedStateReturnValue<T> = T extends import('./bit-bus.js').RegState
+type ResolvedStateReturnValue<T> = T extends import('./bit-bus.js').RegDecl
   ? number
-  : T extends import('./bit-bus.js').MemState
+  : T extends import('./bit-bus.js').MemDecl
     ? Map<number, number>
     : T;
 
@@ -323,7 +323,7 @@ export interface Circuit<
    *  hierarchical UIs. */
   readonly nodes: { readonly [K in keyof Ns]: Node };
   /** @internal Type-level shape for generic propagation. Carries the
-   *  per-instance generic parameters so other generic helpers (`ConnectArg`,
+   *  per-instance generic parameters so other generic helpers (`ConnectContext`,
    *  `NodePortRefs`) can recover them via `infer`. Not for runtime use. */
   readonly _shape: { inputs: Ins; outputs: Outs; nodes: Ns };
   /** Sub-circuit definitions needed for simulation (transitive). Walk this
@@ -373,7 +373,7 @@ export interface CircuitConfig<
    *  with destructurable port refs and returns an array of connections built
    *  via `port.to(...targets)`. Use this for composite circuits — the
    *  alternative is `eval` for primitives. */
-  connect?: (arg: ConnectArg<Ins, Outs, Nodes>) => ConnectionDef[];
+  connect?: (arg: ConnectContext<Ins, Outs, Nodes>) => ConnectionDef[];
   /** Combinational behavior — given input values (and current state), return
    *  output values. Use for primitives (gates, ALUs, decoders) whose output
    *  is a pure function of inputs. Pair with `onTick` for sequential logic. */
