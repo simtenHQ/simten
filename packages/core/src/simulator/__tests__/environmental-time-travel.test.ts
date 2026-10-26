@@ -17,7 +17,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { designOf } from '../../circuit/behaviour.js';
+import { designOf } from '../../circuit/behavior.js';
 import { bit, circuit } from '../../circuit/index.js';
 import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
 import { DFlipFlop, Switch } from '../../std/index.js';
@@ -69,7 +69,7 @@ function buildSim() {
   const flat = elaborate(SwitchedFF.circuit, library);
   const sim = createEngine(flat, {
     componentLibrary: library,
-    behaviours: designOf(SwitchedFF).behaviours,
+    behaviors: designOf(SwitchedFF).behaviors,
   });
   return { sim, flat, library };
 }
@@ -93,7 +93,7 @@ describe('environmental state time-travel', () => {
     sim.tick();
 
     // FlatNode has primitiveType, not componentRef — captureEnvironmentalState
-    // reads componentRef and finds nothing. This is the behaviour that broke
+    // reads componentRef and finds nothing. This is the behavior that broke
     // the sandbox; assert it so future refactors don't mistakenly believe the
     // core helper works on FlatCircuits.
     const wrongWay = captureEnvironmentalState(flat as unknown as CircuitIR, library);

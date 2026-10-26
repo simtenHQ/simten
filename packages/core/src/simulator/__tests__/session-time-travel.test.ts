@@ -15,7 +15,7 @@
  * the real session path and assert both kinds of state rewind.
  */
 import { describe, expect, it } from 'vitest';
-import { designOf } from '../../circuit/behaviour.js';
+import { designOf } from '../../circuit/behavior.js';
 import type { Circuit } from '../../circuit/index.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { isSequentialCircuit } from '../../circuit/is-sequential.js';
@@ -55,7 +55,7 @@ function makeSession(built: Circuit<any, any>): SimulationSession {
   const isSeq = isSequentialCircuit(built.circuit, lib.resolveCircuit);
   const engine = createEngine(elaborate(built.circuit, lib), {
     componentLibrary: lib,
-    behaviours: designOf(built).behaviours,
+    behaviors: designOf(built).behaviors,
   });
   engine.runCombinational();
   return new SimulationSession(engine, { isSequential: isSeq });

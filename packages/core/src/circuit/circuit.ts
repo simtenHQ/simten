@@ -34,13 +34,13 @@ import type {
 } from '../ir/circuit-ir.js';
 import { checkMemoryContents } from '../ir/memory-contents.js';
 import {
-  attachBehaviour,
-  type Behaviour,
-  type BehaviourFn,
-  behaviourOf,
+  attachBehavior,
+  type Behavior,
+  type BehaviorFn,
+  behaviorOf,
   definitionKey,
   NO_EVAL,
-} from './behaviour.js';
+} from './behavior.js';
 import { isMemDecl, isRegDecl, type MemDecl, normalizePortType } from './bit-bus.js';
 import type {
   Circuit,
@@ -256,7 +256,7 @@ function assertCircuitName(name: unknown): asserts name is string {
  * with `_args` attached. The factory closes over the original `name`, so
  * every specialized instance shares the same component name. Shape can
  * differ per call (e.g. port widths); each instance carries its own
- * behaviour closures.
+ * behavior closures.
  */
 function specializeFactory(name: string, factory: CircuitFactory) {
   return (opts?: FactoryOptions): Circuit => {
@@ -354,7 +354,7 @@ function resetStateInitials(state: StateBlock[]): void {
   }
 }
 
-/** Object form: validate the config, then build its IR and attach its behaviour. */
+/** Object form: validate the config, then build its IR and attach its behavior. */
 function buildCircuit(name: string, config: AnyCircuitConfig): Circuit {
   const ports = normalizePorts(config);
   const declaredNodes = (config.nodes ?? {}) as Record<string, NodeEntry>;
@@ -372,7 +372,7 @@ function buildCircuit(name: string, config: AnyCircuitConfig): Circuit {
 
   const built = buildIR(name, config, ports, nodes, connectionDefs, dependencies);
   if (built.circuit.implementation.kind === 'primitive') {
-    attachBehaviour(built, behaviourFor(config, built.circuit));
+    attachBehavior(built, behaviorFor(config, built.circuit));
   }
   return built;
 }
@@ -925,11 +925,11 @@ function buildMetadata(timing: CircuitTiming, meta: CircuitMeta | undefined): Ci
 
 /**
  * Sub-circuit definitions for this circuit's tree, keyed by component name.
- * The library and behaviour table a compile builds from this hold one
+ * The library and behavior table a compile builds from this hold one
  * definition per name, so two different circuits under one name in one tree
  * would both run as whichever was seen first (#428). That is an error.
  * Specialisations of one factory are the same circuit: a primitive's are
- * compared by behaviour and port names (not widths, which each node carries),
+ * compared by behavior and port names (not widths, which each node carries),
  * a composite's by structure.
  */
 function collectDependencies(
@@ -963,17 +963,17 @@ function collectDependencies(
 }
 
 /**
- * The behaviour a primitive carries. Display-only primitives like HexDisplay
+ * The behavior a primitive carries. Display-only primitives like HexDisplay
  * have no `eval` of their own (no computation, no outputs) but still get a
  * no-op, so the engine can dispatch through them.
  */
-function behaviourFor(config: AnyCircuitConfig, circuitIR: CircuitIR): Behaviour {
+function behaviorFor(config: AnyCircuitConfig, circuitIR: CircuitIR): Behavior {
   return {
     inputNames: circuitIR.inputs.map((p) => p.name),
     outputNames: circuitIR.outputs.map((p) => p.name),
-    evalFn: (config.eval as BehaviourFn | undefined) ?? NO_EVAL,
+    evalFn: (config.eval as BehaviorFn | undefined) ?? NO_EVAL,
     stateKeys: config.state ? Object.keys(config.state) : undefined,
-    onTickFn: config.onTick as BehaviourFn | undefined,
+    onTickFn: config.onTick as BehaviorFn | undefined,
   };
 }
 
@@ -1101,16 +1101,16 @@ function checkDirection(
 }
 
 /** Whether two circuits under one name are one definition, so can share a library entry. */
-function sameDefinition(a: Circuit, b: Circuit): boolean {
+export function sameDefinition(a: Circuit, b: Circuit): boolean {
   if (a.circuit === b.circuit) return true;
   const kind = a.circuit.implementation.kind;
   if (kind !== b.circuit.implementation.kind) return false;
   if (kind === 'composite') return structureKey(a.circuit) === structureKey(b.circuit);
-  const behaviourA = behaviourOf(a);
-  const behaviourB = behaviourOf(b);
-  if (behaviourA === behaviourB) return true;
-  if (!behaviourA || !behaviourB) return structureKey(a.circuit) === structureKey(b.circuit);
-  return definitionKey(behaviourA) === definitionKey(behaviourB);
+  const behaviorA = behaviorOf(a);
+  const behaviorB = behaviorOf(b);
+  if (behaviorA === behaviorB) return true;
+  if (!behaviorA || !behaviorB) return structureKey(a.circuit) === structureKey(b.circuit);
+  return definitionKey(behaviorA) === definitionKey(behaviorB);
 }
 
 /** Memoised per IR object: composites are compared often and rebuilt rarely. */

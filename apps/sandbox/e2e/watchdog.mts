@@ -1,5 +1,5 @@
 /**
- * A behaviour function that never returns must not freeze the page or the
+ * A behavior function that never returns must not freeze the page or the
  * sandbox. Builds the sandbox, serves it on :4310 and a bare parent page on
  * :4311, then drives it in headless Chromium.
  *
@@ -240,7 +240,7 @@ try {
   const ticked = await send({ type: 'tick-n', n: 5, slot: 'again' });
   check('tick after restart', ticked.type === 'ticked-n' && ticked.cycle === 5, show(ticked));
 
-  // User code can't change stdlib behaviour for any slot.
+  // User code can't change stdlib behavior for any slot.
   check(
     'compile fake Adder',
     (await send({ type: 'compile', source: FAKE_ADDER, slot: 'fake' })).type === 'compiled',

@@ -1,13 +1,13 @@
 /**
- * Eval Bridge — connects `eval`/`onTick` behaviour to the simulator.
+ * Eval Bridge — connects `eval`/`onTick` behavior to the simulator.
  *
  * The engine dispatches through a per-compile evaluator table:
  *   circuit.evaluators[circuit.primitiveTypeIndex[nodeIndex]](ctx)
  *
- * Behaviour works with named plain objects:
+ * Behavior works with named plain objects:
  *   ({ a, b }) => ({ sum: a + b })
  *
- * This module builds that table from one compile's `BehaviourTable`, by
+ * This module builds that table from one compile's `BehaviorTable`, by
  * wrapping each eval in a function that:
  * 1. Reads inputs from typed arrays by index → builds a named input object
  * 2. Merges state values if the component is sequential
@@ -15,7 +15,7 @@
  * 4. Writes output object properties back to typed arrays by index
  */
 
-import type { BehaviourFn, BehaviourTable } from '../circuit/behaviour.js';
+import type { BehaviorFn, BehaviorTable } from '../circuit/behavior.js';
 import type { EvalContext, NumericEvaluator } from './evaluators/types.js';
 import { readInput, writeOutput } from './evaluators/types.js';
 
@@ -88,7 +88,7 @@ function mergeState(ctx: EvalContext, stateKeys: string[], inputs: Record<string
 export function generateEvalWrapper(
   inputNames: string[],
   outputNames: string[],
-  evalFn: BehaviourFn,
+  evalFn: BehaviorFn,
   stateKeys?: string[],
 ): NumericEvaluator {
   const numInputs = inputNames.length;
@@ -148,14 +148,14 @@ export function generateEvalWrapper(
 export type OnTickEntry = {
   inputNames: string[];
   stateKeys: string[];
-  fn: BehaviourFn;
+  fn: BehaviorFn;
 };
 
 /** One compile's dispatch: an evaluator and an onTick per primitive type, by type index. */
 export interface DispatchTables {
   /** Primitive type name for each type index. */
   typeNames: string[];
-  /** Null when the compile has no behaviour for that type; dispatching it throws. */
+  /** Null when the compile has no behavior for that type; dispatching it throws. */
   evaluators: (NumericEvaluator | null)[];
   onTicks: (OnTickEntry | undefined)[];
   /** Type index for each name in `typeNames`. */
@@ -169,19 +169,19 @@ export function createDispatchTables(): DispatchTables {
 
 /**
  * The type index for a primitive type in this compile, building its evaluator
- * and onTick from the behaviour table the first time the type is seen.
+ * and onTick from the behavior table the first time the type is seen.
  */
 export function typeIndexFor(
   tables: DispatchTables,
   name: string,
-  behaviours: BehaviourTable,
+  behaviors: BehaviorTable,
 ): number {
   const existing = tables.typeIndex.get(name);
   if (existing !== undefined) return existing;
   const idx = tables.typeNames.length;
   tables.typeIndex.set(name, idx);
   tables.typeNames.push(name);
-  const entry = behaviours.get(name);
+  const entry = behaviors.get(name);
   tables.evaluators.push(
     entry
       ? generateEvalWrapper(entry.inputNames, entry.outputNames, entry.evalFn, entry.stateKeys)

@@ -50,8 +50,8 @@ export interface NumericCircuit {
   /** Primitive type name for each type index */
   primitiveTypeNames: string[];
 
-  /** Evaluator for each type index, built from this compile's behaviour table.
-   *  Null when the table has no behaviour for the type. */
+  /** Evaluator for each type index, built from this compile's behavior table.
+   *  Null when the table has no behavior for the type. */
   evaluators: (NumericEvaluator | null)[];
 
   /** onTick for each type index, when the type has one */

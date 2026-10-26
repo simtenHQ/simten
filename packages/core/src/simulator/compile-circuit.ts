@@ -5,7 +5,7 @@
  * This is a one-time operation during initialization.
  */
 
-import type { BehaviourTable } from '../circuit/behaviour.js';
+import type { BehaviorTable } from '../circuit/behavior.js';
 import type { CircuitIR, CircuitLibrary, PortType } from '../ir/circuit-ir.js';
 import { createDispatchTables, typeIndexFor } from './eval-bridge.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
@@ -17,13 +17,13 @@ import { TOP_LEVEL_NODE } from './types.js';
  *
  * @param flatCircuit - The flattened circuit to compile
  * @param library - Component library for resolving component definitions
- * @param behaviours - This compile's behaviour, by primitive type name
+ * @param behaviors - This compile's behavior, by primitive type name
  * @returns Compiled numeric circuit
  */
 export function compileForSimulation(
   flatCircuit: FlatCircuit,
   library: CircuitLibrary,
-  behaviours: BehaviourTable,
+  behaviors: BehaviorTable,
 ): NumericCircuit {
   const nodeCount = flatCircuit.nodes.length;
 
@@ -153,12 +153,12 @@ export function compileForSimulation(
   // ============================================================================
 
   // One type index per primitive type in this circuit, into dispatch tables
-  // built from this compile's behaviour and nothing else.
+  // built from this compile's behavior and nothing else.
   const primitiveTypeIndex = new Uint16Array(nodeCount);
   const dispatch = createDispatchTables();
 
   for (let i = 0; i < nodeCount; i++) {
-    primitiveTypeIndex[i] = typeIndexFor(dispatch, flatCircuit.nodes[i].primitiveType, behaviours);
+    primitiveTypeIndex[i] = typeIndexFor(dispatch, flatCircuit.nodes[i].primitiveType, behaviors);
   }
 
   // ============================================================================

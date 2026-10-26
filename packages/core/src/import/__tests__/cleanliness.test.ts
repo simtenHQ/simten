@@ -40,7 +40,7 @@ function measure(file: string, top: string) {
   const {
     top: t,
     library,
-    behaviours,
+    behaviors,
   } = importNetlist(JSON.parse(fixGz(file).toString('utf8')) as YosysNetlist, top);
   const mods = [...library.values()].filter((c) => c.metadata?.description?.includes('Imported'));
   let recon = 0;
@@ -58,7 +58,7 @@ function measure(file: string, top: string) {
   return {
     t,
     library,
-    behaviours,
+    behaviors,
     recon,
     semantic,
     rtl,
@@ -94,7 +94,7 @@ describe('cleanliness — RV32I_CPU_Core scale guard (measured-then-ratcheted)',
 
   it('still builds and simulates (structure valid)', () => {
     const deps = [...m.library.values()].filter((c) => c.name !== m.t.name);
-    const sim = simulate(buildFromIR(m.t, deps, m.behaviours));
+    const sim = simulate(buildFromIR(m.t, deps, m.behaviors));
     sim.tick();
     sim.dispose();
   });
@@ -126,7 +126,7 @@ describe('cleanliness — SERV serv_rf_top, unmodified third-party RTL', () => {
 
   it('still builds and simulates (structure valid)', () => {
     const deps = [...m.library.values()].filter((c) => c.name !== m.t.name);
-    const sim = simulate(buildFromIR(m.t, deps, m.behaviours));
+    const sim = simulate(buildFromIR(m.t, deps, m.behaviors));
     sim.tick();
     sim.dispose();
   });

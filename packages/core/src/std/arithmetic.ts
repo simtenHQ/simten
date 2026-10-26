@@ -114,7 +114,7 @@ export const Adder = circuit(
     meta: { category: 'arithmetic', icon: '+', description: 'N-bit adder with carry' },
     // `width` is read from inputs (bridge merges node.arguments) so a single
     // lambda works for every Adder({width: N}) instance. The fallback is the
-    // literal 8, not the factory's `width`: a compile keys behaviour by name,
+    // literal 8, not the factory's `width`: a compile keys behavior by name,
     // so one instance's closure serves them all, and the sandbox rebuilds
     // evals sent as text without their closure.
     eval: ({ a, b, carry_in, width: w = 8 }) => {

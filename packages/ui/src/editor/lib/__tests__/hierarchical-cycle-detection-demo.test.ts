@@ -5,24 +5,24 @@
  */
 
 import {
-  type Behaviour,
+  type Behavior,
   type CircuitLibrary,
   createEngine,
   elaborate,
-  getStdBehaviours,
+  getStdDesign,
 } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
 import { bitType, busType, type CircuitIR } from '../../types/circuit';
 
-// Behaviour for the local 'Add' primitive defined below, on top of std's. The
-// engine runs only the behaviour table it is given, so any primitive a test
+// Behavior for the local 'Add' primitive defined below, on top of std's. The
+// engine runs only the behavior table it is given, so any primitive a test
 // uses needs an entry. (Before the hand-written fast paths were deleted, the
 // simulator silently zeroed outputs for unknown primitives, which let this
 // test pass on a fluke while computing nonsense.)
-const BEHAVIOURS = new Map<string, Behaviour>([
-  ...getStdBehaviours(),
+const BEHAVIORS = new Map<string, Behavior>([
+  ...getStdDesign().behaviors,
   [
     'Add',
     {
@@ -37,7 +37,7 @@ const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
   (c) => c.implementation.kind === 'primitive',
 );
 
-function getLibrary(): CircuitLibrary {
+function storeLibrary(): CircuitLibrary {
   const store = useCircuitLibraryStore.getState();
   return {
     resolveCircuit: (name) => store.resolveCircuit(name),
@@ -257,10 +257,10 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
 
     // Before the fix: This would fail with "Cycle detected in circuit"
     // After the fix: This should succeed because registers break the paths
-    const simLibrary = getLibrary();
+    const simLibrary = storeLibrary();
     const sim = createEngine(elaborate(system, simLibrary), {
       componentLibrary: simLibrary,
-      behaviours: BEHAVIOURS,
+      behaviors: BEHAVIORS,
     });
     const result = sim.runCombinational();
 
@@ -501,10 +501,10 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
 
     // OLD BEHAVIOR: Would falsely detect cycle
     // NEW BEHAVIOR: Correctly recognizes registers break the path
-    const simLibrary = getLibrary();
+    const simLibrary = storeLibrary();
     const sim = createEngine(elaborate(network, simLibrary), {
       componentLibrary: simLibrary,
-      behaviours: BEHAVIOURS,
+      behaviors: BEHAVIORS,
     });
     const result = sim.runCombinational();
 

@@ -8,7 +8,7 @@
  * has zero tracing overhead.
  */
 
-import type { BehaviourTable } from '../circuit/behaviour.js';
+import type { BehaviorTable } from '../circuit/behavior.js';
 import type { CircuitLibrary } from '../ir/circuit-ir.js';
 import { compileForSimulation } from './compile-circuit.js';
 import type { EvalContext } from './evaluators/types.js';
@@ -129,9 +129,9 @@ function propagateWithTrace(
 export function tracePropagation(
   flatCircuit: FlatCircuit,
   library: CircuitLibrary,
-  behaviours: BehaviourTable,
+  behaviors: BehaviorTable,
 ): PropagationStep[] {
-  const numeric = compileForSimulation(flatCircuit, library, behaviours);
+  const numeric = compileForSimulation(flatCircuit, library, behaviors);
   const values = createNumericPortValues(numeric.portCount);
   const queue = new NumericEventQueue(numeric.nodeCount);
 

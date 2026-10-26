@@ -1,11 +1,11 @@
 /**
- * Redefining a primitive replaces its behaviour.
+ * Redefining a primitive replaces its behavior.
  *
- * Component behaviour used to be cached in two module-level places keyed by
- * name: a global behaviour registry (written by `circuit()` at definition time)
+ * Component behavior used to be cached in two module-level places keyed by
+ * name: a global behavior registry (written by `circuit()` at definition time)
  * and a compiled evaluator table (built from it at compile time). Both used to
  * keep the *first* value for a given name and silently drop later ones. Each
- * compile now owns its behaviour table (#465), and this pins the result.
+ * compile now owns its behavior table (#465), and this pins the result.
  *
  * That is invisible in a normal build — each name is defined once — but the
  * browser editor re-executes source in the same realm, so these module-level

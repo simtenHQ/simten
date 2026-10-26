@@ -26,7 +26,7 @@ import type {
   FlatSequentialState,
   SimulatorEngine,
 } from '@simten/core/internal';
-import { autoHarness, behaviourOf, isSequentialCircuit } from '@simten/core/internal';
+import { autoHarness, behaviorOf, isSequentialCircuit } from '@simten/core/internal';
 import { HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
 import {
   type BehaviorSource,
@@ -120,10 +120,10 @@ export interface UseCircuitSimulatorOptions {
 
 /**
  * Extract eval function sources from a Circuit and its dependencies, from the
- * behaviour each built circuit carries. These are serialized and sent to the
+ * behavior each built circuit carries. These are serialized and sent to the
  * sandbox, which uses its own closure for any that match std's text and
  * rebuilds the rest with new Function(). Returns an empty object for a circuit
- * built from IR (the editor case, where the behaviour lives in the sandbox's
+ * built from IR (the editor case, where the behavior lives in the sandbox's
  * own compile of the source).
  */
 function extractBehaviorSources(circuit: Circuit): Record<string, BehaviorSource> {
@@ -135,7 +135,7 @@ function extractBehaviorSources(circuit: Circuit): Record<string, BehaviorSource
     if (visited.has(name)) return;
     visited.add(name);
 
-    const entry = behaviourOf(c);
+    const entry = behaviorOf(c);
     if (entry) {
       sources[name] = {
         evalSource: entry.evalFn.toString(),
@@ -157,7 +157,7 @@ function extractBehaviorSources(circuit: Circuit): Record<string, BehaviorSource
 /**
  * Build a minimal Circuit-like object from a Circuit IR and its dependencies.
  * Used by the editor to adapt sandbox compile results into the shape useCircuitSimulator expects.
- * The resulting object carries no behaviour: the sandbox runs the behaviour of its own
+ * The resulting object carries no behavior: the sandbox runs the behavior of its own
  * prior sandbox.compile(source).
  */
 export function builtFromIR(circuit: CircuitIR, dependencies: CircuitIR[]): Circuit {

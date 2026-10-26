@@ -10,7 +10,7 @@
  *
  * N-way concatenation and sign-extension (MSB replication) are expressed as a
  * fold of `RtlConcat2`, so every instance shares a fixed set of port NAMES
- * (`in`/`out`, `hi`/`lo`/`out`): a compile's behaviour table is keyed by
+ * (`in`/`out`, `hi`/`lo`/`out`): a compile's behavior table is keyed by
  * circuit name, so one eval serves every instance and only widths vary
  * (same contract as `Adder`/`Register` in std).
  *
@@ -363,7 +363,7 @@ export function Dlatch(opts: { width: number; enPolarity: number }): Circuit {
  *
  * The primitive name encodes the shape (read/write port counts, address/data
  * widths, depth) so every instance of a shape shares a fixed set of port names
- * : a compile's behaviour table keys behaviour by name. Ports are per-lane and narrow
+ * : a compile's behavior table keys behavior by name. Ports are per-lane and narrow
  * (`rd_addr_i`, `wr_addr_i`, `wr_data_i`, `wr_en_i`, `rd_data_i`), so the
  * importer slices yosys's wide packed `RD_ADDR`/`WR_DATA`/… bit arrays into
  * lanes rather than materializing a >32-bit port.

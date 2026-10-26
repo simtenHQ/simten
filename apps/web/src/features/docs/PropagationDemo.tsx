@@ -79,9 +79,9 @@ export function PropagationDemo() {
   // Run the real propagation trace
   const trace = useMemo((): PropagationStep[] => {
     try {
-      const { library, behaviours } = designOf(HalfAdderDemo);
+      const { library, behaviors } = designOf(HalfAdderDemo);
       const flat = elaborate(HalfAdderDemo.circuit, library);
-      return tracePropagation(flat, library, behaviours);
+      return tracePropagation(flat, library, behaviors);
     } catch (e) {
       console.error('Trace failed:', e);
       return [];

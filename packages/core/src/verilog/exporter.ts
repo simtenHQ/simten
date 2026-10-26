@@ -11,12 +11,12 @@
  * - No combinational loops
  */
 
-import type { BehaviourTable } from '../circuit/behaviour.js';
+import type { BehaviorTable } from '../circuit/behavior.js';
 import type { CircuitIR, MemoryValue, PortType } from '../ir/circuit-ir.js';
 import { memoryContentsToMap } from '../ir/memory-contents.js';
 import { elaborate } from '../simulator/elaboration.js';
 import type { CircuitLibrary, FlatCircuit, FlatConnection, FlatNode } from '../simulator/types.js';
-import { getStdBehaviours } from '../tools/lib.js';
+import { getStdDesign } from '../std/design.js';
 import {
   emitPrimitive,
   isSequentialPrimitive,
@@ -29,11 +29,11 @@ import {
 import type { ExportResult, VerilogExportOptions } from './types.js';
 import { INLINE_MEMORY_THRESHOLD } from './types.js';
 
-type ResolvedOptions = Required<Omit<VerilogExportOptions, 'behaviours'>> & {
-  behaviours: BehaviourTable;
+type ResolvedOptions = Required<Omit<VerilogExportOptions, 'behaviors'>> & {
+  behaviors: BehaviorTable;
 };
 
-const DEFAULT_OPTIONS: Required<Omit<VerilogExportOptions, 'behaviours'>> = {
+const DEFAULT_OPTIONS: Required<Omit<VerilogExportOptions, 'behaviors'>> = {
   mode: 'flat',
   topModuleName: '',
   clockName: 'clk',
@@ -91,7 +91,7 @@ export function exportVerilogFlat(
   const opts: ResolvedOptions = {
     ...DEFAULT_OPTIONS,
     ...options,
-    behaviours: options?.behaviours ?? getStdBehaviours(),
+    behaviors: options?.behaviors ?? getStdDesign().behaviors,
   };
   const flatCircuit = elaborate(circuit, library, false, { expandReferences: true });
   return emitFlatModule(circuit, flatCircuit, library, opts);
@@ -344,7 +344,7 @@ function emitFlatModule(
     }
 
     const ctx: PrimitiveContext = {
-      behaviours: opts.behaviours,
+      behaviors: opts.behaviors,
       nodeId: node.id,
       primitiveType: node.primitiveType,
       args: node.arguments,

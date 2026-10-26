@@ -67,7 +67,7 @@ export function traceSource(params: {
   // Create simulator from flat circuit
   const simulator = createEngine(flatCircuit, {
     componentLibrary: compiled.library,
-    behaviours: compiled.behaviours,
+    behaviors: compiled.behaviors,
   });
 
   // Load memory data if provided

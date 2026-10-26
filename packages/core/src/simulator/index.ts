@@ -6,9 +6,9 @@
  * circuits with `simulate()` from `@simten/core`.
  *
  * ```typescript
- * const { library, behaviours } = designOf(top);
+ * const { library, behaviors } = designOf(top);
  * const flat = elaborate(top.circuit, library);
- * const engine = createEngine(flat, { componentLibrary: library, behaviours });
+ * const engine = createEngine(flat, { componentLibrary: library, behaviors });
  * engine.setNode('switch1', 1);
  * const result = engine.tick();
  * ```

@@ -10,7 +10,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type { Behaviour } from '../../circuit/behaviour.js';
+import type { Behavior } from '../../circuit/behavior.js';
 import {
   bitType,
   type CircuitIR,
@@ -172,13 +172,13 @@ describe('Core Simulator Standalone', () => {
     expect(flatCircuit.nodes[0].primitiveType).toBe('And');
   });
 
-  // The engine runs the behaviour table it is given and nothing else. A test
+  // The engine runs the behavior table it is given and nothing else. A test
   // that builds raw Circuit IR, without circuit(), supplies that table itself.
   // createCircuitLibrary + elaborate + createEngine still run without
   // DOM/React/Zustand.
 
-  it('should run a simulation from a behaviour table built by hand', () => {
-    const behaviours = new Map<string, Behaviour>([
+  it('should run a simulation from a behavior table built by hand', () => {
+    const behaviors = new Map<string, Behavior>([
       [
         'And',
         {
@@ -257,7 +257,7 @@ describe('Core Simulator Standalone', () => {
     };
 
     const flatCircuit = elaborate(circuit, library);
-    const sim = createEngine(flatCircuit, { componentLibrary: library, behaviours });
+    const sim = createEngine(flatCircuit, { componentLibrary: library, behaviors });
 
     // Both switches are on, so AND should output 1
     const result = sim.runCombinational();
@@ -278,5 +278,5 @@ describe('Core Simulator Standalone', () => {
   // need to exercise the simulator API surface should use circuit() to
   // define their primitives, which carries the eval and stays free of
   // browser deps. The combinational test above shows the shape for callers
-  // that build raw IRs: a behaviour table built by hand.
+  // that build raw IRs: a behavior table built by hand.
 });

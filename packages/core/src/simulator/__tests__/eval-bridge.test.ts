@@ -4,24 +4,24 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type { Behaviour, BehaviourFn } from '../../circuit/behaviour.js';
+import type { Behavior, BehaviorFn } from '../../circuit/behavior.js';
 import {
   createDispatchTables,
-  generateEvalWrapper as generateFromBehaviour,
+  generateEvalWrapper as generateFromBehavior,
   typeIndexFor,
 } from '../eval-bridge.js';
 import type { EvalContext } from '../evaluators/types.js';
 import type { NumericCircuit, NumericSequentialState } from '../numeric-types.js';
 import type { NumericPortValues } from '../numeric-values.js';
 
-/** The tests' evals take numbers; behaviour in general takes any named values. */
+/** The tests' evals take numbers; behavior in general takes any named values. */
 function generateEvalWrapper(
   inputNames: string[],
   outputNames: string[],
   evalFn: (inputs: Record<string, number>) => Record<string, number>,
   stateKeys?: string[],
 ) {
-  return generateFromBehaviour(inputNames, outputNames, evalFn as BehaviourFn, stateKeys);
+  return generateFromBehavior(inputNames, outputNames, evalFn as BehaviorFn, stateKeys);
 }
 
 // ============================================================================
@@ -217,7 +217,7 @@ describe('generateEvalWrapper (sequential)', () => {
 // Per-compile dispatch tables
 // ============================================================================
 
-const xor: Behaviour = {
+const xor: Behavior = {
   inputNames: ['a', 'b'],
   outputNames: ['out'],
   evalFn: ({ a, b }) => ({ out: (a as number) ^ (b as number) }),
@@ -226,14 +226,14 @@ const xor: Behaviour = {
 describe('dispatch tables', () => {
   it('gives each type one index, in the order types are seen', () => {
     const tables = createDispatchTables();
-    const behaviours = new Map([['Xor', xor]]);
-    expect(typeIndexFor(tables, 'Xor', behaviours)).toBe(0);
-    expect(typeIndexFor(tables, 'Other', behaviours)).toBe(1);
-    expect(typeIndexFor(tables, 'Xor', behaviours)).toBe(0);
+    const behaviors = new Map([['Xor', xor]]);
+    expect(typeIndexFor(tables, 'Xor', behaviors)).toBe(0);
+    expect(typeIndexFor(tables, 'Other', behaviors)).toBe(1);
+    expect(typeIndexFor(tables, 'Xor', behaviors)).toBe(0);
     expect(tables.typeNames).toEqual(['Xor', 'Other']);
   });
 
-  it("builds an evaluator from the compile's own behaviour", () => {
+  it("builds an evaluator from the compile's own behavior", () => {
     const tables = createDispatchTables();
     const idx = typeIndexFor(tables, 'Xor', new Map([['Xor', xor]]));
     const { ctx, values } = createTestContext([1, 0], 1);
@@ -241,17 +241,17 @@ describe('dispatch tables', () => {
     expect(values[2]).toBe(1);
   });
 
-  it('leaves a type with no behaviour empty, for the engine to report', () => {
+  it('leaves a type with no behavior empty, for the engine to report', () => {
     const tables = createDispatchTables();
     const idx = typeIndexFor(tables, 'Missing', new Map());
     expect(tables.evaluators[idx]).toBeNull();
     expect(tables.onTicks[idx]).toBeUndefined();
   });
 
-  it('two compiles of one name keep their own behaviour', () => {
+  it('two compiles of one name keep their own behavior', () => {
     const a = createDispatchTables();
     const b = createDispatchTables();
-    const xnor: Behaviour = {
+    const xnor: Behavior = {
       ...xor,
       evalFn: ({ a, b }) => ({ out: (a as number) === (b as number) ? 1 : 0 }),
     };

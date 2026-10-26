@@ -10,7 +10,7 @@
 
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { attachBehaviour, behaviourOf } from '../../../circuit/behaviour.js';
+import { attachBehavior, behaviorOf } from '../../../circuit/behavior.js';
 import type { Circuit } from '../../../circuit/builder-types.js';
 import * as MOS6502 from '../../mos6502.js';
 import { createHarteRunner, type HarteCase } from './harte.js';
@@ -70,11 +70,11 @@ const FAULTS: Fault[] = [
 let blind = 0;
 for (const fault of FAULTS) {
   // The core's blocks are module constants, so the machine the runner builds
-  // uses this very circuit, and swapping its behaviour injects the fault.
+  // uses this very circuit, and swapping its behavior injects the fault.
   const component = (MOS6502 as unknown as Record<string, Circuit>)[fault.component];
-  const entry = component && behaviourOf(component);
+  const entry = component && behaviorOf(component);
   if (!entry) throw new Error(`no eval for ${fault.component}`);
-  attachBehaviour(component, { ...entry, evalFn: fault.wrap(entry.evalFn as Eval) });
+  attachBehavior(component, { ...entry, evalFn: fault.wrap(entry.evalFn as Eval) });
   try {
     const runner = createHarteRunner();
     let caught = 0;
@@ -91,7 +91,7 @@ for (const fault of FAULTS) {
     console.log(`${caught ? 'caught' : 'MISSED'}  ${fault.name}: ${caught}/${total} cases fail`);
     if (!caught) blind++;
   } finally {
-    attachBehaviour(component, entry);
+    attachBehavior(component, entry);
   }
 }
 process.exit(blind ? 1 : 0);

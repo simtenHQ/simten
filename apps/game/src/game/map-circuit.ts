@@ -108,10 +108,10 @@ export interface MapState {
 export function simulateMap(solved: ReadonlySet<string> = new Set()): MapState {
   const built = buildMapCircuit();
 
-  const { library, behaviours } = designOf(built);
+  const { library, behaviors } = designOf(built);
   const engine = createEngine(elaborate(built.circuit, library), {
     componentLibrary: library,
-    behaviours,
+    behaviors,
   });
 
   const levelIds = MAP_ROWS.flat();

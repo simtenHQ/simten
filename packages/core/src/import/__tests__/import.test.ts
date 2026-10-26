@@ -51,9 +51,9 @@ describe('fixture integrity (hard paths survived yosys proc/opt_clean)', () => {
 
 describe('end-to-end: imported IR simulates to the iverilog golden', () => {
   it('matches all golden vectors', () => {
-    const { top, library, behaviours } = importNetlist(netlist, 'top');
+    const { top, library, behaviors } = importNetlist(netlist, 'top');
     const deps = [...library.values()].filter((c) => c.name !== 'top');
-    const sim = simulate(buildFromIR(top, deps, behaviours));
+    const sim = simulate(buildFromIR(top, deps, behaviors));
     for (const v of golden.vectors) {
       sim.set(v.in);
       sim.tick();
@@ -73,13 +73,13 @@ describe('hierarchy is load-bearing (not decorative)', () => {
   });
 
   it('failure differential: removing sub breaks simulation', () => {
-    const { top, library, behaviours } = importNetlist(netlist, 'top');
+    const { top, library, behaviors } = importNetlist(netlist, 'top');
     // drop the submodule dependency — regd depends on it, so this must fail.
     const depsWithoutSub = [...library.values()].filter(
       (c) => c.name !== 'top' && c.name !== 'sub',
     );
     expect(() => {
-      const sim = simulate(buildFromIR(top, depsWithoutSub, behaviours));
+      const sim = simulate(buildFromIR(top, depsWithoutSub, behaviors));
       sim.set(golden.vectors[0].in);
       sim.tick();
     }).toThrow(/sub/i);

@@ -7,7 +7,7 @@
  * Source: second half of src/core/simulator/types.ts (lines 194-420)
  */
 
-import type { BehaviourTable } from '../circuit/behaviour.js';
+import type { BehaviorTable } from '../circuit/behavior.js';
 import type {
   ArgumentValue,
   BitValue,
@@ -155,10 +155,10 @@ export interface InitOptions {
   /** Circuit library for resolving circuit definitions */
   componentLibrary: CircuitLibrary;
   /**
-   * This compile's behaviour (eval/onTick) by primitive type name. Collect it
+   * This compile's behavior (eval/onTick) by primitive type name. Collect it
    * from the circuit tree with `designOf`, alongside the library.
    */
-  behaviours: BehaviourTable;
+  behaviors: BehaviorTable;
   /** Initial memory data for ROM/RAM components (nodeId -> address -> value) */
   initialMemory?: Map<string, Map<number, number>>;
 }

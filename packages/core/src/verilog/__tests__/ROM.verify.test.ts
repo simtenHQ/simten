@@ -17,8 +17,8 @@ import { describe, expect, it } from 'vitest';
 import { bus, circuit } from '../../circuit/index.js';
 import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
+import { getStdDesign } from '../../std/design.js';
 import { ROM } from '../../std/index.js';
-import { getStdBehaviours } from '../../tools/lib.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { hasVerifier, verifyVerilog } from './verify.js';
@@ -86,7 +86,7 @@ function runSimulator(addrs: number[]): number[] {
   const { circuit, lib } = buildRom();
   const sim = createEngine(elaborate(circuit, lib), {
     componentLibrary: lib,
-    behaviours: getStdBehaviours(),
+    behaviors: getStdDesign().behaviors,
   });
 
   // Preload ROM contents the same way real apps do: setNode with a Map.

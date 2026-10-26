@@ -11,8 +11,8 @@ import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import type { CircuitLibrary } from '../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
+import { getStdDesign } from '../../std/design.js';
 import { Register } from '../../std/index.js';
-import { getStdBehaviours } from '../../tools/lib.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { hasVerifier, verifyVerilog } from './verify.js';
@@ -59,7 +59,7 @@ function runSimulator(steps: Step[]): number[] {
   const { circuit, lib } = buildRegister();
   const sim = createEngine(elaborate(circuit, lib), {
     componentLibrary: lib,
-    behaviours: getStdBehaviours(),
+    behaviors: getStdDesign().behaviors,
   });
   const outputs: number[] = [];
 

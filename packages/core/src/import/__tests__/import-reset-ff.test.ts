@@ -32,9 +32,9 @@ const netlist = JSON.parse(fix('syncfifo.json')) as YosysNetlist;
 const golden = JSON.parse(fix('syncfifo.golden.json')) as Golden;
 
 function importDesign(netlistJson: YosysNetlist, topName: string) {
-  const { top, library, behaviours } = importNetlist(netlistJson, topName);
+  const { top, library, behaviors } = importNetlist(netlistJson, topName);
   const deps = [...library.values()].filter((c) => c.name !== top.name);
-  return { top, deps, behaviours };
+  return { top, deps, behaviors };
 }
 
 function importFifo() {
@@ -43,7 +43,7 @@ function importFifo() {
 
 /** Run every golden vector through the imported circuit and assert it matches. */
 function assertMatchesGolden(design: ReturnType<typeof importDesign>, g: Golden) {
-  const sim = simulate(buildFromIR(design.top, design.deps, design.behaviours));
+  const sim = simulate(buildFromIR(design.top, design.deps, design.behaviors));
   g.vectors.forEach((v, cycle) => {
     sim.set(v.in);
     sim.tick();

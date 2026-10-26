@@ -12,7 +12,7 @@
  *   sim.get('sum')  // 0
  */
 
-import { designOf } from '../circuit/behaviour.js';
+import { designOf } from '../circuit/behavior.js';
 import type { Circuit, PortMap } from '../circuit/builder-types.js';
 import { isSequentialCircuit } from '../circuit/is-sequential.js';
 import type {
@@ -115,7 +115,7 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
 ): SimulationHandle<Ins, Outs> {
   const rawCircuit = comp.circuit;
 
-  // The library and behaviour table for this circuit and its dependencies.
+  // The library and behavior table for this circuit and its dependencies.
   const design = designOf(comp);
   const library = options?.library ?? design.library;
   if (isMutable(library)) {
@@ -137,7 +137,7 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
   // Create engine and session
   const engine = createEngine(elaborate(circuit, library), {
     componentLibrary: library,
-    behaviours: design.behaviours,
+    behaviors: design.behaviors,
   });
 
   // Run initial combinational propagation

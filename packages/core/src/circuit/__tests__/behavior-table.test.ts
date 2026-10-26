@@ -1,5 +1,5 @@
 /**
- * Behaviour belongs to a compile, not to the process (#465, decision 0001).
+ * Behavior belongs to a compile, not to the process (#465, decision 0001).
  *
  * Each compile collects the eval/onTick of exactly the circuits it built, and
  * the engine runs that table. These pin the consequences: same-named circuits
@@ -15,20 +15,20 @@ import { describe, expect, it } from 'vitest';
 import type { CircuitIR } from '../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
 import { simulate } from '../../simulator/simulate.js';
+import { getStdDesign } from '../../std/design.js';
 import { Adder } from '../../std/index.js';
-import { getStdBehaviours } from '../../tools/lib.js';
-import { createLibrary, designOf } from '../behaviour.js';
+import { createLibrary, designOf } from '../behavior.js';
 import { bit, bus } from '../bit-bus.js';
 import { circuit } from '../circuit.js';
 import { type ExecuteResult, executeCircuitCode } from '../execute.js';
 
-/** Run a compiled source's last circuit with the compile's own library and behaviour. */
+/** Run a compiled source's last circuit with the compile's own library and behavior. */
 function run(result: ExecuteResult, inputs: Record<string, number>): Record<string, number> {
   expect(result.error).toBeNull();
   const top = result.circuits[result.circuits.length - 1];
   const engine = createEngine(elaborate(top, result.library), {
     componentLibrary: result.library,
-    behaviours: result.behaviours,
+    behaviors: result.behaviors,
   });
   for (const [name, value] of Object.entries(inputs)) engine.setNode(name, value);
   engine.runCombinational();
@@ -59,7 +59,7 @@ const wire = `connect: ({ inputs, outputs, nodes: { u } }) => [
   inputs.a.to(u.a), inputs.b.to(u.b), u.sum.to(outputs.sum),
 ]`;
 
-describe('two compiles never share behaviour', () => {
+describe('two compiles never share behavior', () => {
   it('same-named circuits with different evals keep their own, in either order', () => {
     const plusOne = executeCircuitCode(twinSource('a + 1'));
     const timesTwo = executeCircuitCode(twinSource('a * 2'));
@@ -219,29 +219,29 @@ describe('defining a circuit registers nothing', () => {
     implementation: { kind: 'composite' },
   };
 
-  it('a fresh compile has no behaviour for it', () => {
+  it('a fresh compile has no behavior for it', () => {
     const library = createLibrary();
     library.addCircuit(Probe.circuit);
     library.addCircuit(wrapper);
     const engine = () =>
       createEngine(elaborate(wrapper, library), {
         componentLibrary: library,
-        behaviours: new Map(),
+        behaviors: new Map(),
       });
-    expect(engine).toThrow(/'BTRegistersNothing' has no behaviour in this compile/);
-    expect(executeCircuitCode('').behaviours.has('BTRegistersNothing')).toBe(false);
-    expect(getStdBehaviours().has('BTRegistersNothing')).toBe(false);
+    expect(engine).toThrow(/'BTRegistersNothing' has no behavior in this compile/);
+    expect(executeCircuitCode('').behaviors.has('BTRegistersNothing')).toBe(false);
+    expect(getStdDesign().behaviors.has('BTRegistersNothing')).toBe(false);
   });
 
   it('the built circuit has it, so its own design runs', () => {
-    expect(designOf(Probe).behaviours.has('BTRegistersNothing')).toBe(true);
+    expect(designOf(Probe).behaviors.has('BTRegistersNothing')).toBe(true);
     const sim = simulate(Probe);
     sim.set({ a: 1 });
     expect(sim.get('y')).toBe(1);
   });
 });
 
-describe('behaviour is kept beside the circuit, not on it', () => {
+describe('behavior is kept beside the circuit, not on it', () => {
   it('leaves the built circuit with no extra properties', () => {
     const Plain = circuit('BTPlain', { inputs: { a: bit }, outputs: { y: bit } });
     const WithEval = circuit('BTWithEval', {

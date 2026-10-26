@@ -7,16 +7,16 @@
 export { autoHarness } from './circuit/auto-harness.js';
 export {
   addToDesign,
-  type Behaviour,
-  type BehaviourFn,
-  type BehaviourTable,
-  type BehaviourValues,
-  behaviourOf,
+  type Behavior,
+  type BehaviorFn,
+  type BehaviorTable,
+  type BehaviorValues,
+  behaviorOf,
   createLibrary,
   type Design,
   designOf,
   emptyDesign,
-} from './circuit/behaviour.js';
+} from './circuit/behavior.js';
 export { buildFromIR } from './circuit/build-from-ir.js';
 export {
   type CircuitNameSite,
@@ -40,5 +40,6 @@ export {
   type SignalMetrics,
   type SimulationTrace,
 } from './simulator/trace-analysis.js';
+export { getStdDesign } from './std/design.js';
 export * from './tools/index.js';
 export { slugify } from './util/test-name.js';

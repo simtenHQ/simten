@@ -24,8 +24,8 @@ import { describe, expect, it } from 'vitest';
 import { bus, circuit } from '../../circuit/index.js';
 import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
+import { getStdDesign } from '../../std/design.js';
 import { Adder, Constant, Register } from '../../std/index.js';
-import { getStdBehaviours } from '../../tools/lib.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { buildNaiveTraceAcrossReset, buildParityTraceAcrossReset } from './parity-helpers.js';
@@ -115,7 +115,7 @@ d('reset — JS simulator vs iverilog co-simulation under rst_n', () => {
     const { circuit, lib } = buildCounter();
     const sim = createEngine(elaborate(circuit, lib), {
       componentLibrary: lib,
-      behaviours: getStdBehaviours(),
+      behaviors: getStdDesign().behaviors,
     });
 
     const simOutputs = buildParityTraceAcrossReset(sim, PRE, POST, () => readCount(sim));
@@ -153,7 +153,7 @@ d('reset — JS simulator vs iverilog co-simulation under rst_n', () => {
     const { circuit, lib } = buildCounter();
     const sim = createEngine(elaborate(circuit, lib), {
       componentLibrary: lib,
-      behaviours: getStdBehaviours(),
+      behaviors: getStdDesign().behaviors,
     });
 
     const naiveOutputs = buildNaiveTraceAcrossReset(sim, PRE, POST, () => readCount(sim));

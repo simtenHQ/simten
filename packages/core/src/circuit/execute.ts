@@ -26,7 +26,7 @@ import { transform } from 'sucrase';
 import { Dlatch, Mem, Pmux } from '../import/primitives.js';
 import type { CircuitIR, MutableCircuitLibrary } from '../ir/circuit-ir.js';
 import * as std from '../std/index.js';
-import { addToDesign, type Behaviour, emptyDesign } from './behaviour.js';
+import { addToDesign, type Behavior, emptyDesign } from './behavior.js';
 import { bit, bus, mem, reg } from './bit-bus.js';
 import type { Circuit } from './builder-types.js';
 import { circuit } from './circuit.js';
@@ -54,10 +54,10 @@ export interface ExecuteResult {
   /** The circuit library (stdlib + user-defined circuits) */
   library: MutableCircuitLibrary;
   /**
-   * Behaviour (eval/onTick) for the primitives in `library`, by name. Owned by
+   * Behavior (eval/onTick) for the primitives in `library`, by name. Owned by
    * this run: nothing the code defines is visible to any other compile.
    */
-  behaviours: Map<string, Behaviour>;
+  behaviors: Map<string, Behavior>;
   /** Error message if execution failed */
   error: string | null;
 }
@@ -197,7 +197,7 @@ function asCircuit(value: unknown): Circuit | null {
  * Deliberately a regex over the same lines `stripExports` rewrites, rather than
  * a parse. It runs on every keystroke in the editor, the shapes it has to catch
  * are the ones that survive stripping, and anything it misses simply falls back
- * to today's behaviour.
+ * to today's behavior.
  */
 function exportedNames(code: string): string[] {
   const names = new Set<string>();
@@ -236,7 +236,7 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
   const allValues = extraScope ? [...values, ...Object.values(extraScope)] : values;
 
   const design = emptyDesign();
-  const { library, behaviours } = design;
+  const { library, behaviors } = design;
   const builtCircuits: Circuit[] = [];
   const circuits: CircuitIR[] = [];
   const exportedCircuits: CircuitIR[] = [];
@@ -308,7 +308,7 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
       exportedCircuits,
       builtCircuits,
       library,
-      behaviours,
+      behaviors,
       error: null,
     };
   } catch (e) {
@@ -318,7 +318,7 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
       exportedCircuits: [],
       builtCircuits: [],
       library,
-      behaviours,
+      behaviors,
       error: e instanceof Error ? e.message : String(e),
     };
   }

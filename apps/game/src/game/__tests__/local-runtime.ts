@@ -16,19 +16,14 @@
  * source in the main frame would defeat the sandbox.
  */
 
-import type { Behaviour, CircuitIR } from '@simten/core/internal';
-import {
-  createEngine,
-  elaborate,
-  executeCircuitCode,
-  getStdBehaviours,
-} from '@simten/core/internal';
+import type { Behavior, CircuitIR } from '@simten/core/internal';
+import { createEngine, elaborate, executeCircuitCode, getStdDesign } from '@simten/core/internal';
 import type { GradeRuntime } from '../runtime';
 import { RuntimeFailure, readOutputs } from '../runtime';
 
 export function localRuntime(): GradeRuntime {
   let library: CircuitIR[] = [];
-  let behaviours: ReadonlyMap<string, Behaviour> = new Map();
+  let behaviors: ReadonlyMap<string, Behavior> = new Map();
   let engine: ReturnType<typeof createEngine> | null = null;
 
   return {
@@ -39,7 +34,7 @@ export function localRuntime(): GradeRuntime {
         .getAllCircuitNames()
         .map((n) => result.library.resolveCircuit(n))
         .filter((c): c is CircuitIR => c != null);
-      behaviours = result.behaviours;
+      behaviors = result.behaviors;
       return { circuits: result.circuits, libraryCircuits: library };
     },
 
@@ -52,10 +47,10 @@ export function localRuntime(): GradeRuntime {
             .filter((c) => c.implementation?.kind === 'primitive')
             .map((c) => c.name),
       };
-      // As the sandbox's compile-ir: std's behaviour under the compiled source's.
+      // As the sandbox's compile-ir: std's behavior under the compiled source's.
       engine = createEngine(elaborate(target, lib), {
         componentLibrary: lib,
-        behaviours: new Map([...getStdBehaviours(), ...behaviours]),
+        behaviors: new Map([...getStdDesign().behaviors, ...behaviors]),
       });
     },
 

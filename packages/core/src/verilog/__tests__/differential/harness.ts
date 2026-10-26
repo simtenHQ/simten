@@ -13,7 +13,7 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import type { BehaviourTable } from '../../../circuit/behaviour.js';
+import type { BehaviorTable } from '../../../circuit/behavior.js';
 import type { CircuitIR, PortType } from '../../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../../simulator/index.js';
 import type { CircuitLibrary } from '../../../simulator/types.js';
@@ -22,7 +22,7 @@ import { exportVerilog } from '../../exporter.js';
 export interface DiffTarget {
   top: CircuitIR;
   library: CircuitLibrary;
-  behaviours: BehaviourTable;
+  behaviors: BehaviorTable;
 }
 
 export interface DiffOptions {
@@ -160,7 +160,7 @@ function runSimulator(
 ): (number | undefined)[][] {
   const engine = createEngine(elaborate(target.top, target.library), {
     componentLibrary: target.library,
-    behaviours: target.behaviours,
+    behaviors: target.behaviors,
   });
   const trace: (number | undefined)[][] = [];
   for (const v of vectors) {
@@ -270,7 +270,7 @@ export function runDifferential(
     clockPorts = reference.clock ? [`.${reference.clock}(clk)`] : [];
     signals = topSignals(target.top);
   } else {
-    const result = exportVerilog(target.top, target.library, { behaviours: target.behaviours });
+    const result = exportVerilog(target.top, target.library, { behaviors: target.behaviors });
     if (result.unsupported) {
       throw new Error(`exporter has no mapping for ${Object.keys(result.unsupported).join(', ')}`);
     }

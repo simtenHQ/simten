@@ -77,9 +77,9 @@ function recompile(source: string): Circuit {
 }
 
 function importedTop(): Circuit {
-  const { top, library, behaviours } = importNetlist(netlist, 'top');
+  const { top, library, behaviors } = importNetlist(netlist, 'top');
   const deps = [...library.values()].filter((c) => c.name !== top.name);
-  return buildFromIR(top, deps, behaviours);
+  return buildFromIR(top, deps, behaviors);
 }
 
 describe('memory contents survive the round trip through generated source', () => {

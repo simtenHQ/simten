@@ -1,10 +1,5 @@
 import type { CircuitIR, FlatCircuit } from '@simten/core/internal';
-import {
-  buildFromIR,
-  compileForSimulation,
-  elaborate,
-  getStdBehaviours,
-} from '@simten/core/internal';
+import { buildFromIR, compileForSimulation, elaborate, getStdDesign } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { CircuitEmbed } from '@simten/embed';
 import { useSandboxContext } from '@simten/ui/sandbox';
@@ -130,7 +125,7 @@ export function PipelineVisualizer() {
             resolveCircuit,
             getAllPrimitiveNames: () => primNames,
           },
-          getStdBehaviours(),
+          getStdDesign().behaviors,
         );
 
         setCompiled({ circuits, fullAdder, flat, numeric });

@@ -2,7 +2,7 @@
  * Standard Library — Logic Gates
  *
  * Defined using circuit() for full TypeScript type inference. The engine runs
- * the eval functions here, through each compile's behaviour table.
+ * the eval functions here, through each compile's behavior table.
  */
 
 import { bit, bus } from '../circuit/bit-bus.js';

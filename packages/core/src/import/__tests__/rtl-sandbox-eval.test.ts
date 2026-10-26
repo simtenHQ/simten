@@ -14,7 +14,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { behaviourOf } from '../../internal.js';
+import { behaviorOf } from '../../internal.js';
 import { Dlatch, Mem, Pmux } from '../primitives.js';
 
 /** Mirror the sandbox: stringify → new Function → the rebuilt lambda. */
@@ -44,7 +44,7 @@ describe('import primitives bake _args (so recompiled nodes carry their shape)',
 
 describe('import primitives survive sandbox eval reconstruction (new Function(toString))', () => {
   it('Pmux: one-hot select reads sWidth/width from io', () => {
-    const evalFn = reconstruct(behaviourOf(Pmux({ width: 8, sWidth: 3 }))!.evalFn);
+    const evalFn = reconstruct(behaviorOf(Pmux({ width: 8, sWidth: 3 }))!.evalFn);
     // s selects lane 1; b_1 = 20
     expect(evalFn({ width: 8, sWidth: 3, s: 0b010, a: 99, b_0: 10, b_1: 20, b_2: 30 })).toEqual({
       out: 20,
@@ -56,7 +56,7 @@ describe('import primitives survive sandbox eval reconstruction (new Function(to
   });
 
   it('Dlatch: transparency reads width/enPolarity from io', () => {
-    const entry = behaviourOf(Dlatch({ width: 8, enPolarity: 1 }))!;
+    const entry = behaviorOf(Dlatch({ width: 8, enPolarity: 1 }))!;
     const evalFn = reconstruct(entry.evalFn);
     const onTickFn = reconstruct(entry.onTickFn!);
     expect(evalFn({ width: 8, enPolarity: 1, en: 1, d: 42, hold: 7 })).toEqual({ q: 42 }); // transparent
@@ -65,7 +65,7 @@ describe('import primitives survive sandbox eval reconstruction (new Function(to
   });
 
   it('Mem: read/write reads shape from io, wraps to depth', () => {
-    const entry = behaviourOf(Mem({ rdPorts: 1, wrPorts: 1, abits: 4, width: 8, size: 16 }))!;
+    const entry = behaviorOf(Mem({ rdPorts: 1, wrPorts: 1, abits: 4, width: 8, size: 16 }))!;
     const evalFn = reconstruct(entry.evalFn);
     const onTickFn = reconstruct(entry.onTickFn!);
     const store: Record<number, number> = { 2: 55 };

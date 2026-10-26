@@ -6,10 +6,10 @@
  * which only needs the circuit IR and its dependency circuits — no closures,
  * no executable code.
  *
- * The IR carries no behaviour, so the result has none unless a behaviour table
+ * The IR carries no behavior, so the result has none unless a behavior table
  * is passed (an import's, for example): each primitive whose name is in it gets
- * that behaviour. Without one the circuit is for display, or for the sandbox,
- * which runs the behaviour of its own compile.
+ * that behavior. Without one the circuit is for display, or for the sandbox,
+ * which runs the behavior of its own compile.
  *
  * Usage:
  *   const result = await sandbox.compile(source);
@@ -21,7 +21,7 @@
  */
 
 import type { CircuitIR } from '../ir/circuit-ir.js';
-import { attachBehaviour, type BehaviourTable } from './behaviour.js';
+import { attachBehavior, type BehaviorTable } from './behavior.js';
 import type { Circuit } from './builder-types.js';
 
 /**
@@ -29,22 +29,22 @@ import type { Circuit } from './builder-types.js';
  *
  * @param circuit - The main circuit to display
  * @param libraryCircuits - All dependency circuits returned by the sandbox
- * @param behaviours - Behaviour to attach to primitives, by name
+ * @param behaviors - Behavior to attach to primitives, by name
  * @returns A Circuit suitable for CircuitEmbed / CircuitViewer
  */
 export function buildFromIR(
   circuit: CircuitIR,
   libraryCircuits: CircuitIR[],
-  behaviours?: BehaviourTable,
+  behaviors?: BehaviorTable,
 ): Circuit {
   const dependencies = new Map<string, Circuit>();
   for (const dep of libraryCircuits) {
-    dependencies.set(dep.name, attachToJSON(wrap(dep, new Map(), behaviours)));
+    dependencies.set(dep.name, attachToJSON(wrap(dep, new Map(), behaviors)));
   }
-  return attachToJSON(wrap(circuit, dependencies, behaviours));
+  return attachToJSON(wrap(circuit, dependencies, behaviors));
 }
 
-function wrap(c: CircuitIR, deps: Map<string, Circuit>, behaviours?: BehaviourTable): Circuit {
+function wrap(c: CircuitIR, deps: Map<string, Circuit>, behaviors?: BehaviorTable): Circuit {
   const inputs: Record<string, (typeof c.inputs)[number]> = {};
   for (const p of c.inputs) inputs[p.name] = p;
   const outputs: Record<string, (typeof c.outputs)[number]> = {};
@@ -58,8 +58,8 @@ function wrap(c: CircuitIR, deps: Map<string, Circuit>, behaviours?: BehaviourTa
     nodes,
     _dependencies: deps,
   } as unknown as Circuit;
-  const behaviour = c.implementation.kind === 'primitive' ? behaviours?.get(c.name) : undefined;
-  if (behaviour) attachBehaviour(built, behaviour);
+  const behavior = c.implementation.kind === 'primitive' ? behaviors?.get(c.name) : undefined;
+  if (behavior) attachBehavior(built, behavior);
   return built;
 }
 

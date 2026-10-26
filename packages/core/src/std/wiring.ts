@@ -9,7 +9,7 @@
  * clean and editable (see import/component-homes.ts for the classification).
  *
  * Every instance shares a fixed set of port NAMES (`in`/`out`), varying only
- * widths per instance. A compile keys behaviour by circuit name, so
+ * widths per instance. A compile keys behavior by circuit name, so
  * structural args (`inWidth`/`offset`/`width`/`outWidth`) are read from the eval
  * input bag (fed from node.arguments by the bridge merge), never closed over.
  * Same contract as `Adder`/`Register`.

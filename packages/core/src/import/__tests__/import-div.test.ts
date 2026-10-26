@@ -26,9 +26,9 @@ const golden = JSON.parse(fix('divtest.golden.json')) as {
 };
 
 function importDiv() {
-  const { top, library, behaviours } = importNetlist(netlist, 'divtest');
+  const { top, library, behaviors } = importNetlist(netlist, 'divtest');
   const deps = [...library.values()].filter((c) => c.name !== top.name);
-  return { top, deps, behaviours };
+  return { top, deps, behaviors };
 }
 
 describe('divide/remainder import ($div/$mod → Divider/Modulo + Signed*)', () => {
@@ -44,8 +44,8 @@ describe('divide/remainder import ($div/$mod → Divider/Modulo + Signed*)', () 
   });
 
   it('simulates identically to the iverilog golden (unsigned + signed div/mod)', () => {
-    const { top, deps, behaviours } = importDiv();
-    const sim = simulate(buildFromIR(top, deps, behaviours));
+    const { top, deps, behaviors } = importDiv();
+    const sim = simulate(buildFromIR(top, deps, behaviors));
     golden.vectors.forEach((v, i) => {
       sim.set(v.in);
       sim.tick();

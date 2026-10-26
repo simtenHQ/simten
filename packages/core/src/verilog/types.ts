@@ -2,7 +2,7 @@
  * Types for the Verilog exporter and verification pipeline.
  */
 
-import type { BehaviourTable } from '../circuit/behaviour.js';
+import type { BehaviorTable } from '../circuit/behavior.js';
 
 export interface VerilogExportOptions {
   /** Export mode: flat (single module) or hierarchical (sub-modules preserved) */
@@ -26,12 +26,12 @@ export interface VerilogExportOptions {
    */
   inlineMemoryThreshold?: number;
   /**
-   * Behaviour (eval/onTick) by primitive name, for primitives with no
+   * Behavior (eval/onTick) by primitive name, for primitives with no
    * hand-written Verilog mapping: their eval is transpiled. Collect it with
    * the library (`designOf` in `@simten/core/internal`). Defaults to the
-   * standard library's behaviour.
+   * standard library's behavior.
    */
-  behaviours?: BehaviourTable;
+  behaviors?: BehaviorTable;
 }
 
 /**

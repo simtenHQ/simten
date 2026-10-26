@@ -72,7 +72,7 @@ describe('Splitter and Combiner', () => {
       ]),
     };
     const split = emitPrimitive({
-      behaviours: new Map(),
+      behaviors: new Map(),
       nodeId: 's',
       primitiveType: 'Splitter_4w',
       args: { width: 4 },

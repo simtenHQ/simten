@@ -33,7 +33,7 @@ import type {
   StateBlock,
 } from '../ir/circuit-ir.js';
 import { STDLIB_CIRCUITS } from '../std/index.js';
-import { behaviourOf, hasCallbacks } from './behaviour.js';
+import { behaviorOf, hasCallbacks } from './behavior.js';
 import type { Circuit } from './builder-types.js';
 import { safeIdentifier } from './reserved-identifiers.js';
 
@@ -93,8 +93,8 @@ export function circuitToSource(built: Circuit): string {
   // Which circuits carry eval/onTick callbacks, which the IR cannot express.
   const withCallbacks = new Set<string>();
   for (const c of [built, ...built._dependencies.values()]) {
-    const behaviour = behaviourOf(c);
-    if (behaviour && hasCallbacks(behaviour)) withCallbacks.add(c.circuit.name);
+    const behavior = behaviorOf(c);
+    if (behavior && hasCallbacks(behavior)) withCallbacks.add(c.circuit.name);
   }
   const emit = (c: CircuitIR) => emitCircuit(c, idOf, withCallbacks.has(c.name));
 

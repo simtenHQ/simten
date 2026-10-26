@@ -5,11 +5,11 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { type BehaviourTable, behaviourOf, designOf } from '../../circuit/behaviour.js';
+import { type BehaviorTable, behaviorOf, designOf } from '../../circuit/behavior.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import type { ArgumentValue } from '../../ir/circuit-ir.js';
+import { getStdDesign } from '../../std/design.js';
 import { And, Xor } from '../../std/index.js';
-import { getStdBehaviours } from '../../tools/lib.js';
 import {
   checkSynthesizable,
   emitVerilogFromEval,
@@ -27,10 +27,10 @@ function makeCtx(
   inputs: Record<string, string>,
   outputs: Record<string, string>,
   args: Record<string, ArgumentValue> = {},
-  behaviours: BehaviourTable = getStdBehaviours(),
+  behaviors: BehaviorTable = getStdDesign().behaviors,
 ): PrimitiveContext {
   return {
-    behaviours,
+    behaviors,
     nodeId: 'test_node',
     resetName: 'rst_n',
     primitiveType,
@@ -44,7 +44,7 @@ function makeCtx(
   };
 }
 
-const lookup = (table: BehaviourTable) => (name: string) => table.get(name);
+const lookup = (table: BehaviorTable) => (name: string) => table.get(name);
 
 // ── Parser ───────────────────────────────────────────────────────────────
 
@@ -404,7 +404,7 @@ describe('tryEmitFromEval', () => {
       eval: ({ a, b }) => ({ out: a && b ? 1 : 0 }),
     });
 
-    const table = designOf(MyGate).behaviours;
+    const table = designOf(MyGate).behaviors;
     const ctx = makeCtx('TestSynthGate', { a: 'w_a', b: 'w_b' }, { out: 'w_out' }, {}, table);
     const result = tryEmitFromEval(ctx, lookup(table));
     expect(result).not.toBeNull();
@@ -413,14 +413,14 @@ describe('tryEmitFromEval', () => {
 
   it('returns null for unknown primitive', () => {
     const ctx = makeCtx('NonExistent', {}, {});
-    const result = tryEmitFromEval(ctx, lookup(getStdBehaviours()));
+    const result = tryEmitFromEval(ctx, lookup(getStdDesign().behaviors));
     expect(result).toBeNull();
   });
 
   it('transpiles sequential Register with eval + onTick', () => {
     // Register has stateKeys — now handled by eval-synth
     const ctx = makeCtx('Register', { data: 'w_d', we: 'w_we', rst: 'w_rst' }, { q: 'w_q' });
-    const result = tryEmitFromEval(ctx, lookup(getStdBehaviours()));
+    const result = tryEmitFromEval(ctx, lookup(getStdDesign().behaviors));
     expect(result).not.toBeNull();
     const text = result!.lines.join('\n');
     expect(text).toContain('assign'); // eval outputs
@@ -432,14 +432,14 @@ describe('tryEmitFromEval', () => {
 
 describe('stdlib eval synthesizability', () => {
   it('And eval is synthesizable', () => {
-    const entry = behaviourOf(And);
+    const entry = behaviorOf(And);
     expect(entry).toBeDefined();
     const result = checkSynthesizable(entry!.evalFn, entry!.inputNames, entry!.outputNames);
     expect(result.valid).toBe(true);
   });
 
   it('Xor eval is synthesizable', () => {
-    const entry = behaviourOf(Xor);
+    const entry = behaviorOf(Xor);
     expect(entry).toBeDefined();
     const result = checkSynthesizable(entry!.evalFn, entry!.inputNames, entry!.outputNames);
     expect(result.valid).toBe(true);
@@ -447,7 +447,7 @@ describe('stdlib eval synthesizability', () => {
 
   // Parameterized factories — Verilog goes through primitive-map; eval is parameter-aware
   it.skip('Adder eval is synthesizable', () => {
-    const entry = getStdBehaviours().get('Adder');
+    const entry = getStdDesign().behaviors.get('Adder');
     expect(entry).toBeDefined();
     const result = checkSynthesizable(entry!.evalFn, entry!.inputNames, entry!.outputNames);
     expect(result.valid).toBe(true);
@@ -477,8 +477,8 @@ describe('end-to-end eval-synth export', () => {
       ],
     });
 
-    const { library, behaviours } = designOf(MyCircuit);
-    const { verilog } = exportVerilog(MyCircuit.circuit, library, { behaviours });
+    const { library, behaviors } = designOf(MyCircuit);
+    const { verilog } = exportVerilog(MyCircuit.circuit, library, { behaviors });
 
     // Should contain synthesized logic, NOT a WARNING comment
     expect(verilog).toContain('module TestSynthCircuit');
@@ -512,7 +512,7 @@ describe('top-level primitive simulation', () => {
 
     const sim = createEngine(flat, {
       componentLibrary: lib,
-      behaviours: designOf(Doubler).behaviours,
+      behaviors: designOf(Doubler).behaviors,
     });
     sim.setNode('a', 5);
     sim.runCombinational();
@@ -543,7 +543,7 @@ describe('top-level primitive simulation', () => {
 
     const sim = createEngine(flat, {
       componentLibrary: lib,
-      behaviours: designOf(MyReg).behaviours,
+      behaviors: designOf(MyReg).behaviors,
     });
     sim.setNode('data', 42);
     sim.setNode('we', 1);

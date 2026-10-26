@@ -91,7 +91,7 @@ class DefaultSimulatorEngine implements SimulatorEngine {
     this.numericCircuit = compileForSimulation(
       circuit,
       options.componentLibrary,
-      options.behaviours,
+      options.behaviors,
     );
 
     // Initialize flat sequential state (memory data loaded later via setNode)
@@ -471,7 +471,7 @@ class DefaultSimulatorEngine implements SimulatorEngine {
  *
  * Uses a numeric simulator with typed arrays for optimal performance.
  *
- * **Behaviour:** the engine runs `options.behaviours` and nothing else. Every
+ * **Behavior:** the engine runs `options.behaviors` and nothing else. Every
  * primitive type in the flattened circuit needs an entry there; `designOf`
  * collects the library and the table from a built circuit tree. A primitive
  * with no entry throws on its first dispatch, naming it.

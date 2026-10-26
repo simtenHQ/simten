@@ -6,7 +6,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { designOf } from '../../circuit/behaviour.js';
+import { designOf } from '../../circuit/behavior.js';
 import type { Circuit } from '../../circuit/builder-types.js';
 import { bit, bus, circuit, mem, reg } from '../../circuit/index.js';
 import { Buffer, DFlipFlop, Nand, Not, Switch } from '../../std/index.js';
@@ -14,8 +14,8 @@ import { createEngine, elaborate } from '../index.js';
 import { simulate } from '../simulate.js';
 
 function engineFor(top: Circuit) {
-  const { library, behaviours } = designOf(top);
-  return createEngine(elaborate(top.circuit, library), { componentLibrary: library, behaviours });
+  const { library, behaviors } = designOf(top);
+  return createEngine(elaborate(top.circuit, library), { componentLibrary: library, behaviors });
 }
 
 describe('outputs are masked to their port width', () => {

@@ -12,9 +12,9 @@
  *   Has imports → load npm packages via an esm.sh Blob URL module, then
  *                 executeJsCode() with the merged scope
  * Either way the circuits the source builds carry their eval/onTick closures,
- * and each slot's simulator runs the behaviour table of its own compile.
+ * and each slot's simulator runs the behavior table of its own compile.
  * Nothing is shared between compiles, so user code can't change another
- * slot's behaviour or the stdlib's.
+ * slot's behavior or the stdlib's.
  *
  * compile-ir carries evals as source text from the page. An eval whose text
  * matches one the compile already has (std's, or the source slot's) keeps that
@@ -26,16 +26,16 @@
 import type { BitValue, BusValue } from '@simten/core';
 import type { CircuitIR, CircuitLibrary, SimulatorSnapshot } from '@simten/core/internal';
 import {
-  type Behaviour,
-  type BehaviourFn,
-  type BehaviourTable,
+  type Behavior,
+  type BehaviorFn,
+  type BehaviorTable,
   createEngine,
   designOf,
   type EnvironmentalStateValue,
   elaborate,
   executeCircuitCode,
   executeJsCode,
-  getStdBehaviours,
+  getStdDesign,
   stripTypes,
 } from '@simten/core/internal';
 import type {
@@ -99,8 +99,8 @@ interface FlatCircuitLike {
 interface SlotState {
   simulator: Simulator;
   library: SlotLibrary;
-  /** The behaviour this slot's compile runs, by primitive name. */
-  behaviours: BehaviourTable;
+  /** The behavior this slot's compile runs, by primitive name. */
+  behaviors: BehaviorTable;
   /** Kept to capture/restore environmental state on snapshot/restore. */
   flatCircuit: FlatCircuitLike;
   /**
@@ -121,15 +121,15 @@ function installSlot(
   slotId: string,
   target: CircuitIR,
   library: SlotLibrary,
-  behaviours: BehaviourTable,
+  behaviors: BehaviorTable,
 ): SlotState {
   const flatCircuit = elaborate(target, library);
-  const simulator = createEngine(flatCircuit, { componentLibrary: library, behaviours });
+  const simulator = createEngine(flatCircuit, { componentLibrary: library, behaviors });
   // Recompile is a fresh timeline: prior snapshots refer to the old sim.
   const slot: SlotState = {
     simulator,
     library,
-    behaviours,
+    behaviors,
     flatCircuit,
     peripheralBusNodes: computePeripheralBusNodes(flatCircuit, library),
     snapshots: new Map(),
@@ -235,8 +235,8 @@ function serializable(c: CircuitIR): CircuitIR {
   return JSON.parse(JSON.stringify(c));
 }
 
-/** Whether behaviour sent as text is the same code as a closure the compile already has. */
-function sameSource(entry: Behaviour, info: BehaviorSource): boolean {
+/** Whether behavior sent as text is the same code as a closure the compile already has. */
+function sameSource(entry: Behavior, info: BehaviorSource): boolean {
   return (
     String(entry.evalFn) === info.evalSource &&
     (entry.onTickFn ? String(entry.onTickFn) : undefined) === info.onTickSource
@@ -244,21 +244,21 @@ function sameSource(entry: Behaviour, info: BehaviorSource): boolean {
 }
 
 /**
- * Add behaviour sent as source text to one compile's table. Text identical to
+ * Add behavior sent as source text to one compile's table. Text identical to
  * an entry already there keeps that entry's closure: rebuilding with
  * `new Function` keeps the body but not the closure, which is wrong for any
  * eval that reads its factory's variables. Anything else, a user circuit that
  * happens to share a std name included, is rebuilt and used in this compile only.
  */
 function addBehaviorSources(
-  table: Map<string, Behaviour>,
+  table: Map<string, Behavior>,
   evalSources: Record<string, BehaviorSource>,
 ) {
   for (const [name, info] of Object.entries(evalSources)) {
     const existing = table.get(name);
     if (existing && sameSource(existing, info)) continue;
     try {
-      const rebuild = (src: string) => new Function(`return (${src})`)() as BehaviourFn;
+      const rebuild = (src: string) => new Function(`return (${src})`)() as BehaviorFn;
       table.set(name, {
         inputNames: info.inputNames,
         outputNames: info.outputNames,
@@ -329,7 +329,7 @@ async function compile(source: string, slotId: string = DEFAULT_SLOT): Promise<S
   // design, the one this circuit uses is the one it runs.
   const library = newLibrary();
   for (const c of [...circuits, ...libraryCircuits]) library.addCircuit(c);
-  const behaviours = new Map(result.behaviours);
+  const behaviors = new Map(result.behaviors);
   const targetIR = renderable[renderable.length - 1];
   const built = result.builtCircuits.find((b) => b.circuit === targetIR);
   if (built) {
@@ -338,9 +338,9 @@ async function compile(source: string, slotId: string = DEFAULT_SLOT): Promise<S
       const c = design.library.resolveCircuit(name);
       if (c) library.addCircuit(serializable(c));
     }
-    for (const [name, b] of design.behaviours) behaviours.set(name, b);
+    for (const [name, b] of design.behaviors) behaviors.set(name, b);
   }
-  const slot = installSlot(slotId, circuits[circuits.length - 1], library, behaviours);
+  const slot = installSlot(slotId, circuits[circuits.length - 1], library, behaviors);
 
   return {
     type: 'compiled',
@@ -353,8 +353,8 @@ async function compile(source: string, slotId: string = DEFAULT_SLOT): Promise<S
 
 /**
  * Compile from Circuit IR rather than source, e.g. the auto-harnessed circuit
- * built on the page. Reuses the library and behaviour of any slot compiled
- * from source, so it can reference that slot's components; std's behaviour is
+ * built on the page. Reuses the library and behavior of any slot compiled
+ * from source, so it can reference that slot's components; std's behavior is
  * the base under both.
  */
 function compileIR(req: Extract<SandboxRequest, { type: 'compile-ir' }>): SandboxResult {
@@ -367,13 +367,13 @@ function compileIR(req: Extract<SandboxRequest, { type: 'compile-ir' }>): Sandbo
   for (const c of req.libraryCircuits) lib.addCircuit(c);
   lib.addCircuit(req.circuit);
 
-  const behaviours = new Map<string, Behaviour>([
-    ...getStdBehaviours(),
-    ...(base?.behaviours ?? []),
+  const behaviors = new Map<string, Behavior>([
+    ...getStdDesign().behaviors,
+    ...(base?.behaviors ?? []),
   ]);
-  if (req.evalSources) addBehaviorSources(behaviours, req.evalSources);
+  if (req.evalSources) addBehaviorSources(behaviors, req.evalSources);
 
-  const slot = installSlot(req.slot, req.circuit, lib, behaviours);
+  const slot = installSlot(req.slot, req.circuit, lib, behaviors);
   return {
     type: 'compiled-ir',
     portValues: portValues(slot.simulator.getPortValues()),

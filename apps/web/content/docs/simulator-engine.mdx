@@ -190,13 +190,13 @@ class NumericEventQueue {
 
 ### Dispatch Table
 
-Every primitive's behaviour is its `eval` (and `onTick`) from `circuit()`. A compile collects the behaviour of the circuits it built into a table keyed by name, and `createEngine` is given that table. When the circuit is compiled, each primitive type it uses gets an index and a wrapper around its `eval` that reads the node's inputs from the typed arrays, calls the eval, and writes the outputs back:
+Every primitive's behavior is its `eval` (and `onTick`) from `circuit()`. A compile collects the behavior of the circuits it built into a table keyed by name, and `createEngine` is given that table. When the circuit is compiled, each primitive type it uses gets an index and a wrapper around its `eval` that reads the node's inputs from the typed arrays, calls the eval, and writes the outputs back:
 
 ```typescript
 circuit.evaluators[typeIdx] = generateEvalWrapper(inputNames, outputNames, evalFn, stateKeys);
 ```
 
-Hot path lookup: `circuit.evaluators[primitiveTypeIndex[nodeIndex]](ctx)`: single array index, no branching. The table belongs to the compiled circuit, so two compiles never share behaviour, even for circuits with the same name.
+Hot path lookup: `circuit.evaluators[primitiveTypeIndex[nodeIndex]](ctx)`: single array index, no branching. The table belongs to the compiled circuit, so two compiles never share behavior, even for circuits with the same name.
 
 ### Evaluation Context
 

@@ -182,8 +182,8 @@ export function propagate(
     if (evaluator) {
       evaluator(ctx);
     } else {
-      // The compile had no behaviour for this type. Throws, naming it.
-      missingBehaviour(circuit, nodeIndex);
+      // The compile had no behavior for this type. Throws, naming it.
+      missingBehavior(circuit, nodeIndex);
     }
 
     // Check for changes and enqueue dependents. A port counts as "changed"
@@ -212,17 +212,17 @@ export function propagate(
 }
 
 /**
- * A node whose primitive type has no behaviour in this compile's table.
+ * A node whose primitive type has no behavior in this compile's table.
  * Throwing is far more useful than silently zeroing outputs and producing
  * nonsense state.
  */
-function missingBehaviour(circuit: NumericCircuit, nodeIndex: number): never {
+function missingBehavior(circuit: NumericCircuit, nodeIndex: number): never {
   const node = circuit.flatCircuit.nodes[nodeIndex];
   throw new Error(
-    `Primitive '${node.primitiveType}' has no behaviour in this compile. ` +
-      'The engine runs the behaviour table it was given (`behaviours`), which ' +
+    `Primitive '${node.primitiveType}' has no behavior in this compile. ` +
+      'The engine runs the behavior table it was given (`behaviors`), which ' +
       'a compile collects from the circuits it built. A Circuit IR built by hand ' +
-      'needs its behaviour added to that table.',
+      'needs its behavior added to that table.',
   );
 }
 

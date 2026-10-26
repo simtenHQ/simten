@@ -120,10 +120,10 @@ const BUG = {
   ramInit: 'unfiled: RAM drops its memory contents on export',
 } as const;
 
-/** Top circuit plus every transitive dependency and their behaviour. */
+/** Top circuit plus every transitive dependency and their behavior. */
 function target(top: Circuit): DiffTarget {
-  const { library, behaviours } = designOf(top);
-  return { top: top.circuit, library, behaviours };
+  const { library, behaviors } = designOf(top);
+  return { top: top.circuit, library, behaviors };
 }
 
 /**
@@ -159,7 +159,7 @@ function example(id: string): DiffTarget {
   return {
     top: compiled.circuits[compiled.circuits.length - 1],
     library: compiled.library,
-    behaviours: compiled.behaviours,
+    behaviors: compiled.behaviors,
   };
 }
 
@@ -168,9 +168,9 @@ const fixture = (name: string) =>
 
 function imported(module: string): DiffTarget {
   const netlist = JSON.parse(fixture('imports.json')) as YosysNetlist;
-  const { top, library, behaviours } = importNetlist(netlist, module);
+  const { top, library, behaviors } = importNetlist(netlist, module);
   const deps = [...library.values()].filter((c) => c.name !== top.name);
-  return target(buildFromIR(top, deps, behaviours));
+  return target(buildFromIR(top, deps, behaviors));
 }
 
 const cases: Case[] = [];

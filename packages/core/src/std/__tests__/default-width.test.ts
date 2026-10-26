@@ -2,7 +2,7 @@
  * A bare `Adder()` must keep its own 8-bit default even when a 32-bit Adder is
  * defined after it.
  *
- * Behaviour was keyed by component NAME in a global registry where the last
+ * Behavior was keyed by component NAME in a global registry where the last
  * write won, so there was one lambda per name no matter how many widths got
  * instantiated, resolved at `simulate()` time. (A compile's own table is still
  * keyed by name, so one instance's closure serves every instance.) An eval whose width default
