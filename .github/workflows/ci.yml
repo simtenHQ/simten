@@ -61,7 +61,7 @@ jobs:
         # wrangler from each app's wrangler.jsonc) but is referenced by
         # the Cloudflare apps' tsconfigs. Generate before typecheck.
         run: |
-          for d in apps/web apps/compiler apps/synth apps/verifier; do
+          for d in apps/web apps/compiler apps/synth apps/verifier apps/embed-page; do
             (cd "$d" && pnpm exec wrangler types) || exit 1
           done
 

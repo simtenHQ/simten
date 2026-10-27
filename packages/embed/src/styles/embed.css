@@ -168,6 +168,13 @@
 [data-embed-theme] canvas {
   display: block;
   vertical-align: middle;
+}
+
+/* Images and video only, as in Tailwind's own Preflight. On every svg it
+   capped React Flow's edge layer, an svg inside a zero-width box, at zero
+   width, and Chrome then drew none of the wires. */
+[data-embed-theme] img,
+[data-embed-theme] video {
   max-width: 100%;
   height: auto;
 }

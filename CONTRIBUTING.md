@@ -12,7 +12,7 @@ You need [Node 20+](https://nodejs.org/) and [pnpm 8+](https://pnpm.io/installat
 git clone https://github.com/simtenhq/simten
 cd simten
 pnpm install
-pnpm dev:all     # web app on :3001 + sandbox on :3002
+pnpm dev:all     # web app on :3001 + sandbox on :3002 + embed pages on :3004
 ```
 
 Open <http://localhost:3001>. The editor, simulator, docs, blog and learn pages all work end-to-end. You're done.
@@ -25,6 +25,8 @@ pnpm dev:game      # :3003
 ```
 
 Open <http://localhost:3003>. Both apps run player code in the sandbox iframe, so it needs to be up for levels to grade.
+
+Embed pages (embed.simten.dev) run on :3004 with `pnpm dev:embed`, alongside the web app and the sandbox. In dev they read the shares the local web app creates, so Share → Embed in the editor previews them. `pnpm --filter @simten/embed-page test:e2e` builds the page and checks it from another origin in a browser.
 
 ## Setup tiers
 
@@ -59,6 +61,7 @@ Add a ULX3S board, [openFPGALoader](https://github.com/trabucayre/openFPGALoader
 apps/
   web/               ← main React app (editor, docs, blog, learn), `@simten/web`
   game/              ← play.simten.dev, the level campaign, `@simten/game`
+  embed-page/        ← embed.simten.dev, shared circuits for iframes, `@simten/embed-page`
   sandbox/           ← isolated iframe that runs user circuit code
   compiler/          ← Cloudflare Container: RISC-V cross-compiler
   synth/             ← Cloudflare Container: Yosys synthesis
@@ -136,7 +139,7 @@ The subject should describe the *outcome*, not the change. "Fix bug" is bad. "Dr
 
 ## The sandbox
 
-Circuit code is arbitrary TypeScript, so neither the web app nor the game ever runs it directly. Every surface that runs user code (the editor, the game, `<circuit-embed>`) sends it to `apps/sandbox`, a hidden iframe on its own origin, which runs it in a Web Worker and sends back plain JSON. Because it's a different origin, user code can't read the main site's cookies, storage or DOM.
+Circuit code is arbitrary TypeScript, so neither the web app nor the game ever runs it directly. Every surface that runs user code (the editor, the game, embed pages, `<circuit-embed>`) sends it to `apps/sandbox`, a hidden iframe on its own origin, which runs it in a Web Worker and sends back plain JSON. Because it's a different origin, user code can't read the main site's cookies, storage or DOM.
 
 - **Where it runs:** `localhost:3002` in dev, `sandbox.simtenusercontent.dev` in production. Set `VITE_SANDBOX_ORIGIN` to point at a different one, e.g. a staging sandbox.
 - **If it isn't running:** nothing compiles or grades. The app waits about 10 seconds for the iframe to say it's ready, then gives up. If circuits silently never simulate, check that `pnpm dev:sandbox` (or `pnpm dev:all`) is up.

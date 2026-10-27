@@ -15,7 +15,7 @@ Circuit code is arbitrary TypeScript. When you share a circuit or ask Claude to 
 
 When you type circuit code in the editor, it compiles and simulates inside a hidden `<iframe>` served from a separate origin (`sandbox.simtenusercontent.dev` in production, `localhost:3002` in development). The main app (`simten.dev` / `localhost:3001`) never executes user code directly, not even via `eval` or `new Function()`.
 
-This applies to every code-execution surface: the editor, the live playground, and `<circuit-embed>` web components. All three route through the same sandbox.
+This applies to every code-execution surface: the editor, the live playground, embed pages on `embed.simten.dev`, and `<circuit-embed>` web components. All of them route through the same sandbox.
 
 ### Two levels of isolation
 
@@ -78,6 +78,28 @@ The default of `'none'` means every directive must be explicitly opted in. The s
 To close the `import()` exfiltration channel entirely, the worker also **rejects circuit code containing dynamic `import()` expressions at compile time**: the rewriter only handles static `import` statements, and leaving `import()` ungated even with the CSP above is unnecessary risk. Static imports remain fully supported; that covers every legitimate use case (importing fast-check, npm hash libraries as Tier-A oracles, etc.).
 
 The policy is written once, in `apps/sandbox/public/_headers`. Cloudflare serves it in production, and the dev and preview servers (`apps/sandbox/vite.config.ts`) read the same file.
+
+### Embed pages
+
+Shared circuits can be embedded in other sites from `embed.simten.dev/s/<id>`. That page is on its own origin so `simten.dev` can keep refusing to be framed by anyone but itself (`frame-ancestors 'self'` on every page). The embed origin is the opposite: any site may frame it. It is safe to frame because it holds nothing worth attacking. It sets no cookies, keeps nothing in storage, and has no action inside the frame that writes anything. Forking or saving happens on `simten.dev`, behind an "Open in Simten" link that opens a new tab.
+
+The embed page runs only Simten's own code. The circuit's code still compiles and runs one level down, in the sandbox iframe described above, exactly as in the editor. Its enforced CSP:
+
+```
+default-src 'none';
+script-src  'self';
+style-src   'self';
+img-src     'self' data:;
+font-src    'self';
+connect-src 'self';
+frame-src   https://sandbox.simtenusercontent.dev;
+frame-ancestors *;
+base-uri    'none';
+form-action 'none';
+object-src  'none';
+```
+
+`connect-src 'self'` covers its one request, the shared source from `embed.simten.dev/api/share/<id>`. The policy is written in `apps/embed-page/src/headers.ts`.
 
 ### Timeout and recovery
 

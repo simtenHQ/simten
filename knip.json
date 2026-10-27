@@ -22,6 +22,9 @@
       "ignore": [".source/**", "public/blog-assets/wasm/**"],
       "ignoreDependencies": ["cloudflare"]
     },
+    "apps/embed-page": {
+      "entry": ["e2e/*.mts"]
+    },
     "apps/sandbox": {
       "entry": ["e2e/*.mts"]
     },

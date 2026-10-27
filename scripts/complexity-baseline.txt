@@ -2,7 +2,6 @@ apps/game/src/routes/$levelId.tsx PlayLevel
 apps/web/src/features/blog/building-a-cpu/CCodeEditor.tsx highlightC
 apps/web/src/features/blog/computing-trig-in-hardware/CORDICDemo.tsx getDisplayValue
 apps/web/src/features/blog/synth-in-hardware/useLiveVoice.ts pump
-apps/web/src/features/visual-editor/components/EditorWorkspace.tsx EditorWorkspace
 demos/cli/sin-wave.ts render
 hardware/ulx3s/lib/pipeline.ts runPipeline
 hardware/ulx3s/projects/cpu/cycle-diff.ts main

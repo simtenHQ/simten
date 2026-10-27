@@ -10,6 +10,7 @@
   "ignore": [
     "@simten/web",
     "@simten/game",
+    "@simten/embed-page",
     "@simten/sandbox",
     "@simten/compiler",
     "@simten/verifier",
