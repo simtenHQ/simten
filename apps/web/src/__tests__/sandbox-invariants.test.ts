@@ -8,14 +8,16 @@
  * executeJsCode; banning it here covers both and any future variants.
  */
 
-import { readdirSync, readFileSync, statSync } from 'fs';
-import { join } from 'path';
+import { readdirSync, readFileSync, statSync } from 'node:fs';
+import { join } from 'node:path';
 
 const APP_SRC = join(__dirname, '..');
 const EMBED_SRC = join(__dirname, '../../../../packages/embed/src');
 // packages/ui is where useSandbox itself lives, so it is the package most
 // likely to grow a violation, and it was not being scanned.
 const UI_SRC = join(__dirname, '../../../../packages/ui/src');
+// The game runs player code too, through the same sandbox.
+const GAME_SRC = join(__dirname, '../../../game/src');
 
 function collectSourceFiles(dir: string): string[] {
   const files: string[] = [];
@@ -57,7 +59,14 @@ describe('sandbox invariants', () => {
     ...collectSourceFiles(APP_SRC),
     ...collectSourceFiles(EMBED_SRC),
     ...collectSourceFiles(UI_SRC),
+    ...collectSourceFiles(GAME_SRC),
   ];
+
+  it('scans every app and package that hosts the sandbox', () => {
+    for (const dir of [APP_SRC, EMBED_SRC, UI_SRC, GAME_SRC]) {
+      expect(files.some((f) => f.startsWith(dir))).toBe(true);
+    }
+  });
 
   for (const { pattern, reason } of BANNED) {
     it(`no source file matches: ${pattern}`, () => {

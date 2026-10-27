@@ -158,7 +158,7 @@ function parseImports(jsCode: string): ParsedImport[] {
     let found = false;
 
     for (let j = i; j < Math.min(i + 20, lines.length); j++) {
-      if (j > i) raw += '\n' + lines[j];
+      if (j > i) raw += `\n${lines[j]}`;
 
       // Try full import with 'from':  import [bindings] from 'specifier'
       const fromMatch = raw.match(/\bfrom\s+(['"])([^'"]+)\1\s*;?\s*$/);

@@ -165,10 +165,12 @@
   },
   "devDependencies": {
     "@monaco-editor/react": "^4.7.0",
+    "@testing-library/react": "^16.2.0",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "fast-check": "^4.5.3",
+    "jsdom": "^27.0.0",
     "monaco-editor": "^0.55.1",
     "typescript": "^5",
     "vitest": "^5.0.5"
