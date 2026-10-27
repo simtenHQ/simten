@@ -15,12 +15,12 @@ import { describe, expect, it } from 'vitest';
 import type { CircuitIR } from '../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
 import { simulate } from '../../simulator/simulate.js';
+import { type ExecuteResult, executeCircuitCode } from '../../source/execute.js';
 import { Adder } from '../../std/index.js';
 import { getStdLibrary } from '../../std/library.js';
 import { createDefinitions, libraryOf } from '../behavior.js';
 import { bit, bus } from '../bit-bus.js';
 import { circuit } from '../circuit.js';
-import { type ExecuteResult, executeCircuitCode } from '../execute.js';
 import { internalsOf } from '../internals.js';
 
 /** Run a compiled source's last circuit with the compile's own library and behavior. */

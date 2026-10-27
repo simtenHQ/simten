@@ -22,8 +22,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import type { Circuit } from '../circuit/builder-types.js';
-import { executeCircuitCode } from '../circuit/execute.js';
 import { isCircuit } from '../circuit/internals.js';
+import { executeCircuitCode } from '../source/execute.js';
 
 interface ComponentSurface {
   /** The name source code uses in the sandbox, when it differs from the export name. */
