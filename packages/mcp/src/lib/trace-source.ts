@@ -12,6 +12,8 @@ import {
   createEngine,
   detectSteadyState,
   elaborate,
+  type FlatNode,
+  type MemoryContents,
   type SimulationTrace,
   TOP_LEVEL_NODE,
 } from '@simten/core/internal';
@@ -43,7 +45,12 @@ export function traceSource(params: {
   // which propagate.ts reads raw when building onTick's inputs. A boolean here
   // would land in sequential state verbatim.
   inputs?: Record<string, number>;
-  memoryData?: Map<string, Map<number, number>>;
+  /**
+   * Memory contents to load before the first tick, by node: the node's ID
+   * (`rom`) or its path inside the circuit (`cpu.imem`), each holding
+   * `{ address: value }` contents.
+   */
+  memoryData?: Record<string, MemoryContents>;
 }): SimulateResult | SimulateError {
   const ticks = params.ticks ?? 10;
 
@@ -73,10 +80,14 @@ export function traceSource(params: {
   // Create simulator from flat circuit
   const simulator = createEngine(flatCircuit, { library: compiled.library });
 
-  // Load memory data if provided
+  // Load memory data if provided. The engine's memories run on a Map, and its
+  // setNode skips a name that matches no node, so check the names here.
   if (params.memoryData) {
-    for (const [nodeId, data] of Object.entries(params.memoryData)) {
-      simulator.setNode(nodeId, data);
+    for (const [nodeId, contents] of Object.entries(params.memoryData)) {
+      if (!findNode(flatCircuit.nodes, nodeId)) {
+        return { error: `memoryData: no node "${nodeId}" in circuit "${target.name}"` };
+      }
+      simulator.setNode(nodeId, memoryContentsToMap(contents));
     }
   }
 
@@ -145,4 +156,13 @@ export function traceSource(params: {
     vcd,
     ...(steadyStateAt !== undefined ? { steadyStateAt } : {}),
   };
+}
+
+/** The node `setNode` resolves `name` to: an exact ID, else an ID ending in `.name`. */
+function findNode(nodes: readonly FlatNode[], name: string): FlatNode | undefined {
+  return nodes.find((n) => n.id === name) ?? nodes.find((n) => n.id.endsWith(`.${name}`));
+}
+
+function memoryContentsToMap(contents: MemoryContents): Map<number, number> {
+  return new Map(Object.entries(contents).map(([address, value]) => [Number(address), value]));
 }
