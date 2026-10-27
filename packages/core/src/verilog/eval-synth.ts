@@ -40,6 +40,7 @@ import {
 import type { Behavior, BehaviorFn } from '../circuit/behavior.js';
 import type { ArgumentValue, MemoryValue, StateBlock } from '../ir/circuit-ir.js';
 import { memoryContentsToMap } from '../ir/memory-contents.js';
+import { type PrimitiveContext, sanitizeId } from './emitters/helpers.js';
 import {
   and,
   binary,
@@ -57,7 +58,6 @@ import {
   unsupported,
   type Value,
 } from './eval-values.js';
-import type { PrimitiveContext } from './primitive-map.js';
 
 /** Result of checking whether behavior can be translated. */
 export interface SynthValidation {
@@ -659,10 +659,6 @@ function caseGroups(cases: SwitchCase[]): CaseGroup[] {
 // ============================================================================
 // Translating a behavior
 // ============================================================================
-
-function sanitizeId(id: string): string {
-  return id.replace(/[.-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-}
 
 function argument(key: string, value: ArgumentValue): Value {
   if (typeof value === 'boolean') return literal(value ? 1n : 0n, 'bool');
