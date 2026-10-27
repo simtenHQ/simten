@@ -12,6 +12,7 @@
  *   sim.get('sum')  // 0
  */
 
+import { libraryOf } from '../circuit/behavior.js';
 import type { Circuit, PortMap } from '../circuit/builder-types.js';
 import { isSequentialCircuit } from '../circuit/is-sequential.js';
 import type {
@@ -19,18 +20,12 @@ import type {
   BitValue,
   BusValue,
   CircuitIR,
-  CircuitLibrary,
   MemoryContents,
-  MutableCircuitLibrary,
 } from '../ir/circuit-ir.js';
 import { memoryContentsShapeError, memoryContentsToMap } from '../ir/memory-contents.js';
 import { createEngine, elaborate } from './index.js';
 import { SimulationSession } from './simulation-session.js';
 import type { SimulatorSnapshot } from './types.js';
-
-function isMutable(lib: CircuitLibrary): lib is MutableCircuitLibrary {
-  return 'addCircuit' in lib && typeof (lib as MutableCircuitLibrary).addCircuit === 'function';
-}
 
 // ============================================================================
 // Simulation handle type
@@ -89,9 +84,6 @@ export interface SimulationHandle<Ins extends PortMap = PortMap, Outs extends Po
    */
   setNode(nodeId: string, value: BitValue | BusValue | MemoryContents): void;
 
-  /** Access the underlying session (for advanced use). */
-  readonly session: SimulationSession;
-
   /** Clean up resources. */
   dispose(): void;
 }
@@ -104,47 +96,25 @@ export interface SimulationHandle<Ins extends PortMap = PortMap, Outs extends Po
  * Create a simulation from a component.
  *
  * @param comp - A Circuit (from circuit().build() or stdlib)
- * @param options - Optional: custom library, initial memory data
  */
 export function simulate<Ins extends PortMap, Outs extends PortMap>(
   comp: Circuit<Ins, Outs>,
-  options?: {
-    library?: CircuitLibrary;
-  },
 ): SimulationHandle<Ins, Outs> {
   const rawCircuit = comp.circuit;
 
-  // Build component library from the circuit + all transitive dependencies
-  const circuitMap = new Map<string, CircuitIR>();
-  const defaultLibrary: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
-    resolveCircuit: (name) => circuitMap.get(name),
-    getAllPrimitiveNames: () =>
-      [...circuitMap.entries()]
-        .filter(([, c]) => c.implementation.kind === 'primitive')
-        .map(([n]) => n),
-    addCircuit: (c) => {
-      circuitMap.set(c.name, c);
-    },
-  };
-  const library = options?.library ?? defaultLibrary;
-  if (isMutable(library)) {
-    library.addCircuit(rawCircuit);
-    if (comp._dependencies) {
-      for (const [, dep] of comp._dependencies) {
-        library.addCircuit(dep.circuit);
-      }
-    }
-  }
+  // The definitions and behavior for this circuit and its dependencies.
+  const library = libraryOf(comp);
+  const { definitions } = library;
 
   // If the component is a primitive (leaf), wrap it in a composite shell
   // so the elaboration pipeline can handle it properly
   const circuit = wrapIfPrimitive(rawCircuit, comp._args ?? {});
 
   // Detect sequential
-  const isSequential = isSequentialCircuit(circuit, library.resolveCircuit);
+  const isSequential = isSequentialCircuit(circuit, definitions.resolveCircuit);
 
   // Create engine and session
-  const engine = createEngine(elaborate(circuit, library), { componentLibrary: library });
+  const engine = createEngine(elaborate(circuit, definitions), { library });
 
   // Run initial combinational propagation
   engine.runCombinational();
@@ -267,10 +237,6 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
       const shapeError = memoryContentsShapeError(value);
       if (shapeError) throw new Error(`setNode('${nodeId}'): ${shapeError}`);
       engine.setNode(nodeId, memoryContentsToMap(value));
-    },
-
-    get session() {
-      return session;
     },
 
     dispose() {

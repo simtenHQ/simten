@@ -5,11 +5,11 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { getCircuitBehavior } from '../../circuit/behavior-registry.js';
+import { type BehaviorTable, behaviorOf, libraryOf } from '../../circuit/behavior.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
-// Registers the stdlib behaviours the synthesizability checks read.
-import '../../std/index.js';
+import type { ArgumentValue } from '../../ir/circuit-ir.js';
+import { And, Xor } from '../../std/index.js';
+import { getStdLibrary } from '../../std/library.js';
 import {
   checkSynthesizable,
   emitVerilogFromEval,
@@ -26,9 +26,11 @@ function makeCtx(
   primitiveType: string,
   inputs: Record<string, string>,
   outputs: Record<string, string>,
-  args: Record<string, any> = {},
+  args: Record<string, ArgumentValue> = {},
+  behaviors: BehaviorTable = getStdLibrary().behaviors,
 ): PrimitiveContext {
   return {
+    behaviors,
     nodeId: 'test_node',
     resetName: 'rst_n',
     primitiveType,
@@ -42,22 +44,7 @@ function makeCtx(
   };
 }
 
-function libraryFor(c: { circuit: any; _dependencies: ReadonlyMap<string, any> }) {
-  const circuitMap = new Map<string, CircuitIR>();
-  const lib: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
-    resolveCircuit: (name) => circuitMap.get(name),
-    getAllPrimitiveNames: () =>
-      [...circuitMap.entries()]
-        .filter(([, c]) => c.implementation.kind === 'primitive')
-        .map(([n]) => n),
-    addCircuit: (c) => {
-      circuitMap.set(c.name, c);
-    },
-  };
-  lib.addCircuit(c.circuit);
-  for (const [, dep] of c._dependencies) lib.addCircuit(dep.circuit ?? dep);
-  return lib;
-}
+const lookup = (table: BehaviorTable) => (name: string) => table.get(name);
 
 // ── Parser ───────────────────────────────────────────────────────────────
 
@@ -410,30 +397,30 @@ describe('emitVerilogFromEval', () => {
 // ── tryEmitFromEval (integration) ────────────────────────────────────────
 
 describe('tryEmitFromEval', () => {
-  it('returns Verilog for a registered eval', () => {
-    // Define a custom circuit — this registers its eval
+  it("returns Verilog for an eval in the compile's table", () => {
     const MyGate = circuit('TestSynthGate', {
       inputs: { a: bit, b: bit },
       outputs: { out: bit },
       eval: ({ a, b }) => ({ out: a && b ? 1 : 0 }),
     });
 
-    const ctx = makeCtx('TestSynthGate', { a: 'w_a', b: 'w_b' }, { out: 'w_out' });
-    const result = tryEmitFromEval(ctx, getCircuitBehavior);
+    const table = libraryOf(MyGate).behaviors;
+    const ctx = makeCtx('TestSynthGate', { a: 'w_a', b: 'w_b' }, { out: 'w_out' }, {}, table);
+    const result = tryEmitFromEval(ctx, lookup(table));
     expect(result).not.toBeNull();
     expect(result!.lines.some((l) => l.includes('assign'))).toBe(true);
   });
 
   it('returns null for unknown primitive', () => {
     const ctx = makeCtx('NonExistent', {}, {});
-    const result = tryEmitFromEval(ctx, getCircuitBehavior);
+    const result = tryEmitFromEval(ctx, lookup(getStdLibrary().behaviors));
     expect(result).toBeNull();
   });
 
   it('transpiles sequential Register with eval + onTick', () => {
     // Register has stateKeys — now handled by eval-synth
     const ctx = makeCtx('Register', { data: 'w_d', we: 'w_we', rst: 'w_rst' }, { q: 'w_q' });
-    const result = tryEmitFromEval(ctx, getCircuitBehavior);
+    const result = tryEmitFromEval(ctx, lookup(getStdLibrary().behaviors));
     expect(result).not.toBeNull();
     const text = result!.lines.join('\n');
     expect(text).toContain('assign'); // eval outputs
@@ -445,14 +432,14 @@ describe('tryEmitFromEval', () => {
 
 describe('stdlib eval synthesizability', () => {
   it('And eval is synthesizable', () => {
-    const entry = getCircuitBehavior('And');
+    const entry = behaviorOf(And);
     expect(entry).toBeDefined();
     const result = checkSynthesizable(entry!.evalFn, entry!.inputNames, entry!.outputNames);
     expect(result.valid).toBe(true);
   });
 
   it('Xor eval is synthesizable', () => {
-    const entry = getCircuitBehavior('Xor');
+    const entry = behaviorOf(Xor);
     expect(entry).toBeDefined();
     const result = checkSynthesizable(entry!.evalFn, entry!.inputNames, entry!.outputNames);
     expect(result.valid).toBe(true);
@@ -460,7 +447,7 @@ describe('stdlib eval synthesizability', () => {
 
   // Parameterized factories — Verilog goes through primitive-map; eval is parameter-aware
   it.skip('Adder eval is synthesizable', () => {
-    const entry = getCircuitBehavior('Adder');
+    const entry = getStdLibrary().behaviors.get('Adder');
     expect(entry).toBeDefined();
     const result = checkSynthesizable(entry!.evalFn, entry!.inputNames, entry!.outputNames);
     expect(result.valid).toBe(true);
@@ -490,7 +477,8 @@ describe('end-to-end eval-synth export', () => {
       ],
     });
 
-    const { verilog } = exportVerilog(MyCircuit.circuit, libraryFor(MyCircuit));
+    const { definitions, behaviors } = libraryOf(MyCircuit);
+    const { verilog } = exportVerilog(MyCircuit.circuit, definitions, { behaviors });
 
     // Should contain synthesized logic, NOT a WARNING comment
     expect(verilog).toContain('module TestSynthCircuit');
@@ -513,16 +501,18 @@ describe('top-level primitive simulation', () => {
       eval: ({ a }) => ({ result: (a << 1) >>> 0 }),
     });
 
-    const lib = {
+    const definitions = {
       resolveCircuit: (name: string) => (name === 'TestDoubler' ? Doubler.circuit : undefined),
       getAllPrimitiveNames: () => ['TestDoubler'],
     };
 
-    const flat = elaborate(Doubler.circuit, lib);
+    const flat = elaborate(Doubler.circuit, definitions);
     expect(flat.nodes.length).toBe(1);
     expect(flat.nodes[0].primitiveType).toBe('TestDoubler');
 
-    const sim = createEngine(flat, { componentLibrary: lib });
+    const sim = createEngine(flat, {
+      library: { definitions, behaviors: libraryOf(Doubler).behaviors },
+    });
     sim.setNode('a', 5);
     sim.runCombinational();
     const vals = sim.getPortValues();
@@ -542,15 +532,17 @@ describe('top-level primitive simulation', () => {
       onTick: ({ data, we, value }) => ({ value: we ? (data as number) : (value as number) }),
     });
 
-    const lib = {
+    const definitions = {
       resolveCircuit: (name: string) => (name === 'TestSimReg' ? MyReg.circuit : undefined),
       getAllPrimitiveNames: () => ['TestSimReg'],
     };
 
-    const flat = elaborate(MyReg.circuit, lib);
+    const flat = elaborate(MyReg.circuit, definitions);
     expect(flat.nodes.length).toBe(1);
 
-    const sim = createEngine(flat, { componentLibrary: lib });
+    const sim = createEngine(flat, {
+      library: { definitions, behaviors: libraryOf(MyReg).behaviors },
+    });
     sim.setNode('data', 42);
     sim.setNode('we', 1);
     sim.tick(); // clock edge: value ← 42

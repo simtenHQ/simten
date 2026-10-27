@@ -113,7 +113,7 @@ It debounces edits, keeps the last good circuit when a compile fails, picks the 
 The lower-level hook, for when you need to route the compile result somewhere custom rather than straight into a simulator. The `/circuit` editor uses it to feed its own selection stores. It owns only the compile mechanics and takes no opinion about what happens next.
 
 ```tsx
-const { result, library, diagnostics, compiling, compile } = useCircuitCompiler(source, {
+const { result, definitions, diagnostics, compiling, compile } = useCircuitCompiler(source, {
   autoCompile: true,
   debounceMs: 500,
 });
@@ -122,7 +122,7 @@ const { result, library, diagnostics, compiling, compile } = useCircuitCompiler(
 | Returns | |
 |---|---|
 | `result` | Last successful compile (`circuits`, `libraryCircuits`, `portValues`), retained across a later failure |
-| `library` | Component lookup (`resolveCircuit`, `getAllPrimitiveNames`, `getAllCircuitNames`) |
+| `definitions` | Component lookup (`resolveCircuit`, `getAllPrimitiveNames`, `getAllCircuitNames`) |
 | `diagnostics` | Compile errors; pass straight to `SimtenCodeEditor`'s `diagnostics` prop |
 | `compiling` | True while a compile is in flight |
 | `compile()` | Trigger a compile now, bypassing the debounce |

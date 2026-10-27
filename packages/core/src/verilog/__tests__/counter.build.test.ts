@@ -14,7 +14,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { CircuitLibrary } from '../../ir/circuit-ir.js';
+import type { CircuitDefinitions } from '../../ir/circuit-ir.js';
 import { Adder, Constant, Mux, Or, Register } from '../../std/index.js';
 import { exportVerilog } from '../exporter.js';
 import { buildBitstream, hasBuild } from './build.js';
@@ -44,7 +44,7 @@ function buildCounter() {
     ],
   });
 
-  const lib: CircuitLibrary = {
+  const definitions: CircuitDefinitions = {
     resolveCircuit: (name) => {
       if (name === 'Counter') return Counter.circuit;
       return Counter._dependencies.get(name)?.circuit;
@@ -52,15 +52,15 @@ function buildCounter() {
     getAllPrimitiveNames: () => [...Counter._dependencies.keys()],
   };
 
-  return { circuit: Counter.circuit, lib };
+  return { circuit: Counter.circuit, definitions };
 }
 
 const d = describe.skipIf(!hasSynth() || !hasBuild());
 
 d('Counter — full pipeline to ECP5 bitstream', () => {
   it('synth_ecp5 → nextpnr-ecp5 → ecppack → bitstream', { timeout: 180000 }, async () => {
-    const { circuit, lib } = buildCounter();
-    const exportResult = exportVerilog(circuit, lib, { target: 'synthesis' });
+    const { circuit, definitions } = buildCounter();
+    const exportResult = exportVerilog(circuit, definitions, { target: 'synthesis' });
 
     // Step 1: Synthesise for ECP5 target
     const synthResp = await synthesizeVerilog(exportResult, 'Counter', 'ecp5');

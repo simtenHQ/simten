@@ -5,7 +5,7 @@
  */
 
 import { bit, circuit } from '@simten/core/circuit';
-import type { CircuitIR, CircuitLibrary } from '@simten/core/internal';
+import type { CircuitDefinitions, CircuitIR } from '@simten/core/internal';
 import { And, Xor } from '@simten/core/std';
 import { describe, expect, it } from 'vitest';
 import type { NodeData } from '../../nodes';
@@ -23,7 +23,7 @@ const HalfAdder = circuit('HalfAdder', {
   ],
 });
 
-function libraryOf(...circuits: CircuitIR[]): CircuitLibrary {
+function definitionsOf(...circuits: CircuitIR[]): CircuitDefinitions {
   const byName = new Map(circuits.map((c) => [c.name, c]));
   return {
     resolveCircuit: (name) => byName.get(name),
@@ -47,8 +47,8 @@ function nodeData(componentRef: string, args: Record<string, unknown> = {}): Nod
 
 describe('resolveDrillTarget', () => {
   it('opens a composite into its own structure', () => {
-    const lib = libraryOf(HalfAdder.circuit);
-    const frame = resolveDrillTarget(nodeData('HalfAdder'), lib);
+    const definitions = definitionsOf(HalfAdder.circuit);
+    const frame = resolveDrillTarget(nodeData('HalfAdder'), definitions);
     expect(frame?.componentName).toBe('HalfAdder');
     expect(frame?.componentDef.nodes).toHaveLength(2);
   });
@@ -56,7 +56,7 @@ describe('resolveDrillTarget', () => {
   it('opens an eval-only primitive into its gate-level reference build', () => {
     // The whole point: Adder has no `connect` and no nodes, so before MADE_OF
     // this was a dead end.
-    const frame = resolveDrillTarget(nodeData('Adder', { width: 8 }), libraryOf());
+    const frame = resolveDrillTarget(nodeData('Adder', { width: 8 }), definitionsOf());
     expect(frame).not.toBeNull();
     const stages = frame?.componentDef.nodes.filter((n) => n.componentRef === 'FullAdder');
     expect(stages).toHaveLength(8);
@@ -64,7 +64,7 @@ describe('resolveDrillTarget', () => {
 
   it('builds to the node’s own width, not a fixed one', () => {
     for (const width of [1, 4, 16]) {
-      const frame = resolveDrillTarget(nodeData('Adder', { width }), libraryOf());
+      const frame = resolveDrillTarget(nodeData('Adder', { width }), definitionsOf());
       const stages = frame?.componentDef.nodes.filter((n) => n.componentRef === 'FullAdder');
       expect(stages, `width ${width}`).toHaveLength(width);
     }
@@ -83,58 +83,61 @@ describe('resolveDrillTarget', () => {
         x.out.to(outputs.sum),
       ],
     });
-    const frame = resolveDrillTarget(nodeData('Adder', { width: 8 }), libraryOf(UserAdder.circuit));
+    const frame = resolveDrillTarget(
+      nodeData('Adder', { width: 8 }),
+      definitionsOf(UserAdder.circuit),
+    );
     expect(frame?.componentDef.nodes).toHaveLength(1);
     expect(frame?.componentDef.nodes[0].componentRef).toBe('Xor');
   });
 
   it('returns null for a leaf primitive', () => {
-    expect(resolveDrillTarget(nodeData('Xor'), libraryOf(Xor.circuit))).toBeNull();
+    expect(resolveDrillTarget(nodeData('Xor'), definitionsOf(Xor.circuit))).toBeNull();
     // Deliberately excluded from MADE_OF.
-    expect(resolveDrillTarget(nodeData('Multiplier', { width: 8 }), libraryOf())).toBeNull();
-    expect(resolveDrillTarget(nodeData('Constant', { value: 1 }), libraryOf())).toBeNull();
+    expect(resolveDrillTarget(nodeData('Multiplier', { width: 8 }), definitionsOf())).toBeNull();
+    expect(resolveDrillTarget(nodeData('Constant', { value: 1 }), definitionsOf())).toBeNull();
   });
 
   it('returns null rather than throwing on a malformed argument bag', () => {
     // A bad width should leave the node inert, not break the canvas.
     for (const width of ['wide', Number.NaN, -1]) {
-      expect(() => resolveDrillTarget(nodeData('Adder', { width }), libraryOf())).not.toThrow();
+      expect(() => resolveDrillTarget(nodeData('Adder', { width }), definitionsOf())).not.toThrow();
     }
     // Missing arguments entirely — falls back to the default width.
-    const frame = resolveDrillTarget(nodeData('Adder'), libraryOf());
+    const frame = resolveDrillTarget(nodeData('Adder'), definitionsOf());
     expect(frame?.componentDef.nodes.filter((n) => n.componentRef === 'FullAdder')).toHaveLength(8);
   });
 
-  it('carries a library that resolves every node in the reference build', () => {
+  it('carries definitions that resolve every node in the reference build', () => {
     // The bug this pins: FigletStream depends on Adder, not on the FullAdder /
     // Slice / Concat / gates that explain it. `projection.ts` drops any node it
-    // cannot resolve, so a frame without its own library renders the boundary
+    // cannot resolve, so a frame without its own definitions renders the boundary
     // ports and an empty middle.
-    const pageLibrary = libraryOf(); // knows nothing
-    const frame = resolveDrillTarget(nodeData('Adder', { width: 8 }), pageLibrary);
-    expect(frame?.library).toBeDefined();
+    const pageDefinitions = definitionsOf(); // knows nothing
+    const frame = resolveDrillTarget(nodeData('Adder', { width: 8 }), pageDefinitions);
+    expect(frame?.definitions).toBeDefined();
     for (const node of frame?.componentDef.nodes ?? []) {
       expect(
-        frame?.library?.resolveCircuit(node.componentRef),
+        frame?.definitions?.resolveCircuit(node.componentRef),
         `${node.componentRef} unresolvable — it would be dropped from the canvas`,
       ).toBeDefined();
     }
   });
 
-  it('keeps that library reachable when drilling deeper', () => {
+  it('keeps those definitions reachable when drilling deeper', () => {
     // FullAdder is only known because the Adder build introduced it; drilling
     // into it must still resolve Xor/And/Or.
-    const frame = resolveDrillTarget(nodeData('Adder', { width: 4 }), libraryOf());
-    const inner = resolveDrillTarget(nodeData('FullAdder'), frame!.library!);
+    const frame = resolveDrillTarget(nodeData('Adder', { width: 4 }), definitionsOf());
+    const inner = resolveDrillTarget(nodeData('FullAdder'), frame!.definitions!);
     expect(inner?.componentDef.nodes.length).toBeGreaterThan(0);
     for (const node of inner?.componentDef.nodes ?? []) {
-      expect(inner?.library?.resolveCircuit(node.componentRef)).toBeDefined();
+      expect(inner?.definitions?.resolveCircuit(node.componentRef)).toBeDefined();
     }
   });
 
   it('carries the node label so the breadcrumb reads as the instance', () => {
     const data = nodeData('Adder', { width: 8 });
     data.label = 'adder';
-    expect(resolveDrillTarget(data, libraryOf())?.nodeLabel).toBe('adder');
+    expect(resolveDrillTarget(data, definitionsOf())?.nodeLabel).toBe('adder');
   });
 });

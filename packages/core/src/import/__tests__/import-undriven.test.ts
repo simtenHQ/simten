@@ -26,8 +26,8 @@ describe('undriven nets tie to 0 with a warning (not a hard error)', () => {
   });
 
   it('ties the undriven output to a Constant(0) in the generated source', () => {
-    const { top, library } = importNetlist(undriven, 'top');
-    const deps = [...library.values()].filter((c) => c.name !== top.name);
+    const { top, definitions } = importNetlist(undriven, 'top');
+    const deps = [...definitions.values()].filter((c) => c.name !== top.name);
     const source = circuitToSource(buildFromIR(top, deps));
     expect(source).toContain('Constant({ width: 1, value: 0 })');
     expect(source).not.toMatch(/inWidth: null/); // tied constant carries its width

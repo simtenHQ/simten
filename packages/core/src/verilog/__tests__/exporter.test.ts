@@ -6,13 +6,13 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
+import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import { And, DFlipFlop, Or, RAM, Register, ROM, Xor } from '../../std/index.js';
 import { exportVerilog } from '../exporter.js';
 
 function libraryFor(c: { circuit: any; _dependencies: ReadonlyMap<string, any> }) {
   const circuitMap = new Map<string, CircuitIR>();
-  const lib: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
+  const definitions: CircuitDefinitions & { addCircuit(c: CircuitIR): void } = {
     resolveCircuit: (name) => circuitMap.get(name),
     getAllPrimitiveNames: () =>
       [...circuitMap.entries()]
@@ -22,9 +22,9 @@ function libraryFor(c: { circuit: any; _dependencies: ReadonlyMap<string, any> }
       circuitMap.set(c.name, c);
     },
   };
-  lib.addCircuit(c.circuit);
-  for (const [, dep] of c._dependencies) lib.addCircuit(dep.circuit ?? dep);
-  return lib;
+  definitions.addCircuit(c.circuit);
+  for (const [, dep] of c._dependencies) definitions.addCircuit(dep.circuit ?? dep);
+  return definitions;
 }
 
 describe('exportVerilog', () => {
@@ -153,12 +153,12 @@ describe('exportVerilog', () => {
         [RamUser.circuit.name, RamUser.circuit],
         ['RAM', ramDefWithData],
       ]);
-      const lib: CircuitLibrary = {
+      const definitions: CircuitDefinitions = {
         resolveCircuit: (name) => circuitMap.get(name),
         getAllPrimitiveNames: () => ['RAM'],
       };
 
-      const { verilog } = exportVerilog(RamUser.circuit, lib);
+      const { verilog } = exportVerilog(RamUser.circuit, definitions);
       const initSection = verilog.match(/initial begin[\s\S]*?end/)?.[0] ?? '';
       // Sorted ascending by address
       expect(initSection.indexOf('[0]')).toBeLessThan(initSection.indexOf('[1]'));
@@ -204,12 +204,12 @@ describe('exportVerilog', () => {
         [RamUser.circuit.name, RamUser.circuit],
         ['RAM', ramDefWithData],
       ]);
-      const lib: CircuitLibrary = {
+      const definitions: CircuitDefinitions = {
         resolveCircuit: (name) => circuitMap.get(name),
         getAllPrimitiveNames: () => ['RAM'],
       };
 
-      const result = exportVerilog(RamUser.circuit, lib, {
+      const result = exportVerilog(RamUser.circuit, definitions, {
         inlineMemoryThreshold: 5, // force the big path
       });
 

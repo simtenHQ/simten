@@ -33,8 +33,8 @@ export function load(workload: Workload): Loaded {
   const compiled = compileSource(example.code);
   if (compiled.error) throw new Error(`${workload.id}: ${compiled.error}`);
   const top = compiled.circuits[compiled.circuits.length - 1];
-  const engine = createEngine(elaborate(top, compiled.library), {
-    componentLibrary: compiled.library,
+  const engine = createEngine(elaborate(top, compiled.library.definitions), {
+    library: compiled.library,
   });
 
   if (!workload.randomInputs) return { engine, step: () => engine.tick() };

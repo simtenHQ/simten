@@ -4,18 +4,23 @@
  * Tests Screen component reading RAM via sequential state (DMA-like behavior).
  */
 
-import { type CircuitLibrary, createEngine, elaborate } from '@simten/core/internal';
+import {
+  type CircuitDefinitions,
+  createEngine,
+  elaborate,
+  getStdLibrary,
+} from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
+import { useCircuitDefinitionsStore } from '../../stores/circuit-definitions-store';
 import { bitType, busType, type CircuitIR } from '../../types/circuit';
 
 const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
   (c) => c.implementation.kind === 'primitive',
 );
 
-function getLibrary(): CircuitLibrary {
-  const store = useCircuitLibraryStore.getState();
+function storeDefinitions(): CircuitDefinitions {
+  const store = useCircuitDefinitionsStore.getState();
   return {
     resolveCircuit: (name) => store.resolveCircuit(name),
     getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
@@ -23,12 +28,12 @@ function getLibrary(): CircuitLibrary {
 }
 
 describe('Screen Integration', () => {
-  let library: ReturnType<typeof useCircuitLibraryStore.getState>;
+  let store: ReturnType<typeof useCircuitDefinitionsStore.getState>;
 
   beforeEach(() => {
-    library = useCircuitLibraryStore.getState();
-    library.clear();
-    library.addCircuits(PRIMITIVES as any[]);
+    store = useCircuitDefinitionsStore.getState();
+    store.clear();
+    store.addCircuits(PRIMITIVES);
   });
 
   it('should work with empty circuit (no RAM)', () => {
@@ -54,9 +59,11 @@ describe('Screen Integration', () => {
       implementation: { kind: 'composite' },
     };
 
-    const simLibrary = getLibrary();
+    const definitions = storeDefinitions();
 
-    const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+    const sim = createEngine(elaborate(circuit, definitions), {
+      library: { definitions, behaviors: getStdLibrary().behaviors },
+    });
     const result = sim.runCombinational();
 
     expect(result.error).toBeUndefined();
@@ -98,9 +105,11 @@ describe('Screen Integration', () => {
       implementation: { kind: 'composite' },
     };
 
-    const simLibrary = getLibrary();
+    const definitions = storeDefinitions();
 
-    const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+    const sim = createEngine(elaborate(circuit, definitions), {
+      library: { definitions, behaviors: getStdLibrary().behaviors },
+    });
     const result = sim.runCombinational();
 
     expect(result.error).toBeUndefined();
@@ -151,8 +160,10 @@ describe('Screen Integration', () => {
     expect(screenNode?.outputs.length).toBe(0);
 
     // Run simulation - should not error
-    const simLibrary = getLibrary();
-    const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+    const definitions = storeDefinitions();
+    const sim = createEngine(elaborate(circuit, definitions), {
+      library: { definitions, behaviors: getStdLibrary().behaviors },
+    });
     const result = sim.runCombinational();
     expect(result.error).toBeUndefined();
   });

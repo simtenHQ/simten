@@ -28,7 +28,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
+import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import {
   // Arithmetic (composites — these have `connect` and are touched by codemod)
   Adder,
@@ -66,7 +66,7 @@ const GOLDEN_FILE_REL = '../../../../../tools/codemod/golden-verilog-hashes.json
 function libraryFor(c: {
   circuit: CircuitIR;
   _dependencies: ReadonlyMap<string, { circuit: CircuitIR }>;
-}): CircuitLibrary {
+}): CircuitDefinitions {
   const map = new Map<string, CircuitIR>();
   map.set(c.circuit.name, c.circuit);
   for (const [, dep] of c._dependencies) map.set(dep.circuit.name, dep.circuit);

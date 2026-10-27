@@ -15,10 +15,11 @@
  * the real session path and assert both kinds of state rewind.
  */
 import { describe, expect, it } from 'vitest';
+import { libraryOf } from '../../circuit/behavior.js';
 import type { Circuit } from '../../circuit/index.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { isSequentialCircuit } from '../../circuit/is-sequential.js';
-import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
+import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import { Console, RAM } from '../../std/index.js';
 import { createEngine, elaborate, SimulationSession } from '../index.js';
 
@@ -39,7 +40,7 @@ const Probe = circuit('TimeTravelProbe', {
 
 function makeSession(built: Circuit<any, any>): SimulationSession {
   const circuitMap = new Map<string, CircuitIR>();
-  const lib: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
+  const definitions: CircuitDefinitions & { addCircuit(c: CircuitIR): void } = {
     resolveCircuit: (name) => circuitMap.get(name),
     getAllPrimitiveNames: () =>
       [...circuitMap.entries()]
@@ -49,10 +50,13 @@ function makeSession(built: Circuit<any, any>): SimulationSession {
       circuitMap.set(c.name, c);
     },
   };
-  lib.addCircuit(built.circuit);
-  if (built._dependencies) for (const [, dep] of built._dependencies) lib.addCircuit(dep.circuit);
-  const isSeq = isSequentialCircuit(built.circuit, lib.resolveCircuit);
-  const engine = createEngine(elaborate(built.circuit, lib), { componentLibrary: lib });
+  definitions.addCircuit(built.circuit);
+  if (built._dependencies)
+    for (const [, dep] of built._dependencies) definitions.addCircuit(dep.circuit);
+  const isSeq = isSequentialCircuit(built.circuit, definitions.resolveCircuit);
+  const engine = createEngine(elaborate(built.circuit, definitions), {
+    library: { definitions, behaviors: libraryOf(built).behaviors },
+  });
   engine.runCombinational();
   return new SimulationSession(engine, { isSequential: isSeq });
 }

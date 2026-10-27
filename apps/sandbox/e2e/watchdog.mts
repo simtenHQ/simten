@@ -1,5 +1,5 @@
 /**
- * A behaviour function that never returns must not freeze the page or the
+ * A behavior function that never returns must not freeze the page or the
  * sandbox. Builds the sandbox, serves it on :4310 and a bare parent page on
  * :4311, then drives it in headless Chromium.
  *
@@ -59,6 +59,39 @@ const Adder = circuit('Adder', {
   inputs: { a: bus(8), b: bus(8), carry_in: bit },
   outputs: { sum: bus(8), carry_out: bit },
   eval: () => ({ sum: 99, carry_out: 0 }),
+})
+`;
+
+// The fake Adder in a design of its own: it runs as itself there.
+const FAKE_ADDER_TOP = `
+const MyAdder = circuit('Adder', {
+  inputs: { a: bus(8), b: bus(8), carry_in: bit },
+  outputs: { sum: bus(8), carry_out: bit },
+  eval: () => ({ sum: 99, carry_out: 0 }),
+})
+const Top = circuit('FakeTop', {
+  inputs: { a: bus(8), b: bus(8) },
+  outputs: { sum: bus(8) },
+  nodes: { u: MyAdder },
+  connect: ({ inputs, outputs, nodes: { u } }) => [inputs.a.to(u.a), inputs.b.to(u.b), u.sum.to(outputs.sum)],
+})
+`;
+
+// The fake Adder and the std one in one design: two circuits, one name.
+const BOTH_ADDERS = `
+const MyAdder = circuit('Adder', {
+  inputs: { a: bus(8), b: bus(8), carry_in: bit },
+  outputs: { sum: bus(8), carry_out: bit },
+  eval: () => ({ sum: 99, carry_out: 0 }),
+})
+const Top = circuit('BothTop', {
+  inputs: { a: bus(8), b: bus(8) },
+  outputs: { mine: bus(8), std: bus(8) },
+  nodes: { mine: MyAdder, std: Adder({ width: 8 }) },
+  connect: ({ inputs, outputs, nodes: { mine, std } }) => [
+    inputs.a.to(mine.a, std.a), inputs.b.to(mine.b, std.b),
+    mine.sum.to(outputs.mine), std.sum.to(outputs.std),
+  ],
 })
 `;
 
@@ -207,7 +240,7 @@ try {
   const ticked = await send({ type: 'tick-n', n: 5, slot: 'again' });
   check('tick after restart', ticked.type === 'ticked-n' && ticked.cycle === 5, show(ticked));
 
-  // User code can't change stdlib behaviour for any slot.
+  // User code can't change stdlib behavior for any slot.
   check(
     'compile fake Adder',
     (await send({ type: 'compile', source: FAKE_ADDER, slot: 'fake' })).type === 'compiled',
@@ -221,6 +254,25 @@ try {
   await send({ type: 'compile', source: FIBONACCI, slot: 'again' });
   const fibFresh = await send({ type: 'tick-n', n: 5, slot: 'again' });
   check('new slot gets the std Adder', fibFresh.portValues?.['__top__.fib'] === 5, show(fibFresh));
+  await send({ type: 'compile', source: FAKE_ADDER_TOP, slot: 'fake' });
+  const fakeSum = await send({ type: 'tick', slot: 'fake', inputs: { a: 2, b: 3 } });
+  check(
+    'a design using only its own Adder runs it',
+    fakeSum.portValues?.['__top__.sum'] === 99,
+    show(fakeSum),
+  );
+  const both = await send({ type: 'compile', source: BOTH_ADDERS, slot: 'both' });
+  check(
+    'two Adders in one design is a compile error',
+    both.type === 'error' && /Two different circuits are named 'Adder'/.test(both.error ?? ''),
+    show(both),
+  );
+  const fibStill = await send({ type: 'tick-n', n: 5, slot: 'again' });
+  check(
+    'other slots keep the std Adder',
+    fibStill.portValues?.['__top__.fib'] === 55,
+    show(fibStill),
+  );
 
   check('no console errors', consoleErrors.length === 0, consoleErrors.join(' | '));
 } finally {

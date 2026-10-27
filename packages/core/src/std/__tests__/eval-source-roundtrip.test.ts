@@ -9,7 +9,7 @@
  * no `width` argument, so the default always fires.
  *
  * That crashed Snake and Pong with "width is not defined" once
- * `registerCircuitBehavior` became last-write-wins: the rebuilt copies started
+ * `registerCircuitBehavior` (the global registry this replaced) became last-write-wins: the rebuilt copies started
  * replacing the real ones instead of being discarded. The same last-write-wins
  * rule made the closure wrong even in-process — one registry entry per name, so
  * the last `Adder({ width: N })` defined anywhere set the fallback width for
@@ -27,8 +27,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { getAllCircuitBehaviors } from '../../internal.js';
-import '../index.js';
+import { getStdLibrary } from '../../internal.js';
 
 /**
  * Evals that cannot be rebuilt from their own source because they close over a
@@ -63,7 +62,7 @@ function survivesRoundTrip(entry: {
 
 describe('stdlib evals rebuilt from source', () => {
   const closureDeps: string[] = [];
-  for (const [name, entry] of getAllCircuitBehaviors()) {
+  for (const [name, entry] of getStdLibrary().behaviors) {
     const result = survivesRoundTrip(entry);
     if (!result.ok && result.reference) closureDeps.push(name);
   }
@@ -88,7 +87,7 @@ describe('stdlib evals rebuilt from source', () => {
   });
 
   it('rebuilds the majority of stdlib evals cleanly', () => {
-    const total = [...getAllCircuitBehaviors()].length;
+    const total = [...getStdLibrary().behaviors].length;
     expect(total).toBeGreaterThan(50);
     expect(closureDeps.length).toBeLessThan(total / 2);
   });

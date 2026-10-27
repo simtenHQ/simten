@@ -4,13 +4,13 @@
  * Verifies that:
  * 1. All stdlib circuits load without errors
  * 2. Each circuit produces valid Circuit IR matching existing PRIMITIVE_DEFINITIONS
- * 3. The stdlib CircuitLibrary resolves all components
+ * 3. The stdlib CircuitDefinitions resolves all components
  * 4. Stdlib components work in the simulation pipeline (end-to-end)
  */
 
 import { describe, expect, it } from 'vitest';
 import type { Circuit } from '../../circuit/builder-types.js';
-import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
+import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import {
   Adder,
   AddressCombiner,
@@ -211,7 +211,7 @@ describe('circuit._dependencies', () => {
   it('building a library from deps resolves all needed components', () => {
     // Adder is composite — it has And, Or, Xor, etc. in _dependencies
     const circuitMap = new Map<string, CircuitIR>();
-    const lib: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
+    const definitions: CircuitDefinitions & { addCircuit(c: CircuitIR): void } = {
       resolveCircuit: (name) => circuitMap.get(name),
       getAllPrimitiveNames: () =>
         [...circuitMap.entries()]
@@ -222,13 +222,13 @@ describe('circuit._dependencies', () => {
       },
     };
     const adder = Adder();
-    lib.addCircuit(adder.circuit);
-    for (const [, dep] of adder._dependencies) lib.addCircuit(dep.circuit);
+    definitions.addCircuit(adder.circuit);
+    for (const [, dep] of adder._dependencies) definitions.addCircuit(dep.circuit);
 
-    expect(lib.resolveCircuit('Adder')).toBeDefined();
+    expect(definitions.resolveCircuit('Adder')).toBeDefined();
     // All transitive deps are present
     for (const [name] of adder._dependencies) {
-      expect(lib.resolveCircuit(name)).toBeDefined();
+      expect(definitions.resolveCircuit(name)).toBeDefined();
     }
   });
 });

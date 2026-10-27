@@ -1,6 +1,10 @@
 import { bit, circuit } from '@simten/core/circuit';
-import type { CircuitIR, CircuitLibrary } from '@simten/core/internal';
-import { elaborate, type PropagationStep, tracePropagation } from '@simten/core/internal';
+import {
+  elaborate,
+  libraryOf,
+  type PropagationStep,
+  tracePropagation,
+} from '@simten/core/internal';
 import { And, Led, Switch, Xor } from '@simten/core/std';
 import { useCircuitSimulator } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
@@ -80,21 +84,8 @@ export function PropagationDemo() {
   // Run the real propagation trace
   const trace = useMemo((): PropagationStep[] => {
     try {
-      const circuitMap = new Map<string, CircuitIR>();
-      const library: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
-        resolveCircuit: (name) => circuitMap.get(name),
-        getAllPrimitiveNames: () =>
-          [...circuitMap.entries()]
-            .filter(([, c]) => c.implementation.kind === 'primitive')
-            .map(([n]) => n),
-        addCircuit: (c) => {
-          circuitMap.set(c.name, c);
-        },
-      };
-      library.addCircuit(HalfAdderDemo.circuit);
-      for (const [, dep] of HalfAdderDemo._dependencies) library.addCircuit(dep.circuit);
-
-      const flat = elaborate(HalfAdderDemo.circuit, library);
+      const library = libraryOf(HalfAdderDemo);
+      const flat = elaborate(HalfAdderDemo.circuit, library.definitions);
       return tracePropagation(flat, library);
     } catch (e) {
       console.error('Trace failed:', e);
@@ -272,7 +263,7 @@ export function PropagationDemo() {
       {/* Circuit */}
       <CircuitCanvas
         circuit={sim.circuit}
-        componentLibrary={sim.componentLibrary ?? undefined}
+        definitions={sim.definitions ?? undefined}
         portValues={sim.portValues}
         sequentialState={sim.sequentialState}
         onToggleNode={sim.toggleNode}

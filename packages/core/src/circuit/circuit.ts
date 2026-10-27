@@ -34,10 +34,13 @@ import type {
 } from '../ir/circuit-ir.js';
 import { checkMemoryContents } from '../ir/memory-contents.js';
 import {
-  type BehaviorEntry,
-  noteDefinition,
-  registerCircuitBehavior,
-} from './behavior-registry.js';
+  attachBehavior,
+  type Behavior,
+  type BehaviorFn,
+  behaviorOf,
+  definitionKey,
+  NO_EVAL,
+} from './behavior.js';
 import { isMemDecl, isRegDecl, type MemDecl, normalizePortType } from './bit-bus.js';
 import type {
   Circuit,
@@ -251,9 +254,9 @@ function assertCircuitName(name: unknown): asserts name is string {
 /**
  * Factory form: return a callable that builds a per-instance Circuit
  * with `_args` attached. The factory closes over the original `name`, so
- * every specialized instance shares the same component name (and registry
- * entry) — shape can differ per call (e.g. port widths), but the eval/
- * onTick logic is parameter-agnostic and registers equivalently each time.
+ * every specialized instance shares the same component name. Shape can
+ * differ per call (e.g. port widths); each instance carries its own
+ * behavior closures.
  */
 function specializeFactory(name: string, factory: CircuitFactory) {
   return (opts?: FactoryOptions): Circuit => {
@@ -351,7 +354,7 @@ function resetStateInitials(state: StateBlock[]): void {
   }
 }
 
-/** Object form: validate the config, then build its IR and register its behaviour. */
+/** Object form: validate the config, then build its IR and attach its behavior. */
 function buildCircuit(name: string, config: AnyCircuitConfig): Circuit {
   const ports = normalizePorts(config);
   const declaredNodes = (config.nodes ?? {}) as Record<string, NodeEntry>;
@@ -368,7 +371,9 @@ function buildCircuit(name: string, config: AnyCircuitConfig): Circuit {
   }
 
   const built = buildIR(name, config, ports, nodes, connectionDefs, dependencies);
-  registerBehaviour(name, config, built.circuit);
+  if (built.circuit.implementation.kind === 'primitive') {
+    attachBehavior(built, behaviorFor(config, built.circuit));
+  }
   return built;
 }
 
@@ -919,12 +924,13 @@ function buildMetadata(timing: CircuitTiming, meta: CircuitMeta | undefined): Ci
 }
 
 /**
- * Sub-circuit definitions for the direct Circuit → simulator path, keyed
- * by component name. The library this feeds holds one definition per name and
- * composites are flattened from it, so two composites under one name with
- * different insides would both simulate as whichever was seen first (#428).
- * That is reported as an error. Primitives are safe to share: each node
- * carries its own port widths and arguments.
+ * Sub-circuit definitions for this circuit's tree, keyed by component name.
+ * The library and behavior table a compile builds from this hold one
+ * definition per name, so two different circuits under one name in one tree
+ * would both run as whichever was seen first (#428). That is an error.
+ * Specialisations of one factory are the same circuit: a primitive's are
+ * compared by behavior and port names (not widths, which each node carries),
+ * a composite's by structure.
  */
 function collectDependencies(
   nodes: Record<string, Circuit>,
@@ -936,13 +942,13 @@ function collectDependencies(
     const existing = deps.get(depName);
     if (!existing) {
       deps.set(depName, depComp);
-    } else if (!reported.has(depName) && !sameStructure(existing.circuit, depComp.circuit)) {
+    } else if (!reported.has(depName) && !sameDefinition(existing, depComp)) {
       reported.add(depName);
       errors.push(
-        `Two different definitions of '${depName}' are used here (their nodes, ports or ` +
-          'connections differ, e.g. a factory called with options that change its insides). ' +
-          'A component name maps to one definition, so name each variant, e.g. ' +
-          `\`const ${depName} = (n) => circuit(\`${depName}\${n}\`, { ... })\``,
+        `Two different circuits are named '${depName}' in this design (two definitions, ` +
+          'or a factory called with options that change its insides). A name means one ' +
+          "circuit, so rename one of them. If one is the standard library's " +
+          `'${depName}', rename yours.`,
       );
     }
   };
@@ -957,42 +963,18 @@ function collectDependencies(
 }
 
 /**
- * Register eval/onTick in the shared registry at definition time.
- * Every primitive defined via circuit() gets an entry — display-only
- * primitives like HexDisplay/Screen have no `eval` of their own (no
- * computation, no outputs) but still need a registered no-op so the
- * simulator's eval-bridge can dispatch through them instead of falling
- * into evaluateNodeFallback and throwing "no registered evaluator".
+ * The behavior a primitive carries. Display-only primitives like HexDisplay
+ * have no `eval` of their own (no computation, no outputs) but still get a
+ * no-op, so the engine can dispatch through them.
  */
-function registerBehaviour(name: string, config: AnyCircuitConfig, circuitIR: CircuitIR): void {
-  const entry: BehaviorEntry = {
+function behaviorFor(config: AnyCircuitConfig, circuitIR: CircuitIR): Behavior {
+  return {
     inputNames: circuitIR.inputs.map((p) => p.name),
     outputNames: circuitIR.outputs.map((p) => p.name),
-    evalFn: (config.eval ?? (() => ({}))) as BehaviorEntry['evalFn'],
+    evalFn: (config.eval as BehaviorFn | undefined) ?? NO_EVAL,
     stateKeys: config.state ? Object.keys(config.state) : undefined,
-    onTickFn: config.onTick as BehaviorEntry['onTickFn'],
+    onTickFn: config.onTick as BehaviorFn | undefined,
   };
-  // Only a primitive's behaviour comes from this entry; a composite is
-  // flattened from its IR, and `collectDependencies` checks those.
-  if (circuitIR.implementation.kind === 'primitive') {
-    noteDefinition(name, () => definitionKey(entry));
-  }
-  registerCircuitBehavior(name, entry);
-}
-
-/**
- * What makes two primitives under one name the same definition: the port and
- * state names and the behaviour's source text. Port widths are left out, since
- * specialisations of one factory differ there and nowhere else.
- */
-function definitionKey(entry: BehaviorEntry): string {
-  return JSON.stringify([
-    entry.inputNames,
-    entry.outputNames,
-    entry.stateKeys ?? [],
-    String(entry.evalFn),
-    entry.onTickFn ? String(entry.onTickFn) : '',
-  ]);
 }
 
 // ============================================================================
@@ -1118,11 +1100,17 @@ function checkDirection(
   );
 }
 
-/** Whether two IRs under one name can share a library entry. */
-function sameStructure(a: CircuitIR, b: CircuitIR): boolean {
-  if (a === b) return true;
-  if (a.implementation.kind !== 'composite' && b.implementation.kind !== 'composite') return true;
-  return structureKey(a) === structureKey(b);
+/** Whether two circuits under one name are one definition, so can share a library entry. */
+export function sameDefinition(a: Circuit, b: Circuit): boolean {
+  if (a.circuit === b.circuit) return true;
+  const kind = a.circuit.implementation.kind;
+  if (kind !== b.circuit.implementation.kind) return false;
+  if (kind === 'composite') return structureKey(a.circuit) === structureKey(b.circuit);
+  const behaviorA = behaviorOf(a);
+  const behaviorB = behaviorOf(b);
+  if (behaviorA === behaviorB) return true;
+  if (!behaviorA || !behaviorB) return structureKey(a.circuit) === structureKey(b.circuit);
+  return definitionKey(behaviorA) === definitionKey(behaviorB);
 }
 
 /** Memoised per IR object: composites are compared often and rebuilt rarely. */

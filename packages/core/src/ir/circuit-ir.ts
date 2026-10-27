@@ -29,17 +29,17 @@ export type BitValue = 0 | 1;
 export type BusValue = number;
 
 // ============================================================================
-// Circuit Library Interface
+// Circuit Definitions Interface
 // ============================================================================
 
 /**
- * Pure interface for circuit resolution.
+ * Circuit definitions by name: the IR half of a library, without behavior.
  * This decouples the simulator from Zustand/React.
  *
  * The Zustand store in features/visual-editor/stores/ implements this interface
  * for UI integration, but the core simulator only depends on this interface.
  */
-export interface CircuitLibrary {
+export interface CircuitDefinitions {
   /**
    * Resolve a circuit by name.
    * Returns the Circuit definition or undefined if not found.
@@ -52,7 +52,7 @@ export interface CircuitLibrary {
   getAllPrimitiveNames(): string[];
 }
 
-export interface MutableCircuitLibrary extends CircuitLibrary {
+export interface MutableCircuitDefinitions extends CircuitDefinitions {
   addCircuit(circuit: CircuitIR): void;
   getAllCircuitNames(): string[];
 }

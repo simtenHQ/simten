@@ -22,9 +22,10 @@
 
 import { describe, expect, it } from 'vitest';
 import { bus, circuit } from '../../circuit/index.js';
-import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
+import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
 import { Adder, Constant, Register } from '../../std/index.js';
+import { getStdLibrary } from '../../std/library.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { buildNaiveTraceAcrossReset, buildParityTraceAcrossReset } from './parity-helpers.js';
@@ -53,12 +54,12 @@ function buildCounter() {
   const map = new Map<string, CircuitIR>();
   map.set(Counter.circuit.name, Counter.circuit);
   for (const [, dep] of Counter._dependencies) map.set(dep.circuit.name, dep.circuit);
-  const lib: CircuitLibrary = {
+  const definitions: CircuitDefinitions = {
     resolveCircuit: (name) => map.get(name),
     getAllPrimitiveNames: () => [...map.keys()],
   };
 
-  return { circuit: Counter.circuit, lib };
+  return { circuit: Counter.circuit, definitions };
 }
 
 const PRE = 5;
@@ -90,8 +91,8 @@ function readCount(sim: ReturnType<typeof createEngine>): number {
 }
 
 async function runVerilogTrace(): Promise<number[]> {
-  const { circuit, lib } = buildCounter();
-  const { verilog } = exportVerilog(circuit, lib);
+  const { circuit, definitions } = buildCounter();
+  const { verilog } = exportVerilog(circuit, definitions);
   const testbench = generateSequentialTestbench(circuit, buildResetVectors());
   const result = await verifyVerilog(verilog, testbench);
 
@@ -111,8 +112,10 @@ d('reset — JS simulator vs iverilog co-simulation under rst_n', () => {
   it('mid-execution rst_n pulse: sim (via bridge) and hardware agree cycle-by-cycle', {
     timeout: 30000,
   }, async () => {
-    const { circuit, lib } = buildCounter();
-    const sim = createEngine(elaborate(circuit, lib), { componentLibrary: lib });
+    const { circuit, definitions } = buildCounter();
+    const sim = createEngine(elaborate(circuit, definitions), {
+      library: { definitions, behaviors: getStdLibrary().behaviors },
+    });
 
     const simOutputs = buildParityTraceAcrossReset(sim, PRE, POST, () => readCount(sim));
     const veriOutputs = await runVerilogTrace();
@@ -146,8 +149,10 @@ d('reset — JS simulator vs iverilog co-simulation under rst_n', () => {
   it('bridge invariant: naive trace mismatches Verilog by exactly one element at the reset cycle (proves bridge is necessary; drop this when #132 lands)', {
     timeout: 30000,
   }, async () => {
-    const { circuit, lib } = buildCounter();
-    const sim = createEngine(elaborate(circuit, lib), { componentLibrary: lib });
+    const { circuit, definitions } = buildCounter();
+    const sim = createEngine(elaborate(circuit, definitions), {
+      library: { definitions, behaviors: getStdLibrary().behaviors },
+    });
 
     const naiveOutputs = buildNaiveTraceAcrossReset(sim, PRE, POST, () => readCount(sim));
     const veriOutputs = await runVerilogTrace();

@@ -26,8 +26,8 @@ export const project: Project = {
   bitFile: 'snake.bit',
 
   async buildVerilog(ctx) {
-    const { circuit: snakeCircuit, lib } = buildSnake();
-    const { verilog: snakeVerilog, files } = exportVerilog(snakeCircuit, lib, {
+    const { circuit: snakeCircuit, definitions } = buildSnake();
+    const { verilog: snakeVerilog, files } = exportVerilog(snakeCircuit, definitions, {
       target: 'synthesis',
       topModuleName: 'Snake',
     });

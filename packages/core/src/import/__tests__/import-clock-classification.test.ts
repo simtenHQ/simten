@@ -31,8 +31,8 @@ function build() {
     readFileSync(new URL('../__fixtures__/clock-classification.json', import.meta.url), 'utf8'),
   );
   const result = importNetlist(netlist, 'clock_classification');
-  const deps = [...result.library.values()].filter((c) => c.name !== result.top.name);
-  return { result, sim: simulate(buildFromIR(result.top, deps) as never) };
+  const deps = [...result.definitions.values()].filter((c) => c.name !== result.top.name);
+  return { result, sim: simulate(buildFromIR(result.top, deps, result.behaviors) as never) };
 }
 
 describe('clock classification', () => {

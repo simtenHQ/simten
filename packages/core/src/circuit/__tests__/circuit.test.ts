@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getCircuitBehavior } from '../behavior-registry.js';
+import { behaviorOf } from '../behavior.js';
 import { bit, bus } from '../bit-bus.js';
 import { circuit } from '../circuit.js';
 
@@ -83,8 +83,8 @@ describe('combinational leaf', () => {
     expect(Adder.circuit.outputs[1].name).toBe('carry');
   });
 
-  it('registers eval function in registry at definition time', () => {
-    const entry = getCircuitBehavior('And');
+  it('carries its eval function on the built circuit', () => {
+    const entry = behaviorOf(And);
     expect(entry).toBeDefined();
     expect(entry!.evalFn({ a: 1, b: 1 })).toEqual({ out: 1 });
     expect(entry!.evalFn({ a: 1, b: 0 })).toEqual({ out: 0 });
@@ -122,7 +122,7 @@ describe('sequential leaf', () => {
     expect(Counter.circuit.clocks[0].name).toBe('clk');
     expect(Counter.circuit.state).toHaveLength(1);
     expect(Counter.circuit.metadata?.timing).toBe('sequential');
-    const entry = getCircuitBehavior('Counter');
+    const entry = behaviorOf(Counter);
     expect(entry?.evalFn).toBeDefined();
     expect(entry?.onTickFn).toBeDefined();
     expect(entry?.stateKeys).toEqual(['total']);

@@ -9,7 +9,7 @@ import type {
   ArgumentValue,
   BitValue,
   BusValue,
-  CircuitLibrary,
+  CircuitDefinitions,
   MemoryContents,
   MemoryValue,
   StateBlock,
@@ -28,12 +28,12 @@ function portKey(nodeId: string, portName: string): string {
  * Initialize sequential state for all stateful primitives in flat circuit.
  *
  * @param flatCircuit - The flattened circuit
- * @param library - Component library for resolving component definitions
+ * @param definitions - Circuit definitions to resolve components against
  * @param memoryData - Optional pre-loaded memory data (nodeId -> address -> value)
  */
 export function initializeFlatSequentialState(
   flatCircuit: FlatCircuit,
-  library: CircuitLibrary,
+  definitions: CircuitDefinitions,
   memoryData?: Map<string, Map<number, number>>,
 ): FlatSequentialState {
   const currentState = new Map<string, PrimitiveState>();
@@ -45,7 +45,7 @@ export function initializeFlatSequentialState(
   }
 
   for (const node of flatCircuit.nodes) {
-    const component = library.resolveCircuit(node.primitiveType);
+    const component = definitions.resolveCircuit(node.primitiveType);
     if (!component) continue;
 
     // Per-block init: for each state block, the initial value is the block's

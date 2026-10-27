@@ -12,8 +12,8 @@
 'use client';
 
 import type { BitValue, BusValue } from '@simten/core';
-import type { CircuitIR, CircuitLibrary, SimulatorEngine } from '@simten/core/internal';
-import { createEngine, elaborate, isSequentialCircuit } from '@simten/core/internal';
+import type { CircuitDefinitions, CircuitIR, SimulatorEngine } from '@simten/core/internal';
+import { createEngine, elaborate, getStdLibrary, isSequentialCircuit } from '@simten/core/internal';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type { NodeData } from '../nodes';
 import { useSandboxContext } from '../sandbox/SandboxProvider';
@@ -29,21 +29,22 @@ import type { InspectorFrame } from './types';
 
 interface InspectorCanvasProps {
   frame: InspectorFrame;
-  componentLibrary: CircuitLibrary;
+  definitions: CircuitDefinitions;
   onPushLevel: (frame: InspectorFrame) => void;
   theme?: 'light' | 'dark';
 }
 
 function InspectorCanvas({
   frame,
-  componentLibrary,
+  definitions: pageDefinitions,
   onPushLevel,
   theme = 'dark',
 }: InspectorCanvasProps) {
-  // A reference build brings its own circuits; the page's library has never
-  // heard of them. Everything below — simulation, projection, nested drilling —
-  // must resolve against the frame's library, or internal nodes vanish.
-  const library = frame.library ?? componentLibrary;
+  // A reference build brings its own circuits; the page's definitions have
+  // never heard of them. Everything below — simulation, projection, nested
+  // drilling — must resolve against the frame's definitions, or internal nodes
+  // vanish.
+  const definitions = frame.definitions ?? pageDefinitions;
 
   const viewCircuit = useMemo(
     () => createDrillDownViewCircuit(frame.componentDef),
@@ -51,17 +52,17 @@ function InspectorCanvas({
   );
 
   const isSequential = useMemo(
-    () => isSequentialCircuit(viewCircuit, library.resolveCircuit),
-    [viewCircuit, library],
+    () => isSequentialCircuit(viewCircuit, definitions.resolveCircuit),
+    [viewCircuit, definitions],
   );
 
   const handleNodeDoubleClick = useCallback(
     (nodeData: NodeData) => {
       if (!nodeData.isComposite && !nodeData.hasReference) return;
-      const next = resolveDrillTarget(nodeData, library);
+      const next = resolveDrillTarget(nodeData, definitions);
       if (next) onPushLevel(next);
     },
-    [library, onPushLevel],
+    [definitions, onPushLevel],
   );
 
   // ── Simulation: prefer sandbox, fall back to local simulator ──
@@ -99,8 +100,8 @@ function InspectorCanvas({
     // composite children and their outputs stay stuck.
     const allLib: CircuitIR[] = [];
     const seen = new Set<string>();
-    for (const name of library.getAllPrimitiveNames()) {
-      const c = library.resolveCircuit(name);
+    for (const name of definitions.getAllPrimitiveNames()) {
+      const c = definitions.resolveCircuit(name);
       if (c && !seen.has(name)) {
         seen.add(name);
         allLib.push(c);
@@ -109,7 +110,7 @@ function InspectorCanvas({
     const walk = (c: CircuitIR) => {
       for (const node of c.nodes) {
         if (seen.has(node.componentRef)) continue;
-        const resolved = library.resolveCircuit(node.componentRef);
+        const resolved = definitions.resolveCircuit(node.componentRef);
         if (!resolved) continue;
         seen.add(node.componentRef);
         allLib.push(resolved);
@@ -122,8 +123,10 @@ function InspectorCanvas({
       if ('error' in result) {
         // Fall back to local simulator (for embed contexts where no source was compiled)
         try {
-          const engine = createEngine(elaborate(viewCircuit, library), {
-            componentLibrary: library,
+          // The page runs no user code, so this local engine has only std's
+          // behavior: enough for a circuit built from std components.
+          const engine = createEngine(elaborate(viewCircuit, definitions), {
+            library: { definitions, behaviors: getStdLibrary().behaviors },
           });
           engine.runCombinational();
           localEngineRef.current = engine;
@@ -151,7 +154,7 @@ function InspectorCanvas({
       setHistoryIndex(historyRef.current.length === 0 ? -1 : 0);
       setCycle(0);
     });
-  }, [viewCircuit, library, sandbox, slotId, isSequential]);
+  }, [viewCircuit, definitions, sandbox, slotId, isSequential]);
 
   const handleToggle = useCallback(
     (nodeId: string) => {
@@ -282,7 +285,7 @@ function InspectorCanvas({
 
       <CircuitCanvas
         circuit={viewCircuit}
-        componentLibrary={library}
+        definitions={definitions}
         portValues={portValues}
         sequentialState={null}
         onToggleNode={handleToggle}
@@ -351,7 +354,7 @@ function InspectorBreadcrumb({ stack, onNavigate, theme = 'dark' }: BreadcrumbPr
 
 export interface CompositeInspectorDialogProps {
   stack: InspectorFrame[];
-  componentLibrary: CircuitLibrary;
+  definitions: CircuitDefinitions;
   theme?: 'light' | 'dark';
   onClose: () => void;
   onPopLevel: () => void;
@@ -361,7 +364,7 @@ export interface CompositeInspectorDialogProps {
 
 export function CompositeInspectorDialog({
   stack,
-  componentLibrary,
+  definitions,
   theme = 'dark',
   onClose,
   onPopLevel,
@@ -466,7 +469,7 @@ export function CompositeInspectorDialog({
             >
               <InspectorCanvas
                 frame={topFrame}
-                componentLibrary={componentLibrary}
+                definitions={definitions}
                 onPushLevel={onPushLevel}
                 theme={theme}
               />

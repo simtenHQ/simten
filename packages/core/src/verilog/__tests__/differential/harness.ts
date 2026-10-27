@@ -13,14 +13,14 @@ import { execFileSync, spawnSync } from 'node:child_process';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import type { Library } from '../../../circuit/behavior.js';
 import type { CircuitIR, PortType } from '../../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../../simulator/index.js';
-import type { CircuitLibrary } from '../../../simulator/types.js';
 import { exportVerilog } from '../../exporter.js';
 
 export interface DiffTarget {
   top: CircuitIR;
-  library: CircuitLibrary;
+  library: Library;
 }
 
 export interface DiffOptions {
@@ -131,7 +131,7 @@ function topSignals(top: CircuitIR): Signal[] {
 function internalSignals(target: DiffTarget, verilog: string): Signal[] {
   const declared = new Set<string>();
   for (const m of verilog.matchAll(/^\s*wire (?:\[\d+:0\] )?(w_\w+);/gm)) declared.add(m[1]);
-  const flat = elaborate(target.top, target.library, false);
+  const flat = elaborate(target.top, target.library.definitions, false);
   const portWidth = new Map<string, number>();
   for (const node of flat.nodes) {
     for (const p of node.outputs) portWidth.set(`${node.id}.${p.name}`, widthOf(p.portType));
@@ -156,8 +156,8 @@ function runSimulator(
   vectors: Record<string, number>[],
   signals: Signal[],
 ): (number | undefined)[][] {
-  const engine = createEngine(elaborate(target.top, target.library), {
-    componentLibrary: target.library,
+  const engine = createEngine(elaborate(target.top, target.library.definitions), {
+    library: target.library,
   });
   const trace: (number | undefined)[][] = [];
   for (const v of vectors) {
@@ -267,7 +267,9 @@ export function runDifferential(
     clockPorts = reference.clock ? [`.${reference.clock}(clk)`] : [];
     signals = topSignals(target.top);
   } else {
-    const result = exportVerilog(target.top, target.library);
+    const result = exportVerilog(target.top, target.library.definitions, {
+      behaviors: target.library.behaviors,
+    });
     if (result.unsupported) {
       throw new Error(`exporter has no mapping for ${Object.keys(result.unsupported).join(', ')}`);
     }

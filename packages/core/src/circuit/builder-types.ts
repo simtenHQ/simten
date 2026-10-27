@@ -327,7 +327,7 @@ export interface Circuit<
    *  `NodePortRefs`) can recover them via `infer`. Not for runtime use. */
   readonly _shape: { inputs: Ins; outputs: Outs; nodes: Ns };
   /** Sub-circuit definitions needed for simulation (transitive). Walk this
-   *  map to collect every component needed to register in a `CircuitLibrary`
+   *  map to collect every component needed to register in a `CircuitDefinitions`
    *  before simulating or rendering this circuit. */
   readonly _dependencies: ReadonlyMap<string, Circuit>;
   /** @internal Per-instance arguments baked in by a factory call. Populated

@@ -24,7 +24,7 @@ const isCircuitPort = (nodeId: string) => nodeId === '' || nodeId === TOP_LEVEL_
 
 export function autoHarness(
   circuit: CircuitIR,
-  library: {
+  definitions: {
     resolveCircuit: (name: string) => CircuitIR | undefined;
     addCircuit: (c: CircuitIR) => void;
   },
@@ -35,17 +35,17 @@ export function autoHarness(
     return circuit;
   }
 
-  // Register the circuit in the library so the harness can reference it by name.
+  // Register the circuit in the definitions so the harness can reference it by name.
   //
   // Unconditionally, because the definition can change. The harness's `dut` node
   // takes its ports straight from `circuit`, while the canvas resolves the same
-  // name through the library — so skipping the write when an entry already
+  // name through the definitions — so skipping the write when an entry already
   // existed left those two disagreeing the moment a port was added or removed:
   // a `dut` claiming three inputs in front of a two-input circuit, with edges
   // landing off their handles. The library store overwrites by name, and the
   // editor re-harnesses on every apply, so the newest definition is the one to
   // keep.
-  library.addCircuit(circuit);
+  definitions.addCircuit(circuit);
 
   const harnessName = `${circuit.name}Demo`;
 

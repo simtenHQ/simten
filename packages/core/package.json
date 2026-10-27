@@ -19,12 +19,7 @@
     "simulator"
   ],
   "type": "module",
-  "sideEffects": [
-    "./src/std/**",
-    "./dist/std/**",
-    "./src/import/primitives.ts",
-    "./dist/import/primitives.js"
-  ],
+  "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
     "./circuit": "./src/circuit/index.ts",

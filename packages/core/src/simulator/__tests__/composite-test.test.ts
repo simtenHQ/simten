@@ -29,7 +29,7 @@ describe('composite elaboration', () => {
     expect(result.error).toBeNull();
     expect(result.circuits).toHaveLength(2);
 
-    const flat = elaborate(result.circuit!, result.library);
+    const flat = elaborate(result.circuit!, result.library.definitions);
     expect(flat.nodes.length).toBeGreaterThan(0);
     // #140 audit: structural net on every elaboration this test exercises.
     assertFlatCircuitInvariants(flat);

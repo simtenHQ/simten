@@ -4,7 +4,7 @@
  *
  * This is the compile bridge that every editor-with-preview otherwise
  * re-implements. It owns the fiddly mechanics — debounce, `sandbox.compile`,
- * worker-restart retry, error line/col extraction, building the `library`
+ * worker-restart retry, error line/col extraction, building the `definitions`
  * lookup, keep-last-good-on-error, stale-compile cancellation — and hands back
  * the raw result plus diagnostics. The caller decides what to do with it
  * (feed a simulator, push to a store, render a canvas).
@@ -34,7 +34,7 @@ export interface CompileDiagnostic {
 }
 
 /** A minimal component-lookup built from a compile result. */
-export interface CompiledLibrary {
+export interface CompiledDefinitions {
   resolveCircuit: (name: string) => CircuitIR | undefined;
   getAllPrimitiveNames: () => string[];
   getAllCircuitNames: () => string[];
@@ -53,7 +53,7 @@ export interface CircuitCompilerState {
   /** Last successful compile. Retained across a subsequent failure. */
   result: CompileResult | null;
   /** Component lookup for the last successful compile. */
-  library: CompiledLibrary | null;
+  definitions: CompiledDefinitions | null;
   /** Diagnostics from the last compile ([] on success). */
   diagnostics: CompileDiagnostic[];
   /** True while a compile is in flight. */
@@ -80,7 +80,7 @@ export function useCircuitCompiler(
   sourceRef.current = source;
 
   const [result, setResult] = useState<CompileResult | null>(null);
-  const [library, setLibrary] = useState<CompiledLibrary | null>(null);
+  const [definitions, setDefinitions] = useState<CompiledDefinitions | null>(null);
   const [diagnostics, setDiagnostics] = useState<CompileDiagnostic[]>([]);
   const [compiling, setCompiling] = useState(false);
 
@@ -124,7 +124,7 @@ export function useCircuitCompiler(
         const all = [...res.circuits, ...res.libraryCircuits];
         const map = new Map(all.map((c) => [c.name, c]));
         setResult(res);
-        setLibrary({
+        setDefinitions({
           resolveCircuit: (name) => map.get(name),
           getAllPrimitiveNames: () =>
             all.filter((c) => c.implementation?.kind === 'primitive').map((c) => c.name),
@@ -159,5 +159,5 @@ export function useCircuitCompiler(
     return () => clearTimeout(timer);
   }, [source, autoCompile, debounceMs, run]);
 
-  return { result, library, diagnostics, compiling, compile };
+  return { result, definitions, diagnostics, compiling, compile };
 }

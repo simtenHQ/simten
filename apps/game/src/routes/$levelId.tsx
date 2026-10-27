@@ -294,33 +294,30 @@ function PlayLevel({ level }: { level: Level }) {
   // circuit without one. Same check as the grader, so the two never disagree.
   const lastPermitted = useRef<{
     circuit: typeof preview.circuit;
-    library: typeof preview.componentLibrary;
+    definitions: typeof preview.definitions;
   } | null>(null);
 
   const forbidden = useMemo(() => {
-    if (!preview.circuit || !preview.componentLibrary) return [];
+    if (!preview.circuit || !preview.definitions) return [];
     try {
-      return forbiddenPrimitives(
-        elaborate(preview.circuit, preview.componentLibrary),
-        level.allowed,
-      );
+      return forbiddenPrimitives(elaborate(preview.circuit, preview.definitions), level.allowed);
     } catch {
       // Half-typed netlists often fail to elaborate; the compile error covers it.
       return [];
     }
-  }, [preview.circuit, preview.componentLibrary, level.allowed]);
+  }, [preview.circuit, preview.definitions, level.allowed]);
 
   if (forbidden.length === 0 && preview.circuit) {
-    lastPermitted.current = { circuit: preview.circuit, library: preview.componentLibrary };
+    lastPermitted.current = { circuit: preview.circuit, definitions: preview.definitions };
   }
   // With no earlier good circuit, show nothing rather than the banned gate.
   const shown = forbidden.length > 0 ? lastPermitted.current : null;
   const canvasCircuit = shown ? shown.circuit : forbidden.length > 0 ? null : preview.circuit;
-  const canvasLibrary = shown
-    ? shown.library
+  const canvasDefinitions = shown
+    ? shown.definitions
     : forbidden.length > 0
       ? null
-      : preview.componentLibrary;
+      : preview.definitions;
 
   const onSubmit = useCallback(async () => {
     setSubmitting(true);
@@ -498,7 +495,7 @@ function PlayLevel({ level }: { level: Level }) {
                 <div data-tour="canvas" className={`h-full ${fadeIn(canvasShown)}`}>
                   <CircuitCanvas
                     circuit={canvasCircuit}
-                    componentLibrary={canvasLibrary ?? undefined}
+                    definitions={canvasDefinitions ?? undefined}
                     portValues={preview.portValues}
                     showControls
                     // The default only re-lays out when nodes change, not wires.
