@@ -6,10 +6,9 @@
  * `executeCircuitCode` and the simulator engine directly. That is what lets the
  * validation gate run in CI.
  *
- * It goes to the engine rather than the friendlier `simulate()` handle because
- * that handle's `get(name)` resolves a top-level port and otherwise falls back
- * to *any* port key ending in `.name`, which is ambiguous the moment gates
- * have their own `a`/`b`/`in` ports. Reading an `Led` named `out` means reading
+ * It goes to the engine rather than `simulate()` because a self-contained
+ * level's signals are Switch and Led nodes, not ports, and `Simulation.get`
+ * reads top-level ports only. Reading an `Led` named `out` means reading
  * exactly `out.in`, so the raw port map is what is needed.
  *
  * Deliberately not exported from the app: shipping a path that executes player
@@ -25,12 +24,13 @@ import {
   internalsOf,
 } from '@simten/core/internal';
 import type { GradeRuntime } from '../runtime';
-import { RuntimeFailure, readOutputs } from '../runtime';
+import { RuntimeFailure, readOutputs, splitInputs } from '../runtime';
 
 export function localRuntime(): GradeRuntime {
   let compiled: CircuitIR[] = [];
   let behaviors: ReadonlyMap<string, Behavior> = new Map();
   let engine: ReturnType<typeof createEngine> | null = null;
+  let selected: CircuitIR | null = null;
 
   return {
     async compile(source) {
@@ -58,14 +58,19 @@ export function localRuntime(): GradeRuntime {
       engine = createEngine(elaborate(target, definitions), {
         library: { definitions, behaviors: new Map([...getStdLibrary().behaviors, ...behaviors]) },
       });
+      selected = target;
     },
 
     async evaluate(inputs, outputs) {
-      if (!engine) throw new RuntimeFailure('select() was not called before evaluate()');
-      // `setNode` resolves a bare name to a top-level input port first and a
-      // node id second (simulator/index.ts:304), so the same call drives a
-      // Switch in a self-contained level and a port in an abstracted one.
-      for (const [name, value] of Object.entries(inputs)) engine.setNode(name, value);
+      if (!engine || !selected) {
+        throw new RuntimeFailure('select() was not called before evaluate()');
+      }
+      // The same split as `sandboxRuntime`: a port in an abstracted level, a
+      // Switch node in a self-contained one. The engine takes either name.
+      const { ports, nodes } = splitInputs(selected, inputs);
+      for (const [name, value] of Object.entries({ ...ports, ...nodes })) {
+        engine.setNode(name, value);
+      }
       // A clock cycle, because that is what the browser does: `sandboxRuntime`
       // grades through `sandbox.tick`. This used `runCombinational`, which
       // settles the logic without advancing a clock; the two agreed on every

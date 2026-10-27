@@ -77,4 +77,41 @@ export const Board = circuit('Board', {
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('memoryData: no node "imem"');
   });
+
+  it('rejects a short name for a nested memory', async () => {
+    const source = `${ROM_READER}
+export const Board = circuit('Board', {
+  inputs: { addr: bus(16) },
+  outputs: { data: bus(8) },
+  nodes: { reader: RomReader },
+  connect: ({ inputs, outputs, nodes: { reader } }) => [
+    inputs.addr.to(reader.addr),
+    reader.data.to(outputs.data),
+  ],
+});
+`;
+    const result = await simulateTool()({
+      source,
+      ticks: 1,
+      memoryData: { rom: { '0': 7 } },
+      show: false,
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('memoryData: no node "rom"');
+  });
+});
+
+describe('simulate_circuit inputs', () => {
+  it('rejects a name that is not a top-level input, listing the inputs', async () => {
+    const result = await simulateTool()({
+      source: ROM_READER,
+      ticks: 1,
+      inputs: { adr: 1 },
+      show: false,
+    });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain(
+      'inputs: "adr" is not an input of circuit "RomReader". Inputs: addr',
+    );
+  });
 });

@@ -43,7 +43,8 @@ export interface GradeRuntime {
    * implementations disagree silently: grading read `undefined` for every
    * output and scored it 0, which passes any row that expects 0.
    *
-   * A name resolves against either circuit shape; see `resolveOutput`.
+   * A name resolves against either circuit shape; see `splitInputs` and
+   * `resolveOutput`.
    */
   evaluate(inputs: Record<string, number>, outputs: string[]): Promise<Record<string, number>>;
 }
@@ -51,16 +52,38 @@ export interface GradeRuntime {
 /** How the sandbox namespaces a top-level port. Mirrors core's TOP_LEVEL_NODE. */
 const TOP_LEVEL_PREFIX = '__top__.';
 
+/** A vector's inputs, split by what each name drives. */
+interface SplitInputs {
+  /** Top-level input ports of the circuit, by port name. */
+  ports: Record<string, number>;
+  /** Nodes of the circuit (a Switch in a self-contained level), by node id. */
+  nodes: Record<string, number>;
+}
+
+/**
+ * Sort input signals by the shape the level takes: a signal named `a` is either
+ * a top-level input port of `target` or a node with that id. Ports win, as for
+ * outputs. The simulator takes exact names only, so this is where a bare level
+ * signal becomes one or the other.
+ */
+export function splitInputs(target: CircuitIR, inputs: Record<string, number>): SplitInputs {
+  const portNames = new Set(target.inputs.map((p) => p.name));
+  const nodeIds = new Set(target.nodes.map((n) => n.id));
+  const split: SplitInputs = { ports: {}, nodes: {} };
+  for (const [name, value] of Object.entries(inputs)) {
+    if (portNames.has(name)) split.ports[name] = value;
+    else if (nodeIds.has(name)) split.nodes[name] = value;
+    else throw new RuntimeFailure(`\`${target.name}\` has no input port or node \`${name}\``);
+  }
+  return split;
+}
+
 /**
  * Find one output signal in a bag of port values.
  *
  * A signal named `out` is either a top-level output port (`__top__.out`) or the
  * input of a display node of that name (`out.in`), the two shapes a level can
  * take. Ports win, so a circuit with both is unambiguous.
- *
- * Driving inputs needs no equivalent: the simulator's `setNode` already tries a
- * top-level port first and falls back to a node id (simulator/index.ts:304),
- * so one bare name works for both shapes.
  */
 export function resolveOutput(
   values: Record<string, number | boolean>,
@@ -98,6 +121,7 @@ function unwrap<T>(v: T | { type: 'error'; error: string }): T {
 
 /** Grade against the sandbox iframe. Player source never runs in this frame. */
 export function sandboxRuntime(sandbox: SandboxHandle, slot: SimSlot = 'grade'): GradeRuntime {
+  let selected: CircuitIR | null = null;
   return {
     async compile(source) {
       const res = unwrap(await sandbox.compile(source, slot));
@@ -107,9 +131,15 @@ export function sandboxRuntime(sandbox: SandboxHandle, slot: SimSlot = 'grade'):
       // Same slot as the compile above, so the evals registered there are
       // inherited and do not need transferring again.
       unwrap(await sandbox.compileIR(target, library, slot));
+      selected = target;
     },
     async evaluate(inputs, outputs) {
-      const res = unwrap(await sandbox.tick(inputs, slot));
+      if (!selected) throw new RuntimeFailure('select() was not called before evaluate()');
+      const { ports, nodes } = splitInputs(selected, inputs);
+      for (const [id, value] of Object.entries(nodes)) {
+        unwrap(await sandbox.setNode(id, value, slot));
+      }
+      const res = unwrap(await sandbox.tick(ports, slot));
       return readOutputs(res.portValues, outputs);
     },
   };

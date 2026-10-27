@@ -189,7 +189,7 @@ The browser's auto-run lives in `useCircuitSimulator` today: the page sends batc
 
 ### setNode
 
-`engine.setNode(name, value)` is the unified API for setting any node's value. The engine dispatches based on node type:
+`engine.setNode(name, value)` is the unified API for setting any node's value. `name` is a top-level input or an exact node path (`cpu.imem`, not `imem`); any other name throws. The engine dispatches based on node type:
 
 - **Switch/Input/Button** → sets `arguments.value` (combinational)
 - **ROM/RAM/Register** → sets sequential state directly

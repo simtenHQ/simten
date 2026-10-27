@@ -43,9 +43,9 @@ export interface Simulation<Ins extends PortMap = PortMap, Outs extends PortMap 
   /** Clock cycles since the start or the last reset. */
   readonly cycle: number;
 
-  /** Drive top-level input ports. Outputs read afterwards are settled. */
+  /** Drive top-level input ports. Outputs read afterwards are settled. Unknown names throw. */
   set(values: Partial<{ [K in keyof Ins]: number }>): void;
-  /** Read one top-level output port. */
+  /** Read one top-level output port. Unknown names throw. */
   get<K extends keyof Outs & string>(name: K): number;
   /** Read every top-level output port. */
   read(): { [K in keyof Outs]: number };
@@ -76,7 +76,7 @@ export type PeripheralValue = number | string | ReadonlyMap<number, number>;
 
 /** The flat, untyped view of a simulation. For the sandbox, the canvas and tests. */
 export interface SimulationNodes {
-  /** Write a node by dotted instance path: a Switch/Input value, a register, or memory contents. */
+  /** Write a node by exact dotted instance path: a Switch/Input value, a register, or memory contents. Unknown paths throw. */
   set(path: string, value: number | MemoryContents): void;
   /** Tick without recording history; then `record()` once. For the sandbox's sliced ticks. */
   advance(count: number): void;
@@ -108,6 +108,8 @@ export function createSimulation(
   const simulation = new EngineSimulation(engine, {
     isSequential: isSequentialCircuit(circuit, library.definitions.resolveCircuit),
     historySize: Math.max(0, Math.floor(options?.history ?? 0)),
+    circuitName: circuit.name,
+    inputNames: circuit.inputs.map((p) => p.name),
     outputNames: circuit.outputs.map((p) => p.name),
     peripheralNodes: () => peripheralBusNodes(flat, library.definitions),
   });
@@ -124,6 +126,8 @@ const TOP = '__top__';
 interface EngineSimulationOptions {
   isSequential: boolean;
   historySize: number;
+  circuitName: string;
+  inputNames: readonly string[];
   outputNames: readonly string[];
   peripheralNodes: () => ReadonlySet<string>;
 }
@@ -134,7 +138,10 @@ class EngineSimulation implements Simulation {
 
   private readonly engine: SimulatorEngine;
   private readonly historySize: number;
+  private readonly circuitName: string;
+  private readonly inputNames: ReadonlySet<string>;
   private readonly outputNames: readonly string[];
+  private readonly outputNameSet: ReadonlySet<string>;
   private readonly findPeripheralNodes: () => ReadonlySet<string>;
   private peripheralNodes: ReadonlySet<string> | null = null;
 
@@ -148,7 +155,10 @@ class EngineSimulation implements Simulation {
     this.engine = engine;
     this.isSequential = options.isSequential;
     this.historySize = options.historySize;
+    this.circuitName = options.circuitName;
+    this.inputNames = new Set(options.inputNames);
     this.outputNames = options.outputNames;
+    this.outputNameSet = new Set(options.outputNames);
     this.findPeripheralNodes = options.peripheralNodes;
 
     engine.runCombinational();
@@ -175,26 +185,30 @@ class EngineSimulation implements Simulation {
   }
 
   set(values: Partial<Record<string, number>>): void {
-    for (const [name, value] of Object.entries(values)) {
+    const entries = Object.entries(values);
+    // Check every name before writing any, so a typo leaves the inputs as they were.
+    for (const [name] of entries) {
+      if (!this.inputNames.has(name)) {
+        throw new Error(this.unknownPortMessage('set', name, 'input', [...this.inputNames]));
+      }
+    }
+    for (const [name, value] of entries) {
       if (value !== undefined) this.engine.setNode(name, value);
     }
     this.dirty = true;
   }
 
   get(name: string): number {
-    const portValues = this.nodes.ports();
-    const value = portValues.get(`${TOP}.${name}`);
-    if (value !== undefined) return value;
-    // Composite circuits whose outputs are nested: the first port with this leaf name.
-    for (const [key, v] of portValues) {
-      if (key.endsWith(`.${name}`)) return v;
+    if (!this.outputNameSet.has(name)) {
+      throw new Error(this.unknownPortMessage('get', name, 'output', this.outputNames));
     }
-    return 0;
+    return this.nodes.ports().get(`${TOP}.${name}`) ?? 0;
   }
 
   read(): Record<string, number> {
+    const portValues = this.nodes.ports();
     const result: Record<string, number> = {};
-    for (const name of this.outputNames) result[name] = this.get(name);
+    for (const name of this.outputNames) result[name] = portValues.get(`${TOP}.${name}`) ?? 0;
     return result;
   }
 
@@ -234,6 +248,16 @@ class EngineSimulation implements Simulation {
     this.engine.runCombinational();
     this.cycleCount = saved.cycleCount;
     this.dirty = false;
+  }
+
+  private unknownPortMessage(
+    method: string,
+    name: string,
+    kind: string,
+    valid: readonly string[],
+  ): string {
+    const names = valid.length > 0 ? valid.join(', ') : '(none)';
+    return `${method}('${name}'): ${this.circuitName} has no ${kind} named '${name}'. Its ${kind}s: ${names}`;
   }
 
   private setNode(path: string, value: number | MemoryContents): void {
