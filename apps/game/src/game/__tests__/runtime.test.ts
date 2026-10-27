@@ -14,8 +14,11 @@
  * which was the half that was already right.
  */
 
+import { bit, circuit } from '@simten/core/circuit';
+import { internalsOf } from '@simten/core/internal';
+import { Led, Not, Switch } from '@simten/core/std';
 import { describe, expect, it } from 'vitest';
-import { readOutputs, resolveOutput } from '../runtime';
+import { RuntimeFailure, readOutputs, resolveOutput, splitInputs } from '../runtime';
 
 describe('resolveOutput / readOutputs', () => {
   it('strips the __top__ prefix', () => {
@@ -64,5 +67,38 @@ describe('resolveOutput spans both circuit shapes', () => {
 
   it('is undefined when neither exists, so the grader can say so', () => {
     expect(resolveOutput({ 'and1.out': 1 }, 'out')).toBeUndefined();
+  });
+});
+
+describe('splitInputs', () => {
+  const ported = internalsOf(
+    circuit('Ported', {
+      inputs: { a: bit },
+      outputs: { out: bit },
+      nodes: { inv: Not },
+      connect: ({ inputs, outputs, nodes: { inv } }) => [
+        inputs.a.to(inv.in),
+        inv.out.to(outputs.out),
+      ],
+    }),
+  ).ir;
+  const selfContained = internalsOf(
+    circuit('SelfContained', {
+      nodes: { a: Switch, inv: Not, out: Led },
+      connect: ({ nodes: { a, inv, out } }) => [a.out.to(inv.in), inv.out.to(out.in)],
+    }),
+  ).ir;
+
+  it('sends a port name to the ports', () => {
+    expect(splitInputs(ported, { a: 1 })).toEqual({ ports: { a: 1 }, nodes: {} });
+  });
+
+  it('sends a Switch name to the nodes', () => {
+    expect(splitInputs(selfContained, { a: 1 })).toEqual({ ports: {}, nodes: { a: 1 } });
+  });
+
+  it('throws for a name that is neither, rather than driving nothing', () => {
+    expect(() => splitInputs(ported, { b: 1 })).toThrow(RuntimeFailure);
+    expect(() => splitInputs(ported, { b: 1 })).toThrow('`Ported` has no input port or node `b`');
   });
 });
