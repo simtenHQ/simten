@@ -15,6 +15,8 @@ import {
   importNetlist,
   type YosysNetlist,
 } from '@simten/core/internal';
+import { type ApiEnv, checkLimits } from './limits';
+import { callService } from './service';
 
 interface SynthContainerResponse {
   success: boolean;
@@ -112,10 +114,7 @@ function validateImport(body: ImportBody): string | undefined {
   return undefined;
 }
 
-export async function handleVerilogImport(
-  request: Request,
-  env: Record<string, unknown>,
-): Promise<Response> {
+export async function handleVerilogImport(request: Request, env: ApiEnv): Promise<Response> {
   let body: ImportBody;
   try {
     body = await request.json();
@@ -139,20 +138,11 @@ export async function handleVerilogImport(
     return Response.json({ success: false, error: invalid }, { status: 400 });
   }
 
-  // Rate limit: yosys is CPU-heavy and the container has few instances, so keep
-  // this modest per IP (5/min). Mirrors the compile/verify handlers.
-  const rl = (
-    env as { SYNTH_RL?: { limit: (k: { key: string }) => Promise<{ success: boolean }> } }
-  ).SYNTH_RL;
-  if (rl) {
-    const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
-    const { success } = await rl.limit({ key: ip });
-    if (!success) {
-      return Response.json(
-        { success: false, error: 'Rate limit exceeded, try again in a minute' },
-        { status: 429 },
-      );
-    }
+  // yosys is CPU-heavy and the container has few instances, so SYNTH_RL keeps
+  // this modest per client (5/min).
+  const rejected = await checkLimits('synth', request.headers.get('CF-Connecting-IP'), env);
+  if (rejected) {
+    return Response.json({ success: false, error: rejected.error }, { status: rejected.status });
   }
 
   const reqInit: RequestInit = {
@@ -169,14 +159,14 @@ export async function handleVerilogImport(
     }),
   };
 
-  // Service binding (production) → local synth container fallback (dev)
-  const synth = env.SYNTH as { fetch: typeof fetch } | undefined;
-
   let synthResult: SynthContainerResponse;
   try {
-    const resp = synth
-      ? await synth.fetch('https://synth/synth', reqInit)
-      : await fetch('http://localhost:8792/synth', reqInit);
+    const resp = await callService(
+      env.SYNTH,
+      'https://synth/synth',
+      'http://localhost:8792/synth',
+      reqInit,
+    );
     synthResult = await resp.json();
   } catch (e) {
     return Response.json(

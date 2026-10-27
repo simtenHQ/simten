@@ -5,6 +5,9 @@
  * Local dev:  falls back to wrangler dev on localhost:55001.
  */
 
+import { type ApiEnv, checkLimits } from './limits';
+import { callService } from './service';
+
 interface CompilerResponse {
   success: boolean;
   binary?: number[];
@@ -14,24 +17,7 @@ interface CompilerResponse {
   error?: string;
 }
 
-export async function handleCompile(
-  request: Request,
-  env: Record<string, unknown>,
-): Promise<Response> {
-  const rl = (
-    env as { COMPILE_RL?: { limit: (k: { key: string }) => Promise<{ success: boolean }> } }
-  ).COMPILE_RL;
-  if (rl) {
-    const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
-    const { success } = await rl.limit({ key: ip });
-    if (!success) {
-      return Response.json(
-        { success: false, error: 'Rate limit exceeded, try again in a minute' },
-        { status: 429 },
-      );
-    }
-  }
-
+export async function handleCompile(request: Request, env: ApiEnv): Promise<Response> {
   let body: { source?: string; language?: string; disassemble?: boolean };
   try {
     body = await request.json();
@@ -51,6 +37,11 @@ export async function handleCompile(
     );
   }
 
+  const rejected = await checkLimits('compile', request.headers.get('CF-Connecting-IP'), env);
+  if (rejected) {
+    return Response.json({ success: false, error: rejected.error }, { status: rejected.status });
+  }
+
   const payload: Record<string, unknown> = { source: body.source, language };
   if (body.disassemble) payload.disassemble = true;
 
@@ -60,13 +51,13 @@ export async function handleCompile(
     body: JSON.stringify(payload),
   };
 
-  // Service binding (production) → local compiler worker fallback (dev)
-  const compiler = env.COMPILER as { fetch: typeof fetch } | undefined;
-
   try {
-    const resp = compiler
-      ? await compiler.fetch('https://compiler/compile', reqInit)
-      : await fetch('http://localhost:55001/compile', reqInit);
+    const resp = await callService(
+      env.COMPILER,
+      'https://compiler/compile',
+      'http://localhost:55001/compile',
+      reqInit,
+    );
 
     const result: CompilerResponse = await resp.json();
     return Response.json(result, { status: resp.status });

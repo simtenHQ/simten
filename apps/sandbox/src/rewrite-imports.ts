@@ -2,8 +2,9 @@
  * Import rewriter for npm package support in circuit code.
  *
  * Extracts static import statements from JS code, rewrites bare npm specifiers
- * to esm.sh CDN URLs, and produces a loader ES module that can be dynamically
- * imported so the resolved values can be injected into the executeJsCode scope.
+ * to esm.sh CDN URLs (rejecting any other URL or path), and produces a loader
+ * ES module that can be dynamically imported so the resolved values can be
+ * injected into the executeJsCode scope.
  *
  * @simten/* imports are silently skipped — those names are already in scope
  * via getScope() and don't need to be loaded from the network.
@@ -65,10 +66,21 @@ function isSimtenSpecifier(specifier: string): boolean {
   return specifier.startsWith('@simten/');
 }
 
+const ESM_SH = 'https://esm.sh/';
+
+/**
+ * Bare package names go to esm.sh, and esm.sh URLs pass through. Anything else
+ * (another host, a relative or absolute path) is rejected here rather than left
+ * for the CSP to block, so the error names the import.
+ */
 function rewriteSpecifier(specifier: string): string {
-  if (specifier.startsWith('https://') || specifier.startsWith('http://')) return specifier;
-  if (specifier.startsWith('.') || specifier.startsWith('/')) return specifier;
-  return `https://esm.sh/${specifier}`;
+  if (specifier.startsWith(ESM_SH)) return specifier;
+  if (/^[a-z][a-z0-9+.-]*:/i.test(specifier) || /^[./]/.test(specifier)) {
+    throw new Error(
+      `Cannot import '${specifier}': circuit code can import npm packages by name (loaded from esm.sh), not URLs or file paths.`,
+    );
+  }
+  return `${ESM_SH}${specifier}`;
 }
 
 // ── Binding name extraction ────────────────────────────────────────────────
