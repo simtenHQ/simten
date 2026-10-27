@@ -4,8 +4,10 @@
  * Single source of truth for every copy in the repo: the ULX3S FPGA project
  * (hardware/ulx3s/projects/snake), the "Snake in Hardware" blog post and
  * landing-page demo, and the Verilog exporter's end-to-end bitstream test.
- * The /circuit editor example carries the same SnakeCore as a source string;
- * hardware/ulx3s/projects/snake/parity-check.ts pins it to this one.
+ * The /circuit editor example's SnakeCore is this module's source text: the
+ * code between the editor-example markers in buildSnake() is copied into
+ * snake-source.gen.ts by `pnpm --filter @simten/core gen:examples`, and a
+ * test fails when that copy is out of date.
  *
  * A complete 8×8 Snake game in pure logic — no CPU. Structured like the
  * RV32I core: a textbook diagram, drillable level by level.
@@ -51,6 +53,7 @@ import {
 } from '../std/index.js';
 
 export function buildSnake() {
+  // editor-example:start
   /**
    * Free-running phase counter. Increments every clock, wraps mod 4, and
    * decodes to one-hot phase strobes. Everything else in the core is
@@ -630,6 +633,7 @@ export function buildSnake() {
       writer.ram_we.to(outputs.ram_we),
     ],
   });
+  // editor-example:end
 
   /**
    * FPGA top: the core plus its memory. RAM init: framebuffer pixels 33–36
