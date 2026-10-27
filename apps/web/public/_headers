@@ -17,12 +17,12 @@
 #               cloudflareinsights.com  Cloudflare Web Analytics.
 #               ws://localhost:*  the editor's connection to a local MCP server.
 #   worker-src  blob: data:       Monaco's language workers.
-#   frame-src   sandbox.simten.dev  the iframe that runs circuit code.
+#   frame-src   sandbox.simtenusercontent.dev  the iframe that runs circuit code.
 #               www.youtube.com   the video in the Breakout post.
 # Dropping 'unsafe-inline' and adding a report endpoint are tracked in #464.
 
 /*
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net https://data.jsdelivr.com https://api.github.com https://raw.githubusercontent.com https://cloudflareinsights.com ws://localhost:*; worker-src 'self' blob: data:; frame-src https://sandbox.simten.dev https://www.youtube.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net https://data.jsdelivr.com https://api.github.com https://raw.githubusercontent.com https://cloudflareinsights.com ws://localhost:*; worker-src 'self' blob: data:; frame-src https://sandbox.simtenusercontent.dev https://www.youtube.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'
 
 # https://opennext.js.org/cloudflare/caching#static-assets-caching
 /_next/static/*

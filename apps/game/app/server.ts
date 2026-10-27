@@ -18,7 +18,7 @@ import handler from '@tanstack/react-start/server-entry';
  *   connect-src cdn.jsdelivr.net, data.jsdelivr.com  Monaco and npm type acquisition.
  *               cloudflareinsights.com  Cloudflare Web Analytics.
  *   worker-src  blob: data:      Monaco's language workers.
- *   frame-src   sandbox.simten.dev  the iframe that runs player code.
+ *   frame-src   sandbox.simtenusercontent.dev  the iframe that runs player code.
  * Dropping 'unsafe-inline' and adding a report endpoint are tracked in #464.
  */
 const HEADERS: Array<[string, string]> = [
@@ -32,7 +32,7 @@ const HEADERS: Array<[string, string]> = [
       "img-src 'self' data: blob:",
       "connect-src 'self' https://cdn.jsdelivr.net https://data.jsdelivr.com https://cloudflareinsights.com",
       "worker-src 'self' blob: data:",
-      'frame-src https://sandbox.simten.dev',
+      'frame-src https://sandbox.simtenusercontent.dev',
       "frame-ancestors 'self'",
       "object-src 'none'",
       "base-uri 'self'",

@@ -46,12 +46,12 @@ import type {
 // ============================================================================
 
 // Sandbox origin: defaults work for normal dev (localhost:3002) and production
-// (sandbox.simten.dev). VITE_SANDBOX_ORIGIN is an optional escape hatch for
+// (sandbox.simtenusercontent.dev). VITE_SANDBOX_ORIGIN is an optional escape hatch for
 // unusual setups (e.g. pointing local dev at a staging sandbox).
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const env = typeof import.meta !== 'undefined' ? (import.meta as any).env : undefined;
 const SANDBOX_ORIGIN: string =
-  env?.VITE_SANDBOX_ORIGIN || (env?.PROD ? 'https://sandbox.simten.dev' : 'http://localhost:3002');
+  env?.VITE_SANDBOX_ORIGIN || (env?.PROD ? 'https://sandbox.simtenusercontent.dev' : 'http://localhost:3002');
 
 // How long to wait for the iframe's `ready` handshake before giving up on it.
 // Nothing else catches a sandbox that never comes up: `iframe.onerror` does not
@@ -112,7 +112,7 @@ function createIframe(
 
   const iframe = document.createElement('iframe');
   iframe.src = SANDBOX_ORIGIN;
-  // allow-same-origin: keeps iframe's declared origin (sandbox.simten.dev / localhost:3002)
+  // allow-same-origin: keeps iframe's declared origin (sandbox.simtenusercontent.dev / localhost:3002)
   // so the browser can load scripts and Vite dev server works.
   // Origin isolation still holds: the main app (simten.dev / localhost:3001) is a
   // different origin, so the iframe cannot access the main app's cookies or localStorage.
@@ -152,7 +152,7 @@ function nextId(_state: SandboxState): string {
  * Normalise port values arriving from the sandbox to numbers.
  *
  * Port values are numeric (`BitValue = 0 | 1`), but the sandbox is a separately
- * deployed artifact: until sandbox.simten.dev is redeployed against a core with
+ * deployed artifact: until sandbox.simtenusercontent.dev is redeployed against a core with
  * the numeric BitValue, it still reports booleans for bits. Coercing once here —
  * at the single point every response passes through — means no consumer
  * downstream (canvas, inspector, embed) has to know that.
