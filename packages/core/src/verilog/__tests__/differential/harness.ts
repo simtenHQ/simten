@@ -16,7 +16,7 @@ import { join } from 'node:path';
 import type { Library } from '../../../circuit/behavior.js';
 import type { CircuitIR, PortType } from '../../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../../simulator/index.js';
-import { exportVerilog } from '../../exporter.js';
+import { exportVerilogFromIR } from '../../exporter.js';
 
 export interface DiffTarget {
   top: CircuitIR;
@@ -267,7 +267,7 @@ export function runDifferential(
     clockPorts = reference.clock ? [`.${reference.clock}(clk)`] : [];
     signals = topSignals(target.top);
   } else {
-    const result = exportVerilog(target.top, target.library.definitions, {
+    const result = exportVerilogFromIR(target.top, target.library.definitions, {
       behaviors: target.library.behaviors,
     });
     if (result.unsupported) {

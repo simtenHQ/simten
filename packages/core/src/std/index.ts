@@ -10,6 +10,7 @@
  */
 
 import type { Circuit } from '../circuit/builder-types.js';
+import { isCircuit } from '../circuit/internals.js';
 
 // Arithmetic
 export {
@@ -143,8 +144,6 @@ import * as RV32I from './rv32i.js';
 import * as RV32ICpu from './rv32i-cpu.js';
 import * as Sequential from './sequential.js';
 import * as Reconstruction from './wiring.js';
-
-const isCircuit = (v: unknown): v is Circuit => !!v && typeof v === 'object' && 'circuit' in v;
 
 const _allExports: unknown[] = [
   ...Object.values(Logic),

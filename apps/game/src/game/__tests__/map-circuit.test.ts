@@ -8,6 +8,7 @@
  * lights the next one, and nothing further along lights early.
  */
 
+import { internalsOf } from '@simten/core/internal';
 import { describe, expect, it } from 'vitest';
 import { MAP_ROWS } from '../map';
 import { buildMapCircuit, simulateMap } from '../map-circuit';
@@ -15,7 +16,7 @@ import { buildMapCircuit, simulateMap } from '../map-circuit';
 describe('building it', () => {
   it('produces a circuit with a switch and a lamp per level', () => {
     const built = buildMapCircuit();
-    const ids = new Set(built.circuit.nodes.map((n) => n.id));
+    const ids = new Set(internalsOf(built).ir.nodes.map((n) => n.id));
     for (const levelId of MAP_ROWS.flat()) {
       const sane = levelId.replace(/-/g, '_');
       expect(ids.has(`sw_${sane}`)).toBe(true);

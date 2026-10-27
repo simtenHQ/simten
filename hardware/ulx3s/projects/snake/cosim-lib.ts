@@ -10,7 +10,7 @@
  */
 
 import { simulate } from '@simten/core';
-import type { CircuitIR } from '@simten/core/internal';
+import { type CircuitIR, internalsOf } from '@simten/core/internal';
 import { buildSnake } from './index.js';
 import { FB_SIZE, GRID, SnakeRefModel } from './ref-model.js';
 
@@ -36,13 +36,13 @@ export function setNodeArg(
   key: string,
   value: number,
 ): void {
+  const { ir, dependencies } = internalsOf(built);
+  const dep = dependencies.get(circuitName);
   const circuit: CircuitIR | undefined =
-    built.circuit.name === circuitName
-      ? built.circuit
-      : built._dependencies.get(circuitName)?.circuit;
+    built.name === circuitName ? ir : dep && internalsOf(dep).ir;
   if (!circuit) {
     throw new Error(
-      `setNodeArg: circuit '${circuitName}' not found (have: ${[...built._dependencies.keys()].join(', ')})`,
+      `setNodeArg: circuit '${circuitName}' not found (have: ${[...dependencies.keys()].join(', ')})`,
     );
   }
   const node = circuit.nodes.find((n) => n.id === nodeId);

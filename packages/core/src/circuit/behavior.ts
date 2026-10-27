@@ -2,7 +2,7 @@
  * Behavior: a primitive's `eval` and `onTick` closures, carried alongside the
  * IR rather than inside it (decision 0001).
  *
- * A built `Circuit` carries its own behavior. A compile collects a
+ * A built `Circuit` carries its own behavior, in its internals. A compile collects a
  * `BehaviorTable` for exactly the circuit tree it compiles and hands it to the
  * engine, the Verilog exporter and anything else that needs to run or read
  * behavior. Nothing is registered globally, so two compiles never see each
@@ -11,6 +11,7 @@
 
 import type { CircuitDefinitions, CircuitIR, MutableCircuitDefinitions } from '../ir/circuit-ir.js';
 import type { Circuit } from './builder-types.js';
+import { internalsOf } from './internals.js';
 
 /** Named values in and out of an `eval` or `onTick`. */
 export type BehaviorValues = Record<string, unknown>;
@@ -33,23 +34,6 @@ export const NO_EVAL: BehaviorFn = () => ({});
 /** Whether the behavior has user callbacks, as opposed to the no-op default. */
 export function hasCallbacks(behavior: Behavior): boolean {
   return behavior.evalFn !== NO_EVAL || behavior.onTickFn !== undefined;
-}
-
-/**
- * Behavior of each primitive built by `circuit()`, keyed by the built object.
- * The circuit itself stays plain data, and a circuit nothing references any
- * more is freed along with its entry.
- */
-const behaviors = new WeakMap<Circuit, Behavior>();
-
-/** Record a built circuit's behavior. Calling it again replaces it (fault injection). */
-export function attachBehavior(built: Circuit, behavior: Behavior): void {
-  behaviors.set(built, behavior);
-}
-
-/** The behavior a circuit was built with, if it is a primitive built by `circuit()`. */
-export function behaviorOf(built: Circuit): Behavior | undefined {
-  return behaviors.get(built);
 }
 
 const definitionKeys = new WeakMap<Behavior, string>();
@@ -118,10 +102,10 @@ export function emptyLibrary(): MutableLibrary {
  * circuit, or names one like a std component, gets its own definition.
  */
 export function addToLibrary(library: MutableLibrary, top: Circuit): void {
-  for (const c of [top, ...top._dependencies.values()]) {
-    library.definitions.addCircuit(c.circuit);
-    const behavior = behaviorOf(c);
-    if (behavior) library.behaviors.set(c.circuit.name, behavior);
+  for (const c of [top, ...internalsOf(top).dependencies.values()]) {
+    const { ir, behavior } = internalsOf(c);
+    library.definitions.addCircuit(ir);
+    if (behavior) library.behaviors.set(ir.name, behavior);
   }
 }
 

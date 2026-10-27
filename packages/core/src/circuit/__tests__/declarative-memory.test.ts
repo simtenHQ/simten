@@ -8,6 +8,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit, mem, reg } from '../index.js';
+import { internalsOf } from '../internals.js';
 
 // ── reg() and mem() helpers ──────────────────────────────────────────────
 
@@ -65,10 +66,10 @@ describe('circuit() with reg() state', () => {
       onTick: ({ data, we, value }) => ({ value: we ? (data as number) : (value as number) }),
     });
 
-    expect(MyReg.circuit.state.length).toBe(1);
-    expect(MyReg.circuit.state[0].stateType).toEqual({ kind: 'bus', width: 8 });
-    expect(MyReg.circuit.clocks.length).toBe(1);
-    expect(MyReg.circuit.metadata?.timing).toBe('sequential');
+    expect(internalsOf(MyReg).ir.state.length).toBe(1);
+    expect(internalsOf(MyReg).ir.state[0].stateType).toEqual({ kind: 'bus', width: 8 });
+    expect(internalsOf(MyReg).ir.clocks.length).toBe(1);
+    expect(internalsOf(MyReg).ir.metadata?.timing).toBe('sequential');
   });
 
   it('creates a 1-bit reg as bit type', () => {
@@ -80,7 +81,7 @@ describe('circuit() with reg() state', () => {
       onTick: ({ d }) => ({ value: d as number }),
     });
 
-    expect(MyFF.circuit.state[0].stateType).toEqual({ kind: 'bit' });
+    expect(internalsOf(MyFF).ir.state[0].stateType).toEqual({ kind: 'bit' });
   });
 });
 
@@ -103,13 +104,15 @@ describe('circuit() with mem() state', () => {
       },
     });
 
-    expect(MyRAM.circuit.state.length).toBe(1);
-    expect(MyRAM.circuit.state[0].stateType.kind).toBe('memory');
-    if (MyRAM.circuit.state[0].stateType.kind === 'memory') {
-      expect(MyRAM.circuit.state[0].stateType.addressWidth).toBe(8);
-      expect(MyRAM.circuit.state[0].stateType.dataWidth).toBe(8);
+    const { ir } = internalsOf(MyRAM);
+    expect(ir.state.length).toBe(1);
+    const { stateType } = ir.state[0];
+    expect(stateType.kind).toBe('memory');
+    if (stateType.kind === 'memory') {
+      expect(stateType.addressWidth).toBe(8);
+      expect(stateType.dataWidth).toBe(8);
     }
-    expect(MyRAM.circuit.clocks.length).toBe(1);
+    expect(ir.clocks.length).toBe(1);
   });
 
   it('computes addressWidth from depth', () => {
@@ -128,8 +131,9 @@ describe('circuit() with mem() state', () => {
       },
     });
 
-    if (MySmall.circuit.state[0].stateType.kind === 'memory') {
-      expect(MySmall.circuit.state[0].stateType.addressWidth).toBe(4); // ceil(log2(16))
+    const { stateType } = internalsOf(MySmall).ir.state[0];
+    if (stateType.kind === 'memory') {
+      expect(stateType.addressWidth).toBe(4); // ceil(log2(16))
     }
   });
 });

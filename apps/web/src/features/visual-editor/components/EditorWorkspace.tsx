@@ -7,7 +7,7 @@
 
 'use client';
 
-import { exportVerilog } from '@simten/core/verilog';
+import { exportVerilogFromIR } from '@simten/core/internal';
 import { builtFromIR, useCircuitCompiler, useCircuitSimulator } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
 import {
@@ -237,7 +237,7 @@ export function EditorWorkspace({
     }
 
     try {
-      const { verilog, files, unsupported } = exportVerilog(currentCircuit, store);
+      const { verilog, files, unsupported } = exportVerilogFromIR(currentCircuit, store);
 
       // An export with unmapped primitives is the dangerous case: it parses,
       // it synthesizes, and it does not do what the circuit does. Yosys will

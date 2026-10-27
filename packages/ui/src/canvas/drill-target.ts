@@ -20,16 +20,15 @@
  * dialog renders the boundary ports and nothing in between.
  */
 
-import type { CircuitDefinitions, CircuitIR } from '@simten/core/internal';
+import {
+  type CircuitDefinitions,
+  type CircuitIR,
+  internalsOf,
+  isCircuit,
+} from '@simten/core/internal';
 import { MADE_OF } from '@simten/core/std';
 import type { NodeData } from '../nodes';
 import type { InspectorFrame } from './types';
-
-/** The shape `circuit()` returns: the IR plus its transitive dependencies. */
-interface BuiltLike {
-  circuit: CircuitIR;
-  _dependencies?: Map<string, { circuit?: CircuitIR } | undefined>;
-}
 
 /** Definitions that answer from `extra` first, then fall back to `base`. */
 function layer(base: CircuitDefinitions, extra: Map<string, CircuitIR>): CircuitDefinitions {
@@ -71,22 +70,22 @@ export function resolveDrillTarget(
   // Build to this node's own arguments, so Adder({width:16}) opens 16 stages
   // and Adder({width:8}) opens 8.
   const args = (nodeData.arguments ?? {}) as Record<string, never>;
-  let built: BuiltLike;
+  let built: unknown;
   try {
-    built = build(args) as BuiltLike;
+    built = build(args);
   } catch {
     // A malformed argument bag should leave the node inert, not break the canvas.
     return null;
   }
+  if (!isCircuit(built)) return null;
 
-  const extra = new Map<string, CircuitIR>([[built.circuit.name, built.circuit]]);
-  for (const dep of built._dependencies?.values() ?? []) {
-    if (dep?.circuit) extra.set(dep.circuit.name, dep.circuit);
-  }
+  const { ir, dependencies } = internalsOf(built);
+  const extra = new Map<string, CircuitIR>([[ir.name, ir]]);
+  for (const dep of dependencies.values()) extra.set(dep.name, internalsOf(dep).ir);
 
   return {
     componentName: componentRef,
-    componentDef: built.circuit,
+    componentDef: ir,
     nodeLabel,
     definitions: layer(definitions, extra),
   };

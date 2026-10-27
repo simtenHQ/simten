@@ -6,6 +6,7 @@
 
 import { bit, circuit } from '@simten/core/circuit';
 import type { CircuitDefinitions, CircuitIR } from '@simten/core/internal';
+import { internalsOf } from '@simten/core/internal';
 import { And, Xor } from '@simten/core/std';
 import { describe, expect, it } from 'vitest';
 import type { NodeData } from '../../nodes';
@@ -47,7 +48,7 @@ function nodeData(componentRef: string, args: Record<string, unknown> = {}): Nod
 
 describe('resolveDrillTarget', () => {
   it('opens a composite into its own structure', () => {
-    const definitions = definitionsOf(HalfAdder.circuit);
+    const definitions = definitionsOf(internalsOf(HalfAdder).ir);
     const frame = resolveDrillTarget(nodeData('HalfAdder'), definitions);
     expect(frame?.componentName).toBe('HalfAdder');
     expect(frame?.componentDef.nodes).toHaveLength(2);
@@ -85,14 +86,14 @@ describe('resolveDrillTarget', () => {
     });
     const frame = resolveDrillTarget(
       nodeData('Adder', { width: 8 }),
-      definitionsOf(UserAdder.circuit),
+      definitionsOf(internalsOf(UserAdder).ir),
     );
     expect(frame?.componentDef.nodes).toHaveLength(1);
     expect(frame?.componentDef.nodes[0].componentRef).toBe('Xor');
   });
 
   it('returns null for a leaf primitive', () => {
-    expect(resolveDrillTarget(nodeData('Xor'), definitionsOf(Xor.circuit))).toBeNull();
+    expect(resolveDrillTarget(nodeData('Xor'), definitionsOf(internalsOf(Xor).ir))).toBeNull();
     // Deliberately excluded from MADE_OF.
     expect(resolveDrillTarget(nodeData('Multiplier', { width: 8 }), definitionsOf())).toBeNull();
     expect(resolveDrillTarget(nodeData('Constant', { value: 1 }), definitionsOf())).toBeNull();

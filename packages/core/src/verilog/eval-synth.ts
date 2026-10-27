@@ -1010,10 +1010,10 @@ export function tryEmitFromEval(
 }
 
 /**
- * Check whether a component's eval is synthesizable.
- * Useful for tooling/UI to show synthesis status.
+ * Check whether one `eval` function can be translated to Verilog, given its
+ * port names. `checkSynthesizable` checks a whole circuit.
  */
-export function checkSynthesizable(
+export function checkEvalSynthesizable(
   evalFn: Function,
   inputNames: string[],
   outputNames: string[],

@@ -8,27 +8,14 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { libraryOf } from '../../circuit/behavior.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { CircuitDefinitions } from '../../ir/circuit-ir.js';
+import { internalsOf } from '../../circuit/internals.js';
 import { Adder, Constant, DFlipFlop, Mux, Or, Register, Subtractor } from '../../std/index.js';
-import { exportVerilog } from '../exporter.js';
+import { exportVerilogFromIR } from '../exporter.js';
 import { hasSynth, synthesizeVerilog } from './synth.js';
 
 // ---- helpers ----------------------------------------------------------------
-
-function makeDefinitions<
-  T extends {
-    circuit: import('../../ir/circuit-ir.js').CircuitIR;
-    // ReadonlyMap: that is what Circuit exposes. Declaring it mutable made
-    // every real Circuit unassignable here.
-    _dependencies: ReadonlyMap<string, { circuit: import('../../ir/circuit-ir.js').CircuitIR }>;
-  },
->(top: T, name: string): CircuitDefinitions {
-  return {
-    resolveCircuit: (n) => (n === name ? top.circuit : top._dependencies.get(n)?.circuit),
-    getAllPrimitiveNames: () => [...top._dependencies.keys()],
-  };
-}
 
 // ---- circuits ---------------------------------------------------------------
 
@@ -47,7 +34,7 @@ function buildShiftRegister4() {
       ff3.q.to(outputs.q3),
     ],
   });
-  return { circuit: SR4.circuit, definitions: makeDefinitions(SR4, 'ShiftRegister4') };
+  return { circuit: internalsOf(SR4).ir, definitions: libraryOf(SR4).definitions };
 }
 
 function buildUpDownCounter() {
@@ -82,7 +69,7 @@ function buildUpDownCounter() {
       muxResult.out.to(reg.data),
     ],
   });
-  return { circuit: UDCounter.circuit, definitions: makeDefinitions(UDCounter, 'UpDownCounter') };
+  return { circuit: internalsOf(UDCounter).ir, definitions: libraryOf(UDCounter).definitions };
 }
 
 function buildPipelineStage() {
@@ -109,7 +96,7 @@ function buildPipelineStage() {
       reg2.q.to(outputs.result),
     ],
   });
-  return { circuit: Pipeline.circuit, definitions: makeDefinitions(Pipeline, 'Pipeline2Stage') };
+  return { circuit: internalsOf(Pipeline).ir, definitions: libraryOf(Pipeline).definitions };
 }
 
 // ---- tests ------------------------------------------------------------------
@@ -119,7 +106,7 @@ const d = describe.skipIf(!hasSynth());
 d('ShiftRegister4 (4x DFlipFlop chain) — synthesis', () => {
   it('synthesizes serial shift register and produces DFF cells', { timeout: 30000 }, async () => {
     const { circuit, definitions } = buildShiftRegister4();
-    const result = exportVerilog(circuit, definitions, { target: 'synthesis' });
+    const result = exportVerilogFromIR(circuit, definitions, { target: 'synthesis' });
     const resp = await synthesizeVerilog(result, 'ShiftRegister4');
 
     if (!resp.success) console.error('synth:', JSON.stringify(resp, null, 2));
@@ -140,7 +127,7 @@ d('ShiftRegister4 (4x DFlipFlop chain) — synthesis', () => {
 d('UpDownCounter (Register + Adder + Subtractor + Mux) — synthesis', () => {
   it('synthesizes up/down counter with direction control', { timeout: 30000 }, async () => {
     const { circuit, definitions } = buildUpDownCounter();
-    const result = exportVerilog(circuit, definitions, { target: 'synthesis' });
+    const result = exportVerilogFromIR(circuit, definitions, { target: 'synthesis' });
     const resp = await synthesizeVerilog(result, 'UpDownCounter');
 
     if (!resp.success) console.error('synth:', JSON.stringify(resp, null, 2));
@@ -163,7 +150,7 @@ d('Pipeline2Stage (2x Register + Adder) — synthesis', () => {
     timeout: 30000,
   }, async () => {
     const { circuit, definitions } = buildPipelineStage();
-    const result = exportVerilog(circuit, definitions, { target: 'synthesis' });
+    const result = exportVerilogFromIR(circuit, definitions, { target: 'synthesis' });
     const resp = await synthesizeVerilog(result, 'Pipeline2Stage');
 
     if (!resp.success) console.error('synth:', JSON.stringify(resp, null, 2));

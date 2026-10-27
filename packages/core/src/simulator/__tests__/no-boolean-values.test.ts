@@ -45,6 +45,7 @@
 import { describe, expect, it } from 'vitest';
 import { libraryOf } from '../../circuit/behavior.js';
 import { bit, circuit } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import { DFlipFlop } from '../../std/index.js';
 import { createEngine, elaborate } from '../index.js';
@@ -103,11 +104,11 @@ describe('no booleans in the value domain', () => {
     // This is the only route to `sequential-init`'s declared-value path:
     // circuit() coerces a boolean `state:` at authoring time, so nothing built
     // through the builder reaches it.
-    const ff = structuredClone(BoolStateFF.circuit);
+    const ff = structuredClone(internalsOf(BoolStateFF).ir);
     (ff.state[0] as { initialValue: unknown }).initialValue = false;
 
-    const definitions = libraryFor([ff, Top.circuit]);
-    const sim = createEngine(elaborate(Top.circuit, definitions), {
+    const definitions = libraryFor([ff, internalsOf(Top).ir]);
+    const sim = createEngine(elaborate(internalsOf(Top).ir, definitions), {
       library: { definitions, behaviors: libraryOf(Top).behaviors },
     });
     sim.runCombinational();
@@ -128,7 +129,7 @@ describe('no booleans in the value domain', () => {
     // sequential-init coerces on read. The IR crosses the sandbox boundary and
     // feeds the Verilog exporter, so it is the surface that matters.
     const found: string[] = [];
-    for (const sb of DFlipFlop().circuit.state) {
+    for (const sb of internalsOf(DFlipFlop()).ir.state) {
       findBooleans(`ir.${sb.name}.initialValue`, sb.initialValue, found);
     }
     expect(found).toEqual([]);

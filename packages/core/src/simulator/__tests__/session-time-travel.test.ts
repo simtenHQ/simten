@@ -18,6 +18,7 @@ import { describe, expect, it } from 'vitest';
 import { libraryOf } from '../../circuit/behavior.js';
 import type { Circuit } from '../../circuit/index.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import { isSequentialCircuit } from '../../circuit/is-sequential.js';
 import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import { Console, RAM } from '../../std/index.js';
@@ -50,11 +51,12 @@ function makeSession(built: Circuit<any, any>): SimulationSession {
       circuitMap.set(c.name, c);
     },
   };
-  definitions.addCircuit(built.circuit);
-  if (built._dependencies)
-    for (const [, dep] of built._dependencies) definitions.addCircuit(dep.circuit);
-  const isSeq = isSequentialCircuit(built.circuit, definitions.resolveCircuit);
-  const engine = createEngine(elaborate(built.circuit, definitions), {
+  definitions.addCircuit(internalsOf(built).ir);
+  if (internalsOf(built).dependencies)
+    for (const [, dep] of internalsOf(built).dependencies)
+      definitions.addCircuit(internalsOf(dep).ir);
+  const isSeq = isSequentialCircuit(internalsOf(built).ir, definitions.resolveCircuit);
+  const engine = createEngine(elaborate(internalsOf(built).ir, definitions), {
     library: { definitions, behaviors: libraryOf(built).behaviors },
   });
   engine.runCombinational();

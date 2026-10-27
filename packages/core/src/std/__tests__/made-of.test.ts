@@ -20,6 +20,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import { internalsOf, isCircuit } from '../../circuit/internals.js';
 import { STDLIB_CIRCUITS } from '../index.js';
 import * as MadeOfModule from '../made-of.js';
 import { hasMadeOf, MADE_OF, MADE_OF_NAMES } from '../made-of.js';
@@ -28,7 +29,14 @@ const here = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(here, '../../../../..');
 const stdDir = resolve(here, '..');
 
-const stdlibNames = STDLIB_CIRCUITS.map((c) => c.circuit.name);
+const stdlibNames = STDLIB_CIRCUITS.map((c) => c.name);
+
+/** A reference build, checked to be a circuit. */
+function build(name: string, args: Parameters<(typeof MADE_OF)[string]>[0]) {
+  const built = MADE_OF[name](args);
+  if (!isCircuit(built)) throw new Error(`MADE_OF.${name} did not build a circuit`);
+  return built;
+}
 
 describe('MADE_OF containment', () => {
   it('never leaks a reference build into STDLIB_CIRCUITS', () => {
@@ -49,7 +57,7 @@ describe('MADE_OF containment', () => {
       if (typeof v !== 'function') return false;
       try {
         const built = (v as () => unknown)();
-        return !!built && typeof built === 'object' && 'circuit' in built;
+        return isCircuit(built);
       } catch {
         return false;
       }
@@ -62,9 +70,7 @@ describe('MADE_OF containment', () => {
     // do return a Circuit when called with no arguments, which is what
     // `_materialize` does to every exported function.
     for (const name of MADE_OF_NAMES) {
-      const built = MADE_OF[name]({}) as { circuit?: { name?: string } };
-      expect(built).toHaveProperty('circuit');
-      expect(built.circuit?.name).toMatch(/_madeOf$/);
+      expect(build(name, {}).name).toMatch(/_madeOf$/);
     }
   });
 
@@ -113,35 +119,35 @@ describe('MADE_OF table', () => {
 
   it('builds to the width it is given, not the default', () => {
     for (const w of [1, 4, 16]) {
-      const built = MADE_OF.Adder({ width: w }) as { circuit: { name: string; nodes: unknown[] } };
-      expect(built.circuit.name).toBe(`Adder${w}_madeOf`);
+      const built = build('Adder', { width: w });
+      expect(built.name).toBe(`Adder${w}_madeOf`);
       // One FullAdder per bit.
-      const stages = built.circuit.nodes.filter(
-        (n) => (n as { componentRef: string }).componentRef === 'FullAdder',
-      );
+      const stages = internalsOf(built).ir.nodes.filter((n) => n.componentRef === 'FullAdder');
       expect(stages).toHaveLength(w);
     }
   });
 
   it('falls back to the default width on a malformed argument', () => {
     for (const bad of [undefined, 0, -4, 2.5, 'wide']) {
-      const built = MADE_OF.Adder({ width: bad } as never) as { circuit: { name: string } };
-      expect(built.circuit.name).toBe('Adder8_madeOf');
+      expect(build('Adder', { width: bad } as never).name).toBe('Adder8_madeOf');
     }
   });
 });
 
 describe('FullAdder', () => {
+  const fullAdder = () => {
+    const fa = STDLIB_CIRCUITS.find((c) => c.name === 'FullAdder');
+    if (!fa) throw new Error('FullAdder is not in STDLIB_CIRCUITS');
+    return internalsOf(fa).ir;
+  };
+
   it('is a composite in the stdlib, so it can be drilled into', () => {
-    const fa = STDLIB_CIRCUITS.find((c) => c.circuit.name === 'FullAdder');
-    expect(fa).toBeDefined();
-    expect(fa?.circuit.implementation.kind).toBe('composite');
-    expect(fa?.circuit.nodes.length).toBeGreaterThan(0);
+    expect(fullAdder().implementation.kind).toBe('composite');
+    expect(fullAdder().nodes.length).toBeGreaterThan(0);
   });
 
   it('stops at Xor/And/Or — the game already covers NAND', () => {
-    const fa = STDLIB_CIRCUITS.find((c) => c.circuit.name === 'FullAdder');
-    const refs = new Set(fa?.circuit.nodes.map((n) => n.componentRef));
+    const refs = new Set(fullAdder().nodes.map((n) => n.componentRef));
     expect([...refs].sort()).toEqual(['And', 'Or', 'Xor']);
   });
 });

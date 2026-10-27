@@ -1,3 +1,4 @@
+import { internalsOf } from '@simten/core/internal';
 import { useCircuitSimulator } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
 import { useMemo, useState } from 'react';
@@ -51,7 +52,7 @@ export function PlayerSection() {
       <div className="mt-8 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
         <div className="h-[520px] bg-gray-50 dark:bg-gray-950">
           <CircuitCanvas
-            circuit={voice.circuit}
+            circuit={internalsOf(voice).ir}
             definitions={sim.definitions ?? undefined}
             portValues={sim.portValues}
             sequentialState={sim.sequentialState}

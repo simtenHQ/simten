@@ -40,7 +40,8 @@
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { Adder, DFlipFlop, Not, RAM, Register, Xor } from '../../std/index.js';
-import { simulate } from '../simulate.js';
+import { type Snapshot, simulate } from '../simulate.js';
+import type { SimulatorSnapshot } from '../types.js';
 
 // ============================================================================
 // Fixtures
@@ -235,8 +236,10 @@ const Scratchpad = circuit('Scratchpad', {
 });
 
 /** Pull the single memory Map out of a snapshot, whatever the node is called. */
-function memoryOf(snap: { sequentialState: { currentState: Map<string, unknown> } }) {
-  for (const value of snap.sequentialState.currentState.values()) {
+/** The memory a snapshot holds. `Snapshot` is opaque; underneath it is the engine's. */
+function memoryOf(snap: Snapshot) {
+  const { sequentialState } = snap as unknown as SimulatorSnapshot;
+  for (const value of sequentialState?.currentState.values() ?? []) {
     if (value instanceof Map) return value as Map<number, number>;
   }
   throw new Error('snapshot contained no memory state');

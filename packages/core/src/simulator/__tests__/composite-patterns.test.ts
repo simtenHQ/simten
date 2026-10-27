@@ -22,8 +22,10 @@
  */
 
 import { describe, expect, it, vi } from 'vitest';
+import { buildFromIR } from '../../circuit/build-from-ir.js';
 import type { SinkPortRef } from '../../circuit/builder-types.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import { Adder, BusNot, Constant, Not, Register } from '../../std/index.js';
 import { simulate } from '../simulate.js';
 import { assertFlatCircuitInvariants, elaborateBuilt } from './_invariants.js';
@@ -389,7 +391,7 @@ describe('P-multi-drive-stitch — post-stitch multi-drive silently accepted (#1
   // Deliberately invalid: `y` is Pass's OUTPUT, so driving it from outside
   // is meaningless, and that is the point. This fixture exists to produce
   // a multi-driven top-level output after stitching (see #143).
-  Bad.circuit.connections.push({
+  internalsOf(Bad).ir.connections.push({
     id: 'conn_reversed',
     source: { nodeId: '', portName: 'B' },
     target: { nodeId: 'p', portName: 'y' },
@@ -476,9 +478,9 @@ describe('P-recursive-composite — recursive definition rejected with cycle cha
     // Mutate the IR to insert a self-reference node. This is intentionally
     // hostile to the elaborator to exercise the guard.
     const mutated = {
-      ...A.circuit,
+      ...internalsOf(A).ir,
       nodes: [
-        ...A.circuit.nodes,
+        ...internalsOf(A).ir.nodes,
         // Reference back to SelfRefA by component name — creates the cycle.
         {
           id: 'self_loop',
@@ -490,8 +492,8 @@ describe('P-recursive-composite — recursive definition rejected with cycle cha
         },
       ],
     };
-    const built = { circuit: mutated, _dependencies: A._dependencies };
-    expect(() => elaborateBuilt(built as any)).toThrow(/recursive|cycle/i);
+    const deps = [...internalsOf(A).dependencies.values()].map((d) => internalsOf(d).ir);
+    expect(() => elaborateBuilt(buildFromIR(mutated, deps))).toThrow(/recursive|cycle/i);
   });
 });
 

@@ -9,9 +9,10 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import type { CircuitIR } from '../../ir/circuit-ir.js';
 import { Led, Nand, Switch } from '../../std/index.js';
+import type { Circuit } from '../builder-types.js';
 import { circuit } from '../circuit.js';
+import { internalsOf } from '../internals.js';
 
 const BITS = [0, 1, 2, 3];
 
@@ -44,17 +45,19 @@ const WithArrays = circuit('ByteNotLonghand', {
 
 describe('an array entry is exactly its longhand', () => {
   it('produces the same node ids and component references', () => {
-    const ids = (c: { circuit: CircuitIR }) =>
-      c.circuit.nodes.map((n) => `${n.id}:${n.componentRef}`).sort();
+    const ids = (c: Circuit) =>
+      internalsOf(c)
+        .ir.nodes.map((n) => `${n.id}:${n.componentRef}`)
+        .sort();
     expect(ids(WithArrays)).toEqual(ids(Longhand));
   });
 
   it('produces the same connections', () => {
     // The IR flattens `.to(a, b)` into one Connection per target, so this
     // compares source→target pairs rather than fan-out groups.
-    const wires = (c: { circuit: CircuitIR }) =>
-      c.circuit.connections
-        .map(
+    const wires = (c: Circuit) =>
+      internalsOf(c)
+        .ir.connections.map(
           (conn) =>
             `${conn.source.nodeId}.${conn.source.portName}->${conn.target.nodeId}.${conn.target.portName}`,
         )
@@ -63,8 +66,8 @@ describe('an array entry is exactly its longhand', () => {
   });
 
   it('carries the same dependencies', () => {
-    expect([...WithArrays._dependencies.keys()].sort()).toEqual(
-      [...Longhand._dependencies.keys()].sort(),
+    expect([...internalsOf(WithArrays).dependencies.keys()].sort()).toEqual(
+      [...internalsOf(Longhand).dependencies.keys()].sort(),
     );
   });
 });
@@ -72,12 +75,12 @@ describe('an array entry is exactly its longhand', () => {
 describe('expansion rules', () => {
   it('numbers entries from zero', () => {
     const c = circuit('Numbered', { nodes: { g: Array.from({ length: 3 }, () => Nand) } });
-    expect(c.circuit.nodes.map((n) => n.id)).toEqual(['g0', 'g1', 'g2']);
+    expect(internalsOf(c).ir.nodes.map((n) => n.id)).toEqual(['g0', 'g1', 'g2']);
   });
 
   it('accepts an empty array as no nodes at all', () => {
     const c = circuit('Empty', { nodes: { g: [] as (typeof Nand)[] } });
-    expect(c.circuit.nodes).toHaveLength(0);
+    expect(internalsOf(c).ir.nodes).toHaveLength(0);
   });
 
   it('mixes arrays and plain entries', () => {
@@ -85,7 +88,11 @@ describe('expansion rules', () => {
       nodes: { single: Switch, g: Array.from({ length: 2 }, () => Nand) },
       connect: ({ nodes: { single, g } }) => [single.out.to(g[0].a, g[0].b, g[1].a, g[1].b)],
     });
-    expect(c.circuit.nodes.map((n) => n.id).sort()).toEqual(['g0', 'g1', 'single']);
+    expect(
+      internalsOf(c)
+        .ir.nodes.map((n) => n.id)
+        .sort(),
+    ).toEqual(['g0', 'g1', 'single']);
   });
 
   it('rejects an expanded id that collides with a hand-written one', () => {
@@ -114,9 +121,9 @@ describe('BITS-style authoring', () => {
       connect: ({ nodes: { a, n, out } }) =>
         a.flatMap((sw, i) => [sw.out.to(n[i].a, n[i].b), n[i].out.to(out[i].in)]),
     });
-    expect(ByteNot.circuit.nodes).toHaveLength(BITS.length * 3);
+    expect(internalsOf(ByteNot).ir.nodes).toHaveLength(BITS.length * 3);
     // Three wires per bit once fan-out is flattened: switch→n.a, switch→n.b,
     // n.out→lamp.
-    expect(ByteNot.circuit.connections).toHaveLength(BITS.length * 3);
+    expect(internalsOf(ByteNot).ir.connections).toHaveLength(BITS.length * 3);
   });
 });

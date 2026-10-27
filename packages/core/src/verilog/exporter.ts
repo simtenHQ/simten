@@ -11,7 +11,9 @@
  * - No combinational loops
  */
 
-import type { BehaviorTable } from '../circuit/behavior.js';
+import { type BehaviorTable, libraryOf } from '../circuit/behavior.js';
+import type { Circuit } from '../circuit/builder-types.js';
+import { internalsOf } from '../circuit/internals.js';
 import type { CircuitIR, MemoryValue, PortType } from '../ir/circuit-ir.js';
 import { memoryContentsToMap } from '../ir/memory-contents.js';
 import { elaborate } from '../simulator/elaboration.js';
@@ -22,6 +24,7 @@ import type {
   FlatNode,
 } from '../simulator/types.js';
 import { getStdLibrary } from '../std/library.js';
+import { checkEvalSynthesizable, type SynthValidation } from './eval-synth.js';
 import {
   emitPrimitive,
   isSequentialPrimitive,
@@ -34,11 +37,19 @@ import {
 import type { ExportResult, VerilogExportOptions } from './types.js';
 import { INLINE_MEMORY_THRESHOLD } from './types.js';
 
-type ResolvedOptions = Required<Omit<VerilogExportOptions, 'behaviors'>> & {
-  behaviors: BehaviorTable;
-};
+/** Export options for a caller that only has IR, and so passes behavior itself. */
+export interface IRExportOptions extends VerilogExportOptions {
+  /**
+   * Behavior (eval/onTick) by primitive name, for primitives with no
+   * hand-written Verilog mapping: their eval is transpiled. Defaults to the
+   * standard library's behavior.
+   */
+  behaviors?: BehaviorTable;
+}
 
-const DEFAULT_OPTIONS: Required<Omit<VerilogExportOptions, 'behaviors'>> = {
+type ResolvedOptions = Required<VerilogExportOptions> & { behaviors: BehaviorTable };
+
+const DEFAULT_OPTIONS: Required<VerilogExportOptions> = {
   mode: 'flat',
   topModuleName: '',
   clockName: 'clk',
@@ -88,13 +99,14 @@ function collectStateInits(
 }
 
 /**
- * Export a circuit to Verilog (flat mode).
+ * Export a circuit's IR to Verilog (flat mode), for callers that have IR and
+ * definitions but no built circuit: the editor page, and tests that build IR.
  * Elaborates the circuit first, then emits a single flat module.
  */
-export function exportVerilogFlat(
+export function exportVerilogFromIR(
   circuit: CircuitIR,
   definitions: CircuitDefinitions,
-  options?: VerilogExportOptions,
+  options?: IRExportOptions,
 ): ExportResult {
   const opts: ResolvedOptions = {
     ...DEFAULT_OPTIONS,
@@ -106,6 +118,16 @@ export function exportVerilogFlat(
 }
 
 /**
+ * Export a circuit to Verilog (flat mode): one module with every node
+ * flattened to primitives. A primitive with no hand-written mapping has its
+ * own `eval` translated.
+ */
+export function exportVerilogFlat(top: Circuit, options?: VerilogExportOptions): ExportResult {
+  const { definitions, behaviors } = libraryOf(top);
+  return exportVerilogFromIR(internalsOf(top).ir, definitions, { ...options, behaviors });
+}
+
+/**
  * Export a circuit to Verilog (auto mode — flat by default).
  *
  * Returns `{ verilog, files }`: `verilog` is the `.v` source; `files` is a
@@ -113,13 +135,31 @@ export function exportVerilogFlat(
  * exporter emitted for large memories. Callers should write each file
  * next to the `.v` for the Verilog to compile.
  */
-export function exportVerilog(
-  circuit: CircuitIR,
-  definitions: CircuitDefinitions,
-  options?: VerilogExportOptions,
-): ExportResult {
+export function exportVerilog(top: Circuit, options?: VerilogExportOptions): ExportResult {
   // TODO: hierarchical mode (emit sub-modules). For now every mode is flat.
-  return exportVerilogFlat(circuit, definitions, options);
+  return exportVerilogFlat(top, options);
+}
+
+/**
+ * Whether `exportVerilog(top)` translates every primitive in the circuit:
+ * each has a hand-written mapping or an `eval` the exporter can translate.
+ * Each error names a primitive that can't be exported and, when its `eval`
+ * is the reason, what in it can't be translated.
+ */
+export function checkSynthesizable(top: Circuit): SynthValidation {
+  const { unsupported } = exportVerilog(top);
+  const { behaviors } = libraryOf(top);
+  const errors: string[] = [];
+  for (const name of Object.keys(unsupported ?? {})) {
+    const behavior = behaviors.get(name);
+    const evalErrors = behavior
+      ? checkEvalSynthesizable(behavior.evalFn, behavior.inputNames, behavior.outputNames).errors
+      : [];
+    if (evalErrors.length === 0)
+      evalErrors.push('no Verilog mapping, and its behavior cannot be translated');
+    for (const e of evalErrors) errors.push(`${name}: ${e}`);
+  }
+  return { valid: errors.length === 0, errors };
 }
 
 // ── Flat module emission ────────────────────────────────────────────────

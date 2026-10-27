@@ -22,11 +22,12 @@
 
 import { describe, expect, it } from 'vitest';
 import { bus, circuit } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
 import { Adder, Constant, Register } from '../../std/index.js';
 import { getStdLibrary } from '../../std/library.js';
-import { exportVerilog } from '../exporter.js';
+import { exportVerilogFromIR } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { buildNaiveTraceAcrossReset, buildParityTraceAcrossReset } from './parity-helpers.js';
 import { hasVerifier, verifyVerilog } from './verify.js';
@@ -52,14 +53,14 @@ function buildCounter() {
   });
 
   const map = new Map<string, CircuitIR>();
-  map.set(Counter.circuit.name, Counter.circuit);
-  for (const [, dep] of Counter._dependencies) map.set(dep.circuit.name, dep.circuit);
+  map.set(Counter.name, internalsOf(Counter).ir);
+  for (const [, dep] of internalsOf(Counter).dependencies) map.set(dep.name, internalsOf(dep).ir);
   const definitions: CircuitDefinitions = {
     resolveCircuit: (name) => map.get(name),
     getAllPrimitiveNames: () => [...map.keys()],
   };
 
-  return { circuit: Counter.circuit, definitions };
+  return { circuit: internalsOf(Counter).ir, definitions };
 }
 
 const PRE = 5;
@@ -92,7 +93,7 @@ function readCount(sim: ReturnType<typeof createEngine>): number {
 
 async function runVerilogTrace(): Promise<number[]> {
   const { circuit, definitions } = buildCounter();
-  const { verilog } = exportVerilog(circuit, definitions);
+  const { verilog } = exportVerilogFromIR(circuit, definitions);
   const testbench = generateSequentialTestbench(circuit, buildResetVectors());
   const result = await verifyVerilog(verilog, testbench);
 

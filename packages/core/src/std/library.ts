@@ -8,14 +8,10 @@
  * circuits under one name are a bug in std and building it throws.
  */
 
-import {
-  behaviorOf,
-  emptyLibrary,
-  type Library,
-  type MutableLibrary,
-} from '../circuit/behavior.js';
+import { emptyLibrary, type Library, type MutableLibrary } from '../circuit/behavior.js';
 import type { Circuit } from '../circuit/builder-types.js';
 import { sameDefinition } from '../circuit/circuit.js';
+import { internalsOf } from '../circuit/internals.js';
 import { STDLIB_CIRCUITS } from './index.js';
 
 let cached: Library | null = null;
@@ -24,8 +20,8 @@ function buildStdLibrary(): MutableLibrary {
   const library = emptyLibrary();
   const seen = new Map<string, Circuit>();
   for (const built of STDLIB_CIRCUITS) {
-    for (const c of [built, ...built._dependencies.values()]) {
-      const name = c.circuit.name;
+    for (const c of [built, ...internalsOf(built).dependencies.values()]) {
+      const { name } = c;
       const existing = seen.get(name);
       if (existing) {
         if (!sameDefinition(existing, c)) {
@@ -34,8 +30,8 @@ function buildStdLibrary(): MutableLibrary {
         continue;
       }
       seen.set(name, c);
-      library.definitions.addCircuit(c.circuit);
-      const behavior = behaviorOf(c);
+      const { ir, behavior } = internalsOf(c);
+      library.definitions.addCircuit(ir);
       if (behavior) library.behaviors.set(name, behavior);
     }
   }

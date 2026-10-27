@@ -5,8 +5,8 @@ import { readFileSync, writeFileSync } from 'fs';
 import { resolve } from 'path';
 import { buildCPUCore } from './index.js';
 
-const { circuit: cpuCircuit, lib } = buildCPUCore();
-const { verilog: cpuVerilog } = exportVerilog(cpuCircuit, lib, {
+const { built } = buildCPUCore();
+const { verilog: cpuVerilog } = exportVerilog(built, {
   target: 'synthesis',
   topModuleName: 'RV32I_CPU_Core',
 });
