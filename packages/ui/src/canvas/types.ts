@@ -17,7 +17,7 @@ export interface InspectorFrame {
    * never depended on; without them `projection.ts` drops every internal node
    * and the dialog renders an empty canvas.
    */
-  library?: CircuitDefinitions;
+  definitions?: CircuitDefinitions;
 }
 
 /** Screen rect of the node that triggered the dialog (for animate-from-origin) */

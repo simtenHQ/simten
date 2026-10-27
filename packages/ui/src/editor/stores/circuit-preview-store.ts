@@ -17,7 +17,7 @@ import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
 import { createDrillDownViewCircuit } from '../../canvas/drill-down-view';
 import type { CircuitIR } from '../types/circuit';
-import { useCircuitLibraryStore } from './circuit-library-store';
+import { useCircuitDefinitionsStore } from './circuit-definitions-store';
 import { useCircuitStore } from './circuit-store';
 
 /**
@@ -148,16 +148,16 @@ export const useCircuitPreviewStore = create<CircuitPreviewStore>()(
 
       const selectedCircuit = compiledCircuits[selectedCircuitIndex];
 
-      // Ensure harness components (Switch, Led, etc.) are in the library
-      const libStore = useCircuitLibraryStore.getState();
+      // Ensure harness components (Switch, Led, etc.) are in the definitions
+      const libStore = useCircuitDefinitionsStore.getState();
       for (const c of [Switch, Led, Input(), Output, HexDisplay()]) {
         if (!libStore.resolveCircuit(c.circuit.name)) libStore.addCircuit(c.circuit);
       }
 
       // Wrap with Switch/Led harness so inputs/outputs are interactive on canvas
       const harnessed = autoHarness(selectedCircuit, {
-        resolveCircuit: (name) => useCircuitLibraryStore.getState().resolveCircuit(name),
-        addCircuit: (c) => useCircuitLibraryStore.getState().addCircuit(c),
+        resolveCircuit: (name) => useCircuitDefinitionsStore.getState().resolveCircuit(name),
+        addCircuit: (c) => useCircuitDefinitionsStore.getState().addCircuit(c),
       });
 
       // Apply to CircuitStore (auto-layout handled by CircuitCanvas)
@@ -247,7 +247,7 @@ export const useCircuitPreviewStore = create<CircuitPreviewStore>()(
       }
 
       // Resolve the component definition
-      const componentDef = useCircuitLibraryStore.getState().resolveCircuit(node.componentRef);
+      const componentDef = useCircuitDefinitionsStore.getState().resolveCircuit(node.componentRef);
       if (!componentDef || componentDef.implementation.kind !== 'composite') {
         console.warn(
           '[CircuitPreviewStore] drillInto: not a composite component:',

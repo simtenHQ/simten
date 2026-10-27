@@ -13,7 +13,7 @@ import {
 } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
+import { useCircuitDefinitionsStore } from '../../stores/circuit-definitions-store';
 import { bitType, busType, type CircuitIR } from '../../types/circuit';
 
 // Behavior for the local 'Add' primitive defined below, on top of std's. The
@@ -38,7 +38,7 @@ const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
 );
 
 function storeDefinitions(): CircuitDefinitions {
-  const store = useCircuitLibraryStore.getState();
+  const store = useCircuitDefinitionsStore.getState();
   return {
     resolveCircuit: (name) => store.resolveCircuit(name),
     getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
@@ -46,7 +46,7 @@ function storeDefinitions(): CircuitDefinitions {
 }
 
 describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
-  let library: ReturnType<typeof useCircuitLibraryStore.getState>;
+  let store: ReturnType<typeof useCircuitDefinitionsStore.getState>;
 
   // Minimal Add circuit (8-bit adder, no carry) for tests that reference 'Add'
   const Add: import('../../types/circuit').CircuitIR = {
@@ -65,10 +65,10 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
   };
 
   beforeEach(() => {
-    library = useCircuitLibraryStore.getState();
-    library.clear();
-    library.addCircuits(PRIMITIVES as any[]);
-    library.addCircuit(Add);
+    store = useCircuitDefinitionsStore.getState();
+    store.clear();
+    store.addCircuits(PRIMITIVES);
+    store.addCircuit(Add);
   });
 
   it('should compile a multi-level hierarchy with state machines', () => {
@@ -161,7 +161,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
       implementation: { kind: 'composite' },
     };
 
-    library.addCircuit(fsm);
+    store.addCircuit(fsm);
 
     // Create a Controller that contains the FSM
     const controller: CircuitIR = {
@@ -199,7 +199,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
       implementation: { kind: 'composite' },
     };
 
-    library.addCircuit(controller);
+    store.addCircuit(controller);
 
     // Create a top-level system with multiple controllers
     const system: CircuitIR = {
@@ -432,9 +432,9 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
       implementation: { kind: 'composite' },
     };
 
-    library.addCircuit(ingressController);
-    library.addCircuit(arbiter);
-    library.addCircuit(packetForwarder);
+    store.addCircuit(ingressController);
+    store.addCircuit(arbiter);
+    store.addCircuit(packetForwarder);
 
     // Create the network with apparent cycle:
     // IngressController → Arbiter → PacketForwarder → IngressController

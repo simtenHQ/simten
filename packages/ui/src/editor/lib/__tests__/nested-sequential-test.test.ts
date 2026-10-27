@@ -13,7 +13,7 @@ import {
 } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
+import { useCircuitDefinitionsStore } from '../../stores/circuit-definitions-store';
 import { bitType, busType, type CircuitIR } from '../../types/circuit';
 
 const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
@@ -21,7 +21,7 @@ const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
 );
 
 function storeDefinitions(): CircuitDefinitions {
-  const store = useCircuitLibraryStore.getState();
+  const store = useCircuitDefinitionsStore.getState();
   return {
     resolveCircuit: (name) => store.resolveCircuit(name),
     getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
@@ -31,9 +31,9 @@ function storeDefinitions(): CircuitDefinitions {
 describe('Nested Sequential Components', () => {
   beforeAll(() => {
     // Register primitives first (required for nested components to work)
-    const store = useCircuitLibraryStore.getState();
+    const store = useCircuitDefinitionsStore.getState();
     store.clear();
-    store.addCircuits(PRIMITIVES as any[]);
+    store.addCircuits(PRIMITIVES);
 
     // Register the circuits so they can be instantiated as components
     const registerCircuit: CircuitIR = {
@@ -187,7 +187,7 @@ describe('Nested Sequential Components', () => {
       implementation: { kind: 'composite' },
     };
 
-    // Register both circuits in the component library
+    // Register both circuits in the definitions store
     store.addCircuit(registerCircuit);
     store.addCircuit(counterCircuit);
   });

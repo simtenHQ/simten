@@ -12,7 +12,7 @@ import {
 } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
+import { useCircuitDefinitionsStore } from '../../stores/circuit-definitions-store';
 import { bitType, busType, type CircuitIR } from '../../types/circuit';
 
 const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
@@ -20,7 +20,7 @@ const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
 );
 
 function storeDefinitions(): CircuitDefinitions {
-  const store = useCircuitLibraryStore.getState();
+  const store = useCircuitDefinitionsStore.getState();
   return {
     resolveCircuit: (name) => store.resolveCircuit(name),
     getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
@@ -28,12 +28,12 @@ function storeDefinitions(): CircuitDefinitions {
 }
 
 describe('Screen Integration', () => {
-  let library: ReturnType<typeof useCircuitLibraryStore.getState>;
+  let store: ReturnType<typeof useCircuitDefinitionsStore.getState>;
 
   beforeEach(() => {
-    library = useCircuitLibraryStore.getState();
-    library.clear();
-    library.addCircuits(PRIMITIVES as any[]);
+    store = useCircuitDefinitionsStore.getState();
+    store.clear();
+    store.addCircuits(PRIMITIVES);
   });
 
   it('should work with empty circuit (no RAM)', () => {

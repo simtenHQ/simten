@@ -197,7 +197,7 @@ export function CircuitViewer<C extends Circuit = Circuit>({
       <div className="flex-1 min-h-0">
         <CircuitCanvas
           circuit={sim.circuit}
-          componentLibrary={sim.componentLibrary ?? undefined}
+          definitions={sim.definitions ?? undefined}
           portValues={sim.portValues}
           sequentialState={sim.sequentialState}
           onToggleNode={sim.toggleNode}

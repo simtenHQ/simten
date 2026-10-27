@@ -62,7 +62,7 @@ export function resolveDrillTarget(
   if (componentDef?.implementation.kind === 'composite' && componentDef.nodes.length > 0) {
     // Carry the definitions forward so a frame opened from inside a reference build
     // keeps seeing the gates that build introduced.
-    return { componentName: componentRef, componentDef, nodeLabel, library: definitions };
+    return { componentName: componentRef, componentDef, nodeLabel, definitions };
   }
 
   const build = MADE_OF[componentRef];
@@ -88,6 +88,6 @@ export function resolveDrillTarget(
     componentName: componentRef,
     componentDef: built.circuit,
     nodeLabel,
-    library: layer(definitions, extra),
+    definitions: layer(definitions, extra),
   };
 }

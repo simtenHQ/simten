@@ -263,7 +263,7 @@ export function PropagationDemo() {
       {/* Circuit */}
       <CircuitCanvas
         circuit={sim.circuit}
-        componentLibrary={sim.componentLibrary ?? undefined}
+        definitions={sim.definitions ?? undefined}
         portValues={sim.portValues}
         sequentialState={sim.sequentialState}
         onToggleNode={sim.toggleNode}

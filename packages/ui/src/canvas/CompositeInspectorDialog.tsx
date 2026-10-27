@@ -29,14 +29,14 @@ import type { InspectorFrame } from './types';
 
 interface InspectorCanvasProps {
   frame: InspectorFrame;
-  componentLibrary: CircuitDefinitions;
+  definitions: CircuitDefinitions;
   onPushLevel: (frame: InspectorFrame) => void;
   theme?: 'light' | 'dark';
 }
 
 function InspectorCanvas({
   frame,
-  componentLibrary,
+  definitions: pageDefinitions,
   onPushLevel,
   theme = 'dark',
 }: InspectorCanvasProps) {
@@ -44,7 +44,7 @@ function InspectorCanvas({
   // never heard of them. Everything below — simulation, projection, nested
   // drilling — must resolve against the frame's definitions, or internal nodes
   // vanish.
-  const definitions = frame.library ?? componentLibrary;
+  const definitions = frame.definitions ?? pageDefinitions;
 
   const viewCircuit = useMemo(
     () => createDrillDownViewCircuit(frame.componentDef),
@@ -285,7 +285,7 @@ function InspectorCanvas({
 
       <CircuitCanvas
         circuit={viewCircuit}
-        componentLibrary={definitions}
+        definitions={definitions}
         portValues={portValues}
         sequentialState={null}
         onToggleNode={handleToggle}
@@ -354,7 +354,7 @@ function InspectorBreadcrumb({ stack, onNavigate, theme = 'dark' }: BreadcrumbPr
 
 export interface CompositeInspectorDialogProps {
   stack: InspectorFrame[];
-  componentLibrary: CircuitDefinitions;
+  definitions: CircuitDefinitions;
   theme?: 'light' | 'dark';
   onClose: () => void;
   onPopLevel: () => void;
@@ -364,7 +364,7 @@ export interface CompositeInspectorDialogProps {
 
 export function CompositeInspectorDialog({
   stack,
-  componentLibrary,
+  definitions,
   theme = 'dark',
   onClose,
   onPopLevel,
@@ -469,7 +469,7 @@ export function CompositeInspectorDialog({
             >
               <InspectorCanvas
                 frame={topFrame}
-                componentLibrary={componentLibrary}
+                definitions={definitions}
                 onPushLevel={onPushLevel}
                 theme={theme}
               />

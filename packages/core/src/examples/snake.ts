@@ -657,7 +657,7 @@ export function buildSnake() {
     ],
   });
 
-  const lib: CircuitDefinitions = {
+  const definitions: CircuitDefinitions = {
     resolveCircuit: (name) => {
       if (name === 'Snake') return Snake.circuit;
       return Snake._dependencies.get(name)?.circuit;
@@ -665,7 +665,7 @@ export function buildSnake() {
     getAllPrimitiveNames: () => [...Snake._dependencies.keys()],
   };
 
-  return { circuit: Snake.circuit, lib, built: Snake, core: SnakeCore };
+  return { circuit: Snake.circuit, definitions, built: Snake, core: SnakeCore };
 }
 
 /**

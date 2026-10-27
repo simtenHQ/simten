@@ -5,7 +5,7 @@
 import { beforeEach, describe, expect, it } from 'vitest';
 import { BOUNDARY_IN_PREFIX, BOUNDARY_OUT_PREFIX } from '../../../canvas/drill-down-view';
 import type { CircuitIR } from '../../types/circuit';
-import { useCircuitLibraryStore } from '../circuit-library-store';
+import { useCircuitDefinitionsStore } from '../circuit-definitions-store';
 import { useCircuitPreviewStore } from '../circuit-preview-store';
 import { useCircuitStore } from '../circuit-store';
 
@@ -197,21 +197,21 @@ function makeFullAdder(): CircuitIR {
 describe('CircuitPreviewStore drill-down navigation', () => {
   beforeEach(() => {
     // Reset stores
-    const library = useCircuitLibraryStore.getState();
-    library.clear();
+    const store = useCircuitDefinitionsStore.getState();
+    store.clear();
 
     // Register primitives
-    library.addCircuit(makePrimitive('Switch', [], ['out']));
-    library.addCircuit(makePrimitive('Led', ['in'], []));
-    library.addCircuit(makePrimitive('Xor', ['a', 'b'], ['out']));
-    library.addCircuit(makePrimitive('And', ['a', 'b'], ['out']));
+    store.addCircuit(makePrimitive('Switch', [], ['out']));
+    store.addCircuit(makePrimitive('Led', ['in'], []));
+    store.addCircuit(makePrimitive('Xor', ['a', 'b'], ['out']));
+    store.addCircuit(makePrimitive('And', ['a', 'b'], ['out']));
 
     // Register composite HalfAdder
-    library.addCircuit(makeHalfAdderDef());
+    store.addCircuit(makeHalfAdderDef());
 
     // Set up the top-level circuit
     const fullAdder = makeFullAdder();
-    library.addCircuit(fullAdder);
+    store.addCircuit(fullAdder);
 
     // Initialize preview store with the FullAdder circuit
     getState().setCompiledCircuits([fullAdder], 'component FullAdder {}');

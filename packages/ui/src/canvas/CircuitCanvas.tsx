@@ -96,7 +96,7 @@ function CanvasControls() {
 
 export interface CircuitCanvasProps {
   circuit?: CircuitIR | null;
-  componentLibrary?: CircuitDefinitions;
+  definitions?: CircuitDefinitions;
   portValues?: FlatPortValueMap | null;
   sequentialState?: FlatSequentialState | null;
   draggable?: boolean;
@@ -175,7 +175,7 @@ const PIN_LABEL_MIN_ZOOM = 0.35;
 
 function CircuitCanvasInner({
   circuit,
-  componentLibrary,
+  definitions: definitionsProp,
   portValues,
   sequentialState,
   draggable = true,
@@ -207,7 +207,7 @@ function CircuitCanvasInner({
   const pinLabelsReadable = useStore((s) => s.transform[2] >= PIN_LABEL_MIN_ZOOM);
   const resolvedNodeTypes = nodeTypesOverride ?? NODE_TYPES;
   const resolvedEdgeTypes = edgeTypesOverride ?? EDGE_TYPES;
-  const definitions = componentLibrary ?? getDefaultDefinitions();
+  const definitions = definitionsProp ?? getDefaultDefinitions();
 
   const focusLabels = useMemo(() => {
     if (!focus) return null;
@@ -567,7 +567,7 @@ function CircuitCanvasInner({
       {!onNodeDoubleClickProp && inspectorStack.length > 0 && (
         <CompositeInspectorDialog
           stack={inspectorStack}
-          componentLibrary={definitions}
+          definitions={definitions}
           theme={theme}
           onClose={closeInspector}
           onPopLevel={popInspectorLevel}

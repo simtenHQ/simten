@@ -3,7 +3,7 @@
  * tick, plus a way to load register state directly into the core.
  */
 
-import { simulate } from '../../../simulator/simulate.js';
+import { sessionOf, simulate } from '../../../simulator/simulate.js';
 import { MOS6502_Core } from '../../mos6502-cpu.js';
 
 export interface CpuState {
@@ -45,7 +45,7 @@ export function createMachine() {
       set('regs.s', state.s);
       set('status.p', (state.p & 0xef) | 0x20);
       sim.set({ data_in: 0, irq: 0, nmi: 0, reset: 0 });
-      sim.session.runCombinational();
+      sessionOf(sim).runCombinational();
     },
 
     /** Runs one clock cycle against `mem` and returns the bus cycle it made. */

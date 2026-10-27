@@ -84,9 +84,6 @@ export interface SimulationHandle<Ins extends PortMap = PortMap, Outs extends Po
    */
   setNode(nodeId: string, value: BitValue | BusValue | MemoryContents): void;
 
-  /** Access the underlying session (for advanced use). */
-  readonly session: SimulationSession;
-
   /** Clean up resources. */
   dispose(): void;
 }
@@ -94,6 +91,24 @@ export interface SimulationHandle<Ins extends PortMap = PortMap, Outs extends Po
 // ============================================================================
 // simulate() implementation
 // ============================================================================
+
+/**
+ * The session behind each handle. Kept off the handle so the public API never
+ * exposes the engine; Simten's own tests reach it through `sessionOf`.
+ */
+const sessions = new WeakMap<object, SimulationSession>();
+
+/**
+ * The session behind a `simulate()` handle, for Simten's own tests. Not
+ * exported from any package entry point.
+ */
+export function sessionOf<Ins extends PortMap, Outs extends PortMap>(
+  handle: SimulationHandle<Ins, Outs>,
+): SimulationSession {
+  const session = sessions.get(handle);
+  if (!session) throw new Error('sessionOf: not a handle returned by simulate()');
+  return session;
+}
 
 /**
  * Create a simulation from a component.
@@ -242,15 +257,12 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
       engine.setNode(nodeId, memoryContentsToMap(value));
     },
 
-    get session() {
-      return session;
-    },
-
     dispose() {
       session.dispose();
     },
   };
 
+  sessions.set(handle, session);
   return handle;
 }
 

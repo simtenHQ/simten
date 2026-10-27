@@ -108,30 +108,30 @@ describe('resolveDrillTarget', () => {
     expect(frame?.componentDef.nodes.filter((n) => n.componentRef === 'FullAdder')).toHaveLength(8);
   });
 
-  it('carries a library that resolves every node in the reference build', () => {
+  it('carries definitions that resolve every node in the reference build', () => {
     // The bug this pins: FigletStream depends on Adder, not on the FullAdder /
     // Slice / Concat / gates that explain it. `projection.ts` drops any node it
-    // cannot resolve, so a frame without its own library renders the boundary
+    // cannot resolve, so a frame without its own definitions renders the boundary
     // ports and an empty middle.
-    const pageLibrary = definitionsOf(); // knows nothing
-    const frame = resolveDrillTarget(nodeData('Adder', { width: 8 }), pageLibrary);
-    expect(frame?.library).toBeDefined();
+    const pageDefinitions = definitionsOf(); // knows nothing
+    const frame = resolveDrillTarget(nodeData('Adder', { width: 8 }), pageDefinitions);
+    expect(frame?.definitions).toBeDefined();
     for (const node of frame?.componentDef.nodes ?? []) {
       expect(
-        frame?.library?.resolveCircuit(node.componentRef),
+        frame?.definitions?.resolveCircuit(node.componentRef),
         `${node.componentRef} unresolvable — it would be dropped from the canvas`,
       ).toBeDefined();
     }
   });
 
-  it('keeps that library reachable when drilling deeper', () => {
+  it('keeps those definitions reachable when drilling deeper', () => {
     // FullAdder is only known because the Adder build introduced it; drilling
     // into it must still resolve Xor/And/Or.
     const frame = resolveDrillTarget(nodeData('Adder', { width: 4 }), definitionsOf());
-    const inner = resolveDrillTarget(nodeData('FullAdder'), frame!.library!);
+    const inner = resolveDrillTarget(nodeData('FullAdder'), frame!.definitions!);
     expect(inner?.componentDef.nodes.length).toBeGreaterThan(0);
     for (const node of inner?.componentDef.nodes ?? []) {
-      expect(inner?.library?.resolveCircuit(node.componentRef)).toBeDefined();
+      expect(inner?.definitions?.resolveCircuit(node.componentRef)).toBeDefined();
     }
   });
 

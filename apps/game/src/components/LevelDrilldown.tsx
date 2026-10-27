@@ -98,12 +98,12 @@ export function LevelDrilldown({ level, draft, expanded, onCloseExpanded }: Leve
     );
   }
 
-  if (!preview.componentLibrary) return null;
+  if (!preview.definitions) return null;
 
   return (
     <CompositeInspectorDialog
       stack={stack}
-      componentLibrary={preview.componentLibrary}
+      definitions={preview.definitions}
       theme={theme}
       onClose={onClose}
       onPopLevel={onPopLevel}

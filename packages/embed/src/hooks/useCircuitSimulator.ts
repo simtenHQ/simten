@@ -54,7 +54,7 @@ export interface SimulatorState {
   circuit: CircuitIR | null;
   portValues: FlatPortValueMap | null;
   sequentialState: FlatSequentialState | null;
-  componentLibrary: CircuitDefinitions | null;
+  definitions: CircuitDefinitions | null;
   history: readonly { engineSnapshot: unknown; metadata?: unknown }[];
   historyIndex: number;
   isViewingPast: boolean;
@@ -215,7 +215,7 @@ export function useCircuitSimulator(
   );
 
   // ── Build definitions + resolve circuit IR ──
-  const { rawCircuit, componentLibrary } = useMemo(() => {
+  const { rawCircuit, definitions } = useMemo(() => {
     const circuitMap = new Map<string, CircuitIR>();
     const definitions: CircuitDefinitions & { addCircuit(c: CircuitIR): void } = {
       resolveCircuit: (name) => circuitMap.get(name),
@@ -238,20 +238,20 @@ export function useCircuitSimulator(
         }
       }
     }
-    return { rawCircuit: circuit?.circuit ?? null, componentLibrary: definitions };
+    return { rawCircuit: circuit?.circuit ?? null, definitions };
   }, [circuit]);
 
   // ── Auto-harness (wrap with Switches/LEDs if enabled) ──
   const harnessedCircuit = useMemo(() => {
     if (!rawCircuit) return null;
     if (!options?.autoHarness) return rawCircuit;
-    return autoHarness(rawCircuit, componentLibrary, options.initialInputs);
-  }, [rawCircuit, componentLibrary, options?.autoHarness, options?.initialInputs]);
+    return autoHarness(rawCircuit, definitions, options.initialInputs);
+  }, [rawCircuit, definitions, options?.autoHarness, options?.initialInputs]);
 
   // ── Detect sequential (recursively) using shared core util ──
   const isSequential = useMemo(
-    () => isSequentialCircuit(harnessedCircuit, componentLibrary.resolveCircuit),
-    [harnessedCircuit, componentLibrary],
+    () => isSequentialCircuit(harnessedCircuit, definitions.resolveCircuit),
+    [harnessedCircuit, definitions],
   );
 
   // ── Sandbox simulation state ──
@@ -338,7 +338,7 @@ export function useCircuitSimulator(
       // Extract eval sources from the Circuit and its dependencies
       const evalSources = extractBehaviorSources(circuit);
 
-      // Collect all library circuits (stdlib + user).
+      // Collect every circuit definition (stdlib + user).
       // The harnessed circuit references the raw circuit as "dut" by name, so we
       // need to include it + all its dependencies + harness components.
       const libCircuits: CircuitIR[] = [];
@@ -359,10 +359,10 @@ export function useCircuitSimulator(
       for (const c of [Switch, Led, Input(), Output, HexDisplay()]) {
         addCircuit(c.circuit);
       }
-      // Anything else in the library
-      const primNames = componentLibrary.getAllPrimitiveNames();
+      // Anything else in the definitions
+      const primNames = definitions.getAllPrimitiveNames();
       for (const name of primNames) {
-        const c = componentLibrary.resolveCircuit(name);
+        const c = definitions.resolveCircuit(name);
         if (c) addCircuit(c);
       }
 
@@ -408,7 +408,7 @@ export function useCircuitSimulator(
       cancelled = true;
       sandbox.dispose(slotId).catch(() => {});
     };
-  }, [circuit, harnessedCircuit, componentLibrary, sandbox, slotId, isSequential]);
+  }, [circuit, harnessedCircuit, definitions, sandbox, slotId, isSequential]);
 
   // Sync inputs when underlying circuit changes
   useEffect(() => {
@@ -835,7 +835,7 @@ export function useCircuitSimulator(
     circuit: harnessedCircuit,
     portValues: portValues.size > 0 ? portValues : null,
     sequentialState,
-    componentLibrary,
+    definitions,
     history: historyForUi,
     historyIndex,
     isViewingPast: historyIndex >= 0 && historyIndex < historyLen - 1,

@@ -8,7 +8,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { executeCircuitCode } from '../../circuit/execute.js';
-import { simulate } from '../../simulator/simulate.js';
+import { sessionOf, simulate } from '../../simulator/simulate.js';
 import { checkCircuit } from '../../tools/check.js';
 import { EXAMPLES } from '../catalog.js';
 
@@ -54,7 +54,7 @@ describe('example catalog', () => {
     )!;
     const sim = simulate(top);
     sim.tickN(400);
-    const state = sim.session.getState().sequentialState?.currentState;
+    const state = sessionOf(sim).getState().sequentialState?.currentState;
     const text = [...(state?.entries() ?? [])].find(([id]) => id === 'console')?.[1];
     expect(text).toBe('Hello from the 6502!\n');
   });

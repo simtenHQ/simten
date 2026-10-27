@@ -10,7 +10,7 @@ export { ErrorDisplay } from './components/ErrorDisplay';
 export type {
   CircuitCompilerState,
   CompileDiagnostic,
-  CompiledLibrary,
+  CompiledDefinitions,
   UseCircuitCompilerOptions,
 } from './hooks/useCircuitCompiler';
 export { useCircuitCompiler } from './hooks/useCircuitCompiler';
