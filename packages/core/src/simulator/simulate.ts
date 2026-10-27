@@ -93,24 +93,6 @@ export interface SimulationHandle<Ins extends PortMap = PortMap, Outs extends Po
 // ============================================================================
 
 /**
- * The session behind each handle. Kept off the handle so the public API never
- * exposes the engine; Simten's own tests reach it through `sessionOf`.
- */
-const sessions = new WeakMap<object, SimulationSession>();
-
-/**
- * The session behind a `simulate()` handle, for Simten's own tests. Not
- * exported from any package entry point.
- */
-export function sessionOf<Ins extends PortMap, Outs extends PortMap>(
-  handle: SimulationHandle<Ins, Outs>,
-): SimulationSession {
-  const session = sessions.get(handle);
-  if (!session) throw new Error('sessionOf: not a handle returned by simulate()');
-  return session;
-}
-
-/**
  * Create a simulation from a component.
  *
  * @param comp - A Circuit (from circuit().build() or stdlib)
@@ -262,7 +244,6 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
     },
   };
 
-  sessions.set(handle, session);
   return handle;
 }
 
