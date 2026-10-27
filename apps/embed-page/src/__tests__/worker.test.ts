@@ -1,5 +1,5 @@
 import type { ShareKV } from '@simten/ui/share';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import { type Env, handleRequest } from '../worker';
 
 const ID = '0123456789abcdef0123';
@@ -17,7 +17,6 @@ function env(entries: Record<string, string> = {}): Env & { writes: number } {
         store.set(key, value);
       },
     } satisfies ShareKV,
-    ANALYTICS: { writeDataPoint: vi.fn() },
   };
   return e;
 }
@@ -32,7 +31,6 @@ describe('GET /api/share/<id>', () => {
     expect(res.status).toBe(200);
     expect(await res.json()).toEqual({ source: 'const x = 1;' });
     expect(res.headers.get('Cache-Control')).toContain('immutable');
-    expect(e.ANALYTICS?.writeDataPoint).toHaveBeenCalledWith({ blobs: ['embed_view', ID] });
     expect(e.writes).toBe(0);
   });
 
@@ -41,7 +39,6 @@ describe('GET /api/share/<id>', () => {
     const res = await handleRequest(get(`/api/share/${ID}`), e);
     expect(res.status).toBe(404);
     expect(res.headers.get('Cache-Control')).toBe('no-store');
-    expect(e.ANALYTICS?.writeDataPoint).not.toHaveBeenCalled();
     // A share that lands in KV afterwards is found by the next request.
     await e.CIRCUIT_SHARES.put(ID, 'late');
     expect((await handleRequest(get(`/api/share/${ID}`), e)).status).toBe(200);

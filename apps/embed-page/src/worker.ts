@@ -13,7 +13,6 @@ import { isShareHash, loadShare, type ShareKV } from '@simten/ui/share';
 
 export interface Env {
   CIRCUIT_SHARES: ShareKV;
-  ANALYTICS?: { writeDataPoint(point: { blobs?: string[] }): void };
 }
 
 const SHARE_PATH = /^\/api\/share\/([^/]+)$/;
@@ -36,7 +35,6 @@ export async function handleRequest(request: Request, env: Env): Promise<Respons
   // Not cached: the page asks again while the share propagates.
   if (source === null) return json({ error: 'not found' }, 404, 'no-store');
 
-  env.ANALYTICS?.writeDataPoint({ blobs: ['embed_view', id] });
   // Content-addressed: the source behind an id never changes.
   return json({ source }, 200, 'public, max-age=31536000, immutable');
 }

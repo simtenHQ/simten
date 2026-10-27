@@ -29,7 +29,6 @@
       "preview_id": "de858145af144c8d9deadac6b93f10bb"
     }
   ],
-  "analytics_engine_datasets": [{ "binding": "ANALYTICS", "dataset": "simten_analytics" }],
   "assets": {
     // The Cloudflare vite plugin sets the directory at build time.
     // Every path but /api/* is the page: /s/<id> falls back to index.html.

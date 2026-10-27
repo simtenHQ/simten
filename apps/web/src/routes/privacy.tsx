@@ -48,13 +48,13 @@ function PrivacyPage() {
           or sell them. We use them only to debug outages and abuse.
         </p>
         <p>
-          <strong>Cloudflare Analytics Engine, share events only.</strong> When you create, load or
-          view an embedded shared circuit, we increment a counter in Cloudflare&apos;s first-party
-          analytics product: <code>share_create</code> (with the hash and source byte length),{' '}
-          <code>share_read</code> or <code>embed_view</code> (with the hash). No IP, no user agent,
-          no personal data is logged here; we use it to size capacity and spot abuse patterns. There
-          is no tracker on any page, no Google Analytics, no PostHog, no Sentry, no Plausible. We
-          considered them and chose not to ship them.
+          <strong>Cloudflare Analytics Engine, share events only.</strong> When you create or load a
+          shared circuit, we increment two counters in Cloudflare&apos;s first-party analytics
+          product: <code>share_create</code> (with the hash and source byte length) and{' '}
+          <code>share_read</code> (with the hash). No IP, no user agent, no personal data is logged
+          here; we use it to size capacity and spot abuse patterns. There is no tracker on any page,
+          no Google Analytics, no PostHog, no Sentry, no Plausible. We considered them and chose not
+          to ship them.
         </p>
         <p>
           <strong>Shared circuit source (Cloudflare KV).</strong> If you press the

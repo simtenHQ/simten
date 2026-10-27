@@ -12,7 +12,7 @@ This document explains the details so you don't have to take that on faith.
 
 **Cloudflare access logs (IP address, user agent, URL).** Standard web-server logs. Retained by Cloudflare per their default retention; we don't export, aggregate, or sell them. We use them only to debug outages and abuse.
 
-**Cloudflare Analytics Engine, share events only.** When you create, load or view an embedded shared circuit, we increment a counter in Cloudflare's first-party analytics product: `share_create` (with the hash and source byte length), `share_read` or `embed_view` (with the hash). No IP, no user agent, no personal data is logged here — we use it to size capacity and spot abuse patterns. There is no tracker on any page, no Google Analytics, no PostHog, no Sentry, no Plausible. We considered them and chose not to ship them.
+**Cloudflare Analytics Engine, share events only.** When you create or load a shared circuit, we increment two counters in Cloudflare's first-party analytics product: `share_create` (with the hash and source byte length) and `share_read` (with the hash). No IP, no user agent, no personal data is logged here — we use it to size capacity and spot abuse patterns. There is no tracker on any page, no Google Analytics, no PostHog, no Sentry, no Plausible. We considered them and chose not to ship them.
 
 **Shared circuit source (Cloudflare KV).** If you press the "Share" button in the editor, the circuit source code is stored verbatim in Cloudflare KV under a content hash, so anyone with the link can load it, on simten.dev or embedded in another site through embed.simten.dev. Source ≤ 100 KB. Links don't expire, so an embedded circuit keeps working. Sharing is rate-limited (30 shares per IP per 60 seconds, and a site-wide daily cap).
 
