@@ -9,9 +9,10 @@
  * `result` matched but whose `zero` output did not, and nothing in the file
  * looked wrong to a reader.
  *
- * Imported designs hit this routinely, since `Slice`, `ZeroExtend`, `Pmux_*` and
- * `SignedRightShifter` are all products of yosys elaboration with no exporter
- * mapping. So `ExportResult.unsupported` records them and callers refuse.
+ * Imported designs used to hit this routinely (`Slice` and `SignedRightShifter`,
+ * products of yosys elaboration, had no mapping until #458), and a user
+ * primitive whose `eval` can't be translated still does. So
+ * `ExportResult.unsupported` records them and callers refuse.
  *
  * Two claims:
  *  1. A circuit using an unmapped primitive reports it, keyed by type, with the
@@ -23,24 +24,30 @@
 
 import { describe, expect, it } from 'vitest';
 import { bus, circuit } from '../../circuit/index.js';
-import { And, Slice } from '../../std/index.js';
+import { And } from '../../std/index.js';
 import { exportVerilog } from '../index.js';
 import { UNSUPPORTED_MARKER } from '../primitive-map.js';
 
 describe('verilog export: unsupported primitives', () => {
   it('reports unmapped primitives with their node ids', () => {
-    const WithSlice = circuit('WithSlice', {
+    // No mapping, and an eval with a call the exporter can't translate.
+    const Opaque = circuit('Opaque', {
       inputs: { a: bus(8) },
-      outputs: { y: bus(4) },
-      nodes: { s0: Slice({ inWidth: 8, offset: 0, width: 4 }) },
-      connect: ({ inputs, outputs, nodes: { s0 } }) => [inputs.a.to(s0.in), s0.out.to(outputs.y)],
+      outputs: { y: bus(8) },
+      eval: ({ a }) => ({ y: Math.max(a, 3) }),
+    });
+    const WithOpaque = circuit('WithOpaque', {
+      inputs: { a: bus(8) },
+      outputs: { y: bus(8) },
+      nodes: { s0: Opaque },
+      connect: ({ inputs, outputs, nodes: { s0 } }) => [inputs.a.to(s0.a), s0.y.to(outputs.y)],
     });
 
-    const result = exportVerilog(WithSlice);
+    const result = exportVerilog(WithOpaque);
 
     expect(result.unsupported).toBeDefined();
-    expect(Object.keys(result.unsupported ?? {})).toContain('Slice');
-    expect(result.unsupported?.Slice).toEqual(['s0']);
+    expect(Object.keys(result.unsupported ?? {})).toContain('Opaque');
+    expect(result.unsupported?.Opaque).toEqual(['s0']);
 
     // The report must match what actually landed in the file — a mismatch would
     // mean either a silent gap or a spurious refusal.
