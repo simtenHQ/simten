@@ -49,7 +49,7 @@ type RateLimitBinding = 'COMPILE_RL' | 'VERIFY_RL' | 'SYNTH_RL' | 'SHARE_RL';
 export const SERVICES = {
   compile: { rateLimit: 'COMPILE_RL', dailyBudget: 5000 },
   verify: { rateLimit: 'VERIFY_RL', dailyBudget: 2000 },
-  synth: { rateLimit: 'SYNTH_RL', dailyBudget: 2000 },
+  synth: { rateLimit: 'SYNTH_RL', dailyBudget: 500 },
   share: { rateLimit: 'SHARE_RL', dailyBudget: 5000 },
 } as const satisfies Record<string, { rateLimit: RateLimitBinding; dailyBudget: number }>;
 
