@@ -108,11 +108,12 @@ const BUG = {
   logicalOps: '#429: && and ! on buses are emitted as bitwise & and ~',
   signedShift: '#429: JS >> is emitted as logical >>',
   onTickPorts: '#429: an onTick primitive gets no clk/rst_n port',
+  timingLogic:
+    "#429: MOS6502_TimingLogic's eval reads unconnected inputs as undeclared regs and drops let initial values",
   stateInit: '#429 (no clk/rst_n port), then #131: state resets to 0, not its initial value',
   xMemory: '#436: unwritten memory reads 0 in the simulator and x in Verilog',
   negedge: '#430: imported negedge $dff becomes posedge',
   shiftWidth: '#430: imported shift amount is sliced to the result width',
-  noMapping: 'unfiled: no Verilog mapping, exported as an UNSUPPORTED comment',
   screen: "unfiled: a Screen's addrB output is left undriven, then #436: unwritten RAM reads x",
   dualPortRom: 'unfiled: DualPortROM exports reads of a memory it never declares',
   ramInit: 'unfiled: RAM drops its memory contents on export',
@@ -252,24 +253,38 @@ std('ZeroExtend 4->16', () => ZeroExtend({ inWidth: 4, outWidth: 16 }));
 std('Constant w8', () => Constant({ value: 0xa5, width: 8 }));
 std('Constant w32', () => Constant({ value: 0xdeadbeef, width: 32 }));
 
-// No exporter mapping at all: one case each, so a new mapping flips one.
-std('BusXnor w8', () => BusXnor({ width: 8 }), { bug: BUG.noMapping });
-std('ReduceAnd w8', () => ReduceAnd({ width: 8 }), { bug: BUG.noMapping });
-std('ReduceXor w8', () => ReduceXor({ width: 8 }), { bug: BUG.noMapping });
-std('ReduceXnor w8', () => ReduceXnor({ width: 8 }), { bug: BUG.noMapping });
-std('WrappingMultiplier w8', () => WrappingMultiplier({ width: 8 }), { bug: BUG.noMapping });
-std('SignedRightShifter w8', () => SignedRightShifter({ width: 8 }), { bug: BUG.noMapping });
-std('Slice 8[2+:4]', () => Slice({ inWidth: 8, offset: 2, width: 4 }), { bug: BUG.noMapping });
-std('DynamicSlice 32/5/8', () => DynamicSlice({ inWidth: 32, shiftWidth: 5, outWidth: 8 }), {
-  bug: BUG.noMapping,
+// Mapped by hand in #458; several widths each, and the edges the simulator
+// defines where Verilog doesn't (division by zero, a slice past the end).
+for (const w of [1, 8, 32]) {
+  std(`BusXnor w${w}`, () => BusXnor({ width: w }));
+  std(`ReduceAnd w${w}`, () => ReduceAnd({ width: w }));
+  std(`ReduceXor w${w}`, () => ReduceXor({ width: w }));
+  std(`ReduceXnor w${w}`, () => ReduceXnor({ width: w }));
+}
+for (const w of [8, 16]) {
+  std(`WrappingMultiplier w${w}`, () => WrappingMultiplier({ width: w }));
+  std(`SignedRightShifter w${w}`, () => SignedRightShifter({ width: w }));
+}
+std('WrappingMultiplier w32', () => WrappingMultiplier({ width: 32 }));
+std('SignedRightShifter w32, shift < 32', () => SignedRightShifter({ width: 32 }), {
+  opts: { inputMask: { shift: 31 } },
 });
+std('Slice 8[2+:4]', () => Slice({ inWidth: 8, offset: 2, width: 4 }));
+std('Slice 32[31+:1]', () => Slice({ inWidth: 32, offset: 31, width: 1 }));
+std('Slice 32[0+:32]', () => Slice({ inWidth: 32, offset: 0, width: 32 }));
+std('DynamicSlice 32/5/8', () => DynamicSlice({ inWidth: 32, shiftWidth: 5, outWidth: 8 }));
+std('DynamicSlice 8/4/1, shift past the end', () =>
+  DynamicSlice({ inWidth: 8, shiftWidth: 4, outWidth: 1 }),
+);
 for (const [n, c] of [
   ['Divider', Divider],
   ['Modulo', Modulo],
   ['SignedDivider', SignedDivider],
   ['SignedModulo', SignedModulo],
 ] as const) {
-  std(`${n} w8`, () => c({ width: 8 }), { opts: { nonZero: ['b'] }, bug: BUG.noMapping });
+  for (const w of [8, 16]) std(`${n} w${w}`, () => c({ width: w }), { opts: { nonZero: ['b'] } });
+  // Zero divisors on one cycle in four: x in plain Verilog, defined here.
+  std(`${n} w4, b in 0..3`, () => c({ width: 4 }), { opts: { inputMask: { b: 3 } } });
 }
 
 // ── std sequential and memory ───────────────────────────────────────────
@@ -536,8 +551,7 @@ evalCase(
 );
 
 // ── bundled examples ────────────────────────────────────────────────────
-// Not here: figlet (needs the editor's figlet global) and 6502-computer
-// (uses Slice, which has no mapping; covered above).
+// Not here: figlet (needs the editor's figlet global).
 for (const [id, cycles, bug] of [
   ['hack-alu', 200, undefined],
   ['fibonacci', 64, undefined],
@@ -547,6 +561,7 @@ for (const [id, cycles, bug] of [
   ['tpu-3x3', 64, undefined],
   ['snake', 200, BUG.screen],
   ['rv32i-computer', 300, BUG.dualPortRom],
+  ['6502-computer', 300, BUG.timingLogic],
 ] as const) {
   cases.push({ name: `example ${id}`, target: () => example(id), opts: { cycles }, bug });
 }
