@@ -56,14 +56,10 @@ describe('property-based circuit verification', () => {
     fc.assert(
       fc.property(fc.boolean(), fc.boolean(), (a, b) => {
         const sim = simulate(HalfAdder);
-        try {
-          sim.set({ a: a ? 1 : 0, b: b ? 1 : 0 });
-          const sum = sim.get('sum');
-          const carry = sim.get('carry');
-          return sum + 2 * carry === (a ? 1 : 0) + (b ? 1 : 0);
-        } finally {
-          sim.dispose();
-        }
+        sim.set({ a: a ? 1 : 0, b: b ? 1 : 0 });
+        const sum = sim.get('sum');
+        const carry = sim.get('carry');
+        return sum + 2 * carry === (a ? 1 : 0) + (b ? 1 : 0);
       }),
       { numRuns: 100 },
     );
@@ -73,14 +69,10 @@ describe('property-based circuit verification', () => {
     fc.assert(
       fc.property(fc.boolean(), fc.boolean(), fc.boolean(), (a, b, cin) => {
         const sim = simulate(FullAdder);
-        try {
-          sim.set({ a: a ? 1 : 0, b: b ? 1 : 0, cin: cin ? 1 : 0 });
-          const sum = sim.get('sum');
-          const cout = sim.get('cout');
-          return sum + 2 * cout === (a ? 1 : 0) + (b ? 1 : 0) + (cin ? 1 : 0);
-        } finally {
-          sim.dispose();
-        }
+        sim.set({ a: a ? 1 : 0, b: b ? 1 : 0, cin: cin ? 1 : 0 });
+        const sum = sim.get('sum');
+        const cout = sim.get('cout');
+        return sum + 2 * cout === (a ? 1 : 0) + (b ? 1 : 0) + (cin ? 1 : 0);
       }),
       { numRuns: 100 },
     );
@@ -90,14 +82,10 @@ describe('property-based circuit verification', () => {
     fc.assert(
       fc.property(fc.integer({ min: 0, max: 255 }), fc.integer({ min: 0, max: 255 }), (a, b) => {
         const sim = simulate(Adder());
-        try {
-          sim.set({ a, b, carry_in: 0 });
-          const sum = sim.get('sum');
-          const carry_out = sim.get('carry_out');
-          return sum + 256 * carry_out === a + b;
-        } finally {
-          sim.dispose();
-        }
+        sim.set({ a, b, carry_in: 0 });
+        const sum = sim.get('sum');
+        const carry_out = sim.get('carry_out');
+        return sum + 256 * carry_out === a + b;
       }),
       { numRuns: 500 },
     );
@@ -119,12 +107,8 @@ describe('property-based circuit verification', () => {
     fc.assert(
       fc.property(fc.boolean(), fc.boolean(), (a, b) => {
         const sim = simulate(DoubleXor);
-        try {
-          sim.set({ a: a ? 1 : 0, b: b ? 1 : 0 });
-          return sim.get('result') === (a ? 1 : 0);
-        } finally {
-          sim.dispose();
-        }
+        sim.set({ a: a ? 1 : 0, b: b ? 1 : 0 });
+        return sim.get('result') === (a ? 1 : 0);
       }),
       { numRuns: 100 },
     );
@@ -134,21 +118,17 @@ describe('property-based circuit verification', () => {
     fc.assert(
       fc.property(fc.integer({ min: 0, max: 255 }), fc.integer({ min: 0, max: 255 }), (a, b) => {
         const sim = simulate(Comparator());
-        try {
-          sim.set({ a, b });
-          const eq = sim.get('eq');
-          const lt = sim.get('lt');
-          const gt = sim.get('gt');
+        sim.set({ a, b });
+        const eq = sim.get('eq');
+        const lt = sim.get('lt');
+        const gt = sim.get('gt');
 
-          // Exactly one flag is set
-          if (eq + lt + gt !== 1) return false;
-          // Flags match JavaScript comparison
-          if (a === b) return eq === 1;
-          if (a < b) return lt === 1;
-          return gt === 1;
-        } finally {
-          sim.dispose();
-        }
+        // Exactly one flag is set
+        if (eq + lt + gt !== 1) return false;
+        // Flags match JavaScript comparison
+        if (a === b) return eq === 1;
+        if (a < b) return lt === 1;
+        return gt === 1;
       }),
       { numRuns: 500 },
     );

@@ -686,7 +686,6 @@ export function useCircuitSimulator(
    * round trip, one React update.
    *
    * So the timer runs at the display rate and each firing advances a batch.
-   * Same drift-free shape `SimulationSession.startAutoRun` already uses in core.
    * The tradeoff is documented on `tickN`: only the final state of a batch is
    * snapshotted, so stepping back through a free-run lands on batch boundaries.
    */

@@ -5,7 +5,6 @@ apps/web/src/features/blog/synth-in-hardware/useLiveVoice.ts pump
 demos/cli/sin-wave.ts render
 hardware/ulx3s/lib/pipeline.ts runPipeline
 hardware/ulx3s/projects/cpu/cycle-diff.ts main
-hardware/ulx3s/projects/cpu/cycle-diff.ts runTsSim
 hardware/ulx3s/projects/cpu/sim.ts runSim
 hardware/ulx3s/projects/cpu/verify.ts runSuite
 hardware/ulx3s/run_on_fpga.ts main

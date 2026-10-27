@@ -74,7 +74,6 @@ describe('bare stdlib factories keep their own default width', () => {
     sim.set({ a: 6, b: 255 });
     expect(sim.get('sum')).toBe(5);
     expect(sim.get('carry_out')).toBe(1);
-    sim.dispose();
   });
 
   it('Subtractor() wraps at 8 bits: 5 - 6 = 255 borrow 1', () => {
@@ -82,13 +81,11 @@ describe('bare stdlib factories keep their own default width', () => {
     sim.set({ a: 5, b: 6 });
     expect(sim.get('difference')).toBe(255);
     expect(sim.get('borrow_out')).toBe(1);
-    sim.dispose();
   });
 
   it('Concat() shifts the high half by its own 4-bit low half', () => {
     const sim = simulate(bareConcat);
     sim.set({ high: 0xa, low: 0x5 });
     expect(sim.get('out')).toBe(0xa5);
-    sim.dispose();
   });
 });

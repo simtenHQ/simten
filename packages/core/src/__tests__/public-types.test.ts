@@ -60,6 +60,8 @@ const UNREACHED_EXPORTS: Record<string, string> = {
   CheckSummary: 'part of VerifyResult',
   VerifyFailure: 'part of VerifyResult',
   VerifyCounterexample: 'part of VerifyResult',
+  BitValue: "a bit port's value (0 or 1), as the canvas and embeds type port values",
+  BusValue: "a bus port's value, as the canvas and embeds type port values",
 };
 
 const program = ts.createProgram(ENTRIES, {

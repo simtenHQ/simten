@@ -16,6 +16,7 @@ import {
   Eth_ProtocolDecoder,
 } from '../../std/index.js';
 import { simulate } from '../simulate.js';
+import { nodesOf } from '../simulation.js';
 
 /** Helper: simulate combinational circuit, return output values */
 function sim<C extends Circuit>(
@@ -23,17 +24,13 @@ function sim<C extends Circuit>(
   inputs: Record<string, number | boolean> = {},
 ): Record<string, number | boolean> {
   const s = simulate(built);
-  try {
-    s.set(inputs as any);
-    const out: Record<string, number | boolean> = {};
-    for (const port of internalsOf(built).ir.outputs) {
-      const v = s.get(port.name as any);
-      out[port.name] = port.portType.kind === 'bit' ? Boolean(v) : (v as number);
-    }
-    return out;
-  } finally {
-    s.dispose();
+  s.set(inputs as any);
+  const out: Record<string, number | boolean> = {};
+  for (const port of internalsOf(built).ir.outputs) {
+    const v = s.get(port.name as any);
+    out[port.name] = port.portType.kind === 'bit' ? Boolean(v) : (v as number);
   }
+  return out;
 }
 
 /** Helper: simulate multi-tick with constant inputs, return per-tick output values */
@@ -44,23 +41,19 @@ function simTicks<C extends Circuit>(
   preTickSetup?: (s: ReturnType<typeof simulate>) => void,
 ): Record<string, (number | boolean)[]> {
   const s = simulate(built);
-  try {
-    if (preTickSetup) preTickSetup(s);
-    s.set(inputs as any);
-    const out: Record<string, (number | boolean)[]> = {};
-    for (const port of internalsOf(built).ir.outputs) out[port.name] = [];
-    for (let i = 0; i < ticks; i++) {
-      // Capture pre-edge values to match the legacy trace semantics
-      for (const port of internalsOf(built).ir.outputs) {
-        const v = s.get(port.name as any);
-        out[port.name].push(port.portType.kind === 'bit' ? Boolean(v) : (v as number));
-      }
-      s.tick();
+  if (preTickSetup) preTickSetup(s);
+  s.set(inputs as any);
+  const out: Record<string, (number | boolean)[]> = {};
+  for (const port of internalsOf(built).ir.outputs) out[port.name] = [];
+  for (let i = 0; i < ticks; i++) {
+    // Capture pre-edge values to match the legacy trace semantics
+    for (const port of internalsOf(built).ir.outputs) {
+      const v = s.get(port.name as any);
+      out[port.name].push(port.portType.kind === 'bit' ? Boolean(v) : (v as number));
     }
-    return out;
-  } finally {
-    s.dispose();
+    s.tick();
   }
+  return out;
 }
 
 // ============================================================================
@@ -201,7 +194,7 @@ describe('Eth_FrameInput', () => {
   function loadFrame(s: ReturnType<typeof simulate>, bytes: number[]) {
     // Every byte gets an entry, zeros too: Eth_FrameInput takes the frame
     // length from the highest address present.
-    s.setNode('fi', Object.fromEntries(bytes.map((b, i) => [i, b])));
+    nodesOf(s).set('fi', Object.fromEntries(bytes.map((b, i) => [i, b])));
   }
 
   it('streams 8-byte frame in 2 cycles', () => {

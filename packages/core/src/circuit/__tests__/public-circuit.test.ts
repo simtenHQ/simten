@@ -70,9 +70,9 @@ describe('snapshot and restore', () => {
       onTick: ({ count }) => ({ count: (count + 1) & 0xff }),
     });
     const sim = simulate(Counter);
-    sim.tickN(3);
+    sim.tick(3);
     const snap = sim.snapshot();
-    sim.tickN(5);
+    sim.tick(5);
     expect(sim.get('q')).toBe(8);
     sim.restore(snap);
     expect(sim.get('q')).toBe(3);

@@ -44,22 +44,21 @@ SHAPE
 
   verify.exhaustive('truth table', [2, 2], (a, b) => {
     const s = simulate(MyCircuit);
-    try {
-      s.set({ a, b });                                     // drive inputs by port name
-      return s.get('sum') === (a ^ b) && s.get('carry') === (a & b);
-    } finally {
-      s.dispose();
-    }
+    s.set({ a, b });                                       // drive inputs by port name
+    return s.get('sum') === (a ^ b) && s.get('carry') === (a & b);
   });
 
   verify.run();   // REQUIRED — flushes the structured result (this is the gate)
 
 THE simulate() HANDLE
   const s = simulate(Circuit);
-  s.set({ portName: value, ... });   // set input port values (number/boolean)
+  s.set({ portName: value, ... });   // set input port values (numbers)
   s.tick();                          // advance one rising clock edge (sequential circuits)
-  s.get('portName');                 // read an output port's current value
-  s.dispose();                       // ALWAYS in finally — frees the sim
+  s.tick(n);                         // advance n edges
+  s.get('portName');                 // read an output port's settled value
+  s.read();                          // every output, as { portName: value }
+  s.reset();                         // back to cycle 0; s.cycle counts edges
+  // Nothing to clean up: a simulation is plain objects.
   // Combinational: set() then get(). Sequential: set(), tick() per cycle, get().
   // Pulse a reset: s.set({ reset: 1 }); s.tick(); s.set({ reset: 0 }); then drive normally.
 
@@ -73,7 +72,7 @@ TIER-A npm-oracle pattern (the flagship) — import a real package and compare t
   declareOracle({ tier: 'A', type: '@noble/hashes sha256("") vector', independence_basis: 'expected bytes come from an external crypto library, not this circuit' });
   verify.exhaustive('rom holds sha256("")[0..3]', [4], (addr) => {
     const s = simulate(HashRom);
-    try { s.set({ addr }); s.tick(); return s.get('data') === expected[addr]; } finally { s.dispose(); }
+    s.set({ addr }); s.tick(); return s.get('data') === expected[addr];
   });
   verify.run();
 
@@ -96,7 +95,7 @@ export function registerReferenceTools(server: McpServer): void {
 
   server.tool(
     'get_verify_api',
-    'Return how to write a `.verify.ts` testbench for `verify_circuit`: the `simulate()` stepper API (set/tick/get/dispose), `verify.exhaustive` vs `verify.check`, `declareOracle`, and worked examples (incl. the Tier-A npm-oracle pattern). Call this before writing a testbench.',
+    'Return how to write a `.verify.ts` testbench for `verify_circuit`: the `simulate()` stepper API (set/tick/get/read/reset), `verify.exhaustive` vs `verify.check`, `declareOracle`, and worked examples (incl. the Tier-A npm-oracle pattern). Call this before writing a testbench.',
     {},
     async () => ({ content: [{ type: 'text' as const, text: VERIFY_API }] }),
   );

@@ -1,5 +1,5 @@
 /**
- * The simulator engine layer: elaboration, the numeric engine, sessions.
+ * The simulator engine layer: elaboration, the numeric engine, simulations.
  *
  * Pure computation with no browser dependencies. The sandbox worker, the
  * canvas and the bench reach it through `@simten/core/internal`; users run
@@ -84,7 +84,7 @@ export type {
 } from './types.js';
 
 // ============================================================================
-// Simulation Session
+// Simulation
 // ============================================================================
 
 export {
@@ -92,12 +92,12 @@ export {
   type EnvironmentalStateValue,
   restoreEnvironmentalState,
 } from './environmental-state.js';
-export type {
-  SessionSnapshot,
-  SimulationSessionOptions,
-  SimulationSessionState,
-} from './simulation-session.js';
-export { SimulationSession } from './simulation-session.js';
+export {
+  createSimulation,
+  nodesOf,
+  type PeripheralValue,
+  type SimulationNodes,
+} from './simulation.js';
 
 // ============================================================================
 // Primitive Interface Exports

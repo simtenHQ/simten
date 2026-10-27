@@ -36,17 +36,13 @@ function sim<C extends Circuit>(
   inputs: Record<string, number | boolean>,
 ): Record<string, number | boolean> {
   const s = simulate(built);
-  try {
-    s.set(inputs as any);
-    const out: Record<string, number | boolean> = {};
-    for (const port of internalsOf(built).ir.outputs) {
-      const v = s.get(port.name as any);
-      out[port.name] = port.portType.kind === 'bit' ? Boolean(v) : (v as number);
-    }
-    return out;
-  } finally {
-    s.dispose();
+  s.set(inputs as any);
+  const out: Record<string, number | boolean> = {};
+  for (const port of internalsOf(built).ir.outputs) {
+    const v = s.get(port.name as any);
+    out[port.name] = port.portType.kind === 'bit' ? Boolean(v) : (v as number);
   }
+  return out;
 }
 
 describe('Evaluator Edge Cases', () => {

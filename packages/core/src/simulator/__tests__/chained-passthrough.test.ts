@@ -55,14 +55,10 @@ describe('chained composite passthrough wires (#138)', () => {
       assertFlatCircuitInvariants(elaborateBuilt(chain));
 
       const sim = simulate(chain);
-      try {
-        sim.set({ x: 1 });
-        expect(sim.get('y')).toBe(1);
-        sim.set({ x: 0 });
-        expect(sim.get('y')).toBe(0);
-      } finally {
-        sim.dispose();
-      }
+      sim.set({ x: 1 });
+      expect(sim.get('y')).toBe(1);
+      sim.set({ x: 0 });
+      expect(sim.get('y')).toBe(0);
     });
   }
 });

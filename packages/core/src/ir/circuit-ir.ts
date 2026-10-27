@@ -121,7 +121,7 @@ export type StateType = BitType | BusType | MemoryType;
  * `{ 0: 0x3e, 1: 0x07 }`. Addresses left out read 0. This is the one format
  * memory contents take everywhere: `mem(depth, width, contents)`, the std
  * memories' `memory` option, `romFromBytes`/`romFromWords`, the IR and
- * `SimulationHandle.setNode`. It is plain JSON, so it survives the IR's trips
+ * `nodesOf(sim).set`. It is plain JSON, so it survives the IR's trips
  * through `JSON.stringify` and `postMessage`. Arrays are rejected (`length`
  * is `never`): build dense contents with `romFromBytes` or `romFromWords`.
  */

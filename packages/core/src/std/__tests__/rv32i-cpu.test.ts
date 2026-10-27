@@ -54,7 +54,6 @@ describe('RV32I_Core debug pipeline-PC outputs', () => {
       sim.set({ instruction: NOP, data_read: 0 }); // feed off instr_addr (always NOP)
       sim.tick();
     }
-    sim.dispose();
 
     // Steady window: pipeline full, before any wrap.
     for (let t = 8; t <= 16; t++) {

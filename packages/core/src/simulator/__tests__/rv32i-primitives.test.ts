@@ -19,6 +19,7 @@ import {
   RV32I_RegisterFile,
 } from '../../std/index.js';
 import { simulate } from '../simulate.js';
+import { nodesOf } from '../simulation.js';
 
 /** Helper: simulate a 1-tick combinational circuit, return output values */
 function sim<C extends Circuit>(
@@ -26,17 +27,13 @@ function sim<C extends Circuit>(
   inputs: Record<string, number | boolean> = {},
 ): Record<string, number | boolean> {
   const s = simulate(built);
-  try {
-    s.set(inputs as any);
-    const out: Record<string, number | boolean> = {};
-    for (const port of internalsOf(built).ir.outputs) {
-      const v = s.get(port.name as any);
-      out[port.name] = port.portType.kind === 'bit' ? Boolean(v) : (v as number);
-    }
-    return out;
-  } finally {
-    s.dispose();
+  s.set(inputs as any);
+  const out: Record<string, number | boolean> = {};
+  for (const port of internalsOf(built).ir.outputs) {
+    const v = s.get(port.name as any);
+    out[port.name] = port.portType.kind === 'bit' ? Boolean(v) : (v as number);
   }
+  return out;
 }
 
 /** Helper: simulate multi-tick with constant inputs, return per-tick output values */
@@ -47,23 +44,19 @@ function simTicks<C extends Circuit>(
   setupNodes?: (s: ReturnType<typeof simulate>) => void,
 ): Record<string, (number | boolean)[]> {
   const s = simulate(built);
-  try {
-    if (setupNodes) setupNodes(s);
-    s.set(inputs as any);
-    const out: Record<string, (number | boolean)[]> = {};
-    for (const port of internalsOf(built).ir.outputs) out[port.name] = [];
-    for (let i = 0; i < ticks; i++) {
-      // Capture pre-tick values to match the legacy trace semantics
-      for (const port of internalsOf(built).ir.outputs) {
-        const v = s.get(port.name as any);
-        out[port.name].push(port.portType.kind === 'bit' ? Boolean(v) : (v as number));
-      }
-      s.tick();
+  if (setupNodes) setupNodes(s);
+  s.set(inputs as any);
+  const out: Record<string, (number | boolean)[]> = {};
+  for (const port of internalsOf(built).ir.outputs) out[port.name] = [];
+  for (let i = 0; i < ticks; i++) {
+    // Capture pre-tick values to match the legacy trace semantics
+    for (const port of internalsOf(built).ir.outputs) {
+      const v = s.get(port.name as any);
+      out[port.name].push(port.portType.kind === 'bit' ? Boolean(v) : (v as number));
     }
-    return out;
-  } finally {
-    s.dispose();
+    s.tick();
   }
+  return out;
 }
 
 // ============================================================================
@@ -456,15 +449,10 @@ describe('RV32I_InstrMem', () => {
     });
 
     const s = simulate(c);
-    try {
-      s.setNode('im', { 0: 0x93, 1: 0x00, 2: 0x50, 3: 0x00 });
-      s.set({ addr: 0 } as any);
-      // setNode invalidates the cache; tick to re-propagate combinational outputs
-      s.tick();
-      expect(s.get('instruction' as any)).toBe(0x00500093);
-    } finally {
-      s.dispose();
-    }
+    nodesOf(s).set('im', { 0: 0x93, 1: 0x00, 2: 0x50, 3: 0x00 });
+    s.set({ addr: 0 });
+    // The read settles after the writes; no clock edge needed.
+    expect(s.get('instruction')).toBe(0x00500093);
   });
 });
 

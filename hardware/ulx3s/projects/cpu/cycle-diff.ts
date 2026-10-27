@@ -31,13 +31,8 @@
 import { writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import {
-  createEngine,
-  elaborate,
-  internalsOf,
-  libraryOf,
-  SimulationSession,
-} from '@simten/core/internal';
+import { simulate } from '@simten/core';
+import { nodesOf } from '@simten/core/internal';
 import { buildCPUCore } from './index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -104,21 +99,9 @@ const hex = (v: number, w = 8) => '0x' + (v >>> 0).toString(16).padStart(w, '0')
 // ─── Run TS sim ────────────────────────────────────────────────────────────
 
 function runTsSim(): Array<Map<string, number>> {
-  // Driven through the engine rather than simulate(): the trace reads every
-  // internal port value, which the public handle doesn't expose.
+  // The trace reads every internal port value, through nodesOf.
   const { built } = buildCPUCore();
-  const library = libraryOf(built);
-  const engine = createEngine(elaborate(internalsOf(built).ir, library.definitions), { library });
-  engine.runCombinational();
-  const session = new SimulationSession(engine, { isSequential: true });
-  const cpu = {
-    set: (values: Record<string, number>) => {
-      for (const [port, value] of Object.entries(values)) session.setNode(port, value);
-    },
-    get: (port: string) => Number(session.getState().portValues.get(`__top__.${port}`)),
-    tick: () => session.tick(),
-    dispose: () => session.dispose(),
-  };
+  const cpu = simulate(built);
   cpu.set({ instruction: 0, data_read: 0 });
 
   const DMEM_BASE = 0x00010000;
@@ -127,14 +110,14 @@ function runTsSim(): Array<Map<string, number>> {
 
   for (let cycle = 0; cycle < N_CYCLES; cycle++) {
     const snapshot = new Map<string, number>();
-    const portValues = session.getState().portValues;
+    const portValues = nodesOf(cpu).ports();
     for (const [key, val] of portValues) {
       const cleanKey = key.startsWith('__top__.') ? key.slice('__top__.'.length) : key;
       // Normalize to unsigned so cross-side `===` works regardless of JS's
       // bitwise-int sign convention. iverilog's parser always produces
       // non-negative values, but TS sim may carry signed-32 internally
       // (e.g. lui imm with bit 31 set comes back as -2147483648).
-      const num = typeof val === 'boolean' ? (val ? 1 : 0) : (val as number) >>> 0;
+      const num = val >>> 0;
       snapshot.set(cleanKey, num);
     }
     trace.push(snapshot);
@@ -187,7 +170,6 @@ function runTsSim(): Array<Map<string, number>> {
     cpu.set({ instruction: instr, data_read: dataRead });
     cpu.tick();
   }
-  cpu.dispose();
   return trace;
 }
 

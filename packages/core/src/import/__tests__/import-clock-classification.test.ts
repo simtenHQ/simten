@@ -53,31 +53,23 @@ describe('clock classification', () => {
 
   it('the register still latches on the clock', () => {
     const { sim } = build();
-    try {
-      sim.set({ d: 0x5a } as never);
-      sim.tick();
-      expect(sim.get('latched' as never)).toBe(0x5a);
+    sim.set({ d: 0x5a } as never);
+    sim.tick();
+    expect(sim.get('latched' as never)).toBe(0x5a);
 
-      // Changing d without a tick must not reach the register.
-      sim.set({ d: 0x11 } as never);
-      expect(sim.get('latched' as never)).toBe(0x5a);
+    // Changing d without a tick must not reach the register.
+    sim.set({ d: 0x11 } as never);
+    expect(sim.get('latched' as never)).toBe(0x5a);
 
-      sim.tick();
-      expect(sim.get('latched' as never)).toBe(0x11);
-    } finally {
-      sim.dispose();
-    }
+    sim.tick();
+    expect(sim.get('latched' as never)).toBe(0x11);
   });
 
   it('the child with the unused clock still works', () => {
     const { sim } = build();
-    try {
-      sim.set({ d: 0x0f } as never);
-      sim.tick();
-      // Combinational inverter: unaffected by the clock it never reads.
-      expect(sim.get('inverted' as never)).toBe(0xf0);
-    } finally {
-      sim.dispose();
-    }
+    sim.set({ d: 0x0f } as never);
+    sim.tick();
+    // Combinational inverter: unaffected by the clock it never reads.
+    expect(sim.get('inverted' as never)).toBe(0xf0);
   });
 });

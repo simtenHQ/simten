@@ -6,10 +6,11 @@
  * values and the top-level inputs along with sequential state and port
  * values, so a rewind puts the switches back as well as the registers.
  *
- * The sandbox also restores them itself, through `captureEnvironmentalState`
- * style walks over `metadata.interactiveArg` and `setNode`. These tests pin
- * both: the engine alone reproduces the trace, and the host recipe layered
- * on top still does.
+ * `Simulation` history rides on those snapshots, so stepping back puts the
+ * switches back with no extra bookkeeping. The sandbox also restores them
+ * itself, through `captureEnvironmentalState` style walks over
+ * `metadata.interactiveArg` and `setNode`. These tests pin all three: history
+ * on a `Simulation`, the engine alone, and the host recipe layered on top.
  *
  * The shift-register time-travel demo on the landing page relies on this
  * invariant: if restore skips env state, the visible switch desyncs from
@@ -23,6 +24,8 @@ import { internalsOf } from '../../circuit/internals.js';
 import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import { DFlipFlop, Switch } from '../../std/index.js';
 import { captureEnvironmentalState, createEngine, elaborate } from '../index.js';
+import { simulate } from '../simulate.js';
+import { nodesOf } from '../simulation.js';
 import type { FlatCircuit } from '../types.js';
 
 /**
@@ -103,6 +106,29 @@ describe('environmental state time-travel', () => {
     // helper and now in the sandbox) captures the switch state.
     const rightWay = captureFlatEnv(flat, definitions);
     expect(rightWay.get('sw')).toBe(1);
+  });
+
+  it('Simulation history puts the Switch back', () => {
+    const sim = simulate(SwitchedFF, { history: 10 });
+    // Tick once with the switch at its default (OFF): the DFF latches 0.
+    sim.tick();
+    expect(sim.get('q')).toBe(0);
+
+    // Flip the switch ON and tick: the DFF latches 1.
+    nodesOf(sim).set('sw', 1);
+    sim.tick();
+    expect(sim.get('q')).toBe(1);
+
+    // Step back: the DFF and the switch both return to OFF.
+    expect(sim.stepBack()).toBe(true);
+    expect(sim.get('q')).toBe(0);
+
+    // Ticking again reproduces the original trace.
+    sim.tick();
+    expect(sim.get('q')).toBe(0);
+
+    // And forward history was dropped by that tick.
+    expect(sim.stepForward()).toBe(false);
   });
 
   it('engine restore puts the Switch back', () => {

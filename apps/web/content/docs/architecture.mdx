@@ -148,18 +148,19 @@ Each clock tick executes five phases:
 
 The atomic commit in Phase 4 is what makes this match real hardware: all flip-flops and registers update at the same instant, just like a physical clock edge.
 
-## Simulation Session
+## Simulation
 
-The `SimulationSession` is the orchestration layer between the UI and the engine. It wraps a `SimulatorEngine` and adds:
+`simulate(top)` returns a `Simulation`: the engine plus the typed port interface, the clock and, when asked for, history. It is synchronous, has no timers and holds nothing that needs releasing.
 
 ```
 ┌──────────────────────┐
-│     React UI         │  hooks, components
+│  test, verify file,  │
+│  MCP, sandbox worker │
 └─────────┬────────────┘
-          │ subscribe / commands
+          │ set / get / tick / stepBack
           ▼
 ┌──────────────────────┐
-│  SimulationSession   │  history, time-travel, auto-run, batching
+│     Simulation       │  ports, cycle, history
 └─────────┬────────────┘
           │ tick / restore / setNode
           ▼
@@ -168,19 +169,23 @@ The `SimulationSession` is the orchestration layer between the UI and the engine
 └──────────────────────┘
 ```
 
+A `set` marks the logic dirty and the next read settles it, so `get` after `set` returns the settled value and a `set` followed by `tick` costs nothing extra.
+
 ### Time-travel
 
-Every `tick()` records a snapshot. Users can step back and forward through the history to inspect any clock cycle. The session maintains a ring buffer of snapshots (default 1000) with index-based navigation:
+`simulate(top, { history: n })` keeps the last `n` steps; the default is 0, no history. Each `tick` call records one snapshot, so `tick(100)` is one step back. Navigation is index-based:
 
-- `stepBack()` / `stepForward()`: move one cycle
-- `seek(index)`: jump to any recorded cycle
+- `stepBack()` / `stepForward()`: move one step
+- `seek(index)`: jump to any recorded step
 - Ticking while viewing the past truncates forward history (linear, no branching)
 
-Environmental state (switch positions, input values) is captured as opaque metadata in each snapshot and restored via callbacks when time-travelling.
+Each returns `false`, and changes nothing, when there is nothing to step to. Snapshots carry the top-level inputs and Switch/Input values, so a rewind puts the switches back too.
+
+Internal nodes are reached through `nodesOf(sim)` in `@simten/core/internal`: `set(path, value)` writes a node by dotted path, `ports()` reads every port value, `peripherals()` reads the state of screens, consoles and the memories wired to them, and `advance(n)` followed by `record()` ticks in slices and records the whole run as one step.
 
 ### Auto-run
 
-For continuous execution, `startAutoRun(ticksPerSecond, { displayRate })` runs the engine in a tight loop and only notifies React at the display rate. The RISC-V CPU can run at ~20,000 ticks/sec while the UI updates at 30fps, so the engine does ~667 ticks per display frame.
+The browser's auto-run lives in `useCircuitSimulator` today: the page sends batches of ticks to the sandbox at the display rate. The RISC-V CPU can run at ~20,000 ticks/sec while the UI updates at 30fps, so the engine does ~667 ticks per display frame. `simulate()` has no auto-run; in Node, call `tick` in a loop.
 
 ### setNode
 
@@ -194,7 +199,7 @@ This means loading a binary into ROM works the same as flipping a switch: one AP
 ## Packages
 
 ```
-@simten/core       ← headless: circuit builder, compiler, simulator, session
+@simten/core       ← headless: circuit builder, compiler, simulator
        ↑
 @simten/ui         ← visual: nodes, canvas, simulation hooks, editor
        ↑
@@ -203,7 +208,7 @@ This means loading a binary into ROM works the same as flipping a switch: one AP
 
 | Package | Description |
 |---------|-------------|
-| `@simten/core` | TypeScript builder, compiler, validator, simulator engine, `SimulationSession`, environmental state, Verilog export. No UI dependencies. |
+| `@simten/core` | TypeScript builder, compiler, validator, simulator engine, `Simulation`, environmental state, Verilog export. No UI dependencies. |
 | `@simten/ui` | React components: canonical node renderers, shared canvas, ELK layout, sandbox context (`useSandbox`), `ClockControls`, editor UI. |
 | `@simten/embed` | `CircuitViewer` (simulation + canvas), `CircuitEmbed` (viewer + auto-harness + info bar), `<circuit-embed>` web component. Depends on core + ui. |
 | `@simten/mcp` | MCP server for Claude Code integration |
@@ -268,7 +273,7 @@ useCircuitStore         (the active circuit)
 | Import | Contents |
 |--------|----------|
 | `@simten/core` | `circuit`, `bit`, `bus`, `simulate`, `Circuit`: the public API. Components come from `@simten/core/std` |
-| `@simten/core/internal` | `elaborate`, `createEngine`, `SimulationSession`, `SimulatorEngine`, the IR types (`CircuitIR`), a built circuit's internals (`internalsOf`), libraries of definitions and behavior (`libraryOf`), `executeCircuitCode`, `captureEnvironmentalState`, `restoreEnvironmentalState`: for Simten's own packages, no stability promise |
+| `@simten/core/internal` | `elaborate`, `createEngine`, `createSimulation`, `nodesOf`, `SimulatorEngine`, the IR types (`CircuitIR`), a built circuit's internals (`internalsOf`), libraries of definitions and behavior (`libraryOf`), `executeCircuitCode`, `captureEnvironmentalState`, `restoreEnvironmentalState`: for Simten's own packages, no stability promise |
 | `@simten/embed` | `CircuitViewer`, `CircuitEmbed`, `<circuit-embed>` web component: everything needed to embed a circuit |
 | `@simten/ui/canvas` | `CircuitCanvas`, `ClockControls`: shared simulation UI |
 | `@simten/ui/sandbox` | `useSandbox`, `SandboxProvider`: sandbox iframe context used by `useCircuitSimulator` |

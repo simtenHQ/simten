@@ -3,11 +3,8 @@
  * tick, plus a way to load register state directly into the core.
  */
 
-import { libraryOf } from '../../../circuit/behavior.js';
-import { internalsOf } from '../../../circuit/internals.js';
-import { elaborate } from '../../../simulator/elaboration.js';
-import { createEngine } from '../../../simulator/engine.js';
-import { SimulationSession } from '../../../simulator/simulation-session.js';
+import { simulate } from '../../../simulator/simulate.js';
+import { nodesOf } from '../../../simulator/simulation.js';
 import { MOS6502_Core } from '../../mos6502-cpu.js';
 
 export interface CpuState {
@@ -22,21 +19,8 @@ export interface CpuState {
 export type BusCycle = [addr: number, data: number, kind: 'read' | 'write'];
 
 export function createMachine() {
-  // Driven through the session rather than simulate(), so `load` can settle
-  // the logic after poking registers without a clock edge.
-  const core = MOS6502_Core({ debug: true });
-  const library = libraryOf(core);
-  const engine = createEngine(elaborate(internalsOf(core).ir, library.definitions), { library });
-  engine.runCombinational();
-  const session = new SimulationSession(engine, { isSequential: true });
-  const sim = {
-    get: (port: string) => Number(session.getState().portValues.get(`__top__.${port}`)),
-    set: (values: Record<string, number>) => {
-      for (const [port, value] of Object.entries(values)) session.setNode(port, value);
-    },
-    setNode: (id: string, value: number) => session.setNode(id, value),
-    tick: () => session.tick(),
-  };
+  const sim = simulate(MOS6502_Core({ debug: true }));
+  const nodes = nodesOf(sim);
   const mem = new Uint8Array(0x10000);
 
   return {
@@ -44,7 +28,7 @@ export function createMachine() {
 
     /** Puts the core at an instruction boundary: the next cycle fetches at `pc`. */
     load(state: CpuState) {
-      const set = (id: string, v: number) => sim.setNode(id, v);
+      const set = (id: string, v: number) => nodes.set(id, v);
       set('timing.t', 0);
       set('timing.kind', 0);
       set('timing.acr', 0);
@@ -63,7 +47,6 @@ export function createMachine() {
       set('regs.s', state.s);
       set('status.p', (state.p & 0xef) | 0x20);
       sim.set({ data_in: 0, irq: 0, nmi: 0, reset: 0 });
-      session.runCombinational();
     },
 
     /** Runs one clock cycle against `mem` and returns the bus cycle it made. */

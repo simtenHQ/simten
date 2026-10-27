@@ -17,12 +17,8 @@ declareOracle({
 });
 verify.exhaustive('ROM holds sha256("")[0..3]', [4], (addr) => {
   const s = simulate(HashRom);
-  try {
-    s.set({ addr });
-    s.tick();
-    return s.get('data') === expected[addr];
-  } finally {
-    s.dispose();
-  }
+  s.set({ addr });
+  s.tick();
+  return s.get('data') === expected[addr];
 });
 verify.run();
