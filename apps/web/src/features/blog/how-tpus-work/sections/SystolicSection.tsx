@@ -34,9 +34,10 @@ export function SystolicSection() {
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The circuit computes{' '}
           <strong className="text-gray-900 dark:text-white">C = A &times; B</strong>. Click{' '}
-          <strong>Start</strong> to begin. The total latency for an N&times;N multiply is{' '}
-          <strong className="text-gray-900 dark:text-white">3N cycles</strong> (9 for our
-          3&times;3). Where does the 3 come from?
+          <strong>Start</strong> to begin. For an N&times;N multiply, the last partial sum leaves
+          the bottom of the array on{' '}
+          <strong className="text-gray-900 dark:text-white">cycle 3N&minus;1</strong> (cycle 8 for
+          our 3&times;3). Where do those cycles come from?
         </p>
 
         <div className="flex items-center justify-center gap-3 my-4 font-mono text-sm">
@@ -114,34 +115,44 @@ export function SystolicSection() {
         </div>
         <ol className="text-gray-600 dark:text-gray-300 leading-relaxed list-decimal list-inside space-y-2">
           <li>
-            <strong className="text-gray-900 dark:text-white">N cycles to feed data</strong>: each
-            row of PEs receives N activation values, one per cycle.
+            <strong className="text-gray-900 dark:text-white">1 cycle to load weights</strong>:
+            every PE latches its weight from B on the first cycle.
           </li>
           <li>
             <strong className="text-gray-900 dark:text-white">
-              N&minus;1 cycles for staggered injection
+              N&minus;1 cycles for the rows of A
             </strong>
-            : because each PE&rsquo;s partial-sum output goes through a register, there&rsquo;s a
-            one-cycle propagation delay per PE vertically. Row&nbsp;r must start r&nbsp;cycles late
-            so its activations arrive at the same time as the partial sum traveling down from the
-            row above.
+            : the rows go in one per cycle, so row&nbsp;i of A enters i&nbsp;cycles after
+            row&nbsp;0.
           </li>
           <li>
             <strong className="text-gray-900 dark:text-white">
-              N cycles for vertical propagation
+              N&minus;1 cycles to cross the columns
             </strong>
-            : the partial sum must travel through N registered stages (one per PE) before the final
-            result appears at the bottom.
+            : activations move one PE to the right per cycle, so column&nbsp;j sees each value
+            j&nbsp;cycles after column&nbsp;0.
+          </li>
+          <li>
+            <strong className="text-gray-900 dark:text-white">
+              N cycles to pass down a column
+            </strong>
+            : each PE&rsquo;s partial-sum output goes through a register, so a sum moves down one
+            row per cycle. Row&nbsp;r of PEs gets its activations r&nbsp;cycles late (staggered
+            injection) so they arrive at the same time as the partial sum coming down from the row
+            above.
           </li>
         </ol>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          That&rsquo;s N + (N&minus;1) + N = 3N&minus;1 data cycles, plus 1 for weight loading = 3N
-          total. If the vertical partial-sum path were <em>combinational</em> instead of registered
-          (meaning the entire column settles in a single cycle with no propagation delay), you
-          wouldn&rsquo;t need staggered injection or vertical wait time, and the total would drop to
-          just <strong className="text-gray-900 dark:text-white">2N cycles</strong>. But a
-          combinational chain 256 PEs deep can&rsquo;t close timing at real TPU clock speeds.
-          Registers break that critical path, trading latency for a design that actually
+          So C[i][j] leaves the bottom of the array on cycle 1 + i + j + N, and the last one,
+          C[N&minus;1][N&minus;1], on cycle 1 + (N&minus;1) + (N&minus;1) + N = 3N&minus;1. The demo
+          then passes each result through two capture registers on its way to the display, so all
+          nine are on screen by cycle 3N + 1 (10 here), when the done light comes on. If the
+          vertical partial-sum path were <em>combinational</em> instead of registered (meaning the
+          entire column settles in a single cycle with no propagation delay), you wouldn&rsquo;t
+          need staggered injection, the N cycles down each column would shrink to one, and the last
+          sum would leave on <strong className="text-gray-900 dark:text-white">cycle 2N</strong>{' '}
+          instead. But a combinational chain 256 PEs deep can&rsquo;t close timing at real TPU clock
+          speeds. Registers break that critical path, trading latency for a design that actually
           synthesizes.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
@@ -150,9 +161,9 @@ export function SystolicSection() {
           and partial sums are building downward through registered stages, but nothing has reached
           the bottom of a column yet. Then results start appearing in a{' '}
           <strong className="text-gray-900 dark:text-white">diagonal wavefront</strong>: C[0][0]
-          first (shortest path), then the next anti-diagonal, and so on until C[2][2] (longest path
-          through the array). This is exactly what you&rsquo;d see on a real chip: pipeline latency,
-          then a steady stream of results.
+          first on cycle 6 (shortest path), then one anti-diagonal per cycle, until C[2][2] on cycle
+          10 (longest path through the array). This is exactly what you&rsquo;d see on a real chip:
+          pipeline latency, then a steady stream of results.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           This is the same fundamental architecture that powers Google&rsquo;s TPU. A real TPUv1 has

@@ -4,8 +4,8 @@
 # pages. The worker (app/server.ts) applies the `/*` block below to the pages it
 # renders itself, so these headers are written here and nowhere else.
 #
-# The CSP is report-only for now: violations are logged in the browser console
-# and nothing is blocked. What it allows, from what the site loads:
+# The CSP is enforced: the browser blocks anything it does not allow. What it
+# allows, from what the site loads:
 #   script-src  'unsafe-inline'   TanStack Start's hydration scripts are inline.
 #               'wasm-unsafe-eval' the cc65 compiler in the 6502 posts is wasm.
 #               cdn.jsdelivr.net  Monaco and the TypeScript compiler for the editor.
@@ -19,11 +19,10 @@
 #   worker-src  blob: data:       Monaco's language workers.
 #   frame-src   sandbox.simten.dev  the iframe that runs circuit code.
 #               www.youtube.com   the video in the Breakout post.
-# When this has run clean in the console for a while, rename the header to
-# Content-Security-Policy to enforce it.
+# Dropping 'unsafe-inline' and adding a report endpoint are tracked in #464.
 
 /*
-  Content-Security-Policy-Report-Only: default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net https://data.jsdelivr.com https://api.github.com https://raw.githubusercontent.com https://cloudflareinsights.com ws://localhost:*; worker-src 'self' blob: data:; frame-src https://sandbox.simten.dev https://www.youtube.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net https://data.jsdelivr.com https://api.github.com https://raw.githubusercontent.com https://cloudflareinsights.com ws://localhost:*; worker-src 'self' blob: data:; frame-src https://sandbox.simten.dev https://www.youtube.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'
 
 # https://opennext.js.org/cloudflare/caching#static-assets-caching
 /_next/static/*

@@ -7,8 +7,8 @@
 import handler from '@tanstack/react-start/server-entry';
 
 /**
- * Report-only for now: violations are logged in the browser console and
- * nothing is blocked. What it allows, from what the game loads:
+ * The CSP is enforced: the browser blocks anything it does not allow. What it
+ * allows, from what the game loads:
  *   script-src  'unsafe-inline'  the theme and newcomer scripts in <head>, and
  *                                TanStack Start's hydration scripts.
  *               cdn.jsdelivr.net Monaco and the TypeScript compiler.
@@ -19,12 +19,11 @@ import handler from '@tanstack/react-start/server-entry';
  *               cloudflareinsights.com  Cloudflare Web Analytics.
  *   worker-src  blob: data:      Monaco's language workers.
  *   frame-src   sandbox.simten.dev  the iframe that runs player code.
- * When this has run clean in the console for a while, rename the header to
- * Content-Security-Policy to enforce it.
+ * Dropping 'unsafe-inline' and adding a report endpoint are tracked in #464.
  */
 const HEADERS: Array<[string, string]> = [
   [
-    'Content-Security-Policy-Report-Only',
+    'Content-Security-Policy',
     [
       "default-src 'self'",
       "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://static.cloudflareinsights.com",

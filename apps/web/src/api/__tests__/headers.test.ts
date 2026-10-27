@@ -27,11 +27,11 @@ describe('siteWideHeaders', () => {
 
   it('finds the CSP in the real _headers file', () => {
     const names = siteWideHeaders(HEADERS_FILE).map(([name]) => name);
-    expect(names).toContain('Content-Security-Policy-Report-Only');
+    expect(names).toContain('Content-Security-Policy');
   });
 
   it('lets the page frame the sandbox', () => {
-    const csp = new Map(siteWideHeaders(HEADERS_FILE)).get('Content-Security-Policy-Report-Only');
+    const csp = new Map(siteWideHeaders(HEADERS_FILE)).get('Content-Security-Policy');
     expect(csp).toMatch(/frame-src [^;]*https:\/\/sandbox\.simten\.dev/);
   });
 });
