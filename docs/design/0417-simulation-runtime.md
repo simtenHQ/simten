@@ -1,6 +1,6 @@
 # Design: the simulation runtime (#417)
 
-**Status:** Proposed, for review before implementation.
+**Status:** Open questions answered on #493 (see Decisions at the end). Not yet implemented.
 **Issue:** #417. Follow-up: #418 (embed folds into ui).
 **Packages after both issues:** `core`, `sandbox`, `ui`, `mcp`. React only in `ui`.
 
@@ -10,7 +10,8 @@
 - New package `@simten/sandbox`, no React: the protocol, `SandboxClient` (one iframe, many sessions) and `SessionClient` (an async mirror of `Simulation`).
 - The sandbox worker holds a `Simulation` per session and runs the auto-run loop itself, pushing state to the page at display rate. The page keeps no history and no timers.
 - Two hooks in `@simten/ui`, `useCompile` and `useSimulation`, replace six hooks and one helper. Return shapes stay close to today's.
-- The drill-down inspector reads the main session by dotted path. No second engine and no second sandbox session for composites.
+- Every simulation runs in the sandbox; nothing simulates on the page. That lets the engine leave the page bundle later (#419).
+- The drill-down inspector reads the main session by dotted path. Gate-level reference builds, which aren't in the running netlist, get a second session in the same shared iframe, fed with the parent's input values.
 - Simulation results don't change: the engine is untouched, so `pnpm bench --check` fingerprints stay identical. Saved circuits and share links are unaffected (decision 0003 freezes source names, not the runtime).
 
 ## 1. What exists today
@@ -132,6 +133,22 @@ export type PeripheralValue = number | string | ReadonlyMap<number, number>;
 
 Ports are public because they're the circuit's typed interface: a verify file, a test or an MCP agent drives a design through its ports and nothing else. Internal nodes are reached by dotted path because that's what the canvas, the inspector and the sandbox work with, but those paths are elaboration details (`dut.ha1.xor1`) and not a contract, so they stay in `internal`. `nodesOf` follows the existing `internalsOf(circuit)` pattern.
 
+`SessionClient` (section 3) does have `setNode(path)`, and that's deliberate. Its callers are the canvas and keyboard input, which set nodes inside the circuit: clicking a Switch writes `a` or `dut.ha1.sw`, and a key press writes a scan code into an Input node. A harnessed circuit has no top-level inputs at all, so ports alone can't drive it. Those callers are UI code in this repo, not users writing against the typed interface, so the method belongs on the client the UI uses and not on `Simulation`.
+
+```ts
+// @simten/core/internal, used only by the sandbox's session host
+export function timelineOf(simulation: Simulation): SimulationTimeline;
+
+export interface SimulationTimeline {
+  /** Tick without recording history. */
+  advance(count: number): void;
+  /** Record the current state as one history entry. */
+  record(): void;
+}
+```
+
+`tick(n)` is `advance(n)` then `record()`. The host needs the two halves separately to run one request in several slices and still record it as one step (section 4).
+
 ### Every member, and why it's there
 
 | Member | Reason | Was |
@@ -159,7 +176,7 @@ Ports are public because they're the circuit's typed interface: a verify file, a
 
 ### Behavior notes
 
-- **Settling after `set`.** Today `set` settles combinational logic only on combinational circuits; on a sequential circuit `get` after `set` returns the value from before the write until the next `tick`. The sandbox already settles after every write. `Simulation` marks itself dirty on `set` or `nodesOf().set` and settles lazily on the next read (`get`, `read`, `ports()`), so a write followed by `tick` costs nothing extra. Clocked results are unchanged; only a read between `set` and `tick` changes, and it changes to the settled value. This is the one visible behavior change; see open question 2.
+- **Settling after `set`.** Today `set` settles combinational logic only on combinational circuits; on a sequential circuit `get` after `set` returns the value from before the write until the next `tick`. The sandbox already settles after every write. `Simulation` marks itself dirty on `set` or `nodesOf().set` and settles lazily on the next read (`get`, `read`, `ports()`), so a write followed by `tick` costs nothing extra. Clocked results are unchanged; only a read between `set` and `tick` changes, and it changes to the settled value. This is the one visible behavior change, and it's accepted (decision 2).
 - **History records one entry per `tick` call**, so `tick(100)` is one step back, same as `tickN` in the embed today. With `history: 0` (the `simulate()` default) nothing is recorded. Today `simulate()` snapshots the engine on every cycle into a 1000-entry ring buffer that no caller can reach, so this is a speed-up for long verify runs.
 - **Environmental state** (Switch/Input positions) rewinds with history through the engine snapshot's `inputs` and `nodeValues`, which already exist. The worker's separate `FullSnapshot.env` capture becomes redundant; `environmental-time-travel.test.ts` is ported to `Simulation` to prove it.
 
@@ -196,7 +213,7 @@ export interface Compiled {
 export type SessionSource =
   /** A circuit from a source compile, by name, or IR built from that compile's circuits (the editor's canvas). */
   | { compiled: Compiled; circuit: string | CircuitIR }
-  /** A circuit built on the page from trusted code (blog, docs). Behavior goes as source text. */
+  /** A circuit built on the page from trusted code (blog, docs, the inspector's reference builds). Behavior goes as source text. */
   | { circuit: Circuit };
 
 export interface OpenOptions {
@@ -290,12 +307,12 @@ How it relates to `Simulation`:
 |---|---|---|
 | `set`, `tick`, `reset`, `stepBack`, `stepForward`, `seek`, `dispose` | same names, return `Promise<void>` | crossing postMessage |
 | `get`, `cycle`, `history`, `isSequential` | same, sync, from the last reported state | after `await s.set(...)` the state is current, so `await s.set({ a: 1 }); s.get('sum')` reads like Node code |
-| `nodesOf(sim).set` | `setNode` | the page has no `nodesOf`; the canvas needs node writes |
+| `nodesOf(sim).set` (internal) | `setNode` | switch toggles on the canvas and keyboard input write nodes inside the circuit, and a harnessed circuit has no top-level inputs to `set`. See section 2 |
 | `snapshot`, `restore` | none | engine state can't cross the boundary, and the UI uses history instead |
 | none | `run`, `pause`, `sample`, `scan` | loops that must run next to the engine |
 | none | `getState`, `subscribe` | a remote mirror needs change notification; fits `useSyncExternalStore` |
 
-Requests to one session are applied in the order they're sent (one postMessage channel, one worker), so `setNode(...)` then `tick()` without awaiting the first is safe, as `CRC32Section` relies on today.
+Requests to one session are applied in the order they're sent (one postMessage channel, one worker, and a per-session queue in the host), so `setNode(...)` then `tick()` without awaiting the first is safe, as `CRC32Section` relies on today. Requests to different sessions don't wait for each other beyond one slice (section 4).
 
 Promises reject with `SandboxError` (section 8) instead of resolving to `T | SandboxError` unions.
 
@@ -349,7 +366,7 @@ interface SessionUpdate {
 }
 ```
 
-Iframe ↔ worker messages are the same types; the relay forwards both ways unchanged, as now.
+Iframe ↔ worker messages are the same types, plus one the relay keeps to itself: `progressed` (`id`), which the worker sends at most once a second while a sliced request is still running. The relay uses it to re-arm the watchdog and doesn't forward it. Everything else is forwarded both ways unchanged, as now.
 
 ### Removed
 
@@ -370,7 +387,8 @@ function frame() {
   const n = Math.min(Math.floor(owed), affordable);
   if (n > 0) {
     const start = performance.now();
-    sim.tick(n);                            // one call, so one history entry per frame
+    timeline.advance(n);                    // timelineOf(sim)
+    timeline.record();                      // one history entry per frame
     msPerCycle = 0.8 * msPerCycle + 0.2 * ((performance.now() - start) / n);
     owed -= n;
   }
@@ -381,9 +399,32 @@ function frame() {
 ```
 
 - The worker posts one `updated` per frame, whether or not the page has drawn the last one. The page's `SessionClient` keeps only the latest state and notifies subscribers; React batches the renders. Handling a message is a structured-clone decode and a reference swap, so frames don't back up.
-- Each frame runs as many cycles as the running estimate says fit in about 80% of the frame period, in one `tick(n)` call. A frame can't run long enough to trip the watchdog unless a cycle hangs, and `pause` is handled within one frame.
+- Each frame runs as many cycles as the running estimate says fit in about 80% of the frame period. A frame can't run long enough to trip the watchdog unless a cycle hangs, and `pause` is handled within one frame.
 - The loop doesn't wait for the page between batches, so throughput is bounded by the engine, not by round trips. Today's loop is a page `setInterval` that sends `tick-n` and waits for the reply.
 - History records one entry per frame, matching today's batch-boundary history.
+
+### Large `tick` requests
+
+A `tick` with a large `count` (the 6502 demo asks for thousands per request) is sliced the same way, so one session can't hold the worker while others wait:
+
+```ts
+// session-host.ts
+async function tick(session: HostSession, count: number) {
+  let left = count;
+  while (left > 0) {
+    const n = Math.min(left, session.affordable());   // same estimate as auto-run: ~80% of a frame
+    session.timeline.advance(n);
+    left -= n;
+    if (left > 0) await yieldToOtherWork();           // setTimeout(0): lets other sessions' requests in
+  }
+  session.timeline.record();                          // the whole request is one history step
+}
+```
+
+- Requests for one session wait in that session's queue until the slice loop finishes, so order within a session is kept.
+- Requests for other sessions run between slices, so a long `tick` on one session delays another session's response by about one frame.
+- `sample` is sliced the same way. `scan` doesn't tick and its `count` is small (64 for Snake), so it runs in one go.
+- The worker sends `progressed` at most once a second during a sliced request, so the watchdog (section 8) measures whether the worker is responsive, not how long a request takes. A `tick(10_000_000)` that takes 20s is allowed; a single cycle that hangs for 5s is not.
 
 Rejected: page pull (the page asks for state each `requestAnimationFrame`). It ties simulation progress to the page's frame rate and puts a round trip back in the loop. Also rejected: per-frame acknowledgements from the page. They add a message type and a stall state for no benefit while frames are this cheap to drop.
 
@@ -419,6 +460,17 @@ export function useSimulation(
 ): UseSimulationResult;
 
 export interface UseSimulationResult {
+  /** What the circuit is doing now. Changes every update. */
+  state: SimulationViewState;
+  /** Where the history cursor is. */
+  history: { length: number; index: number; isViewingPast: boolean };
+  /** Stable for the life of the session, so they're safe in dependency arrays and canvas callbacks. */
+  actions: SimulationActions;
+  /** For the inspector and anything else that reads this session directly. */
+  session: SessionClient | null;
+}
+
+export interface SimulationViewState {
   ready: boolean;
   /** Fatal: the sandbox didn't load, or the circuit failed to open. */
   error: string | null;
@@ -435,12 +487,11 @@ export interface UseSimulationResult {
   outputs: Record<string, number>;
   peripheralState: ReadonlyMap<string, PeripheralValue>;
 
-  historyLength: number;
-  historyIndex: number;
-  isViewingPast: boolean;
   isRunning: boolean;
   speed: number;
+}
 
+export interface SimulationActions {
   set(values: Record<string, number>): Promise<void>;
   setNode(path: string, value: number | MemoryContents): Promise<void>;
   /** Flip a Switch/Button node between 0 and 1. */
@@ -456,26 +507,27 @@ export interface UseSimulationResult {
   setSpeed(speed: number): void;
   sample(port: string, count: number, inputs?: Record<string, number>): Promise<number[]>;
   scan(path: string, port: string, count: number): Promise<number[]>;
-
-  /** For the inspector and anything else that reads this session directly. */
-  session: SessionClient | null;
 }
 ```
 
-`useSimulation` opens a session when `source` changes and closes the old one. For a page-built `Circuit` it sends the IR, library and behavior source text, as `useCircuitSimulator` does now. Harnessing moves into the worker, so the page no longer builds harness definitions itself. The hook subscribes to the session with `useSyncExternalStore`. Action rejections are caught: `failed` goes to `error`, `restarted` goes to `notice`.
+`useSimulation` opens a session when `source` changes and closes the old one. For a page-built `Circuit` it sends the IR, library and behavior source text, as `useCircuitSimulator` does now. Harnessing moves into the worker, so the page no longer builds harness definitions itself. The hook subscribes to the session with `useSyncExternalStore`. Action rejections are caught: `failed` goes to `state.error`, `restarted` goes to `state.notice`.
 
-Renames from `useCircuitSimulator`, applied at call sites:
+The return is grouped so what changes every frame is separate from what never changes. `actions` keeps one identity for the session's life, which removes the `simRef` workaround in `EditorWorkspace` (it exists so canvas callbacks don't change on every tick). Call sites destructure what they need: `const { state, actions } = useSimulation(...)`.
+
+Mapping from `useCircuitSimulator`, applied at call sites:
 
 | Old | New | Uses |
 |---|---|---|
-| `cycleCount` | `cycle` | 20 |
-| `setNodeValue`, `setNode` | `setNode` (one method; always resolves after the write) | 19 + 13 |
-| `tickN(n)` | `tick(n)` | 7 |
-| `scanPort` | `scan` | 8 |
-| `renderSamples` | `sample` | 2 |
-| `sequentialState` | `peripheralState` (it only ever held peripheral-bus nodes) | 10, plus the `CircuitCanvas` prop |
-| `startAutoRun(speed)`, `stopAutoRun()` | `run(speed)`, `pause()` | 1 + 1 |
-| `history.length` | `historyLength` | 2 |
+| `ready`, `error`, `circuit`, `definitions`, `isSequential`, `portValues`, `outputs`, `isRunning`, `speed` | `state.` + same name | 49, 14, 20, 5, 2, 40, 6, 2, 2 |
+| `cycleCount` | `state.cycle` | 20 |
+| `sequentialState` | `state.peripheralState` (it only ever held peripheral-bus nodes) | 10, plus the `CircuitCanvas` prop |
+| `history.length`, `historyIndex`, `isViewingPast` | `history.length`, `history.index`, `history.isViewingPast` | 2, 1, 1 |
+| `setNodeValue`, `setNode` | `actions.setNode` (one method; always resolves after the write) | 19 + 13 |
+| `tick`, `tickN(n)` | `actions.tick()`, `actions.tick(n)` | 27 + 7 |
+| `scanPort` | `actions.scan` | 8 |
+| `renderSamples` | `actions.sample` | 2 |
+| `startAutoRun(speed)`, `stopAutoRun()` | `actions.run(speed)`, `actions.pause()` | 1 + 1 |
+| `toggleNode`, `reset`, `stepBack`, `stepForward`, `seek`, `setSpeed` | `actions.` + same name | |
 | `inputs`, `toggleInput`, `getSimulator`, `runCombinational` | removed (unused, or no-ops today) | |
 
 `useCompile` replaces `useCircuitCompiler` and keeps its behavior: debounce, cancel stale compiles, keep the last good result, parse `(line:col)` from errors, and retry once when a compile was collateral damage of a restart (now `code === 'restarted'` instead of matching the string `'Worker restarted'`). It releases the previous compile when a newer one succeeds.
@@ -499,13 +551,13 @@ const v = sim.portValues.get('display.in');
 
 // after
 import { useSimulation } from '@simten/ui/sandbox';
-const sim = useSimulation(CRC32ByteDemo);
+const { state, actions } = useSimulation(CRC32ByteDemo);
 const handleStep = useCallback(() => {
-  sim.setNode('data', byteVal);
-  sim.tick();
+  actions.setNode('data', byteVal);
+  actions.tick();
   setCycleCount((c) => c + 1);
-}, [sim, dataInput]);
-const v = sim.portValues.get('display.in');
+}, [actions, dataInput]);
+const v = state.portValues.get('display.in');
 ```
 
 **Editor** (`EditorWorkspace.tsx`):
@@ -534,16 +586,19 @@ const onToggleNode = useCallback((nodeId: string) => {
 
 // after
 const compiler = useCompile(code, { debounceMs: 500 });
-const sim = useSimulation(
+const { state, history, actions } = useSimulation(
   compiler.compiled && circuit ? { compiled: compiler.compiled, circuit } : null,
 );
-const onToggleNode = useCallback((path: string) => simRef.current.toggleNode(path), []);
+// actions is stable for the session's life, so simRef is no longer needed
+const onToggleNode = actions.toggleNode;
 <ClockControls
-  cycle={sim.cycle}
-  historyLength={sim.historyLength}
-  onRun={() => sim.run(sim.speed || DEFAULT_SPEED)}
-  onPause={() => sim.pause()}
-  onSpeedChange={(speed) => sim.setSpeed(speed)}
+  cycle={state.cycle}
+  historyLength={history.length}
+  historyIndex={history.index}
+  isViewingPast={history.isViewingPast}
+  onRun={() => actions.run(state.speed || DEFAULT_SPEED)}
+  onPause={actions.pause}
+  onSpeedChange={actions.setSpeed}
   ...
 />
 ```
@@ -557,6 +612,7 @@ const onToggleNode = useCallback((path: string) => simRef.current.toggleNode(pat
 const sandbox = useSandboxContext();
 const preview = useCompiledCircuit(source, { slot: 'preview', select: select as never, autoHarness: true });
 // ... preview.compileError, preview.portValues, preview.circuit, preview.definitions
+const victory = useVictoryRun(level.vectors, preview.setNodeValue, preview.tick);
 const verdict = await grade(sandboxRuntime(sandbox), level, source);
 
 // after
@@ -568,6 +624,8 @@ const preview = useSimulation(
   { harness: true },
 );
 const compileError = compile.diagnostics[0]?.message ?? null;
+// ... preview.state.portValues, preview.state.circuit, preview.state.definitions
+const victory = useVictoryRun(level.vectors, preview.actions.setNode, preview.actions.tick);
 const verdict = await grade(sandboxRuntime(sandbox), level, source);
 ```
 
@@ -617,7 +675,7 @@ Cost: a 64x64 framebuffer RAM goes across every frame. At 30 frames a second tha
 
 ## 7. The inspector and the level drilldown
 
-**Decision: an inspector frame is a view of the session it was opened from, at a dotted instance path.** No sandbox session and no engine of its own.
+**Decision: an inspector frame is a view of the session it was opened from, at a dotted instance path.** A composite gets no session and no engine of its own. A reference build, which isn't in the running netlist, gets a second session in the same shared iframe. Every simulation runs in the sandbox; nothing simulates on the page.
 
 ```ts
 export interface InspectorFrame {
@@ -625,8 +683,8 @@ export interface InspectorFrame {
   componentDef: CircuitIR;
   nodeLabel: string;
   definitions?: CircuitDefinitions;
-  /** Dotted instance path in the parent session, e.g. 'dut.ha1'. Absent for a reference build. */
-  path?: string;
+  /** Dotted instance path in the session the frame was opened from, e.g. 'dut.ha1'. */
+  path: string;
 }
 
 export interface CompositeInspectorDialogProps {
@@ -638,13 +696,14 @@ export interface CompositeInspectorDialogProps {
 }
 ```
 
-- **Composites.** `InspectorCanvas` reads `scopePortValues(simulation.portValues, frame.path + '.', frame.componentDef)`. That function already exists in `drill-down-view.ts` and nothing calls it. Drilling deeper appends the clicked node's id to the path. Because it's the same session, the inspector shows the same cycle as the canvas behind it, keeps updating while auto-run is on, and its clock controls are the main session's (`simulation.tick`, `run`, `stepBack`...).
-- **Writes.** A Switch or Input inside the composite writes `setNode(frame.path + '.' + nodeId)`. A boundary input is writable when the wire feeding the instance in its parent comes from a Switch or Input node; clicking it writes that node. Otherwise it's read-only, because a value driven by logic can't be overridden without breaking the circuit. Today each drill-down has its own copy where every boundary input is a free switch, so this is a visible change: open question 6.
-- **Reference builds** (`MADE_OF`: Adder, Subtractor, Incrementer, Mux, Comparator) aren't in the running netlist, so there's no path to read. They're combinational and built only from std, so the inspector evaluates them on the page with `simulate(MADE_OF[name](args))`, driving its inputs from the parent session's ports at the instance path on every update. That's a pure function of values the session already reports, so it can't drift. It runs no user code: `resolveDrillTarget` picks a user's composite over a reference build, and `MADE_OF` contains only std builders bundled with the page. Open question 1.
+- **Composites.** `InspectorCanvas` reads `scopePortValues(simulation.state.portValues, frame.path + '.', frame.componentDef)`. That function already exists in `drill-down-view.ts` and nothing calls it. Drilling deeper appends the clicked node's id to the path. Because it's the same session, the inspector shows the same cycle as the canvas behind it, keeps updating while auto-run is on, and its clock controls are the main session's (`simulation.actions.tick`, `run`, `stepBack`...).
+- **Writes.** A Switch or Input inside the composite writes `setNode(frame.path + '.' + nodeId)`. A boundary input is writable when the wire feeding the instance in its parent comes from a Switch or Input node; clicking it writes that node. Otherwise it's read-only, because a value driven by logic can't be overridden without breaking the circuit. Today each drill-down has its own copy where every boundary input is a free switch, so this is a visible change, and it's accepted (decision 6).
+- **Reference builds** (`MADE_OF`: Adder, Subtractor, Incrementer, Mux, Comparator) aren't in the running netlist, so there's no path to read. The inspector opens a second session for the build in the same shared iframe, `sandbox.open({ circuit: MADE_OF[name](args) }, { history: 0 })`, and feeds it the parent's input values: on every parent update it reads the instance's input ports from the parent's `portValues` at `frame.path` and calls `set` on the reference session with any that changed. The builds are combinational, so the reference session's outputs are a function of those inputs and can't drift from the parent. Its clock controls are hidden. The session closes when the frame is popped. A frame opened inside a reference build gets a `path` in the reference session, so nested drilling works the same way.
+- **Why a session and not `simulate()` on the page.** Every simulation runs in the sandbox, with no exceptions to explain. That keeps the rule from decision 0001 absolute, and it means the page never calls the engine, so the engine can later leave the page bundle (#419). The cost is one `set` round trip per parent update while a reference frame is open, inside the same iframe.
 - `CircuitCanvas` passes its `simulation` prop to its built-in inspector. Its root frame gets `path` from the double-clicked node's id.
 - **`LevelDrilldown`** (game map) uses `useCompile(draft)` + `useSimulation(..., { harness: true })`, as the level page does, and seeds the stack with `{ ..., path: 'dut' }`. The harness wraps the level circuit as node `dut`, so its boundary inputs are writable through the harness switches.
 
-Deleted from `CompositeInspectorDialog`: slot ids, `compileIR` of the view circuit, the local-engine fallback (`createEngine` with std behavior), the 200ms auto-run, and its history. About 250 lines.
+Deleted from `CompositeInspectorDialog`: slot ids, `compileIR` of the view circuit, the local-engine fallback (`createEngine` with std behavior, the last place the page simulates anything), the 200ms auto-run, and its history. About 250 lines, against about 40 added for the reference session.
 
 ## 8. Errors, the watchdog and restarts (#51)
 
@@ -654,11 +713,11 @@ The relay keeps:
 - the last `compile` request per compile id, and
 - the `open` request per session id.
 
-**A request hangs** (a `tick`, `set` or `open` that runs user code for 5s): as now, the worker is terminated and a new one started. The stuck request fails with `code: 'timed-out'`; other in-flight requests fail with `code: 'restarted'`.
+**The rule:** the watchdog measures whether the worker is responsive, not how long a request takes. While the worker owes a response or a running session owes frames, the relay expects some message from it at least every 5s: a response, an `updated` frame, or a `progressed` heartbeat from a sliced `tick` or `sample` (section 4). Five seconds of silence means a single cycle, or a compile, is stuck in user code.
 
-**A running session goes quiet**: a session in `run` sends a frame at least every `1000 / frameRate` ms. If 5s pass without a frame or a response from the worker while any session is running, the relay restarts the worker the same way. The 80% frame budget means this only happens when a single cycle hangs.
+**On silence**, as now, the worker is terminated and a new one started. The oldest in-flight request fails with `code: 'timed-out'`; other in-flight requests fail with `code: 'restarted'`. If nothing was in flight (a session was auto-running), every running session is treated as the cause. Slicing means a legitimate `tick(10_000_000)` that takes 20s keeps the watchdog quiet, which it doesn't today.
 
-**After the restart**, the relay replays every compile (ids unchanged), then reopens every session at cycle 0 with history cleared and auto-run off. A compile or open that hangs again is dropped, and the relay starts over with a fresh worker, as `replayCompiles` does now. Then it pushes:
+**After the restart**, the relay replays every compile (ids unchanged), then reopens every session, reference sessions included, at cycle 0 with history cleared and auto-run off. A compile or open that hangs again is dropped, and the relay starts over with a fresh worker, as `replayCompiles` does now. Then it pushes:
 
 ```ts
 { type: 'restarted', sessions: ['s-3', 's-7'], dropped: ['s-9'],
@@ -688,9 +747,9 @@ Each PR keeps main green and deployable. The sandbox accepts old and new message
 | 1 | Rename `apps/sandbox` to `@simten/sandbox-app` | `apps/sandbox/package.json`, `--filter` uses in root `package.json`, `.github/workflows/ci.yml`, `bench/browser.mts`, docs mentioning the filter | root `pnpm test`, CI e2e | none (no runtime change) | +20 / -20 |
 | 2 | `Simulation` in core | `simulator/simulation.ts` (new), delete `simulation-session.ts`, `simulate.ts` becomes the factory, `simulator/index.ts`, `src/index.ts`, `src/internal.ts`; delete `ui/canvas/hooks/useSimulationSession.ts`; port `simulate.test.ts`, `session-time-travel.test.ts`, `snapshot-roundtrip.test.ts`, `environmental-time-travel.test.ts`, `mos6502/machine.ts`; move test `setNode` calls to `nodesOf` or `ROM({ memory })`; MCP `reference.ts` text; docs `verifying-circuits`, `mcp-integration`, `known-issues`, `architecture` | root `pnpm test`, `pnpm bench --check` (fingerprints) | none (the browser doesn't use `simulate()`) | +450 / -900 |
 | 3 | Exact names | engine `setNode` suffix match removed; `Simulation.get`/`set` throw on unknown names; game `GradeRuntime` resolves port-vs-node; fixes for anything the full suite turns up | root `pnpm test`, `bench --check`, sandbox e2e | every blog post with a demo, the editor's 6502 and RV32I, 3 game levels (an exact-name miss now shows an error instead of a silent 0) | +80 / -40, plus fixes |
-| 4 | `@simten/sandbox` | `packages/sandbox/*` (protocol moved from ui, `SandboxClient`, `SessionClient`, `session-host.ts`); `apps/sandbox/src/worker.ts` handles new messages through `SessionHost` alongside the old slot messages; `main.ts` relay remembers sessions and watches running ones; `ui/sandbox/protocol.ts` re-exports from the new package | `session-host.test.ts` (Node: open, set, tick, history, run loop with a fake clock, peripheral updates); `session-client.test.ts` over a `MessageChannel` to an in-process host; extend `apps/sandbox/e2e/watchdog.mts` with a hanging `run` and the `restarted` push; `bench/browser.mts` unchanged | deploy sandbox, then confirm production web and game still work on the old messages | +1,500 / -50 |
+| 4 | `@simten/sandbox` | `packages/sandbox/*` (protocol moved from ui, `SandboxClient`, `SessionClient`, `session-host.ts`); `apps/sandbox/src/worker.ts` handles new messages through `SessionHost` alongside the old slot messages; `main.ts` relay remembers sessions and watches running ones; `ui/sandbox/protocol.ts` re-exports from the new package | `session-host.test.ts` (Node: open, set, tick, history, run loop with a fake clock, peripheral updates, a large `tick` split into slices and recorded as one history step); `session-client.test.ts` over a `MessageChannel` to an in-process host. Required cases: interleaved `set`/`tick` on two sessions each end in their own state; a long `tick` on one session delays another session's response by no more than a frame or two; request, compile and session ids are unique across sessions and across several `SandboxClient`s on one page; a restart replays every compile and session and rejects every pending request. Extend `apps/sandbox/e2e/watchdog.mts` with a hanging `run`, a 20s sliced `tick` that must not trip the watchdog, and the `restarted` push; `bench/browser.mts` unchanged | deploy sandbox, then confirm production web and game still work on the old messages | +1,500 / -50 |
 | 5 | Hooks, embed and demos | `ui/sandbox/useCompile.ts`, `useSimulation.ts`, `SandboxProvider` over `SandboxClient`; `embed/CircuitViewer.tsx`, `WebComponentEmbed.tsx` (`sharedSandbox()`); the 13 demo call sites; `docs/PipelineVisualizer.tsx`; `CircuitCanvas` `sequentialState` prop renamed `peripheralState`; docs `building-custom-uis`, `code-editor`, `index`, `architecture` | root `pnpm test`; embed e2e (`circuit-embed.spec.ts`); `pnpm bench:browser` against baseline | each blog post with a custom demo: 6502 (run, console), RV32I debugger (load program, step), Snake (keys, framebuffer), Pong, Breakout, CORDIC, TPU, network switches, CRC32, sorting pipeline, synth (audio via `sample`); one `<CircuitEmbed>` combinational and one sequential; a page with 3 `<circuit-embed>` elements | +700 / -350 |
-| 6 | Editor, game, inspector | `EditorWorkspace.tsx`; game `routes/$levelId.tsx`, `game/runtime.ts`, `runtime.test.ts`, `LevelDrilldown.tsx`; `CompositeInspectorDialog.tsx`, `CircuitCanvas.tsx`, `canvas/types.ts` (`path` on frames) | root `pnpm test`; `bench:browser` (level load, editor load, step, auto-run) | the three from #417: a combinational level, a sequential level, a CPU level (submit, victory run, step back). Editor: 6502 run, pause, scrub, speed change; drill into a composite while running and see it update; drill into an Adder (reference build); keyboard demo; MCP `show` round trip | +450 / -650 |
+| 6 | Editor, game, inspector | `EditorWorkspace.tsx`; game `routes/$levelId.tsx`, `game/runtime.ts`, `runtime.test.ts`, `LevelDrilldown.tsx`; `CompositeInspectorDialog.tsx`, `CircuitCanvas.tsx`, `canvas/types.ts` (`path` on frames) | root `pnpm test`; `bench:browser` (level load, editor load, step, auto-run) | the three from #417: a combinational level, a sequential level, a CPU level (submit, victory run, step back). Editor: 6502 run, pause, scrub, speed change; drill into a composite while running and see it update; drill into an Adder (reference build, a second session) and toggle the parent's inputs to see it follow; keyboard demo; MCP `show` round trip | +450 / -650 |
 | 7 | Delete the old path | `ui/sandbox/useSandbox.ts`, its test, old `protocol.ts` types; `embed/hooks/useCircuitSimulator.ts`, `useCircuitCompiler.ts`, `useCompiledCircuit.ts` and their exports; old slot handlers in `worker.ts` and slot replay in `main.ts`; `normalizePortValues` boolean coercion | root `pnpm test`, both e2e suites, `bench:browser` | deploy sandbox; repeat PR 6's game and editor checks against production | +20 / -2,300 |
 
 Total about +3,200 / -4,300, net about -1,100. The biggest single deletion is `useCircuitSimulator.ts` (847 lines).
@@ -715,13 +774,15 @@ Both auto-run baselines read 10,091 ticks/s, which suggests the bench measures a
 
 **"Throwing on unknown names will break things that work today."** That's the purpose: today a typo reads 0, which passes any check that expects 0 (the game's `runtime.ts` comment describes exactly that bug). It's isolated in PR 3 so it can be reverted alone, and the full suite plus the click-test list is the gate.
 
-**"Lazy settling changes `simulate()` results."** Clocked results don't change: `tick` propagates from the inputs as it does now. Only a read between `set` and `tick` on a sequential circuit changes, from a stale value to the settled one, which is what the canvas already shows. Open question 2.
+**"Lazy settling changes `simulate()` results."** Clocked results don't change: `tick` propagates from the inputs as it does now. Only a read between `set` and `tick` on a sequential circuit changes, from a stale value to the settled one, which is what the canvas already shows. Accepted (decision 2).
 
 **"Why not keep history on the page and only move auto-run?"** Then snapshots live in the worker and their ids on the page, which is the split that needs `prune-snapshots` and leaks. History is sync code over engine snapshots; it belongs next to the engine.
 
 **"Why not run page-built blog circuits locally and skip the sandbox?"** It would split the runtime in two again, and decision 0001 says the page never runs user code. The embed and blog share `CircuitViewer`, and the embed runs share-link source.
 
-**"Behavior still crosses as source text for page-built circuits."** True, and unchanged: `BehaviorSource` stays for `{ circuit: Circuit }` sessions, and std behavior whose text matches keeps its closure, as now. Removing it would mean blog demos compile from source text. Open question 4.
+**"Behavior still crosses as source text for page-built circuits."** True, and unchanged: `BehaviorSource` stays for `{ circuit: Circuit }` sessions, and std behavior whose text matches keeps its closure, as now. Removing it would mean blog demos compile from source text. Kept (decision 4).
+
+**"A reference build as a second session is heavier than a local `simulate()`."** It's one extra session in an iframe that's already there, opened only while a reference frame is on screen, with history off. In exchange the page never runs the engine, so there's one rule with no exceptions and the engine can leave the page bundle (#419).
 
 **"The inspector's boundary inputs become read-only."** Only where logic drives them. The old behavior made the inspector's state disagree with the canvas behind it, which is the bug #417 asks to fix.
 
@@ -731,12 +792,16 @@ Both auto-run baselines read 10,091 ticks/s, which suggests the bench measures a
 
 **Memory.** 200 history entries of RV32I state per session is today's cost. A page with many sequential embeds now shares one iframe, so all their histories sit in one worker; each embed's history was already in one worker per iframe. `history` is per session, so a page can lower it.
 
-## Open questions
+## Decisions
 
-1. **Reference builds in the inspector:** evaluate on the page with `simulate()` (std only, combinational, driven from the parent's ports), as proposed, or open a second sandbox session for them? The proposal avoids a second session lifecycle; the alternative keeps "nothing simulates on the page" absolute.
-2. **Lazy settling in `simulate()`:** accept that `get` after `set` on a sequential circuit returns the settled value instead of the stale one?
-3. **`setNodeValue` becomes `setNode`:** #417 lists `setNodeValue` among names to keep. The proposal merges it into `setNode` to match core and `SessionClient` (19 call-site renames). Keep the old name instead?
-4. **Page-built circuits:** keep sending behavior as source text (proposed), or move blog demos to compile from source text so `BehaviorSource` can be deleted?
-5. **History length:** 200 for sandbox sessions (today's embed cap) and off by default for `simulate()`, as proposed? Core's session uses 1000 today.
-6. **Inspector boundary inputs:** writable only when fed by a Switch or Input in the parent, read-only otherwise, as proposed?
-7. **`sharedSandbox()`:** one iframe for every `<circuit-embed>` on a page. Any reason an embedding site would want them isolated?
+Answered on #493 before implementation.
+
+1. **Reference builds in the inspector run in the sandbox,** as a second session in the shared iframe fed with the parent's input values. Every simulation runs in the sandbox; nothing simulates on the page, so the engine can later leave the page bundle (#419). See section 7.
+2. **`get` after `set` on a sequential circuit returns the settled value.** `Simulation` settles lazily on the next read. See section 2.
+3. **`setNodeValue` merges into `setNode`.** `setNode(path)` isn't on the public `Simulation` (internal `nodesOf` only). It's on `SessionClient` because the canvas (switch toggles) and keyboard input set nodes inside the circuit. See section 2.
+4. **Page-built blog circuits keep sending behavior as source text.**
+5. **History is 200 entries per sandbox session and off by default in `simulate()`.**
+6. **Inspector boundary inputs are writable only when a Switch or Input drives them.** See section 7.
+7. **One shared iframe per page** (`sharedSandbox()`), so every `<circuit-embed>` uses the same one.
+
+Also decided in the same review: `useSimulation` returns `{ state, history, actions }` plus `session` (section 5), and the worker splits large `tick` requests into frame-sized slices like auto-run (section 4).
