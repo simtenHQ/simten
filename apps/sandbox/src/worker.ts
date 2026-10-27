@@ -311,14 +311,18 @@ async function compile(source: string, slotId: string = DEFAULT_SLOT): Promise<S
 
   // A source that defines nothing but exports a component (`export default
   // FullAdder`) still has something to show.
-  const renderable = result.circuits.length > 0 ? result.circuits : (result.exportedCircuits ?? []);
+  const fromSource = result.circuits.length > 0;
+  const renderable = fromSource ? result.circuits : result.exported;
   if (renderable.length === 0) {
     throw new RequestError(
       "Nothing to show. Define a circuit with circuit('Name', { ... }), or export a component to look at.",
     );
   }
+  // The slot simulates the last circuit the source built, or else the last
+  // one it exported.
+  const target = renderable[renderable.length - 1];
 
-  const circuits = renderable.map(serializable);
+  const circuits = renderable.map((c) => serializable(internalsOf(c).ir));
   const libraryCircuits: CircuitIR[] = [];
   for (const name of result.library.definitions.getAllCircuitNames()) {
     const c = result.library.definitions.resolveCircuit(name);
@@ -331,10 +335,8 @@ async function compile(source: string, slotId: string = DEFAULT_SLOT): Promise<S
   const definitions = newDefinitions();
   for (const c of [...circuits, ...libraryCircuits]) definitions.addCircuit(c);
   const behaviors = new Map(result.library.behaviors);
-  const targetIR = renderable[renderable.length - 1];
-  const built = result.builtCircuits.find((b) => internalsOf(b).ir === targetIR);
-  if (built) {
-    const own = libraryOf(built);
+  if (fromSource) {
+    const own = libraryOf(target);
     for (const name of own.definitions.getAllCircuitNames()) {
       const c = own.definitions.resolveCircuit(name);
       if (c) definitions.addCircuit(serializable(c));

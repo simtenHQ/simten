@@ -26,7 +26,7 @@ import { internalsOf } from '../internals.js';
 /** Run a compiled source's last circuit with the compile's own library and behavior. */
 function run(result: ExecuteResult, inputs: Record<string, number>): Record<string, number> {
   expect(result.error).toBeNull();
-  const top = result.circuits[result.circuits.length - 1];
+  const top = internalsOf(result.circuits[result.circuits.length - 1]).ir;
   const engine = createEngine(elaborate(top, result.library.definitions), {
     library: result.library,
   });

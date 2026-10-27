@@ -143,8 +143,9 @@ if (result.error) {
   console.error(`❌ editor snake example failed to execute: ${result.error}`);
   process.exit(1);
 }
+const editorIR = result.circuits.map((c) => internalsOf(c).ir);
 for (const name of SHARED) {
-  const editorCircuit = result.circuits.find((c) => c.name === name);
+  const editorCircuit = editorIR.find((c) => c.name === name);
   if (!editorCircuit) {
     problems.push(`[editor:${name}] circuit missing from the example source`);
     continue;
@@ -153,7 +154,7 @@ for (const name of SHARED) {
 }
 
 // The example's top level must be the playable harness wired to SnakeCore.
-const playable = result.circuits.find((c) => c.name === 'SnakePlayable');
+const playable = editorIR.find((c) => c.name === 'SnakePlayable');
 if (!playable) {
   problems.push('[editor:SnakePlayable] playable top-level circuit missing');
 } else {
