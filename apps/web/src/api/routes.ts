@@ -7,6 +7,7 @@
 
 import { handleCompile } from './compile';
 import type { ApiEnv } from './limits';
+import { handleShare, handleSharePreflight } from './share';
 import { handleVerilogImport } from './synth';
 import { handleVerify } from './verify';
 
@@ -19,13 +20,18 @@ const POST_ROUTES = new Map<string, Handler>([
   ['/api/verilog-import', handleVerilogImport],
 ]);
 
+/** Answers CORS, unlike the routes above: see `share.ts`. */
+const SHARE_ROUTE = '/api/share';
+
 export async function handleApiRoute(request: Request, env: ApiEnv): Promise<Response | null> {
-  const handler = POST_ROUTES.get(new URL(request.url).pathname);
+  const path = new URL(request.url).pathname;
+  if (path === SHARE_ROUTE && request.method === 'OPTIONS') return handleSharePreflight();
+  const handler = path === SHARE_ROUTE ? handleShare : POST_ROUTES.get(path);
   if (!handler || request.method !== 'POST') return null;
 
   // Browsers send a JSON content type to another origin only after a CORS
-  // preflight, and these routes answer none, so in a browser only same-origin
-  // pages can call them.
+  // preflight, and the routes in POST_ROUTES answer none, so in a browser only
+  // same-origin pages can call them.
   if (!isJson(request)) {
     return Response.json(
       { success: false, error: 'Content-Type must be application/json' },

@@ -8,6 +8,7 @@
  * through. The dev server skips whichever is missing. See `deploy-mode.ts`.
  */
 
+import type { ShareKV } from '@simten/ui/share';
 import { isDevServer } from './deploy-mode';
 
 export interface RateLimiter {
@@ -21,6 +22,11 @@ export interface BudgetCounter {
 
 export interface BudgetNamespace {
   getByName(name: string): BudgetCounter;
+}
+
+/** The slice of an Analytics Engine dataset the routes use. */
+export interface AnalyticsDataset {
+  writeDataPoint(point: { blobs?: string[]; doubles?: number[] }): void;
 }
 
 export interface ServiceFetcher {
@@ -37,6 +43,8 @@ export interface ApiEnv {
   COMPILER?: ServiceFetcher;
   VERIFIER?: ServiceFetcher;
   SYNTH?: ServiceFetcher;
+  CIRCUIT_SHARES?: ShareKV;
+  ANALYTICS?: AnalyticsDataset;
 }
 
 type RateLimitBinding = 'COMPILE_RL' | 'VERIFY_RL' | 'SYNTH_RL' | 'SHARE_RL';
