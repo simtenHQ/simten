@@ -7,8 +7,8 @@
  */
 
 import { EXAMPLES } from '@simten/core/examples';
-import { checkCircuit } from '@simten/core/internal';
 import { describe, expect, it } from 'vitest';
+import { checkCircuit } from '../lib/check-circuit.js';
 import { buildOrientation, materializeExample } from './get_started.js';
 
 describe('materializeExample', () => {

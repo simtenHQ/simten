@@ -5,12 +5,18 @@
  * Accepts TypeScript circuit builder code.
  */
 
-import type { BitValue, BusValue } from '../ir/circuit-ir.js';
-import { createEngine, elaborate, TOP_LEVEL_NODE } from '../simulator/index.js';
-import type { SimulationTrace } from '../simulator/trace-analysis.js';
-import { compressTrace, detectSteadyState } from '../simulator/trace-analysis.js';
+import {
+  type BitValue,
+  type BusValue,
+  compressTrace,
+  createEngine,
+  detectSteadyState,
+  elaborate,
+  type SimulationTrace,
+  TOP_LEVEL_NODE,
+} from '@simten/core/internal';
 import { compileSource } from './compile-source.js';
-import { exportVCD } from './vcd.js';
+import { exportVCD } from './vcd-export.js';
 
 export type RLEValue = { value: BitValue | BusValue; count: number };
 

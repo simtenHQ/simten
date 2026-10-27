@@ -458,7 +458,8 @@ export function toFlatPortValueMap(
 
     // Values are numeric regardless of width; the port type carries bit-ness,
     // not the value. (Bits used to be reported as booleans here, which made
-    // callers infer width from the JS type — see tools/vcd.ts inferWidth.)
+    // callers infer width from the JS type; see inferWidth in
+    // packages/mcp/src/lib/vcd-export.ts.)
     result.set(key, numVal);
   }
 

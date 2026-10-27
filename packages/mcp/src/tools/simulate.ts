@@ -3,10 +3,10 @@
  */
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { traceSource } from '@simten/core/internal';
 import { z } from 'zod';
 import { readCircuitSource } from '../lib/file-reader.js';
 import { getPreviewServer } from '../lib/preview-singleton.js';
+import { traceSource } from '../lib/trace-source.js';
 
 export function registerSimulateTool(server: McpServer): void {
   server.tool(

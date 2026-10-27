@@ -4,7 +4,7 @@
  * Pure function to get primitive component catalog.
  */
 
-import type { CircuitDefinitions } from '../ir/circuit-ir.js';
+import type { CircuitDefinitions, PortType } from '@simten/core/internal';
 
 export function getPrimitivesHandler(
   params: {
@@ -41,11 +41,11 @@ export function getPrimitivesHandler(
       description: circuit.metadata?.description,
       inputs: circuit.inputs.map((p) => ({
         name: p.name,
-        type: p.portType.kind === 'bit' ? 'Bit' : `Bus[${(p.portType as any).width ?? '?'}]`,
+        type: portTypeLabel(p.portType),
       })),
       outputs: circuit.outputs.map((p) => ({
         name: p.name,
-        type: p.portType.kind === 'bit' ? 'Bit' : `Bus[${(p.portType as any).width ?? '?'}]`,
+        type: portTypeLabel(p.portType),
       })),
       clocks: circuit.clocks.map((c) => ({ name: c.name })),
     });
@@ -57,6 +57,10 @@ export function getPrimitivesHandler(
   const separator = compact ? '\n' : '\n\n---\n\n';
 
   return components.map((c) => formatter(c)).join(separator) || 'No components found.';
+}
+
+function portTypeLabel(portType: PortType): string {
+  return portType.kind === 'bit' ? 'Bit' : `Bus[${portType.width}]`;
 }
 
 function formatCompact(c: {
