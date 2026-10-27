@@ -1,6 +1,6 @@
 # Design: the simulation runtime (#417)
 
-**Status:** Open questions answered on #493 (see Decisions at the end). Not yet implemented.
+**Status:** Two rounds of questions answered on #493 (see Decisions at the end); one proposal (`setInput`) is waiting for an answer. Not yet implemented.
 **Issue:** #417. Follow-up: #418 (embed folds into ui).
 **Packages after both issues:** `core`, `sandbox`, `ui`, `mcp`. React only in `ui`.
 
@@ -10,6 +10,8 @@
 - New package `@simten/sandbox`, no React: the protocol, `SandboxClient` (one iframe, many sessions) and `SessionClient` (an async mirror of `Simulation`).
 - The sandbox worker holds a `Simulation` per session and runs the auto-run loop itself, pushing state to the page at display rate. The page keeps no history and no timers.
 - Two hooks in `@simten/ui`, `useCompile` and `useSimulation`, replace six hooks and one helper. Return shapes stay close to today's.
+- The sandbox takes source text only. Page-built demos pass their circuits module's text (`import src from './circuits.ts?raw'`) and a circuit name; `compile-ir`, behavior sent as `fn.toString()` text and the worker's `new Function` rebuild are removed. Closures in user factories work because the code runs where it was written.
+- Verilog export runs in the sandbox too (`export` request), so the editor's Export button exports the same way headless and in the browser.
 - Every simulation runs in the sandbox; nothing simulates on the page. That lets the engine leave the page bundle later (#419).
 - The drill-down inspector reads the main session by dotted path. Gate-level reference builds, which aren't in the running netlist, get a second session in the same shared iframe, fed with the parent's input values.
 - Simulation results don't change: the engine is untouched, so `pnpm bench --check` fingerprints stay identical. Saved circuits and share links are unaffected (decision 0003 freezes source names, not the runtime).
@@ -36,6 +38,8 @@ Problems this causes, beyond duplication:
 - History lives in two places: snapshot ids on the page, snapshots in the worker. Pruning needs its own message, and orphaned snapshots leak until the slot is disposed.
 - `compile-ir` takes "the first slot" as its base library (`worker.ts`, `compileIR`). Which slot that is depends on mount order.
 - Every drill-down opens a new sandbox slot running a copy of the circuit, so its state drifts from the canvas it was opened from.
+- Page-built circuits (blog, docs, `<CircuitEmbed>`) reach the worker as IR plus each primitive's `eval`/`onTick` as `fn.toString()` text, which the worker rebuilds with `new Function`. That drops the closure: an `eval` that reads a factory option has nothing to read. The worker works around it by keeping its own closure when the text matches one it already has (`sameSource`, `addBehaviorSources`), and std components built with the config form carry their shape in `node.arguments` through `withArgs` for the same reason. It also contradicts decision 0001: source is canonical, and the page shouldn't be shipping code.
+- The editor's Verilog export runs on the page with std behavior only (`stdBehaviorsFor`), because the page has no user behavior. A user primitive exports as unsupported in the browser but not headless.
 
 ### Call sites
 
@@ -180,6 +184,27 @@ export interface SimulationTimeline {
 - **History records one entry per `tick` call**, so `tick(100)` is one step back, same as `tickN` in the embed today. With `history: 0` (the `simulate()` default) nothing is recorded. Today `simulate()` snapshots the engine on every cycle into a 1000-entry ring buffer that no caller can reach, so this is a speed-up for long verify runs.
 - **Environmental state** (Switch/Input positions) rewinds with history through the engine snapshot's `inputs` and `nodeValues`, which already exist. The worker's separate `FullSnapshot.env` capture becomes redundant; `environmental-time-travel.test.ts` is ported to `Simulation` to prove it.
 
+### `ExecuteResult`
+
+`executeCircuitCode` and `executeJsCode` (core's source runner, used by the worker, MCP and tests) return four overlapping views of the same circuits today: `circuit` (the last one, as IR), `circuits` (IR), `exportedCircuits` (IR) and `builtCircuits` (`Circuit`). The new shape:
+
+```ts
+export interface ExecuteResult {
+  /** Every circuit the source built with `circuit(...)`, in the order it built them. */
+  circuits: Circuit[];
+  /** Circuits the source exports, defined there or not (`export default FullAdder`). */
+  exported: Circuit[];
+  /** Definitions and behavior of everything built, dependencies included. Owned by this run. */
+  library: MutableLibrary;
+  /** Set when the source threw or failed to parse; the lists are then empty. */
+  error: string | null;
+}
+```
+
+- Callers that need IR use `internalsOf(circuit).ir`.
+- There is no "main circuit". Today the worker silently simulates the last circuit, which is why the game's grader has to re-select its target. Every caller now names the circuit it wants: sessions open by name, MCP and the bench pick explicitly.
+- Callers to update: `apps/sandbox/src/worker.ts` (moves into `session-host.ts`), `packages/mcp/src/lib/compile-source.ts`, `packages/core/bench/workloads.ts`, the local grader in `apps/game/src/game/__tests__/runtime.test.ts`, and 17 test files that call `executeCircuitCode`.
+
 ## 3. `@simten/sandbox`
 
 A new package with no React and no DOM beyond the iframe it creates. `apps/sandbox` (currently also named `@simten/sandbox`, private) is renamed `@simten/sandbox-app` first.
@@ -205,16 +230,17 @@ export type SessionId = string;
 
 export interface Compiled {
   id: CompileId;
-  circuits: CircuitIR[];        // circuits the source defines, in order
+  circuits: CircuitIR[];        // circuits the source builds, in order (ExecuteResult.circuits as IR)
+  exported: CircuitIR[];        // circuits the source exports (ExecuteResult.exported as IR)
   libraryCircuits: CircuitIR[]; // everything they depend on, std included
   definitions: CircuitDefinitions;
 }
 
+/** Source text in, always. A circuit is chosen by the name given to `circuit(...)`. */
 export type SessionSource =
-  /** A circuit from a source compile, by name, or IR built from that compile's circuits (the editor's canvas). */
-  | { compiled: Compiled; circuit: string | CircuitIR }
-  /** A circuit built on the page from trusted code (blog, docs, the inspector's reference builds). Behavior goes as source text. */
-  | { circuit: Circuit };
+  | { compiled: Compiled; circuit: string }
+  /** Compiles first (cached by text, so ten embeds of one module compile once), then opens. */
+  | { source: string; circuit: string };
 
 export interface OpenOptions {
   /** Wrap the circuit in Switch/Input and Led/HexDisplay nodes. */
@@ -237,6 +263,9 @@ export class SandboxClient {
   /** Opens a session. Resolves once the sandbox has built it. */
   open(source: SessionSource, options?: OpenOptions): Promise<SessionClient>;
 
+  /** Verilog for one circuit of a compile, with the compile's own behavior. */
+  export(compiled: Compiled, circuit: string, options?: VerilogExportOptions): Promise<ExportResult>;
+
   /** Remove the iframe and fail everything pending. */
   dispose(): void;
 }
@@ -250,6 +279,90 @@ One iframe hosts any number of sessions and compiles, keyed by ids the client ge
 `sharedSandbox()` means every `<circuit-embed>` on a page shares one iframe instead of mounting one each, as `WebComponentEmbed` does today.
 
 Compiles and sessions are separate because they have different lifetimes: the editor recompiles on every edit and then opens one session against the result; the game compiles once to grade and to preview. A session names the compile it was built from, which replaces `compile-ir`'s "first slot" guess.
+
+### Source text only
+
+The sandbox accepts one kind of input: source text. Nothing the page sends is executable, and nothing executable is rebuilt from text.
+
+**What goes.** `compile-ir`, the `evalSources: Record<string, BehaviorSource>` field and `BehaviorSource` itself, `extractBehaviorSources` in `useCircuitSimulator`, and in the worker `addBehaviorSources`, `sameSource` and the `new Function` rebuild. `withArgs` goes from each of its five call sites (`std/routing.ts` twice, `import/primitives.ts` three times) where it only exists so a rebuilt `eval` can find its shape in `node.arguments`. Each site is checked against the Verilog exporter and eval-synth first, since those read `node.arguments` too; any site they depend on stays, with its comment corrected.
+
+**Page-built circuits.** Blog, docs and learn demos pass their circuits module as text, using Vite's `?raw` import, plus the name of the circuit to show:
+
+```tsx
+import circuitsSource from '../circuits.ts?raw';
+import type { CRC32ByteDemo } from '../circuits';      // type only: nothing from the module is bundled to run
+
+const { state, actions } = useSimulation({ source: circuitsSource, circuit: 'CRC32ByteDemo' });
+```
+
+The sandbox compiles that text exactly as it compiles editor source, so a factory's closure is intact.
+
+Rules for a module passed this way, enforced by a test that compiles every `?raw` circuits module through `executeCircuitCode` in Node (`apps/web/src/__tests__/raw-circuits.test.ts`):
+- imports only from `@simten/core/*` (the sandbox resolves those to its own copy) or with `import type`, which `stripTypes` removes. Relative value imports don't resolve in the sandbox: today `building-a-cpu/circuits.ts` imports `FullAdder` from `@/features/splash/circuits`, and modules that import from `../types` must make those imports type-only. Each one is inlined or made type-only in the PR that moves its post.
+- builds the named circuit at module level. A circuit that needs runtime data (the 6502 demo builds `Blog6502Computer({ rom })` from a program fetched at runtime) appends a one-line entry to the text: `` `${circuitsSource}\nexport const Program = Blog6502Computer(${JSON.stringify({ rom })});` ``. Arguments are JSON, as `ArgumentValue` already is.
+
+**`<CircuitEmbed>` keeps its typed `layout`.** Today `layout?: HarnessedLayout<C>` is inferred from the `circuit: C` prop, which is the built circuit the embed then runs. The new props separate what runs from what types the layout:
+
+```ts
+export interface CircuitEmbedProps<C extends Circuit = Circuit> {
+  /** Text of the module that builds the circuit. This is what runs. */
+  source: string;
+  /** The circuit to show, by the name given to circuit(...). */
+  circuit: string;
+  /** Node positions. Keys are checked against C's ports and node labels when C is given. */
+  layout?: HarnessedLayout<C>;
+  // height, aspectRatio, showControls, theme, title, subtitle, description, href, forkSource,
+  // focus, showPortLabels, onPortClick, glowUnconnected, autoRunSpeed, initialInputs,
+  // onPortValuesChange: unchanged
+}
+```
+
+```tsx
+import fullAdderSource from './circuits.ts?raw';
+import type { FullAdder } from './circuits';
+
+<CircuitEmbed<typeof FullAdder>
+  source={fullAdderSource}
+  circuit="FullAdder"
+  layout={{ a: { x: 0, y: 0 }, b: { x: 0, y: 80 }, dut: { x: 200, y: 40 }, sum: { x: 400, y: 0 }, carry: { x: 400, y: 80 } }}
+/>
+```
+
+`C` is supplied as an explicit type argument from a type-only import, so the layout keys are checked at compile time and the circuit module isn't bundled as code. Without a type argument `layout` is `Record<string, Position>`, as for the web component today. A name the compile doesn't contain shows an error listing the names it does contain. Fork keeps opening the selected circuit through `circuitToSource` of its compiled IR unless `forkSource` is given; sending a whole multi-circuit module to the editor would open the wrong circuit.
+
+**Call sites that change.**
+
+| What | Files | Count |
+|---|---|---|
+| `<CircuitEmbed circuit={X}>` becomes `source` + `circuit="X"` | `apps/web/src/features/blog` (57 uses in 48 files), `features/learn` (13 in 11), `features/docs` (8 in 4, including `examples.mdx`), `features/splash/ClaudeDemoSection.tsx` (2), `routes/index.tsx` (3), and the docs pages under `apps/web/content/docs` (20 in 5: `index`, `building-custom-uis`, `examples`, `how-it-works`, `architecture`) | 103 in 70 files, by grep |
+| `useCircuitSimulator(X)` becomes `useSimulation({ source, circuit })` | the 13 demo call sites in section 1 | 13 |
+| `buildFromIR` for display | `docs/PipelineVisualizer.tsx` | 1 |
+| `CircuitViewer` internals | `embed/src/CircuitViewer.tsx`, `CircuitEmbed.tsx` (props), `webcomponent/WebComponentEmbed.tsx` (already passes text; drops its own compile) | 3 |
+| a string sample that mentions the prop | `apps/web/src/__tests__/doc-samples.test.ts` (2 uses), `packages/core/src/source/circuit-to-source.ts` (comment) | 2 files |
+| circuits modules made self-contained | each `circuits.ts` with a relative value import (found by the new test) | about 15 |
+
+**Test first.** Before any of this, a test records how a user factory with a closure behaves through `<CircuitEmbed>` today, so the change is measured, not assumed. In `packages/embed/e2e/circuit-embed.spec.ts`:
+
+```ts
+const Scale = circuit('Scale', (opts: { k: number }) => ({
+  inputs: { a: bus(8) }, outputs: { out: bus(8) },
+  eval: ({ a }) => ({ out: (a * opts.k) & 0xff }),       // reads the factory's closure
+}));
+// mount <CircuitEmbed circuit={Scale({ k: 3 })} />, set a = 2, read out
+```
+
+Expected today: `out` is wrong (the rebuilt `eval` has no `opts`), or the compile throws. Whatever it shows is written into the test as today's result, and the PR that moves `<CircuitEmbed>` to source text flips the assertion to `out === 6`.
+
+### Verilog export
+
+```ts
+// request
+{ id, type: 'export', compile: CompileId, circuit: string, options?: VerilogExportOptions }
+// response
+{ id, type: 'exported', result: ExportResult }   // { verilog, files, unsupported }
+```
+
+The worker calls `exportVerilogFromIR(ir, compile.library, options)` with the compile's own behavior, which is what `exportVerilog` does headless. The editor's Export button calls `sandbox.export(compiled, selectedName)` and keeps its handling of `unsupported` and the sidecar `.hex` downloads. `stdBehaviorsFor` and the page's import of `exportVerilogFromIR` go away, so a user primitive exports the same in the browser as in `tsx`, and the page no longer needs core's exporter (#419). Export is sliced like any other request only if it needs to be; it doesn't tick, so it's subject to the watchdog like a compile.
 
 ### `SessionClient`
 
@@ -328,7 +441,8 @@ Every request carries `id: string`.
 |---|---|---|
 | `compile` | `compile: CompileId`, `source` | `compiled` |
 | `release` | `compile` | `released` |
-| `open` | `session`, `from: { compile, circuit: string \| CircuitIR } \| { circuit: CircuitIR, library: CircuitIR[], behaviors: Record<string, BehaviorSource> }`, `harness?`, `initialInputs?`, `history` | `opened` |
+| `open` | `session`, `compile`, `circuit: string`, `harness?`, `initialInputs?`, `history` | `opened` |
+| `export` | `compile`, `circuit: string`, `options?` | `exported` |
 | `set` | `session`, `values: Record<string, number>` | `updated` |
 | `set-node` | `session`, `path`, `value: number \| MemoryContents` | `updated` |
 | `tick` | `session`, `count` | `updated` |
@@ -346,7 +460,8 @@ Every request carries `id: string`.
 | Response | Fields |
 |---|---|
 | `ready` | none (unchanged handshake) |
-| `compiled` | `id`, `compile`, `circuits`, `libraryCircuits` |
+| `compiled` | `id`, `compile`, `circuits`, `exported`, `libraryCircuits` |
+| `exported` | `id`, `result: ExportResult` |
 | `released` | `id` |
 | `opened` | `id`, `session`, `circuit` (harnessed IR), `isSequential`, `state: SessionUpdate` |
 | `updated` | `id?` (absent on pushed frames), `session`, `state: SessionUpdate` |
@@ -370,7 +485,7 @@ Iframe ↔ worker messages are the same types, plus one the relay keeps to itsel
 
 ### Removed
 
-`compile-ir` (folded into `open`), `tick-n` (`tick` with `count`), `render-samples` (`sample`), `scan-port` (`scan`), `snapshot`, `restore`, `prune-snapshots` (history is in the worker), `dispose` (`close`), every `slot` field, and the `error` response (`failed`). `SandboxResult`, `CompileIRResult`, `TickResult`, `ResetResult`, `SetNodeResult`, `SnapshotResult`, `RestoreResult` go with them. Per decision 0003 there's no support for the old protocol once the last page using it is redeployed.
+`compile-ir` and any IR or behavior text going into the sandbox (`open` takes a compile id and a name; `BehaviorSource` is deleted), `tick-n` (`tick` with `count`), `render-samples` (`sample`), `scan-port` (`scan`), `snapshot`, `restore`, `prune-snapshots` (history is in the worker), `dispose` (`close`), every `slot` field, and the `error` response (`failed`). `SandboxResult`, `CompileIRResult`, `TickResult`, `ResetResult`, `SetNodeResult`, `SnapshotResult`, `RestoreResult` go with them. Per decision 0003 there's no support for the old protocol once the last page using it is redeployed.
 
 ### Auto-run and streaming
 
@@ -455,7 +570,7 @@ export interface UseCompileResult {
 }
 
 export function useSimulation(
-  source: Circuit | { compiled: Compiled; circuit: string | CircuitIR } | null,
+  source: SessionSource | null,   // { source, circuit } or { compiled, circuit }
   options?: { harness?: boolean; initialInputs?: Record<string, number>; history?: number },
 ): UseSimulationResult;
 
@@ -510,7 +625,7 @@ export interface SimulationActions {
 }
 ```
 
-`useSimulation` opens a session when `source` changes and closes the old one. For a page-built `Circuit` it sends the IR, library and behavior source text, as `useCircuitSimulator` does now. Harnessing moves into the worker, so the page no longer builds harness definitions itself. The hook subscribes to the session with `useSyncExternalStore`. Action rejections are caught: `failed` goes to `state.error`, `restarted` goes to `state.notice`.
+`useSimulation` opens a session when `source` changes and closes the old one. Given `{ source, circuit }` it compiles first (cached by text), so a demo is one line. Harnessing moves into the worker, so the page no longer builds harness definitions itself. The hook subscribes to the session with `useSyncExternalStore`. Action rejections are caught: `failed` goes to `state.error`, `restarted` goes to `state.notice`.
 
 The return is grouped so what changes every frame is separate from what never changes. `actions` keeps one identity for the session's life, which removes the `simRef` workaround in `EditorWorkspace` (it exists so canvas callbacks don't change on every tick). Call sites destructure what they need: `const { state, actions } = useSimulation(...)`.
 
@@ -551,7 +666,8 @@ const v = sim.portValues.get('display.in');
 
 // after
 import { useSimulation } from '@simten/ui/sandbox';
-const { state, actions } = useSimulation(CRC32ByteDemo);
+import circuitsSource from '../circuits.ts?raw';
+const { state, actions } = useSimulation({ source: circuitsSource, circuit: 'CRC32ByteDemo' });
 const handleStep = useCallback(() => {
   actions.setNode('data', byteVal);
   actions.tick();
@@ -587,8 +703,15 @@ const onToggleNode = useCallback((nodeId: string) => {
 // after
 const compiler = useCompile(code, { debounceMs: 500 });
 const { state, history, actions } = useSimulation(
-  compiler.compiled && circuit ? { compiled: compiler.compiled, circuit } : null,
+  compiler.compiled && selected ? { compiled: compiler.compiled, circuit: selected.name } : null,
+  { harness: true },   // the store's canvas circuit is autoHarness(selected); the worker builds it now
 );
+const sandbox = useSandboxClient();
+const handleExportVerilog = useCallback(async () => {
+  if (!compiler.compiled || !selected) return;
+  const { verilog, files, unsupported } = await sandbox.export(compiler.compiled, selected.name);
+  // unchanged: refuse on `unsupported`, download the .v and each sidecar file
+}, [sandbox, compiler.compiled, selected]);
 // actions is stable for the session's life, so simRef is no longer needed
 const onToggleNode = actions.toggleNode;
 <ClockControls
@@ -698,7 +821,12 @@ export interface CompositeInspectorDialogProps {
 
 - **Composites.** `InspectorCanvas` reads `scopePortValues(simulation.state.portValues, frame.path + '.', frame.componentDef)`. That function already exists in `drill-down-view.ts` and nothing calls it. Drilling deeper appends the clicked node's id to the path. Because it's the same session, the inspector shows the same cycle as the canvas behind it, keeps updating while auto-run is on, and its clock controls are the main session's (`simulation.actions.tick`, `run`, `stepBack`...).
 - **Writes.** A Switch or Input inside the composite writes `setNode(frame.path + '.' + nodeId)`. A boundary input is writable when the wire feeding the instance in its parent comes from a Switch or Input node; clicking it writes that node. Otherwise it's read-only, because a value driven by logic can't be overridden without breaking the circuit. Today each drill-down has its own copy where every boundary input is a free switch, so this is a visible change, and it's accepted (decision 6).
-- **Reference builds** (`MADE_OF`: Adder, Subtractor, Incrementer, Mux, Comparator) aren't in the running netlist, so there's no path to read. The inspector opens a second session for the build in the same shared iframe, `sandbox.open({ circuit: MADE_OF[name](args) }, { history: 0 })`, and feeds it the parent's input values: on every parent update it reads the instance's input ports from the parent's `portValues` at `frame.path` and calls `set` on the reference session with any that changed. The builds are combinational, so the reference session's outputs are a function of those inputs and can't drift from the parent. Its clock controls are hidden. The session closes when the frame is popped. A frame opened inside a reference build gets a `path` in the reference session, so nested drilling works the same way.
+- **Reference builds** (`MADE_OF`: Adder, Subtractor, Incrementer, Mux, Comparator) aren't in the running netlist, so there's no path to read. The inspector opens a second session for the build in the same shared iframe, from generated source text (below), and feeds it the parent's input values: on every parent update it reads the instance's input ports from the parent's `portValues` at `frame.path` and calls `set` on the reference session with any that changed. The builds are combinational, so the reference session's outputs are a function of those inputs and can't drift from the parent. Its clock controls are hidden. The session closes when the frame is popped. A frame opened inside a reference build gets a `path` in the reference session, so nested drilling works the same way.
+  ```ts
+  const source = `import { MADE_OF } from '@simten/core/std';
+  export default MADE_OF[${JSON.stringify(name)}](${JSON.stringify(args)});`;
+  const reference = await sandbox.open({ source, circuit: name }, { history: 0 });
+  ```
 - **Why a session and not `simulate()` on the page.** Every simulation runs in the sandbox, with no exceptions to explain. That keeps the rule from decision 0001 absolute, and it means the page never calls the engine, so the engine can later leave the page bundle (#419). The cost is one `set` round trip per parent update while a reference frame is open, inside the same iframe.
 - `CircuitCanvas` passes its `simulation` prop to its built-in inspector. Its root frame gets `path` from the double-clicked node's id.
 - **`LevelDrilldown`** (game map) uses `useCompile(draft)` + `useSimulation(..., { harness: true })`, as the level page does, and seeds the stack with `{ ..., path: 'dut' }`. The harness wraps the level circuit as node `dut`, so its boundary inputs are writable through the harness switches.
@@ -740,39 +868,42 @@ export class SandboxError extends Error {
 
 ## 9. Migration
 
-Each PR keeps main green and deployable. The sandbox accepts old and new messages from PR 4 until PR 7, so web, game and sandbox can deploy in any order during the transition and there's no flag day.
+Each PR keeps main green and deployable. The sandbox accepts old and new messages from PR 6 until PR 10, so web, game and sandbox can deploy in any order during the transition and there's no flag day.
 
 | # | PR | Files | Tests | Click-test | Size (+/-) |
 |---|---|---|---|---|---|
-| 1 | Rename `apps/sandbox` to `@simten/sandbox-app` | `apps/sandbox/package.json`, `--filter` uses in root `package.json`, `.github/workflows/ci.yml`, `bench/browser.mts`, docs mentioning the filter | root `pnpm test`, CI e2e | none (no runtime change) | +20 / -20 |
-| 2 | `Simulation` in core | `simulator/simulation.ts` (new), delete `simulation-session.ts`, `simulate.ts` becomes the factory, `simulator/index.ts`, `src/index.ts`, `src/internal.ts`; delete `ui/canvas/hooks/useSimulationSession.ts`; port `simulate.test.ts`, `session-time-travel.test.ts`, `snapshot-roundtrip.test.ts`, `environmental-time-travel.test.ts`, `mos6502/machine.ts`; move test `setNode` calls to `nodesOf` or `ROM({ memory })`; MCP `reference.ts` text; docs `verifying-circuits`, `mcp-integration`, `known-issues`, `architecture` | root `pnpm test`, `pnpm bench --check` (fingerprints) | none (the browser doesn't use `simulate()`) | +450 / -900 |
-| 3 | Exact names | engine `setNode` suffix match removed; `Simulation.get`/`set` throw on unknown names; game `GradeRuntime` resolves port-vs-node; fixes for anything the full suite turns up | root `pnpm test`, `bench --check`, sandbox e2e | every blog post with a demo, the editor's 6502 and RV32I, 3 game levels (an exact-name miss now shows an error instead of a silent 0) | +80 / -40, plus fixes |
-| 4 | `@simten/sandbox` | `packages/sandbox/*` (protocol moved from ui, `SandboxClient`, `SessionClient`, `session-host.ts`); `apps/sandbox/src/worker.ts` handles new messages through `SessionHost` alongside the old slot messages; `main.ts` relay remembers sessions and watches running ones; `ui/sandbox/protocol.ts` re-exports from the new package | `session-host.test.ts` (Node: open, set, tick, history, run loop with a fake clock, peripheral updates, a large `tick` split into slices and recorded as one history step); `session-client.test.ts` over a `MessageChannel` to an in-process host. Required cases: interleaved `set`/`tick` on two sessions each end in their own state; a long `tick` on one session delays another session's response by no more than a frame or two; request, compile and session ids are unique across sessions and across several `SandboxClient`s on one page; a restart replays every compile and session and rejects every pending request. Extend `apps/sandbox/e2e/watchdog.mts` with a hanging `run`, a 20s sliced `tick` that must not trip the watchdog, and the `restarted` push; `bench/browser.mts` unchanged | deploy sandbox, then confirm production web and game still work on the old messages | +1,500 / -50 |
-| 5 | Hooks, embed and demos | `ui/sandbox/useCompile.ts`, `useSimulation.ts`, `SandboxProvider` over `SandboxClient`; `embed/CircuitViewer.tsx`, `WebComponentEmbed.tsx` (`sharedSandbox()`); the 13 demo call sites; `docs/PipelineVisualizer.tsx`; `CircuitCanvas` `sequentialState` prop renamed `peripheralState`; docs `building-custom-uis`, `code-editor`, `index`, `architecture` | root `pnpm test`; embed e2e (`circuit-embed.spec.ts`); `pnpm bench:browser` against baseline | each blog post with a custom demo: 6502 (run, console), RV32I debugger (load program, step), Snake (keys, framebuffer), Pong, Breakout, CORDIC, TPU, network switches, CRC32, sorting pipeline, synth (audio via `sample`); one `<CircuitEmbed>` combinational and one sequential; a page with 3 `<circuit-embed>` elements | +700 / -350 |
-| 6 | Editor, game, inspector | `EditorWorkspace.tsx`; game `routes/$levelId.tsx`, `game/runtime.ts`, `runtime.test.ts`, `LevelDrilldown.tsx`; `CompositeInspectorDialog.tsx`, `CircuitCanvas.tsx`, `canvas/types.ts` (`path` on frames) | root `pnpm test`; `bench:browser` (level load, editor load, step, auto-run) | the three from #417: a combinational level, a sequential level, a CPU level (submit, victory run, step back). Editor: 6502 run, pause, scrub, speed change; drill into a composite while running and see it update; drill into an Adder (reference build, a second session) and toggle the parent's inputs to see it follow; keyboard demo; MCP `show` round trip | +450 / -650 |
-| 7 | Delete the old path | `ui/sandbox/useSandbox.ts`, its test, old `protocol.ts` types; `embed/hooks/useCircuitSimulator.ts`, `useCircuitCompiler.ts`, `useCompiledCircuit.ts` and their exports; old slot handlers in `worker.ts` and slot replay in `main.ts`; `normalizePortValues` boolean coercion | root `pnpm test`, both e2e suites, `bench:browser` | deploy sandbox; repeat PR 6's game and editor checks against production | +20 / -2,300 |
+| 1 | Test: a factory closure through `<CircuitEmbed>` | `packages/embed/e2e/circuit-embed.spec.ts` (the `Scale` case in section 3), asserting whatever happens today | embed e2e | none | +40 / -0 |
+| 2 | Rename `apps/sandbox` to `@simten/sandbox-app` | `apps/sandbox/package.json`, `--filter` uses in root `package.json`, `.github/workflows/ci.yml`, `bench/browser.mts`, docs mentioning the filter | root `pnpm test`, CI e2e | none (no runtime change) | +20 / -20 |
+| 3 | `ExecuteResult` shape | `core/src/source/execute.ts`; callers `apps/sandbox/src/worker.ts`, `mcp/src/lib/compile-source.ts`, `core/bench/workloads.ts`, `game/__tests__/runtime.test.ts`, 17 tests | root `pnpm test`, `bench --check` | editor compile, one game level (the worker picks its circuit explicitly now, behavior unchanged) | +120 / -110 |
+| 4 | `Simulation` in core | `simulator/simulation.ts` (new), delete `simulation-session.ts`, `simulate.ts` becomes the factory, `simulator/index.ts`, `src/index.ts`, `src/internal.ts`; delete `ui/canvas/hooks/useSimulationSession.ts`; port `simulate.test.ts`, `session-time-travel.test.ts`, `snapshot-roundtrip.test.ts`, `environmental-time-travel.test.ts`, `mos6502/machine.ts`; move test `setNode` calls to `nodesOf` or `ROM({ memory })`; MCP `reference.ts` text; docs `verifying-circuits`, `mcp-integration`, `known-issues`, `architecture` | root `pnpm test`, `pnpm bench --check` (fingerprints) | none (the browser doesn't use `simulate()`) | +450 / -900 |
+| 5 | Exact names | engine `setNode` suffix match removed; `Simulation.get`/`set` throw on unknown names; game `GradeRuntime` resolves port-vs-node; fixes for anything the full suite turns up | root `pnpm test`, `bench --check`, sandbox e2e | every blog post with a demo, the editor's 6502 and RV32I, 3 game levels (an exact-name miss now shows an error instead of a silent 0) | +80 / -40, plus fixes |
+| 6 | `@simten/sandbox` | `packages/sandbox/*` (protocol moved from ui, `SandboxClient`, `SessionClient`, `session-host.ts` with `compile`, `open` by name, `export`, compile cache by text); `apps/sandbox/src/worker.ts` handles new messages through `SessionHost` alongside the old slot messages; `main.ts` relay remembers sessions and watches running ones; `ui/sandbox/protocol.ts` re-exports from the new package | `session-host.test.ts` (Node: open, set, tick, history, run loop with a fake clock, peripheral updates, a large `tick` split into slices and recorded as one history step, `export` matching headless `exportVerilog` for a user primitive); `session-client.test.ts` over a `MessageChannel` to an in-process host. Required cases: interleaved `set`/`tick` on two sessions each end in their own state; a long `tick` on one session delays another session's response by no more than a frame or two; request, compile and session ids are unique across sessions and across several `SandboxClient`s on one page; a restart replays every compile and session and rejects every pending request. Extend `apps/sandbox/e2e/watchdog.mts` with a hanging `run`, a 20s sliced `tick` that must not trip the watchdog, and the `restarted` push; `bench/browser.mts` unchanged | deploy sandbox, then confirm production web and game still work on the old messages | +1,550 / -50 |
+| 7 | Hooks and embed | `ui/sandbox/useCompile.ts`, `useSimulation.ts`, `SandboxProvider` over `SandboxClient`; `embed/CircuitEmbed.tsx` (`source` + `circuit` name + typed `layout`), `CircuitViewer.tsx`, `WebComponentEmbed.tsx` (`sharedSandbox()`); `CircuitCanvas` `sequentialState` prop renamed `peripheralState`; PR 1's test flips to the correct result | root `pnpm test`; embed e2e; a type test (`expectTypeOf`) that a wrong `layout` key fails with `typeof FullAdder` and any key passes without it | the embed's own e2e pages; one combinational and one sequential embed in the web app, ported in this PR as the first two call sites; a page with 3 `<circuit-embed>` elements | +600 / -250 |
+| 8 | Demos to source text | the 103 `<CircuitEmbed>` uses and 13 hook call sites in the table in section 3; `docs/PipelineVisualizer.tsx`; circuits modules made self-contained; `raw-circuits.test.ts`; docs `building-custom-uis`, `code-editor`, `index`, `architecture`. Mechanical, so it can be split per post if the diff is too big to review | root `pnpm test` (including `raw-circuits.test.ts` and the MDX build); `pnpm bench:browser` against baseline | every blog and learn post, scrolling each embed and clicking its inputs; the custom demos: 6502 (run, console, load a program), RV32I debugger (load program, step), Snake (keys, framebuffer), Pong, Breakout, CORDIC, TPU, network switches, CRC32, sorting pipeline, synth (audio via `sample`) | +900 / -800 |
+| 9 | Editor, game, inspector | `EditorWorkspace.tsx` (session by name with `harness: true`, Export through `sandbox.export`); game `routes/$levelId.tsx`, `game/runtime.ts`, `runtime.test.ts`, `LevelDrilldown.tsx`; `CompositeInspectorDialog.tsx`, `CircuitCanvas.tsx`, `canvas/types.ts` (`path` on frames) | root `pnpm test`; `bench:browser` (level load, editor load, step, auto-run) | the three from #417: a combinational level, a sequential level, a CPU level (submit, victory run, step back). Editor: 6502 run, pause, scrub, speed change; Export on a std design and on one with a user primitive (now exports instead of reporting unsupported); drill into a composite while running and see it update; drill into an Adder (reference build, a second session) and toggle the parent's inputs to see it follow; keyboard demo; MCP `show` round trip | +450 / -700 |
+| 10 | Delete the old path | `ui/sandbox/useSandbox.ts`, its test, old `protocol.ts` types and `BehaviorSource`; `embed/hooks/useCircuitSimulator.ts`, `useCircuitCompiler.ts`, `useCompiledCircuit.ts` and their exports; in `worker.ts` the slot handlers, `compile-ir`, `addBehaviorSources`, `sameSource` and the `new Function` rebuild; slot replay in `main.ts`; `withArgs` where it only served the rebuild; `stdBehaviorsFor`; `normalizePortValues` boolean coercion | root `pnpm test`, both e2e suites, `bench:browser` | deploy sandbox; repeat PR 9's game and editor checks against production | +20 / -2,500 |
 
-Total about +3,200 / -4,300, net about -1,100. The biggest single deletion is `useCircuitSimulator.ts` (847 lines).
+Total about +4,200 / -5,400, net about -1,200. The biggest single deletion is `useCircuitSimulator.ts` (847 lines). PR 8 is large in lines but each change is the same two-prop edit.
 
-#418 follows: `CircuitEmbed` moves to `@simten/ui/embed` and `@simten/embed` is deprecated. This design keeps `CircuitEmbed` and the web component in `embed` so the two issues don't collide; PR 5 only changes what they import.
+#418 follows: `CircuitEmbed` moves to `@simten/ui/embed` and `@simten/embed` is deprecated. This design keeps `CircuitEmbed` and the web component in `embed` so the two issues don't collide; PR 7 changes their props and what they import, not where they live.
 
 ### Measuring speed
 
-`pnpm bench:browser` already measures `auto-run (6502)` and `auto-run (rv32i)` in ticks/s and fps, `step (6502)` in ms, and level and editor load times, against `bench/browser-baseline.json`. Every PR from 4 on runs it, and PRs 5 to 7 must not regress any number beyond run-to-run noise (5 runs, as the script does).
+`pnpm bench:browser` already measures `auto-run (6502)` and `auto-run (rv32i)` in ticks/s and fps, `step (6502)` in ms, and level and editor load times, against `bench/browser-baseline.json`. Every PR from 6 on runs it, and PRs 7 to 10 must not regress any number beyond run-to-run noise (5 runs, as the script does).
 
-Both auto-run baselines read 10,091 ticks/s, which suggests the bench measures at a requested speed rather than at the engine's limit. PR 4 adds an `auto-run (rv32i), max ticks/s` entry that requests a speed well above what the engine can reach, so the worker-side loop is measured against the old page-driven one at full throttle. It also logs the size of one `updated` frame for RV32I, so we know the per-frame payload before deciding whether the peripheral delta from section 6 is needed.
+Both auto-run baselines read 10,091 ticks/s, which suggests the bench measures at a requested speed rather than at the engine's limit. PR 6 adds an `auto-run (rv32i), max ticks/s` entry that requests a speed well above what the engine can reach, so the worker-side loop is measured against the old page-driven one at full throttle. It also logs the size of one `updated` frame for RV32I, so we know the per-frame payload before deciding whether the peripheral delta from section 6 is needed.
 
-`pnpm bench --check` runs in PRs 2 and 3. It times the engine directly, so it proves the engine's results didn't change; `Simulation` doesn't touch the engine except for removing the suffix match in PR 3.
+`pnpm bench --check` runs in PRs 3 to 5. It times the engine directly, so it proves the engine's results didn't change; `Simulation` doesn't touch the engine except for removing the suffix match in PR 5.
 
 ## 10. Risks and expected pushback
 
 **"Pushing frames without acknowledgements will flood the page."** The page does one structured-clone decode and a reference swap per frame and renders at most once per animation frame. At 30 frames a second that's well under the page's budget even for RV32I's port map. The bench's fps number would show it. If it does, the fallback is an acknowledgement per frame, which only touches `session-host.ts` and `SessionClient`.
 
-**"The whole port map every frame is wasteful."** It's what every response carries today. The inspector needs internal ports, so they have to cross somehow. If the frame-size measurement in PR 4 is large, send only changed entries; the engine knows which ports changed per tick (`resetChangeFlags`). That's a change inside `SessionUpdate`.
+**"The whole port map every frame is wasteful."** It's what every response carries today. The inspector needs internal ports, so they have to cross somehow. If the frame-size measurement in PR 6 is large, send only changed entries; the engine knows which ports changed per tick (`resetChangeFlags`). That's a change inside `SessionUpdate`.
 
 **"Removing `run`, `stop`, `watch`, `watchPort` and `tickN` breaks the public API."** It's pre-1.0, and decision 0003 freezes `circuit`, `bit`, `bus`, std names and import paths, not `simulate()`'s members. The MCP reference never documented them. `tickN` and `setNode` are the only ones with real use; `tick(n)` and `nodesOf` cover them. The changelog lists each.
 
-**"Throwing on unknown names will break things that work today."** That's the purpose: today a typo reads 0, which passes any check that expects 0 (the game's `runtime.ts` comment describes exactly that bug). It's isolated in PR 3 so it can be reverted alone, and the full suite plus the click-test list is the gate.
+**"Throwing on unknown names will break things that work today."** That's the purpose: today a typo reads 0, which passes any check that expects 0 (the game's `runtime.ts` comment describes exactly that bug). It's isolated in PR 5 so it can be reverted alone, and the full suite plus the click-test list is the gate.
 
 **"Lazy settling changes `simulate()` results."** Clocked results don't change: `tick` propagates from the inputs as it does now. Only a read between `set` and `tick` on a sequential circuit changes, from a stale value to the settled one, which is what the canvas already shows. Accepted (decision 2).
 
@@ -780,7 +911,13 @@ Both auto-run baselines read 10,091 ticks/s, which suggests the bench measures a
 
 **"Why not run page-built blog circuits locally and skip the sandbox?"** It would split the runtime in two again, and decision 0001 says the page never runs user code. The embed and blog share `CircuitViewer`, and the embed runs share-link source.
 
-**"Behavior still crosses as source text for page-built circuits."** True, and unchanged: `BehaviorSource` stays for `{ circuit: Circuit }` sessions, and std behavior whose text matches keeps its closure, as now. Removing it would mean blog demos compile from source text. Kept (decision 4).
+**"Passing module text is stringly typed: a renamed circuit breaks the embed at runtime, not at build."** `raw-circuits.test.ts` compiles every `?raw` module and checks that each name passed to `<CircuitEmbed circuit=...>` or `useSimulation` exists in it, so a rename fails CI. The layout keys stay type-checked through the type argument.
+
+**"Every embed now compiles its module, which is slower than handing over a built circuit."** The `SandboxClient` caches compiles by source text, so a post with six embeds from one `circuits.ts` compiles once. The bench's level and editor load times cover the compile path; PR 8 adds a blog post with many embeds to `bench/browser.mts` if load time moves.
+
+**"Circuits modules can't import each other any more."** Not relative value imports, no. That is the same rule the editor and share links already live under, and the new test names every module that breaks it. The ones found so far (`building-a-cpu/circuits.ts` importing `FullAdder` from splash) are a few lines to inline.
+
+**"The page still bundles the circuits modules' text."** Text, not code: the modules stop being executed on the page, which is what lets core's builder, engine and exporter leave the page bundle (#419). For most posts the text is smaller than the built code it replaces.
 
 **"A reference build as a second session is heavier than a local `simulate()`."** It's one extra session in an iframe that's already there, opened only while a reference frame is on screen, with history off. In exchange the page never runs the engine, so there's one rule with no exceptions and the engine can leave the page bundle (#419).
 
@@ -799,9 +936,25 @@ Answered on #493 before implementation.
 1. **Reference builds in the inspector run in the sandbox,** as a second session in the shared iframe fed with the parent's input values. Every simulation runs in the sandbox; nothing simulates on the page, so the engine can later leave the page bundle (#419). See section 7.
 2. **`get` after `set` on a sequential circuit returns the settled value.** `Simulation` settles lazily on the next read. See section 2.
 3. **`setNodeValue` merges into `setNode`.** `setNode(path)` isn't on the public `Simulation` (internal `nodesOf` only). It's on `SessionClient` because the canvas (switch toggles) and keyboard input set nodes inside the circuit. See section 2.
-4. **Page-built blog circuits keep sending behavior as source text.**
+4. **Superseded by decision 8.** The first round kept page-built circuits sending behavior as `fn.toString()` text; the second round removed that path entirely.
 5. **History is 200 entries per sandbox session and off by default in `simulate()`.**
 6. **Inspector boundary inputs are writable only when a Switch or Input drives them.** See section 7.
 7. **One shared iframe per page** (`sharedSandbox()`), so every `<circuit-embed>` uses the same one.
 
 Also decided in the same review: `useSimulation` returns `{ state, history, actions }` plus `session` (section 5), and the worker splits large `tick` requests into frame-sized slices like auto-run (section 4).
+
+Second round, also on #493:
+
+8. **The sandbox takes source text only.** `compile-ir`, `BehaviorSource`, the `new Function` rebuild, `sameSource`/`addBehaviorSources`, and `withArgs` where it only served the rebuild are removed. Blog, docs and `<CircuitEmbed>` pass their circuits module's text (`?raw`) and a circuit name; `<CircuitEmbed>` keeps a typed `layout` through an explicit type argument. A test of a factory closure through `<CircuitEmbed>` lands first to record today's behavior. See section 3.
+9. **Verilog export runs in the sandbox** through an `export` request returning `ExportResult`, used by the editor's Export button, so export behaves the same headless and in the browser and the page no longer needs core's exporter (#419). See section 3.
+10. **`ExecuteResult` is `{ circuits: Circuit[], exported: Circuit[], library, error }`.** IR comes from `internalsOf`; every caller names the circuit it wants. See section 2.
+
+## Proposed, pending an answer
+
+**`SessionClient.setNode(path, value)` becomes `setInput(path, value)`.** It would accept only input components (Input, Switch, the keyboard's scan-code Input) and throw for anything else, so the public `@simten/sandbox` API can't overwrite a register or memory inside a running circuit. Effects if accepted:
+
+- `useSimulation`'s `actions.setNode` and `toggleNode` become `actions.setInput` and `toggleInput`; canvas toggles, the game's victory run, CRC32, Snake and the keyboard hook already only write inputs.
+- Two current uses write something that isn't an input and need another route. The RV32I debugger and the editor's `onLoadMemory` load ROM contents at runtime with `setNodeValue(romId, Map)`: those would rebuild the circuit with contents in its source (`ROM({ memory })` through an appended entry line, as the 6502 demo does) or use a separate, explicit `loadMemory(path, contents)`. `scan` drives a debug address port, which is an Input in every current use (Snake's `scan_addr`).
+- `nodesOf(sim).set` in core stays as it is, for tests.
+
+Until this is answered, the rest of the document uses `setNode`.
