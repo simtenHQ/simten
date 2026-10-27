@@ -81,12 +81,8 @@ describe('Top');
 declareOracle(${JSON.stringify(ORACLE)});
 verify.exhaustive('truth table', [2, 2], (a, b) => {
   const s = simulate(Top);
-  try {
-    s.set({ a, b });
-    return s.get('sum') === (a ^ b) && s.get('carry') === (a & b);
-  } finally {
-    s.dispose();
-  }
+  s.set({ a, b });
+  return s.get('sum') === (a ^ b) && s.get('carry') === (a & b);
 });
 verify.run();
 `,
@@ -193,13 +189,9 @@ declareOracle(${JSON.stringify(ORACLE)});
 const expected = [11, 42, 7, 0];
 verify.exhaustive('table', [4], (addr) => {
   const s = simulate(Lookup);
-  try {
-    s.set({ addr });
-    s.tick();
-    return s.get('data') === expected[addr];
-  } finally {
-    s.dispose();
-  }
+  s.set({ addr });
+  s.tick();
+  return s.get('data') === expected[addr];
 });
 verify.run();
 `,
