@@ -1,0 +1,30 @@
+{
+  "name": "@simten/embed-page",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite dev --port 3004",
+    "build": "vite build",
+    "preview": "vite preview --port 3004",
+    "deploy": "pnpm run build && wrangler deploy",
+    "test": "vitest run",
+    "test:e2e": "tsx e2e/build.mts && playwright test"
+  },
+  "dependencies": {
+    "@simten/embed": "workspace:*",
+    "@simten/ui": "workspace:*",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.13.8",
+    "@playwright/test": "^1.58.2",
+    "@tailwindcss/vite": "^4.1.18",
+    "@types/node": "^22.10.2",
+    "@vitejs/plugin-react": "^5.0.4",
+    "typescript": "^5.7.2",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5",
+    "wrangler": "^4.73.0"
+  }
+}

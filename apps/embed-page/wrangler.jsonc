@@ -1,0 +1,39 @@
+// Embed pages: embed.simten.dev/s/<share-id>, a live circuit for any site's
+// <iframe>.
+//
+// Its own origin so simten.dev keeps `frame-ancestors 'self'` on every page.
+// This origin is frameable by anyone and holds nothing worth attacking: no
+// cookies, no storage, nothing in the frame that writes. Circuit code still
+// runs one level down, in the sandbox (decision 0008).
+//
+// The page is static assets (src/headers.ts writes their CSP into _headers at
+// build time). The one Worker request per view is GET /api/share/<id>, which
+// reads the share from the KV namespace simten.dev writes.
+//
+// Production deploy: `pnpm deploy:embed` from the repo root. The first deploy
+// creates the embed.simten.dev custom domain.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "simten-embed",
+  "compatibility_date": "2025-09-02",
+  "main": "src/worker.ts",
+  "routes": [{ "pattern": "embed.simten.dev", "custom_domain": true }],
+  "observability": {
+    "enabled": true
+  },
+  // The same namespace as apps/web/wrangler.jsonc. This app only reads it.
+  "kv_namespaces": [
+    {
+      "binding": "CIRCUIT_SHARES",
+      "id": "c625bb9e78984737ab1005a8b05671bd",
+      "preview_id": "de858145af144c8d9deadac6b93f10bb"
+    }
+  ],
+  "analytics_engine_datasets": [{ "binding": "ANALYTICS", "dataset": "simten_analytics" }],
+  "assets": {
+    // The Cloudflare vite plugin sets the directory at build time.
+    // Every path but /api/* is the page: /s/<id> falls back to index.html.
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  }
+}
