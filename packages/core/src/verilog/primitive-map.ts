@@ -175,6 +175,34 @@ function sanitizeId(id: string): string {
   return id.replace(/[.-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
 }
 
+/** Comparator output port -> Verilog operator. */
+const UNSIGNED_COMPARISONS: ReadonlyArray<readonly [string, string]> = [
+  ['eq', '=='],
+  ['ne', '!='],
+  ['lt', '<'],
+  ['le', '<='],
+  ['gt', '>'],
+  ['ge', '>='],
+];
+/** SignedComparator also has `lte`/`gte`, aliases of `le`/`ge`. */
+const SIGNED_COMPARISONS: ReadonlyArray<readonly [string, string]> = [
+  ...UNSIGNED_COMPARISONS,
+  ['lte', '<='],
+  ['gte', '>='],
+];
+
+/** One `assign` per connected comparison output. */
+function emitComparisons(
+  wires: PrimitiveWires,
+  a: string,
+  b: string,
+  comparisons: ReadonlyArray<readonly [string, string]>,
+): string[] {
+  return comparisons
+    .filter(([port]) => isConnected(wires, port, 'output'))
+    .map(([port, op]) => `assign ${wire(wires, port, 'output')} = (${a} ${op} ${b});`);
+}
+
 /**
  * Whether the hand-written mapping for this node's name describes it: only
  * when the node is std's own primitive of that name. A user circuit that takes
@@ -329,30 +357,21 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       };
 
     // ── Comparison ───────────────────────────────────────────────────
-    case 'Comparator': {
-      const cmpLines: string[] = [];
-      if (isConnected(wires, 'eq', 'output'))
-        cmpLines.push(`assign ${o('eq')} = (${i('a')} == ${i('b')});`);
-      if (isConnected(wires, 'lt', 'output'))
-        cmpLines.push(`assign ${o('lt')} = (${i('a')} < ${i('b')});`);
-      if (isConnected(wires, 'gt', 'output'))
-        cmpLines.push(`assign ${o('gt')} = (${i('a')} > ${i('b')});`);
-      return { lines: cmpLines, declarations: [] };
-    }
-    case 'SignedComparator': {
-      const scmpLines: string[] = [];
-      if (isConnected(wires, 'eq', 'output'))
-        scmpLines.push(`assign ${o('eq')} = ($signed(${i('a')}) == $signed(${i('b')}));`);
-      if (isConnected(wires, 'lt', 'output'))
-        scmpLines.push(`assign ${o('lt')} = ($signed(${i('a')}) < $signed(${i('b')}));`);
-      if (isConnected(wires, 'gt', 'output'))
-        scmpLines.push(`assign ${o('gt')} = ($signed(${i('a')}) > $signed(${i('b')}));`);
-      if (isConnected(wires, 'lte', 'output'))
-        scmpLines.push(`assign ${o('lte')} = ($signed(${i('a')}) <= $signed(${i('b')}));`);
-      if (isConnected(wires, 'gte', 'output'))
-        scmpLines.push(`assign ${o('gte')} = ($signed(${i('a')}) >= $signed(${i('b')}));`);
-      return { lines: scmpLines, declarations: [] };
-    }
+    case 'Comparator':
+      return {
+        lines: emitComparisons(wires, i('a'), i('b'), UNSIGNED_COMPARISONS),
+        declarations: [],
+      };
+    case 'SignedComparator':
+      return {
+        lines: emitComparisons(
+          wires,
+          `$signed(${i('a')})`,
+          `$signed(${i('b')})`,
+          SIGNED_COMPARISONS,
+        ),
+        declarations: [],
+      };
 
     // ── Multiplexing ─────────────────────────────────────────────────
     case 'Mux':
@@ -580,9 +599,25 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       };
     }
 
-    // ── I/O (handled by exporter as module ports) ────────────────────
+    // ── I/O ──────────────────────────────────────────────────────────
+    // A Switch or Input drives its `value` argument, which is what the
+    // simulator runs with when nobody toggles it. Exported as that constant.
     case 'Switch':
-    case 'Input':
+      return {
+        lines: isConnected(wires, 'out', 'output')
+          ? [`assign ${o('out')} = 1'b${args.value ? 1 : 0};`]
+          : [],
+        declarations: [],
+      };
+    case 'Input': {
+      const value = typeof args.value === 'number' ? args.value : 0;
+      const masked = w >= 32 ? value >>> 0 : (value & (2 ** w - 1)) >>> 0;
+      return {
+        lines: isConnected(wires, 'out', 'output') ? [`assign ${o('out')} = ${w}'d${masked};`] : [],
+        declarations: [],
+      };
+    }
+    // Sinks with no outputs: nothing to drive.
     case 'Led':
     case 'Output':
     case 'HexDisplay':

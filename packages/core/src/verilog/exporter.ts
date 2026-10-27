@@ -53,6 +53,9 @@ const RESET_NAME = 'rst_n';
 /** Std primitives whose output is as wide as their widest data input. */
 const PASS_THROUGH = new Set(['Mux', 'Mux2', 'Buffer', 'Probe']);
 
+/** Primitives registered once per width, whose port types are already exact. */
+const PER_WIDTH = /^(Splitter|Combiner)_\d+w$/;
+
 function sanitizeId(id: string): string {
   return id.replace(/[.-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
 }
@@ -228,11 +231,17 @@ function emitFlatModule(
     'sel', // Mux select
     'carry_in', // Adder carry input
     'carry_out', // Adder carry output
+    'borrow_in', // Subtractor borrow input
+    'borrow_out', // Subtractor borrow output
   ]);
 
   const resolvedPortTypes = new Map<string, PortType>();
   for (const node of flat.nodes) {
-    const argWidth = typeof node.arguments?.width === 'number' ? node.arguments.width : undefined;
+    // A per-width Splitter or Combiner (`Combiner_4w`) has exact port types:
+    // its bit ports stay one bit whatever its `width`.
+    const exact = PER_WIDTH.test(node.primitiveType);
+    const argWidth =
+      !exact && typeof node.arguments?.width === 'number' ? node.arguments.width : undefined;
 
     for (const output of node.outputs) {
       let pt = output.portType;
