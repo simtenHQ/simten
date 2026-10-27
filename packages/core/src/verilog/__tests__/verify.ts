@@ -35,7 +35,7 @@ interface VerifyResult {
   outputs: Record<string, number>;
 }
 
-export interface VerifyResponse {
+interface VerifyResponse {
   success: boolean;
   compileError?: string;
   simError?: string;

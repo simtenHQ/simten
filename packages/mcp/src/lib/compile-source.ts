@@ -7,7 +7,7 @@
 
 import { type CircuitIR, executeCircuitCode, type MutableLibrary } from '@simten/core/internal';
 
-export interface CompileSourceResult {
+interface CompileSourceResult {
   circuits: CircuitIR[];
   library: MutableLibrary;
   error: string | null;

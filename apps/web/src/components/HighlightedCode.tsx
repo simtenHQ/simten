@@ -35,7 +35,7 @@ export const SH_THEME_CLASSES = [
   'dark:[--sh-comment:#6a9955]',
 ].join(' ');
 
-export interface HighlightedCodeProps {
+interface HighlightedCodeProps {
   code: string;
   className?: string;
   /**

@@ -916,7 +916,7 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, { canvasReady?: bo
 // The exported section component
 // ============================================================================
 
-export interface ClaudeDemoSectionProps {
+interface ClaudeDemoSectionProps {
   /** Called once when the scripted demo finishes playing. */
   onComplete?: () => void;
   /**

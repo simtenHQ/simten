@@ -152,7 +152,7 @@ export type OnTickEntry = {
 };
 
 /** One compile's dispatch: an evaluator and an onTick per primitive type, by type index. */
-export interface DispatchTables {
+interface DispatchTables {
   /** Primitive type name for each type index. */
   typeNames: string[];
   /** Null when the compile has no behavior for that type; dispatching it throws. */

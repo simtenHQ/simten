@@ -77,7 +77,6 @@
   },
   "devDependencies": {
     "@playwright/test": "^1.58.2",
-    "@tailwindcss/cli": "^4",
     "@tailwindcss/vite": "^4.1.18",
     "@types/node": "^22.10.2",
     "@types/react": "^19",

@@ -26,7 +26,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { SOLUTIONS } from '../game/solutions';
 import type { Level } from '../game/types';
 
-export interface LevelDrilldownProps {
+interface LevelDrilldownProps {
   level: Level;
   /** The player's source for this level, when they have opened it. */
   draft?: string;

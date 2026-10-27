@@ -15,7 +15,7 @@ import { findRepoRoot } from './repo-root.js';
 
 export const VCD_PROJECT_DIR_SUFFIX = 'hardware/ulx3s/projects/cpu/.vcd';
 
-export interface TestNameResolution {
+interface TestNameResolution {
   path: string;
   slug: string;
 }

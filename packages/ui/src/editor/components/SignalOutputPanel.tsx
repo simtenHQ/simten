@@ -18,7 +18,7 @@ function formatValue(value: number | boolean | undefined): string {
   return String(value);
 }
 
-export interface SignalOutputPanelProps {
+interface SignalOutputPanelProps {
   portValues?: ReadonlyMap<string, boolean | number>;
 }
 

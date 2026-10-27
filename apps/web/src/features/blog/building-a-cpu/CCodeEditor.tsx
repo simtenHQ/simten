@@ -112,7 +112,7 @@ function highlightC(code: string): Token[] {
 
 const TEXT_CLASSES = 'm-0 p-3 font-mono text-xs leading-relaxed whitespace-pre [tab-size:4]';
 
-export interface CCodeEditorProps {
+interface CCodeEditorProps {
   value: string;
   onChange: (value: string) => void;
   className?: string;

@@ -12,11 +12,11 @@
 
 import type { DeviceSpec } from './types.js';
 
-export const SYNTH_URL = process.env.SYNTH_URL ?? 'http://localhost:8792/synth';
-export const BUILD_URL = process.env.BUILD_URL ?? 'http://localhost:8792/build';
-export const PATCH_URL = process.env.PATCH_URL ?? 'http://localhost:8792/patch';
+const SYNTH_URL = process.env.SYNTH_URL ?? 'http://localhost:8792/synth';
+const BUILD_URL = process.env.BUILD_URL ?? 'http://localhost:8792/build';
+const PATCH_URL = process.env.PATCH_URL ?? 'http://localhost:8792/patch';
 
-export interface SynthResponse {
+interface SynthResponse {
   success: boolean;
   netlist?: string;
   stats?: { cells?: number; wires?: number; cellBreakdown?: Record<string, number> };
@@ -24,7 +24,7 @@ export interface SynthResponse {
   error?: string;
 }
 
-export interface BuildResponse {
+interface BuildResponse {
   success: boolean;
   bitstream?: string; // base64
   config?: string; // base64-encoded .config (for later ecpbram patching)
@@ -46,7 +46,7 @@ export interface BuildResponse {
   error?: string;
 }
 
-export interface PatchResponse {
+interface PatchResponse {
   success: boolean;
   bitstream?: string; // base64
   log: string;

@@ -2,7 +2,7 @@ import { useCircuitSimulator } from '@simten/embed';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Blog6502Computer, romImage } from './computer6502.circuit';
 
-export interface Program {
+interface Program {
   id: string;
   name: string;
   description: string;

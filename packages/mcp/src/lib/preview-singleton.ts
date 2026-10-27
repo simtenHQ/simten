@@ -8,8 +8,6 @@
 import { randomUUID } from 'node:crypto';
 import type { StudioServer } from '../server/ws-server.js';
 
-export type { StudioServer };
-
 // Module-level singleton
 let studioServer: StudioServer | null = null;
 let browserOpened = false;
