@@ -23,14 +23,17 @@ import type {
   FlatConnection,
   FlatNode,
 } from '../simulator/types.js';
+import {
+  type PrimitiveContext,
+  type PrimitiveWires,
+  type StateInit,
+  sanitizeId,
+} from './emitters/helpers.js';
 import type { SynthValidation } from './eval-synth.js';
 import {
   emitPrimitive,
   isSequentialPrimitive,
   isSinkPrimitive,
-  type PrimitiveContext,
-  type PrimitiveWires,
-  type StateInit,
   usesStdMapping,
 } from './primitive-map.js';
 import type { ExportResult, VerilogExportOptions } from './types.js';
@@ -54,10 +57,6 @@ const PASS_THROUGH = new Set(['Mux', 'Mux2', 'Buffer', 'Probe']);
 
 /** Primitives registered once per width, whose port types are already exact. */
 const PER_WIDTH = /^(Splitter|Combiner)_\d+w$/;
-
-function sanitizeId(id: string): string {
-  return id.replace(/[.-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
-}
 
 function widthOf(pt: PortType): number {
   return pt.kind === 'bus' ? pt.width : 1;
