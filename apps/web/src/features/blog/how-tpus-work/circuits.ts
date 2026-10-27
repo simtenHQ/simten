@@ -252,7 +252,7 @@ const WavefrontController = circuit('WavefrontController', {
  * Test: A=[[1,2,3],[4,5,6],[7,8,9]] × B=[[2,0,1],[0,2,0],[1,0,2]]
  * Expected C = [[5,4,7],[14,10,16],[23,16,25]]
  */
-const Systolic3x3 = circuit('Systolic3x3', {
+export const Systolic3x3 = circuit('Systolic3x3', {
   inputs: {
     a00: bus(8),
     a01: bus(8),
@@ -705,6 +705,7 @@ export const TestSystolic3x3 = circuit('TestSystolic3x3', {
       start,
       display_c00,
       display_c01,
+      display_c02,
       display_c10,
       display_c11,
       display_c12,
@@ -735,6 +736,7 @@ export const TestSystolic3x3 = circuit('TestSystolic3x3', {
     start.out.to(sys.start),
     sys.c00.to(display_c00.in),
     sys.c01.to(display_c01.in),
+    sys.c02.to(display_c02.in),
     sys.c10.to(display_c10.in),
     sys.c11.to(display_c11.in),
     sys.c12.to(display_c12.in),
