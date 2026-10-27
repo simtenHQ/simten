@@ -216,6 +216,22 @@ function testbench(
   return `${lines.join('\n')}\n`;
 }
 
+/** iverilog's errors compiling `verilog` on its own, or '' when it compiles. */
+export function compileErrors(verilog: string, files: Record<string, string>): string {
+  const dir = mkdtempSync(join(tmpdir(), 'simten-diff-'));
+  try {
+    writeFileSync(join(dir, 'dut.v'), verilog);
+    for (const [name, contents] of Object.entries(files)) writeFileSync(join(dir, name), contents);
+    const r = spawnSync('iverilog', ['-g2012', '-o', 'dut.vvp', 'dut.v'], {
+      cwd: dir,
+      encoding: 'utf8',
+    });
+    return r.status === 0 ? '' : `${r.stderr}${r.stdout}`;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+}
+
 function runIverilog(verilog: string, files: Record<string, string>, tb: string): string[][] {
   const dir = mkdtempSync(join(tmpdir(), 'simten-diff-'));
   try {
