@@ -9,7 +9,7 @@
 // restricts `connect-src` to `self` and `https://esm.sh` (npm CDN).
 //
 // In dev: served by Vite on http://localhost:3002 (CSP set via vite.config.ts).
-// In prod: served at sandbox.simten.dev.
+// In prod: served at sandbox.simtenusercontent.dev.
 //
 // Production deploy:
 //   pnpm --filter @simten/sandbox build
@@ -18,7 +18,12 @@
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "simten-sandbox",
   "compatibility_date": "2025-09-02",
-  "routes": [{ "pattern": "sandbox.simten.dev", "custom_domain": true }],
+  // sandbox.simten.dev serves already-published @simten/embed versions; remove it
+  // at the next npm release (decision 0008).
+  "routes": [
+    { "pattern": "sandbox.simtenusercontent.dev", "custom_domain": true },
+    { "pattern": "sandbox.simten.dev", "custom_domain": true }
+  ],
   "assets": {
     "directory": "./dist",
     "not_found_handling": "single-page-application"

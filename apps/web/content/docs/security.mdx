@@ -13,7 +13,7 @@ Circuit code is arbitrary TypeScript. When you share a circuit or ask Claude to 
 
 ## Browser Sandbox
 
-When you type circuit code in the editor, it compiles and simulates inside a hidden `<iframe>` served from a separate origin (`sandbox.simten.dev` in production, `localhost:3002` in development). The main app (`simten.dev` / `localhost:3001`) never executes user code directly, not even via `eval` or `new Function()`.
+When you type circuit code in the editor, it compiles and simulates inside a hidden `<iframe>` served from a separate origin (`sandbox.simtenusercontent.dev` in production, `localhost:3002` in development). The main app (`simten.dev` / `localhost:3001`) never executes user code directly, not even via `eval` or `new Function()`.
 
 This applies to every code-execution surface: the editor, the live playground, and `<circuit-embed>` web components. All three route through the same sandbox.
 
@@ -21,11 +21,13 @@ This applies to every code-execution surface: the editor, the live playground, a
 
 **Origin isolation (iframe)**
 
-The iframe is served from a different origin. The browser enforces a hard boundary: code inside `sandbox.simten.dev` cannot read `simten.dev` cookies, `localStorage`, auth tokens, or DOM. This is enforced by the browser's same-origin policy at the OS level, not a JavaScript check.
+The iframe is served from a different origin. The browser enforces a hard boundary: code inside `sandbox.simtenusercontent.dev` cannot read the `simten.dev` page, its `localStorage` or its DOM. This is enforced by the browser's same-origin policy at the OS level, not a JavaScript check.
+
+The sandbox is also on a different *site*: `simtenusercontent.dev` is a separate registrable domain, not a subdomain of `simten.dev`. So cookies set for `simten.dev` never reach it, it can't set cookies the main site would accept, `SameSite` protections apply between them, and a blocklist that flags the sandbox doesn't flag `simten.dev`. See [decision 0008](https://github.com/simtenHQ/simten/blob/main/docs/decisions/0008-sandbox-domain.md).
 
 ```html
 <iframe
-  src="https://sandbox.simten.dev"
+  src="https://sandbox.simtenusercontent.dev"
   sandbox="allow-scripts allow-same-origin"
   style="display:none; width:0; height:0"
 />
@@ -39,7 +41,7 @@ The iframe spawns a Web Worker for all user code execution. Workers get their ow
 
 ```
 simten.dev (main app)               ← never runs user code
-└── sandbox.simten.dev (iframe, origin boundary)
+└── sandbox.simtenusercontent.dev (iframe, origin boundary)
     ├── iframe-main thread          ← relay + watchdog, runs no user code
     └── worker.ts (Web Worker, separate thread)
         ├── new Function(userCode)  ← compile/simulate
@@ -123,7 +125,8 @@ This all happens inside the sandbox worker. The main frame never touches the npm
 
 | Attack | Status |
 |--------|--------|
-| Access `simten.dev` cookies / localStorage | Blocked: origin isolation |
+| Access `simten.dev` localStorage | Blocked: origin isolation |
+| Access `simten.dev` cookies | Blocked: the sandbox is on a different site (`simtenusercontent.dev`), so `simten.dev` cookies are never sent to it |
 | Access `simten.dev` DOM | Blocked: origin isolation |
 | `window` object from user code | Blocked: runs in Worker (no `window`) |
 | `localStorage` from user code | Blocked: user code runs only in the Worker, where `localStorage` isn't defined |

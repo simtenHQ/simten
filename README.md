@@ -125,7 +125,7 @@ pnpm test          # 1,000+ tests, plus the exports drift check
 ```
 
 The sandbox is not optional. The canvas runs circuit code in an iframe pointed at
-`localhost:3002` in dev and `sandbox.simten.dev` in production, so without
+`localhost:3002` in dev and `sandbox.simtenusercontent.dev` in production, so without
 `pnpm dev:sandbox` running alongside, nothing crashes and nothing draws either.
 
 ## Docs and contributing

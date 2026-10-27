@@ -3,7 +3,7 @@
  *
  * The page side is `packages/ui/src/sandbox/useSandbox.ts`; message types are
  * in `@simten/ui/sandbox/protocol`. Runs in a hidden cross-origin iframe
- * (sandbox.simten.dev), so user code can't reach the page's cookies, storage
+ * (sandbox.simtenusercontent.dev), so user code can't reach the page's cookies, storage
  * or DOM. See `apps/web/content/docs/security.mdx`.
  *
  * All user code, every simulator and all simulation state live in the worker
