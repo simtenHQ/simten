@@ -132,12 +132,8 @@ class DefaultSimulatorEngine implements SimulatorEngine {
       return;
     }
 
-    // Find the node — prefer exact ID match over suffix match
-    // (suffix match can collide, e.g. switch "a" vs internal node "dut.a")
-    const node =
-      this.flatCircuit.nodes.find((n) => n.id === name) ??
-      this.flatCircuit.nodes.find((n) => n.id.endsWith('.' + name));
-    if (!node) return;
+    const node = this.nodesById.get(name);
+    if (!node) throw new Error(unknownNodeMessage(name, this.topLevelInputs, this.flatCircuit));
 
     // If it has sequential state (ROM, RAM, Register, DFlipFlop) → write state
     const idx = this.numericCircuit.nodeIdToIndex.get(node.id);
@@ -474,4 +470,23 @@ export function createEngine(circuit: FlatCircuit, options: InitOptions): Simula
   const engine = new DefaultSimulatorEngine();
   engine.initialize(circuit, options);
   return engine;
+}
+
+/**
+ * The error for a `setNode` name that is neither a top-level input nor a node
+ * id. Names the inputs, and the nodes the name is a suffix of, since a short
+ * name for a nested node is the usual mistake.
+ */
+function unknownNodeMessage(
+  name: string,
+  topLevelInputs: ReadonlyMap<string, unknown>,
+  circuit: FlatCircuit,
+): string {
+  const prefix = `${TOP_LEVEL_NODE}.`;
+  const inputs = [...topLevelInputs.keys()].map((key) => key.slice(prefix.length));
+  const nested = circuit.nodes.filter((n) => n.id.endsWith(`.${name}`)).map((n) => n.id);
+  let message = `setNode: "${name}" is not a top-level input or a node path.`;
+  message += ` Inputs: ${inputs.length > 0 ? inputs.join(', ') : '(none)'}.`;
+  if (nested.length > 0) message += ` Nodes ending in "${name}": ${nested.slice(0, 5).join(', ')}.`;
+  return message;
 }

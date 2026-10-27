@@ -352,7 +352,7 @@ const result = engine.tick();
 // result.sequentialState: committed state after clock edge
 // result.metrics: { phase1Evals, phase2Evals, totalEvals }
 
-// Input control
+// Input control: a top-level input name or an exact node path, else it throws
 engine.setNode(nodeId, value);
 
 // State query

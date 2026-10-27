@@ -159,6 +159,60 @@ describe('combinational circuits', () => {
 });
 
 // ============================================================================
+// Exact names
+// ============================================================================
+
+describe('exact names', () => {
+  /** Counter one level down: its `q` port is `inner.q`, not a top-level port. */
+  const Wrapped = circuit('SimWrapped', {
+    inputs: { en: bit },
+    outputs: { ready: bit },
+    nodes: { inner: Counter, not: Not },
+    connect: ({ inputs, outputs, nodes: { not } }) => [
+      inputs.en.to(not.in),
+      not.out.to(outputs.ready),
+    ],
+  });
+
+  it('get throws for a name that is not a top-level output, listing the outputs', () => {
+    const sim: Simulation = simulate(Wrapped);
+    expect(() => sim.get('q')).toThrow(
+      "get('q'): SimWrapped has no output named 'q'. Its outputs: ready",
+    );
+    expect(() => sim.get('en')).toThrow(/no output named 'en'/);
+  });
+
+  it('set throws for a name that is not a top-level input, listing the inputs', () => {
+    const sim: Simulation = simulate(Passthrough);
+    expect(() => sim.set({ dd: 1 })).toThrow(
+      "set('dd'): SimPassthrough has no input named 'dd'. Its inputs: d, we",
+    );
+    expect(() => sim.set({ reg: 1 })).toThrow(/no input named 'reg'/);
+  });
+
+  it('a set with one unknown name writes none of them', () => {
+    const sim: Simulation = simulate(Passthrough);
+    expect(() => sim.set({ we: 1, dd: 1 })).toThrow(/no input named 'dd'/);
+    expect(sim.get('inverted')).toBe(1);
+  });
+
+  it('a circuit with no inputs says so', () => {
+    const sim: Simulation = simulate(Counter);
+    expect(() => sim.set({ q: 1 })).toThrow('Its inputs: (none)');
+  });
+
+  it('nodesOf(sim).set takes an exact path and names the paths a short name matches', () => {
+    const sim = simulate(Wrapped);
+    nodesOf(sim).set('inner.reg', 5);
+    expect(nodesOf(sim).ports().get('inner.reg.q')).toBe(5);
+    expect(() => nodesOf(sim).set('reg', 1)).toThrow(
+      'setNode: "reg" is not a top-level input or a node path. Inputs: en. Nodes ending in "reg": inner.reg.',
+    );
+    expect(() => nodesOf(sim).set('nope', 1)).toThrow(/"nope" is not a top-level input/);
+  });
+});
+
+// ============================================================================
 // Sequential circuits
 // ============================================================================
 

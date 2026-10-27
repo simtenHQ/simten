@@ -188,9 +188,9 @@ This is a safety net for **combinational feedback loops with no register breakin
 
 ### `get()` only reads top-level output ports
 
-`simulate(C).get('foo')` reads top-level outputs of `C` reliably. Reading an *internal node's* port (`'subModule.out'`) returns 0 / uninitialised values regardless of the actual signal; it is not a supported observation API.
+`simulate(C).get('foo')` reads top-level outputs of `C`, and `set` drives top-level inputs. Any other name, including an internal node's port (`'subModule.out'`), throws an error that lists the circuit's real port names.
 
-**How to recognize it:** an internal port reads 0 even when wiring and logic say otherwise. **Workaround:** expose the value you need as a top-level output of the circuit under test (wrap it in a probe harness with the signal piped out). Simten's own tests read internal ports with `nodesOf(sim).ports().get('subModule.out')` from `@simten/core/internal`, which works but carries no stability promise: the paths are elaboration details.
+**How to recognize it:** an error like `get('out'): MyCircuit has no output named 'out'. Its outputs: sum, carry`. **Workaround:** expose the value you need as a top-level output of the circuit under test (wrap it in a probe harness with the signal piped out). Simten's own tests read internal ports with `nodesOf(sim).ports().get('subModule.out')` from `@simten/core/internal`, which works but carries no stability promise: the paths are elaboration details.
 
 ### Buses wider than 32 bits don't simulate
 

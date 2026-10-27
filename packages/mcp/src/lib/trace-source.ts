@@ -12,7 +12,6 @@ import {
   createEngine,
   detectSteadyState,
   elaborate,
-  type FlatNode,
   type MemoryContents,
   type SimulationTrace,
   TOP_LEVEL_NODE,
@@ -81,10 +80,11 @@ export function traceSource(params: {
   const simulator = createEngine(flatCircuit, { library: compiled.library });
 
   // Load memory data if provided. The engine's memories run on a Map, and its
-  // setNode skips a name that matches no node, so check the names here.
+  // setNode takes exact node paths only, so check the names here and report a
+  // miss as a tool error.
   if (params.memoryData) {
     for (const [nodeId, contents] of Object.entries(params.memoryData)) {
-      if (!findNode(flatCircuit.nodes, nodeId)) {
+      if (!flatCircuit.nodes.some((n) => n.id === nodeId)) {
         return { error: `memoryData: no node "${nodeId}" in circuit "${target.name}"` };
       }
       simulator.setNode(nodeId, memoryContentsToMap(contents));
@@ -93,7 +93,13 @@ export function traceSource(params: {
 
   // Set inputs
   if (params.inputs) {
+    const ports = target.inputs.map((i) => i.name);
     for (const [name, value] of Object.entries(params.inputs)) {
+      if (!ports.includes(name)) {
+        return {
+          error: `inputs: "${name}" is not an input of circuit "${target.name}". Inputs: ${ports.join(', ') || '(none)'}`,
+        };
+      }
       simulator.setNode(name, value);
     }
   }
@@ -156,11 +162,6 @@ export function traceSource(params: {
     vcd,
     ...(steadyStateAt !== undefined ? { steadyStateAt } : {}),
   };
-}
-
-/** The node `setNode` resolves `name` to: an exact ID, else an ID ending in `.name`. */
-function findNode(nodes: readonly FlatNode[], name: string): FlatNode | undefined {
-  return nodes.find((n) => n.id === name) ?? nodes.find((n) => n.id.endsWith(`.${name}`));
 }
 
 function memoryContentsToMap(contents: MemoryContents): Map<number, number> {
