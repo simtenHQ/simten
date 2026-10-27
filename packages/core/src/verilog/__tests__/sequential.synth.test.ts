@@ -12,6 +12,7 @@ import { libraryOf } from '../../circuit/behavior.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { internalsOf } from '../../circuit/internals.js';
 import { Adder, Constant, DFlipFlop, Mux, Or, Register, Subtractor } from '../../std/index.js';
+import { getStdLibrary } from '../../std/library.js';
 import { exportVerilogFromIR } from '../exporter.js';
 import { hasSynth, synthesizeVerilog } from './synth.js';
 
@@ -106,7 +107,11 @@ const d = describe.skipIf(!hasSynth());
 d('ShiftRegister4 (4x DFlipFlop chain) — synthesis', () => {
   it('synthesizes serial shift register and produces DFF cells', { timeout: 30000 }, async () => {
     const { circuit, definitions } = buildShiftRegister4();
-    const result = exportVerilogFromIR(circuit, definitions, { target: 'synthesis' });
+    const result = exportVerilogFromIR(
+      circuit,
+      { definitions: definitions, behaviors: getStdLibrary().behaviors },
+      { target: 'synthesis' },
+    );
     const resp = await synthesizeVerilog(result, 'ShiftRegister4');
 
     if (!resp.success) console.error('synth:', JSON.stringify(resp, null, 2));
@@ -127,7 +132,11 @@ d('ShiftRegister4 (4x DFlipFlop chain) — synthesis', () => {
 d('UpDownCounter (Register + Adder + Subtractor + Mux) — synthesis', () => {
   it('synthesizes up/down counter with direction control', { timeout: 30000 }, async () => {
     const { circuit, definitions } = buildUpDownCounter();
-    const result = exportVerilogFromIR(circuit, definitions, { target: 'synthesis' });
+    const result = exportVerilogFromIR(
+      circuit,
+      { definitions: definitions, behaviors: getStdLibrary().behaviors },
+      { target: 'synthesis' },
+    );
     const resp = await synthesizeVerilog(result, 'UpDownCounter');
 
     if (!resp.success) console.error('synth:', JSON.stringify(resp, null, 2));
@@ -150,7 +159,11 @@ d('Pipeline2Stage (2x Register + Adder) — synthesis', () => {
     timeout: 30000,
   }, async () => {
     const { circuit, definitions } = buildPipelineStage();
-    const result = exportVerilogFromIR(circuit, definitions, { target: 'synthesis' });
+    const result = exportVerilogFromIR(
+      circuit,
+      { definitions: definitions, behaviors: getStdLibrary().behaviors },
+      { target: 'synthesis' },
+    );
     const resp = await synthesizeVerilog(result, 'Pipeline2Stage');
 
     if (!resp.success) console.error('synth:', JSON.stringify(resp, null, 2));

@@ -93,7 +93,10 @@ function readCount(sim: ReturnType<typeof createEngine>): number {
 
 async function runVerilogTrace(): Promise<number[]> {
   const { circuit, definitions } = buildCounter();
-  const { verilog } = exportVerilogFromIR(circuit, definitions);
+  const { verilog } = exportVerilogFromIR(circuit, {
+    definitions: definitions,
+    behaviors: getStdLibrary().behaviors,
+  });
   const testbench = generateSequentialTestbench(circuit, buildResetVectors());
   const result = await verifyVerilog(verilog, testbench);
 

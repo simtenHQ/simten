@@ -267,9 +267,7 @@ export function runDifferential(
     clockPorts = reference.clock ? [`.${reference.clock}(clk)`] : [];
     signals = topSignals(target.top);
   } else {
-    const result = exportVerilogFromIR(target.top, target.library.definitions, {
-      behaviors: target.library.behaviors,
-    });
+    const result = exportVerilogFromIR(target.top, target.library);
     if (result.unsupported) {
       throw new Error(`exporter has no mapping for ${Object.keys(result.unsupported).join(', ')}`);
     }

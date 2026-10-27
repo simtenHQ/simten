@@ -131,7 +131,10 @@ d('ROM — JS simulator vs iverilog co-simulation (preloaded contents)', () => {
     expect(simOutputs).toEqual(expected);
 
     const { circuit, definitions } = buildRom();
-    const { verilog } = exportVerilogFromIR(circuit, definitions);
+    const { verilog } = exportVerilogFromIR(circuit, {
+      definitions: definitions,
+      behaviors: getStdLibrary().behaviors,
+    });
     const testbench = generateSequentialTestbench(circuit, buildVectors(READ_SEQUENCE));
 
     const result = await verifyVerilog(verilog, testbench);

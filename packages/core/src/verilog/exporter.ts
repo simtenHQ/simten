@@ -11,7 +11,7 @@
  * - No combinational loops
  */
 
-import { type BehaviorTable, libraryOf } from '../circuit/behavior.js';
+import { type BehaviorTable, type Library, libraryOf } from '../circuit/behavior.js';
 import type { Circuit } from '../circuit/builder-types.js';
 import { internalsOf } from '../circuit/internals.js';
 import type { CircuitIR, MemoryValue, PortType } from '../ir/circuit-ir.js';
@@ -23,7 +23,6 @@ import type {
   FlatConnection,
   FlatNode,
 } from '../simulator/types.js';
-import { getStdLibrary } from '../std/library.js';
 import { checkEvalSynthesizable, type SynthValidation } from './eval-synth.js';
 import {
   emitPrimitive,
@@ -36,16 +35,6 @@ import {
 } from './primitive-map.js';
 import type { ExportResult, VerilogExportOptions } from './types.js';
 import { INLINE_MEMORY_THRESHOLD } from './types.js';
-
-/** Export options for a caller that only has IR, and so passes behavior itself. */
-export interface IRExportOptions extends VerilogExportOptions {
-  /**
-   * Behavior (eval/onTick) by primitive name, for primitives with no
-   * hand-written Verilog mapping: their eval is transpiled. Defaults to the
-   * standard library's behavior.
-   */
-  behaviors?: BehaviorTable;
-}
 
 type ResolvedOptions = Required<VerilogExportOptions> & { behaviors: BehaviorTable };
 
@@ -99,20 +88,18 @@ function collectStateInits(
 }
 
 /**
- * Export a circuit's IR to Verilog (flat mode), for callers that have IR and
- * definitions but no built circuit: the editor page, and tests that build IR.
+ * Export a circuit's IR to Verilog (flat mode), for callers that have IR but
+ * no built circuit: the editor page, and tests that build IR. The library's
+ * behavior is what a primitive with no hand-written mapping is translated
+ * from; one with neither is reported in `unsupported`.
  * Elaborates the circuit first, then emits a single flat module.
  */
 export function exportVerilogFromIR(
   circuit: CircuitIR,
-  definitions: CircuitDefinitions,
-  options?: IRExportOptions,
+  { definitions, behaviors }: Library,
+  options?: VerilogExportOptions,
 ): ExportResult {
-  const opts: ResolvedOptions = {
-    ...DEFAULT_OPTIONS,
-    ...options,
-    behaviors: options?.behaviors ?? getStdLibrary().behaviors,
-  };
+  const opts: ResolvedOptions = { ...DEFAULT_OPTIONS, ...options, behaviors };
   const flatCircuit = elaborate(circuit, definitions, false, { expandReferences: true });
   return emitFlatModule(circuit, flatCircuit, definitions, opts);
 }
@@ -123,8 +110,7 @@ export function exportVerilogFromIR(
  * own `eval` translated.
  */
 export function exportVerilogFlat(top: Circuit, options?: VerilogExportOptions): ExportResult {
-  const { definitions, behaviors } = libraryOf(top);
-  return exportVerilogFromIR(internalsOf(top).ir, definitions, { ...options, behaviors });
+  return exportVerilogFromIR(internalsOf(top).ir, libraryOf(top), options);
 }
 
 /**

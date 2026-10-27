@@ -7,7 +7,7 @@
 
 'use client';
 
-import { exportVerilogFromIR } from '@simten/core/internal';
+import { exportVerilogFromIR, stdBehaviorsFor } from '@simten/core/internal';
 import { builtFromIR, useCircuitCompiler, useCircuitSimulator } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
 import {
@@ -176,6 +176,10 @@ export function EditorWorkspace({
     slot: 'editor-main',
   });
 
+  // Read by the Verilog export, which runs from a stable callback.
+  const compileResultRef = useRef(compiler.result);
+  compileResultRef.current = compiler.result;
+
   const codeEmpty = code.trim() === '';
   // Don't render the picker during the boot window; the resizable panels and
   // Monaco haven't laid out yet so the picker would render at near-zero width
@@ -237,7 +241,16 @@ export function EditorWorkspace({
     }
 
     try {
-      const { verilog, files, unsupported } = exportVerilogFromIR(currentCircuit, store);
+      // The page has IR but no behavior, so std's behavior goes only to std's
+      // own primitives: never to a name the source defines, which exports as
+      // unsupported. Exporting in the sandbox worker, which has the real
+      // behavior, is #417.
+      const userNames = new Set(compileResultRef.current?.circuits.map((c) => c.name));
+      const behaviors = stdBehaviorsFor(store, userNames);
+      const { verilog, files, unsupported } = exportVerilogFromIR(currentCircuit, {
+        definitions: store,
+        behaviors,
+      });
 
       // An export with unmapped primitives is the dangerous case: it parses,
       // it synthesizes, and it does not do what the circuit does. Yosys will

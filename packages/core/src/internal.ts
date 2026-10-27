@@ -41,7 +41,7 @@ export {
   type SignalMetrics,
   type SimulationTrace,
 } from './simulator/trace-analysis.js';
-export { getStdLibrary } from './std/library.js';
+export { getStdLibrary, stdBehaviorsFor } from './std/library.js';
 export * from './tools/index.js';
 export { slugify } from './util/test-name.js';
-export { exportVerilogFromIR, type IRExportOptions } from './verilog/exporter.js';
+export { exportVerilogFromIR } from './verilog/exporter.js';

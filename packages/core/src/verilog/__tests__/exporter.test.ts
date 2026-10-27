@@ -5,10 +5,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { libraryOf } from '../../circuit/behavior.js';
+import type { Circuit } from '../../circuit/builder-types.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { internalsOf } from '../../circuit/internals.js';
-import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
-import { And, DFlipFlop, Or, RAM, Register, ROM, Xor } from '../../std/index.js';
+import type { BitType, BusType, CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
+import { And, DFlipFlop, LogicNot, Or, RAM, Register, ROM, Xor } from '../../std/index.js';
+import { getStdLibrary, stdBehaviorsFor } from '../../std/library.js';
 import { checkSynthesizable, exportVerilog, exportVerilogFromIR } from '../exporter.js';
 
 describe('exportVerilog', () => {
@@ -142,7 +145,10 @@ describe('exportVerilog', () => {
         getAllPrimitiveNames: () => ['RAM'],
       };
 
-      const { verilog } = exportVerilogFromIR(internalsOf(RamUser).ir, definitions);
+      const { verilog } = exportVerilogFromIR(internalsOf(RamUser).ir, {
+        definitions: definitions,
+        behaviors: getStdLibrary().behaviors,
+      });
       const initSection = verilog.match(/initial begin[\s\S]*?end/)?.[0] ?? '';
       // Sorted ascending by address
       expect(initSection.indexOf('[0]')).toBeLessThan(initSection.indexOf('[1]'));
@@ -193,9 +199,13 @@ describe('exportVerilog', () => {
         getAllPrimitiveNames: () => ['RAM'],
       };
 
-      const result = exportVerilogFromIR(internalsOf(RamUser).ir, definitions, {
-        inlineMemoryThreshold: 5, // force the big path
-      });
+      const result = exportVerilogFromIR(
+        internalsOf(RamUser).ir,
+        { definitions: definitions, behaviors: getStdLibrary().behaviors },
+        {
+          inlineMemoryThreshold: 5, // force the big path
+        },
+      );
 
       expect(result.verilog).toMatch(/\$readmemh\("[^"]+\.hex",\s*mem_/);
       expect(Object.keys(result.files).length).toBe(1);
@@ -332,5 +342,50 @@ describe("a user primitive's own behavior", () => {
     expect(valid).toBe(false);
     expect(errors.length).toBeGreaterThan(0);
     expect(errors.every((e) => e.startsWith('ParseDigit: '))).toBe(true);
+  });
+});
+
+describe('an export from IR alone', () => {
+  // LogicNot has no hand-written mapping, so its Verilog comes only from the
+  // behavior passed in. The page has IR only and gets std's behavior from
+  // `stdBehaviorsFor`.
+  const top = (not: Circuit<{ a: BusType }, { out: BitType }>) =>
+    circuit('NotTop', {
+      inputs: { a: bus(8) },
+      outputs: { out: bit },
+      nodes: { n: not },
+      connect: ({ inputs, outputs, nodes: { n } }) => [inputs.a.to(n.a), n.out.to(outputs.out)],
+    });
+  const exportIR = (built: Circuit, userNames: string[] = []) => {
+    const { definitions } = libraryOf(built);
+    const behaviors = stdBehaviorsFor(definitions, new Set(userNames));
+    return exportVerilogFromIR(internalsOf(built).ir, { definitions, behaviors });
+  };
+
+  it("translates std's own primitive with std's behavior", () => {
+    expect(exportIR(top(LogicNot())).unsupported).toBeUndefined();
+  });
+
+  it('reports a user primitive named like a std one instead of using std logic', () => {
+    const MyNot = circuit('LogicNot', {
+      inputs: { a: bus(8) },
+      outputs: { out: bit },
+      eval: ({ a }) => ({ out: a & 1 }),
+    });
+    expect(exportIR(top(MyNot)).unsupported).toEqual({ LogicNot: ['n'] });
+  });
+
+  it("gives no std behavior to a name the user's source defines", () => {
+    expect(exportIR(top(LogicNot()), ['LogicNot']).unsupported).toEqual({ LogicNot: ['n'] });
+  });
+
+  it('reports a primitive with no behavior rather than borrowing std', () => {
+    const built = top(LogicNot());
+    const { definitions } = libraryOf(built);
+    const result = exportVerilogFromIR(internalsOf(built).ir, {
+      definitions,
+      behaviors: new Map(),
+    });
+    expect(result.unsupported).toEqual({ LogicNot: ['n'] });
   });
 });

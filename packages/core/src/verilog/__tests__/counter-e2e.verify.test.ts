@@ -135,7 +135,10 @@ d('Counter (Register+Adder+Mux+Or) — end-to-end co-simulation', () => {
     expect(simOutputs[19]).toBe(10); // 10 increments after clear
 
     const { circuit, definitions } = buildCounter();
-    const { verilog } = exportVerilogFromIR(circuit, definitions);
+    const { verilog } = exportVerilogFromIR(circuit, {
+      definitions: definitions,
+      behaviors: getStdLibrary().behaviors,
+    });
     const testbench = generateSequentialTestbench(circuit, buildVectors(SEQUENCE));
 
     const result = await verifyVerilog(verilog, testbench);

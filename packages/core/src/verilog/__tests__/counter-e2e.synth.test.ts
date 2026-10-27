@@ -19,6 +19,7 @@ import { libraryOf } from '../../circuit/behavior.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { internalsOf } from '../../circuit/internals.js';
 import { Adder, Constant, Mux, Or, Register } from '../../std/index.js';
+import { getStdLibrary } from '../../std/library.js';
 import { exportVerilogFromIR } from '../exporter.js';
 import { hasSynth, synthesizeVerilog } from './synth.js';
 
@@ -56,7 +57,11 @@ const d = describe.skipIf(!hasSynth());
 d('Counter (Register+Adder+Mux+Or) — Yosys synthesis', () => {
   it('synthesizes cleanly and includes sequential (DFF) cells', { timeout: 30000 }, async () => {
     const { circuit, definitions } = buildCounter();
-    const result = exportVerilogFromIR(circuit, definitions, { target: 'synthesis' });
+    const result = exportVerilogFromIR(
+      circuit,
+      { definitions: definitions, behaviors: getStdLibrary().behaviors },
+      { target: 'synthesis' },
+    );
 
     const resp = await synthesizeVerilog(result, 'Counter');
 

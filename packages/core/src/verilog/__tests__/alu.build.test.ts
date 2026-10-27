@@ -17,6 +17,7 @@ import { libraryOf } from '../../circuit/behavior.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { internalsOf } from '../../circuit/internals.js';
 import { RV32I_ALU } from '../../std/index.js';
+import { getStdLibrary } from '../../std/library.js';
 import { exportVerilogFromIR } from '../exporter.js';
 import { buildBitstream, hasBuild } from './build.js';
 import { hasSynth, synthesizeVerilog } from './synth.js';
@@ -43,7 +44,11 @@ const d = describe.skipIf(!hasSynth() || !hasBuild());
 d('RV32I_ALU — full pipeline to ECP5 bitstream (combinational)', () => {
   it('synth_ecp5 → nextpnr-ecp5 → ecppack → bitstream', { timeout: 180000 }, async () => {
     const { circuit, definitions } = buildALU();
-    const exportResult = exportVerilogFromIR(circuit, definitions, { target: 'synthesis' });
+    const exportResult = exportVerilogFromIR(
+      circuit,
+      { definitions: definitions, behaviors: getStdLibrary().behaviors },
+      { target: 'synthesis' },
+    );
 
     // Step 1: Synthesise for ECP5
     const synthResp = await synthesizeVerilog(exportResult, 'RV32I_ALU_Top', 'ecp5');

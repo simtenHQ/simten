@@ -11,6 +11,7 @@ import { libraryOf } from '../../circuit/behavior.js';
 import { bit, circuit } from '../../circuit/index.js';
 import { internalsOf } from '../../circuit/internals.js';
 import { And, Xor } from '../../std/index.js';
+import { getStdLibrary } from '../../std/library.js';
 import { exportVerilogFromIR } from '../exporter.js';
 import { hasSynth, synthesizeVerilog } from './synth.js';
 
@@ -37,7 +38,11 @@ const d = describe.skipIf(!hasSynth());
 d('HalfAdder — Yosys synthesis', () => {
   it('synthesizes cleanly and maps to 2 cells (AND + XOR)', { timeout: 30000 }, async () => {
     const { circuit, definitions } = buildHalfAdder();
-    const result = exportVerilogFromIR(circuit, definitions, { target: 'synthesis' });
+    const result = exportVerilogFromIR(
+      circuit,
+      { definitions: definitions, behaviors: getStdLibrary().behaviors },
+      { target: 'synthesis' },
+    );
 
     const resp = await synthesizeVerilog(result, 'HalfAdder');
 

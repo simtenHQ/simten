@@ -156,7 +156,10 @@ d('RV32I_RegisterFile — JS simulator vs iverilog co-simulation', () => {
     expect(x0Reads.debug_read).toBe(0);
 
     const { circuit, definitions } = buildRegfile();
-    const { verilog } = exportVerilogFromIR(circuit, definitions);
+    const { verilog } = exportVerilogFromIR(circuit, {
+      definitions: definitions,
+      behaviors: getStdLibrary().behaviors,
+    });
     const testbench = generateSequentialTestbench(circuit, buildVectors(SEQUENCE));
 
     const result = await verifyVerilog(verilog, testbench);

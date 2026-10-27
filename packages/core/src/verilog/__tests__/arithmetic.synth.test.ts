@@ -17,6 +17,7 @@ import { libraryOf } from '../../circuit/behavior.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { internalsOf } from '../../circuit/internals.js';
 import { Adder, And, BusAnd, Multiplier, Mux, Or, Xor } from '../../std/index.js';
+import { getStdLibrary } from '../../std/library.js';
 import { exportVerilogFromIR } from '../exporter.js';
 import { hasSynth, synthesizeVerilog } from './synth.js';
 
@@ -141,7 +142,11 @@ const d = describe.skipIf(!hasSynth());
 d('FullAdder — synthesis', () => {
   it('synthesizes from And/Or/Xor gates', { timeout: 30000 }, async () => {
     const { circuit, definitions } = buildFullAdder();
-    const result = exportVerilogFromIR(circuit, definitions, { target: 'synthesis' });
+    const result = exportVerilogFromIR(
+      circuit,
+      { definitions: definitions, behaviors: getStdLibrary().behaviors },
+      { target: 'synthesis' },
+    );
     const resp = await synthesizeVerilog(result, 'FullAdder');
 
     if (!resp.success) console.error('synth:', JSON.stringify(resp, null, 2));
@@ -157,11 +162,19 @@ d('RippleCarryAdder4 — synthesis', () => {
     timeout: 30000,
   }, async () => {
     const { circuit: faCkt, definitions: faDefinitions } = buildFullAdder();
-    const faResult = exportVerilogFromIR(faCkt, faDefinitions, { target: 'synthesis' });
+    const faResult = exportVerilogFromIR(
+      faCkt,
+      { definitions: faDefinitions, behaviors: getStdLibrary().behaviors },
+      { target: 'synthesis' },
+    );
     const faResp = await synthesizeVerilog(faResult, 'FullAdder');
 
     const { circuit, definitions } = buildRippleCarryAdder4();
-    const result = exportVerilogFromIR(circuit, definitions, { target: 'synthesis' });
+    const result = exportVerilogFromIR(
+      circuit,
+      { definitions: definitions, behaviors: getStdLibrary().behaviors },
+      { target: 'synthesis' },
+    );
     const resp = await synthesizeVerilog(result, 'RippleCarryAdder4');
 
     if (!resp.success) console.error('synth:', JSON.stringify(resp, null, 2));
@@ -175,7 +188,11 @@ d('RippleCarryAdder4 — synthesis', () => {
 d('Stdlib Adder (eval-synth path) — synthesis', () => {
   it('synthesizes 8-bit adder via eval-synth transpiler', { timeout: 30000 }, async () => {
     const { circuit, definitions } = buildStdlibAdder();
-    const result = exportVerilogFromIR(circuit, definitions, { target: 'synthesis' });
+    const result = exportVerilogFromIR(
+      circuit,
+      { definitions: definitions, behaviors: getStdLibrary().behaviors },
+      { target: 'synthesis' },
+    );
     const resp = await synthesizeVerilog(result, 'Adder8');
 
     if (!resp.success) console.error('synth:', JSON.stringify(resp, null, 2));
@@ -189,7 +206,11 @@ d('Stdlib Adder (eval-synth path) — synthesis', () => {
 d('Multiplier — synthesis', () => {
   it('synthesizes 8×8 multiplier (large combinational)', { timeout: 30000 }, async () => {
     const { circuit, definitions } = buildMultiplier();
-    const result = exportVerilogFromIR(circuit, definitions, { target: 'synthesis' });
+    const result = exportVerilogFromIR(
+      circuit,
+      { definitions: definitions, behaviors: getStdLibrary().behaviors },
+      { target: 'synthesis' },
+    );
     const resp = await synthesizeVerilog(result, 'Multiplier8');
 
     if (!resp.success) console.error('synth:', JSON.stringify(resp, null, 2));
@@ -204,7 +225,11 @@ d('Multiplier — synthesis', () => {
 d('SimpleALU (Adder + BusAnd) — synthesis', () => {
   it('synthesizes ALU with arithmetic and logic ops', { timeout: 30000 }, async () => {
     const { circuit, definitions } = buildSimpleALU();
-    const result = exportVerilogFromIR(circuit, definitions, { target: 'synthesis' });
+    const result = exportVerilogFromIR(
+      circuit,
+      { definitions: definitions, behaviors: getStdLibrary().behaviors },
+      { target: 'synthesis' },
+    );
     const resp = await synthesizeVerilog(result, 'SimpleALU');
 
     if (!resp.success) console.error('synth:', JSON.stringify(resp, null, 2));

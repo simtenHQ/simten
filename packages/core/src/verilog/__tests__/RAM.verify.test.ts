@@ -101,7 +101,10 @@ d('RAM — JS simulator vs iverilog co-simulation', () => {
     const simOutputs = runSimulator(SEQUENCE);
 
     const { circuit, definitions } = buildRam();
-    const { verilog } = exportVerilogFromIR(circuit, definitions);
+    const { verilog } = exportVerilogFromIR(circuit, {
+      definitions: definitions,
+      behaviors: getStdLibrary().behaviors,
+    });
     const testbench = generateSequentialTestbench(circuit, buildVectors(SEQUENCE));
 
     const result = await verifyVerilog(verilog, testbench);
