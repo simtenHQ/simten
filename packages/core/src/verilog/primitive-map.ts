@@ -15,6 +15,7 @@
 
 import type { BehaviorTable } from '../circuit/behavior.js';
 import type { ArgumentValue } from '../ir/circuit-ir.js';
+import { isStdBehavior } from '../std/library.js';
 
 /**
  * Sentinel emitted in place of logic when a primitive has no Verilog mapping.
@@ -175,12 +176,33 @@ function sanitizeId(id: string): string {
 }
 
 /**
+ * Whether the hand-written mapping for this node's name describes it: only
+ * when the node is std's own primitive of that name. A user circuit that takes
+ * a std name (its own `Adder`) does something else, so it is translated from
+ * its own behavior or reported as unsupported.
+ */
+export function usesStdMapping(primitiveType: string, behaviors: BehaviorTable): boolean {
+  return isStdBehavior(primitiveType, behaviors.get(primitiveType));
+}
+
+/** A primitive with no hand-written mapping: translate its behavior, or report it. */
+function emitFromBehavior(ctx: PrimitiveContext): { lines: string[]; declarations: string[] } {
+  const synthResult = tryEmitFromEval(ctx, (name) => ctx.behaviors.get(name));
+  if (synthResult) return synthResult;
+  return {
+    lines: [`// ${UNSUPPORTED_MARKER} "${ctx.primitiveType}" (${sanitizeId(ctx.nodeId)})`],
+    declarations: [],
+  };
+}
+
+/**
  * Emit Verilog for a single primitive instance.
  * Returns { lines: string[], declarations: string[] }
  * - lines: assign/always statements
  * - declarations: reg/wire declarations needed for this primitive
  */
 export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declarations: string[] } {
+  if (!usesStdMapping(ctx.primitiveType, ctx.behaviors)) return emitFromBehavior(ctx);
   const { primitiveType, args, wires, clockName, resetName, nodeId } = ctx;
   const w = getWidth(args);
   const id = sanitizeId(nodeId);
@@ -978,14 +1000,8 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       };
 
     // ── Unknown — try eval-synth auto-transpilation ────────────────
-    default: {
-      const synthResult = tryEmitFromEval(ctx, (name) => ctx.behaviors.get(name));
-      if (synthResult) return synthResult;
-      return {
-        lines: [`// ${UNSUPPORTED_MARKER} "${primitiveType}" (${id})`],
-        declarations: [],
-      };
-    }
+    default:
+      return emitFromBehavior(ctx);
   }
 }
 
