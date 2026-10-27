@@ -98,6 +98,7 @@ packages/
 apps/
 ├── web/         simten.dev (TanStack Start, Vite, Cloudflare Workers)
 ├── game/        play.simten.dev, the level campaign
+├── embed-page/  embed.simten.dev, shared circuits for other sites' iframes
 ├── sandbox/     isolated origin where user circuit code executes
 ├── compiler/    RISC-V cross-compiler (GCC + Rust)
 ├── verifier/    Icarus Verilog, cross-checks exported Verilog against our trace
@@ -121,6 +122,7 @@ pnpm install
 pnpm dev           # simten.dev on :3001
 pnpm dev:sandbox   # second terminal, on :3002
 pnpm dev:game      # play.simten.dev on :3003
+pnpm dev:embed     # embed.simten.dev on :3004
 pnpm test          # 1,000+ tests, plus the exports drift check
 ```
 
