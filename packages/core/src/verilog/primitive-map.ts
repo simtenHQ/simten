@@ -106,6 +106,12 @@ export interface PrimitiveContext {
  * the sidecar collector and the optional threshold override.
  */
 function emitMemoryInit(regName: string, init: StateInit, ctx?: PrimitiveContext): string[] {
+  const body = memoryInitBody(regName, init, ctx);
+  return body.length > 0 ? ['initial begin', ...body, 'end'] : [];
+}
+
+/** The statements inside `emitMemoryInit`'s `initial` block. */
+function memoryInitBody(regName: string, init: StateInit, ctx?: PrimitiveContext): string[] {
   if (init.data.size === 0) return [];
   const w = init.width;
   const hexWidth = Math.max(1, Math.ceil(w / 4));
@@ -127,18 +133,38 @@ function emitMemoryInit(regName: string, init: StateInit, ctx?: PrimitiveContext
       lines[i] = (val >>> 0).toString(16).padStart(hexWidth, '0');
     }
     ctx.sidecarFiles[fileName] = lines.join('\n') + '\n';
-    return [`initial begin`, `  $readmemh("${fileName}", ${regName});`, `end`];
+    return [`  $readmemh("${fileName}", ${regName});`];
   }
 
   // Inline path.
-  const lines: string[] = [`initial begin`];
-  for (const addr of keys) {
+  return keys.map((addr) => {
     const val = init.data.get(addr) ?? 0;
     const hex = (val >>> 0).toString(16).padStart(hexWidth, '0');
-    lines.push(`  ${regName}[${addr}] = ${w}'h${hex};`);
-  }
-  lines.push(`end`);
-  return lines;
+    return `  ${regName}[${addr}] = ${w}'h${hex};`;
+  });
+}
+
+/**
+ * `initial` block for a node's own memory contents, the `memory` argument of a
+ * factory call (`ROM({ memory })`). Empty when the node has none.
+ */
+function emitArgMemoryInit(
+  memName: string,
+  contents: ArgumentValue | undefined,
+  dw: number,
+): string[] {
+  const body = argMemoryInitBody(memName, contents, dw);
+  return body ? ['initial begin', ...body, 'end'] : [];
+}
+
+/** The statements inside `emitArgMemoryInit`'s block, or undefined with no contents. */
+function argMemoryInitBody(
+  memName: string,
+  contents: ArgumentValue | undefined,
+  dw: number,
+): string[] | undefined {
+  if (!contents || typeof contents !== 'object') return undefined;
+  return Object.entries(contents).map(([addr, val]) => `  ${memName}[${addr}] = ${dw}'d${val};`);
 }
 
 /**
@@ -600,14 +626,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       // stateInits overlay.
       const initLines: string[] = [];
       if (ctx.target === 'simulation') {
-        const initData = args.memory;
-        if (initData && typeof initData === 'object') {
-          initLines.push(`initial begin`);
-          for (const [addr, val] of Object.entries(initData)) {
-            initLines.push(`  ${memName}[${addr}] = ${dw}'d${val};`);
-          }
-          initLines.push(`end`);
-        }
+        initLines.push(...emitArgMemoryInit(memName, args.memory, dw));
         for (const init of ctx.stateInits ?? []) {
           initLines.push(...emitMemoryInit(memName, init, ctx));
         }
@@ -626,6 +645,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       const memName = `mem_${id}`;
       const initLines: string[] = [];
       if (ctx.target === 'simulation') {
+        initLines.push(...emitArgMemoryInit(memName, args.memory, dw));
         for (const init of ctx.stateInits ?? []) {
           initLines.push(...emitMemoryInit(memName, init, ctx));
         }
@@ -651,14 +671,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
 
       const initLines: string[] = [];
       if (ctx.target === 'simulation') {
-        const initData = args.memory;
-        if (initData && typeof initData === 'object') {
-          initLines.push(`initial begin`);
-          for (const [addr, val] of Object.entries(initData)) {
-            initLines.push(`  ${memName}[${addr}] = ${dw}'d${val};`);
-          }
-          initLines.push(`end`);
-        }
+        initLines.push(...emitArgMemoryInit(memName, args.memory, dw));
         for (const init of ctx.stateInits ?? []) {
           initLines.push(...emitMemoryInit(memName, init, ctx));
         }
@@ -675,6 +688,44 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
           `assign ${o('outA')} = ${memName}[${i('addrA')}];`,
           `assign ${o('outB')} = ${memName}[${i('addrB')}];`,
         ],
+      };
+    }
+
+    // ── Sequential: DualPortROM ──────────────────────────────────────
+    // 64 KiB of bytes, read a little-endian word at a time on two ports. Each
+    // port reads the word containing its byte address, as the simulator does,
+    // and reads 0 past the end of the memory. Unset bytes read 0, so the
+    // memory is zeroed before its contents load.
+    case 'DualPortROM': {
+      const memName = `mem_${id}`;
+      const depth = 65536;
+      // Zeroing and contents in one block: two `initial`s at time 0 run in no
+      // set order.
+      const initLines =
+        ctx.target === 'simulation'
+          ? [
+              `initial begin : ${memName}_init`,
+              `  integer k;`,
+              `  for (k = 0; k < ${depth}; k = k + 1) ${memName}[k] = 8'd0;`,
+              ...(argMemoryInitBody(memName, args.memory, 8) ?? []),
+              ...(ctx.stateInits ?? []).flatMap((init) => memoryInitBody(memName, init, ctx)),
+              `end`,
+            ]
+          : [];
+      const port = (addr: string, data: string) => {
+        const base = `${memName}_${addr}`;
+        return [
+          `assign ${base} = ${i(addr)} & ~32'd3;`,
+          `assign ${o(data)} = (${base} < 32'd${depth}) ? {${[3, 2, 1, 0].map((k) => `${memName}[${base} + ${k}]`).join(', ')}} : 32'd0;`,
+        ];
+      };
+      return {
+        declarations: [
+          `reg [7:0] ${memName} [0:${depth - 1}];`,
+          `wire [31:0] ${memName}_addrA;`,
+          `wire [31:0] ${memName}_addrB;`,
+        ],
+        lines: [...initLines, ...port('addrA', 'dataA'), ...port('addrB', 'dataB')],
       };
     }
 
