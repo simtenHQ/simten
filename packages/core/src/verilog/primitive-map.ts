@@ -149,6 +149,11 @@ function getWidth(args: Record<string, ArgumentValue>, defaultWidth = 8): number
   return typeof w === 'number' ? w : defaultWidth;
 }
 
+/** All ones, `width` bits wide. */
+function ones(width: number): string {
+  return `{${width}{1'b1}}`;
+}
+
 function getAddressWidth(args: Record<string, ArgumentValue>, defaultWidth = 8): number {
   const w = args.addressWidth;
   return typeof w === 'number' ? w : defaultWidth;
@@ -285,6 +290,21 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       return { lines: [`assign ${o('out')} = ${i('a')} ^ ${i('b')};`], declarations: [] };
     case 'BusNot':
       return { lines: [`assign ${o('out')} = ~${i('in')};`], declarations: [] };
+    case 'BusXnor':
+      return { lines: [`assign ${o('out')} = ~(${i('a')} ^ ${i('b')});`], declarations: [] };
+
+    // ── Reductions ───────────────────────────────────────────────────
+    // Over the low `width` bits of `a`, as the simulator masks them: the input
+    // net can be wider than the port when a narrower source widens into it.
+    case 'ReduceAnd':
+      return {
+        lines: [`assign ${o('out')} = ((${i('a')} & ${ones(w)}) == ${ones(w)});`],
+        declarations: [],
+      };
+    case 'ReduceXor':
+      return { lines: [`assign ${o('out')} = ^(${i('a')} & ${ones(w)});`], declarations: [] };
+    case 'ReduceXnor':
+      return { lines: [`assign ${o('out')} = ~^(${i('a')} & ${ones(w)});`], declarations: [] };
 
     // ── Arithmetic ───────────────────────────────────────────────────
     case 'Adder': {
@@ -343,6 +363,40 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
       };
     case 'Incrementer':
       return { lines: [`assign ${o('out')} = ${i('in')} + 1;`], declarations: [] };
+    case 'WrappingMultiplier':
+      return { lines: [`assign ${o('out')} = ${i('a')} * ${i('b')};`], declarations: [] };
+    // Division by zero is x in Verilog; the simulator gives all ones for a
+    // quotient and the dividend for a remainder.
+    case 'Divider':
+      return {
+        lines: [`assign ${o('out')} = (${i('b')} == 0) ? ${ones(w)} : ${i('a')} / ${i('b')};`],
+        declarations: [],
+      };
+    case 'Modulo':
+      return {
+        lines: [`assign ${o('out')} = (${i('b')} == 0) ? ${i('a')} : ${i('a')} % ${i('b')};`],
+        declarations: [],
+      };
+    // Signed: each operand is read as a `width`-bit two's-complement value, and
+    // the quotient and remainder truncate toward zero, as Verilog's do.
+    case 'SignedDivider':
+    case 'SignedModulo': {
+      const [a, b, r] = [`sdiv_${id}_a`, `sdiv_${id}_b`, `sdiv_${id}_r`];
+      const divide = primitiveType === 'SignedDivider';
+      return {
+        declarations: [
+          `wire signed [${w - 1}:0] ${a};`,
+          `wire signed [${w - 1}:0] ${b};`,
+          `wire signed [${w - 1}:0] ${r};`,
+        ],
+        lines: [
+          `assign ${a} = ${i('a')};`,
+          `assign ${b} = ${i('b')};`,
+          `assign ${r} = ${a} ${divide ? '/' : '%'} ${b};`,
+          `assign ${o('out')} = (${b} == 0) ? ${divide ? ones(w) : a} : ${r};`,
+        ],
+      };
+    }
 
     // ── Shift ────────────────────────────────────────────────────────
     case 'LeftShifter':
@@ -355,6 +409,14 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
         lines: [`assign ${o('result')} = ${i('value')} >> ${i('shift')};`],
         declarations: [],
       };
+    case 'SignedRightShifter': {
+      // `value` as a `width`-bit signed net, so its sign bit is bit width-1.
+      const v = `sra_${id}`;
+      return {
+        declarations: [`wire signed [${w - 1}:0] ${v};`],
+        lines: [`assign ${v} = ${i('value')};`, `assign ${o('result')} = ${v} >>> ${i('shift')};`],
+      };
+    }
 
     // ── Comparison ───────────────────────────────────────────────────
     case 'Comparator':
@@ -417,6 +479,23 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
             ? `assign ${o('out')} = {{${pad}{${i('in')}[${inWidth - 1}]}}, ${i('in')}};`
             : `assign ${o('out')} = ${i('in')}[${outWidth - 1}:0];`,
         ],
+        declarations: [],
+      };
+    }
+    // in[offset +: width], by shift and mask so the net's width doesn't matter.
+    case 'Slice': {
+      const offset = typeof args.offset === 'number' ? args.offset : 0;
+      const width = getWidth(args, 1);
+      return {
+        lines: [`assign ${o('out')} = (${i('in')} >> ${offset}) & ${ones(width)};`],
+        declarations: [],
+      };
+    }
+    // in[shift +: outWidth]; a shift past the input reads 0.
+    case 'DynamicSlice': {
+      const outWidth = typeof args.outWidth === 'number' ? args.outWidth : 1;
+      return {
+        lines: [`assign ${o('out')} = (${i('in')} >> ${i('shift')}) & ${ones(outWidth)};`],
         declarations: [],
       };
     }
