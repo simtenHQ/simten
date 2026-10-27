@@ -132,6 +132,15 @@ jobs:
         # drift checks, which have their own steps above.
         run: pnpm -r test
 
+      - name: Hardware Snake checks
+        # The FPGA Snake played against a reference model, a check that every
+        # copy of SnakeCore in the repo matches the one that ships to the
+        # board, the editor's playable harness, and a fault-injection check
+        # that the gameplay testbench catches known bugs. About 3 seconds.
+        # Not part of the package's `test` script, so nothing ran them and two
+        # broke silently in #479.
+        run: pnpm --filter @simten/hardware-ulx3s verify:snake
+
       - name: Simulator fingerprints
         # Hash of the full simulator state after N ticks of each bundled
         # example, against packages/core/bench/baseline.json. A change means
