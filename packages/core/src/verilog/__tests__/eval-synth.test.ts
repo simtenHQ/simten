@@ -1,457 +1,294 @@
 /**
- * Eval-Synth Tests
+ * Eval-synth tests: Verilog translated from a primitive's own eval/onTick.
  *
- * Tests for parsing, validating, and transpiling eval functions to Verilog.
+ * The differential test checks the translations against iverilog; these pin
+ * down what is translated and, above all, what is refused with a reason
+ * instead of being translated wrongly (#429).
  */
 
 import { describe, expect, it } from 'vitest';
-import { type BehaviorTable, libraryOf } from '../../circuit/behavior.js';
-import { bit, bus, circuit } from '../../circuit/index.js';
+import { libraryOf } from '../../circuit/behavior.js';
+import type { Circuit } from '../../circuit/builder-types.js';
+import { bit, bus, circuit, mem, reg } from '../../circuit/index.js';
 import { internalsOf } from '../../circuit/internals.js';
-import type { ArgumentValue } from '../../ir/circuit-ir.js';
-import { And, Xor } from '../../std/index.js';
-import { getStdLibrary } from '../../std/library.js';
-import {
-  checkEvalSynthesizable,
-  emitVerilogFromEval,
-  parseBehaviorSource,
-  tryEmitFromEval,
-  validateSynthAST,
-} from '../eval-synth.js';
-import { exportVerilog } from '../exporter.js';
-import type { PrimitiveContext } from '../primitive-map.js';
+import { And, MOS6502_ALU, Xor } from '../../std/index.js';
+import { checkEvalSynthesizable } from '../eval-synth.js';
+import { checkSynthesizable, exportVerilog } from '../exporter.js';
 
-// ── Helpers ──────────────────────────────────────────────────────────────
-
-function makeCtx(
-  primitiveType: string,
-  inputs: Record<string, string>,
-  outputs: Record<string, string>,
-  args: Record<string, ArgumentValue> = {},
-  behaviors: BehaviorTable = getStdLibrary().behaviors,
-): PrimitiveContext {
-  return {
-    behaviors,
-    nodeId: 'test_node',
-    resetName: 'rst_n',
-    primitiveType,
-    args,
-    wires: {
-      inputs: new Map(Object.entries(inputs)),
-      outputs: new Map(Object.entries(outputs)),
+/** `inner` as the only node of a top circuit with the same ports. */
+function wrap(inner: Circuit): Circuit {
+  const { inputs, outputs } = internalsOf(inner).ir;
+  const ports = (list: typeof inputs) => Object.fromEntries(list.map((p) => [p.name, p.portType]));
+  return circuit('Top', {
+    inputs: ports(inputs),
+    outputs: ports(outputs),
+    nodes: { u: inner },
+    connect: ({ inputs: i, outputs: o, nodes: { u } }) => {
+      const n = u as unknown as Record<string, { to: (...t: unknown[]) => unknown }>;
+      const ins = i as unknown as Record<string, { to: (...t: unknown[]) => unknown }>;
+      return [
+        ...inputs.map((p) => ins[p.name].to(n[p.name])),
+        ...outputs.map((p) => n[p.name].to((o as Record<string, unknown>)[p.name])),
+      ] as never;
     },
-    clockName: 'clk',
-    target: 'simulation',
-  };
+  });
 }
 
-const lookup = (table: BehaviorTable) => (name: string) => table.get(name);
+/** Why `inner` can't be exported, or undefined when it can. */
+function reason(inner: Circuit): string | undefined {
+  const { valid, errors } = checkSynthesizable(wrap(inner));
+  return valid ? undefined : errors.join('\n');
+}
 
-// ── Parser ───────────────────────────────────────────────────────────────
+const verilogOf = (inner: Circuit) => exportVerilog(wrap(inner)).verilog;
 
-describe('parseBehaviorSource', () => {
-  it('parses simple arrow expression', () => {
-    const fn = ({ a, b }: any) => ({ out: a & b });
-    const parsed = parseBehaviorSource(fn);
-    expect(parsed).not.toBeNull();
-    expect(parsed!.paramNames).toEqual(['a', 'b']);
+describe('eval-synth translates', () => {
+  it('&& and ! on buses by value, not bitwise', () => {
+    const C = circuit('Logical', {
+      inputs: { a: bus(8), b: bus(8) },
+      outputs: { both: bit, none: bit },
+      eval: ({ a, b }) => ({ both: a && b ? 1 : 0, none: !a ? 1 : 0 }),
+    });
+    const v = verilogOf(C);
+    expect(v).toContain('assign w_u_both = ((a ? b : 0) ? 1 : 0);');
+    expect(v).toContain('assign w_u_none = ((a == 0) ? 1 : 0);');
   });
 
-  it('parses arrow with block body', () => {
-    const fn = ({ a, b }: any) => {
-      const result = a + b;
-      return { sum: result & 0xff };
-    };
-    const parsed = parseBehaviorSource(fn);
-    expect(parsed).not.toBeNull();
-    expect(parsed!.paramNames).toEqual(['a', 'b']);
+  it('JS >> on a 32-bit value as an arithmetic shift of its int32 reading', () => {
+    const C = circuit('Sar', {
+      inputs: { a: bus(32) },
+      outputs: { y: bus(32) },
+      eval: ({ a }) => ({ y: a >> 3 }),
+    });
+    expect(verilogOf(C)).toMatch(/>>> 3\)/);
   });
 
-  it('parses destructuring rename', () => {
-    const fn = ({ in: a }: any) => ({ out: a ? 0 : 1 });
-    const parsed = parseBehaviorSource(fn);
-    expect(parsed).not.toBeNull();
-    expect(parsed!.paramNames).toEqual(['a']);
+  it('a const at the width its value needs, with no width argument', () => {
+    const C = circuit('WideConst', {
+      inputs: { a: bus(8), b: bus(8) },
+      outputs: { y: bus(8) },
+      eval: ({ a, b }) => {
+        const sum = a + b;
+        return { y: sum >> 1 };
+      },
+    });
+    const v = verilogOf(C);
+    expect(v).toContain('wire [8:0] u_sum;');
+    expect(v).toContain("assign u_sum = ((a + b) + 9'd0);");
   });
 
-  it('parses switch/case with let', () => {
-    const fn = ({ a, op }: any) => {
-      let result: number;
-      switch (op) {
-        case 0:
-          result = a + 1;
-          break;
-        case 1:
-          result = a - 1;
-          break;
-        default:
-          result = 0;
-      }
-      return { out: result };
-    };
-    const parsed = parseBehaviorSource(fn);
-    expect(parsed).not.toBeNull();
-    expect(parsed!.paramNames).toEqual(['a', 'op']);
+  it('a let with its initial value, reassigned in branches', () => {
+    const C = circuit('LetInit', {
+      inputs: { a: bus(8), s: bit },
+      outputs: { y: bus(8) },
+      eval: ({ a, s }) => {
+        let y = a;
+        if (s) y = 0;
+        return { y };
+      },
+    });
+    expect(verilogOf(C)).toContain('assign u_y = (s ? 0 : a);');
   });
 
-  it('returns null for non-function', () => {
-    expect(parseBehaviorSource(42 as any)).toBeNull();
+  it('an early return in onTick as a choice of next state', () => {
+    const C = circuit('EarlyReturn', {
+      inputs: { en: bit },
+      outputs: { count: bus(8) },
+      state: { n: reg(8) },
+      eval: ({ n }) => ({ count: n }),
+      onTick: ({ en, n }) => {
+        if (!en) return { n };
+        return { n: (n + 1) & 0xff };
+      },
+    });
+    const v = verilogOf(C);
+    expect(v).toMatch(/input clk,\s+input rst_n,/);
+    expect(v).toContain('u_n <= u_n_ret;');
+  });
+
+  it('a primitive with onTick gets the clock and reset, and resets to its initial state', () => {
+    const C = circuit('InitState', {
+      inputs: { en: bit },
+      outputs: { count: bus(8) },
+      state: { n: reg(8, 42) },
+      eval: ({ n }) => ({ count: n }),
+      onTick: ({ en, n }) => ({ n: en ? (n + 1) & 0xff : n }),
+    });
+    const v = verilogOf(C);
+    expect(v).toMatch(/input clk,\s+input rst_n,/);
+    expect(v).toContain("initial u_n = 8'd42;");
+    expect(v).toContain("u_n <= 8'd42;");
+  });
+
+  it('a memory, declared and zeroed, written in onTick', () => {
+    const C = circuit('Mem', {
+      inputs: { addr: bus(4), data: bus(8), we: bit },
+      outputs: { q: bus(8) },
+      state: { m: mem(16, 8, { 3: 7 }) },
+      eval: ({ addr, m }) => ({ q: m[addr] }),
+      onTick: ({ addr, data, we, m }) => {
+        if (we) m[addr] = data;
+        return { m };
+      },
+    });
+    const v = verilogOf(C);
+    expect(v).toContain('reg [7:0] u_m [0:15];');
+    expect(v).toContain("u_m[3] = 8'd7;");
+    expect(v).toContain('if (we) u_m[addr] <= data;');
+  });
+
+  it('an unconnected input as 0, not an undeclared register', () => {
+    const C = circuit('Unconnected', {
+      inputs: { a: bus(8), b: bus(8) },
+      outputs: { y: bus(8) },
+      eval: ({ a, b }) => ({ y: a | b }),
+    });
+    const Top = circuit('UnconnectedTop', {
+      inputs: { a: bus(8) },
+      outputs: { y: bus(8) },
+      nodes: { u: C },
+      connect: ({ inputs, outputs, nodes: { u } }) => [inputs.a.to(u.a), u.y.to(outputs.y)],
+    });
+    expect(exportVerilog(Top).verilog).toContain('assign w_u_y = (a | 0);');
+  });
+
+  it("every eval in the 6502's datapath", () => {
+    expect(reason(MOS6502_ALU)).toBeUndefined();
   });
 });
 
-// ── Validator ────────────────────────────────────────────────────────────
+describe('eval-synth refuses, with the reason, what it would translate wrongly', () => {
+  const refused: [string, Circuit, RegExp][] = [
+    [
+      'a call',
+      circuit('Call', {
+        inputs: { a: bus(8) },
+        outputs: { y: bus(8) },
+        eval: ({ a }) => ({ y: Math.max(a, 3) }),
+      }),
+      /eval: it calls Math\.max\(\)/,
+    ],
+    [
+      'division',
+      circuit('Div', {
+        inputs: { a: bus(8), b: bus(8) },
+        outputs: { y: bus(8) },
+        eval: ({ a, b }) => ({ y: a / b }),
+      }),
+      /operator '\/'/,
+    ],
+    [
+      'a loop',
+      circuit('Loop', {
+        inputs: { a: bus(8) },
+        outputs: { y: bit },
+        eval: ({ a }) => {
+          let p = 0;
+          for (let i = 0; i < 8; i++) p ^= (a >> i) & 1;
+          return { y: p };
+        },
+      }),
+      /ForStatement/,
+    ],
+    [
+      'a state value that outgrows its register',
+      circuit('Grow', {
+        inputs: { en: bit },
+        outputs: { y: bus(8) },
+        state: { n: reg(8) },
+        eval: ({ n }) => ({ y: n }),
+        onTick: ({ n }) => ({ n: n + 1 }),
+      }),
+      /state 'n' can be set outside its 8 bits/,
+    ],
+    [
+      'an output returned on some paths only',
+      circuit('Partial', {
+        inputs: { a: bus(8) },
+        outputs: { y: bus(8), z: bus(8) },
+        eval: (({ a }: { a: number }) => {
+          if (a) return { y: a, z: 0 };
+          return { y: 0 };
+        }) as never,
+      }),
+      /returns 'z' on some paths but not on others/,
+    ],
+    [
+      'a path with no return',
+      circuit('NoReturn', {
+        inputs: { a: bus(8) },
+        outputs: { y: bus(8) },
+        eval: (({ a }: { a: number }) => {
+          if (a) return { y: 1 };
+        }) as never,
+      }),
+      /does not return on every path/,
+    ],
+    [
+      '=== between a boolean and a number',
+      circuit('StrictBool', {
+        inputs: { a: bus(8), b: bus(8) },
+        outputs: { y: bit },
+        eval: ({ a, b }) => ({ y: a > b === (1 as unknown) ? 1 : 0 }),
+      }),
+      /never finds equal/,
+    ],
+    [
+      'a product past 2^53',
+      circuit('BigProduct', {
+        inputs: { a: bus(32), b: bus(32) },
+        outputs: { y: bus(32) },
+        eval: ({ a, b }) => ({ y: a * b }),
+      }),
+      /can exceed 2\^53/,
+    ],
+    [
+      'a name it never defines',
+      circuit('Undefined', {
+        inputs: { a: bus(8) },
+        outputs: { y: bus(8) },
+        eval: (({ a, scale }: { a: number; scale: number }) => ({ y: a * scale })) as never,
+      }),
+      /reads 'scale', which is not an input, state or argument/,
+    ],
+    [
+      'a switch case that falls through',
+      circuit('FallThrough', {
+        inputs: { a: bus(2) },
+        outputs: { y: bus(8) },
+        // Built from text: written out here, the fall-through is a lint error.
+        eval: Function(
+          'return ({ a }) => { let y = 0; switch (a) { case 0: y = 1; case 1: y = 2; break; } return { y }; }',
+        )(),
+      }),
+      /falls through/,
+    ],
+  ];
 
-describe('validateSynthAST', () => {
-  it('accepts bitwise operations', () => {
-    const fn = ({ a, b }: any) => ({ out: (a & b) | (a ^ b) });
-    const parsed = parseBehaviorSource(fn)!;
-    const result = validateSynthAST(parsed, ['a', 'b'], ['out']);
-    expect(result.valid).toBe(true);
-  });
-
-  it('accepts arithmetic', () => {
-    const fn = ({ a, b }: any) => ({ sum: a + b, diff: a - b });
-    const parsed = parseBehaviorSource(fn)!;
-    const result = validateSynthAST(parsed, ['a', 'b'], ['sum', 'diff']);
-    expect(result.valid).toBe(true);
-  });
-
-  it('accepts ternary', () => {
-    const fn = ({ a, b, sel }: any) => ({ out: sel ? a : b });
-    const parsed = parseBehaviorSource(fn)!;
-    const result = validateSynthAST(parsed, ['a', 'b', 'sel'], ['out']);
-    expect(result.valid).toBe(true);
-  });
-
-  it('accepts const declarations', () => {
-    const fn = ({ a, b }: any) => {
-      const sum = a + b;
-      return { out: sum & 0xff };
-    };
-    const parsed = parseBehaviorSource(fn)!;
-    const result = validateSynthAST(parsed, ['a', 'b'], ['out']);
-    expect(result.valid).toBe(true);
-  });
-
-  it('accepts switch/case with let-result', () => {
-    const fn = ({ op, a, b }: any) => {
-      let result: number;
-      switch (op) {
-        case 0:
-          result = a + b;
-          break;
-        case 1:
-          result = a - b;
-          break;
-        default:
-          result = 0;
-      }
-      return { out: result };
-    };
-    const parsed = parseBehaviorSource(fn)!;
-    const result = validateSynthAST(parsed, ['op', 'a', 'b'], ['out']);
-    expect(result.valid).toBe(true);
-  });
-
-  it('accepts comparison operators', () => {
-    const fn = ({ a, b }: any) => ({
-      eq: a === b ? 1 : 0,
-      lt: a < b ? 1 : 0,
-      gt: a > b ? 1 : 0,
+  for (const [what, inner, why] of refused) {
+    it(what, () => {
+      expect(reason(inner)).toMatch(why);
+      const { unsupported, verilog } = exportVerilog(wrap(inner));
+      expect(unsupported).toEqual({ [inner.name]: ['u'] });
+      expect(verilog).toMatch(why);
     });
-    const parsed = parseBehaviorSource(fn)!;
-    const result = validateSynthAST(parsed, ['a', 'b'], ['eq', 'lt', 'gt']);
-    expect(result.valid).toBe(true);
-  });
+  }
+});
 
-  it('accepts logical operators', () => {
-    const fn = ({ a, b }: any) => ({ out: a && b ? 1 : 0 });
-    const parsed = parseBehaviorSource(fn)!;
-    const result = validateSynthAST(parsed, ['a', 'b'], ['out']);
-    expect(result.valid).toBe(true);
-  });
-
-  it('accepts unary operators', () => {
-    const fn = ({ a }: any) => ({ out: ~a, neg: !a });
-    const parsed = parseBehaviorSource(fn)!;
-    const result = validateSynthAST(parsed, ['a'], ['out', 'neg']);
-    expect(result.valid).toBe(true);
-  });
-
-  // ── Rejections ──
-
-  it('rejects function calls', () => {
-    const fn = ({ a }: any) => ({ out: Math.min(a, 255) });
-    const parsed = parseBehaviorSource(fn)!;
-    const result = validateSynthAST(parsed, ['a'], ['out']);
-    expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes('not synthesizable'))).toBe(true);
-  });
-
-  it('rejects member expressions', () => {
-    const fn = ({ a }: any) => ({ out: a.toString() });
-    const parsed = parseBehaviorSource(fn)!;
-    const result = validateSynthAST(parsed, ['a'], ['out']);
-    expect(result.valid).toBe(false);
-  });
-
-  it('rejects loops', () => {
-    // Can't directly test loop in an arrow fn that returns, but we can test
-    // the validator against a parsed function with a loop
-    const fn = ({ a }: any) => {
-      let sum = 0;
-      for (let i = 0; i < 8; i++) {
-        sum += a;
-      }
-      return { out: sum };
-    };
-    const parsed = parseBehaviorSource(fn);
-    if (parsed) {
-      const result = validateSynthAST(parsed, ['a'], ['out']);
-      expect(result.valid).toBe(false);
-      expect(result.errors.some((e) => e.includes('not synthesizable'))).toBe(true);
+describe('checkEvalSynthesizable (one eval, by port names)', () => {
+  it('accepts std gates', () => {
+    for (const c of [And, Xor]) {
+      const { evalFn, inputNames, outputNames } = internalsOf(c).behavior!;
+      expect(checkEvalSynthesizable(evalFn, inputNames, outputNames)).toEqual({
+        valid: true,
+        errors: [],
+      });
     }
   });
 
-  it('rejects new expressions', () => {
-    const fn = ({ a }: any) => {
-      const m = new Map();
-      return { out: a };
-    };
-    const parsed = parseBehaviorSource(fn)!;
-    const result = validateSynthAST(parsed, ['a'], ['out']);
-    expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes('new'))).toBe(true);
-  });
-
-  it('rejects var declarations', () => {
-    // Use a function expression to get 'var'
-    const fn = ({ a }: any) => {
-      var x = a + 1;
-      return { out: x };
-    };
-    const parsed = parseBehaviorSource(fn)!;
-    const result = validateSynthAST(parsed, ['a'], ['out']);
-    expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes('var'))).toBe(true);
-  });
-
-  it('rejects await', () => {
-    // Async arrow function
-    const fn = async ({ a }: any) => ({ out: await a });
-    const parsed = parseBehaviorSource(fn);
-    if (parsed) {
-      const result = validateSynthAST(parsed, ['a'], ['out']);
-      expect(result.valid).toBe(false);
-    }
-  });
-
-  it('rejects string literals', () => {
-    const fn = ({ a }: any) => ({ out: 'hello' as any });
-    const parsed = parseBehaviorSource(fn)!;
-    const result = validateSynthAST(parsed, ['a'], ['out']);
-    expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes('string'))).toBe(true);
-  });
-
-  it('rejects references to undeclared identifiers', () => {
-    const fn = ({ a }: any) => ({ out: a + globalVar });
-    // globalVar doesn't exist so fn.toString() includes it
-    const parsed = parseBehaviorSource(fn)!;
-    const result = validateSynthAST(parsed, ['a'], ['out']);
-    expect(result.valid).toBe(false);
-    expect(result.errors.some((e) => e.includes('globalVar'))).toBe(true);
-  });
-});
-
-// ── checkEvalSynthesizable (one eval) ─────────────────────────────────────
-
-describe('checkEvalSynthesizable', () => {
-  it('returns valid for simple combinational', () => {
-    const fn = ({ a, b }: any) => ({ out: a & b });
-    const result = checkEvalSynthesizable(fn, ['a', 'b'], ['out']);
-    expect(result.valid).toBe(true);
-  });
-
-  it('returns invalid with errors for function calls', () => {
-    const fn = ({ a }: any) => ({ out: parseInt(a) });
-    const result = checkEvalSynthesizable(fn, ['a'], ['out']);
-    expect(result.valid).toBe(false);
-    expect(result.errors.length).toBeGreaterThan(0);
-  });
-});
-
-// ── Transpiler ───────────────────────────────────────────────────────────
-
-describe('emitVerilogFromEval', () => {
-  it('transpiles simple AND', () => {
-    const fn = ({ a, b }: any) => ({ out: a & b });
-    const parsed = parseBehaviorSource(fn)!;
-    const ctx = makeCtx('MyAnd', { a: 'w_a', b: 'w_b' }, { out: 'w_out' });
-    const result = emitVerilogFromEval(parsed, fn, ctx, ['a', 'b'], ['out']);
-    expect(result.lines.some((l) => l.includes('assign w_out'))).toBe(true);
-    expect(result.lines.some((l) => l.includes('w_a') && l.includes('w_b'))).toBe(true);
-  });
-
-  it('transpiles multi-output comparator', () => {
-    const fn = ({ a, b }: any) => ({
-      eq: a === b ? 1 : 0,
-      lt: a < b ? 1 : 0,
-    });
-    const parsed = parseBehaviorSource(fn)!;
-    const ctx = makeCtx('MyCmp', { a: 'w_a', b: 'w_b' }, { eq: 'w_eq', lt: 'w_lt' });
-    const result = emitVerilogFromEval(parsed, fn, ctx, ['a', 'b'], ['eq', 'lt']);
-    expect(result.lines.some((l) => l.includes('assign w_eq'))).toBe(true);
-    expect(result.lines.some((l) => l.includes('assign w_lt'))).toBe(true);
-  });
-
-  it('transpiles const intermediate wire', () => {
-    const fn = ({ a, b, carry_in }: any) => {
-      const result = a + b + carry_in;
-      return { sum: result & 0xff, carry_out: (result >> 8) & 1 };
-    };
-    const parsed = parseBehaviorSource(fn)!;
-    const ctx = makeCtx(
-      'MyAdd',
-      { a: 'w_a', b: 'w_b', carry_in: 'w_cin' },
-      { sum: 'w_sum', carry_out: 'w_cout' },
-      { width: 8 },
-    );
-    const result = emitVerilogFromEval(
-      parsed,
-      fn,
-      ctx,
-      ['a', 'b', 'carry_in'],
-      ['sum', 'carry_out'],
-    );
-    // Should have a wire declaration for the intermediate
-    expect(result.declarations.some((d) => d.includes('wire'))).toBe(true);
-    expect(result.lines.some((l) => l.includes('assign w_sum'))).toBe(true);
-    expect(result.lines.some((l) => l.includes('assign w_cout'))).toBe(true);
-  });
-
-  it('transpiles switch/case to always block', () => {
-    const fn = ({ a, b, op }: any) => {
-      let result: number;
-      switch (op) {
-        case 0:
-          result = a + b;
-          break;
-        case 1:
-          result = a - b;
-          break;
-        default:
-          result = 0;
-      }
-      return { out: result };
-    };
-    const parsed = parseBehaviorSource(fn)!;
-    const ctx = makeCtx(
-      'MyALU',
-      { a: 'w_a', b: 'w_b', op: 'w_op' },
-      { out: 'w_out' },
-      { width: 8 },
-    );
-    const result = emitVerilogFromEval(parsed, fn, ctx, ['a', 'b', 'op'], ['out']);
-    const text = result.lines.join('\n');
-    expect(text).toContain('always @(*)');
-    expect(text).toContain('case (w_op)');
-    expect(text).toContain('endcase');
-    expect(result.declarations.some((d) => d.includes('reg'))).toBe(true);
-  });
-
-  it('strips >>> 0 unsigned coercion', () => {
-    const fn = ({ a, b }: any) => ({ out: (a + b) >>> 0 });
-    const parsed = parseBehaviorSource(fn)!;
-    const ctx = makeCtx('MyAdd', { a: 'w_a', b: 'w_b' }, { out: 'w_out' });
-    const result = emitVerilogFromEval(parsed, fn, ctx, ['a', 'b'], ['out']);
-    const text = result.lines.join('\n');
-    // Should NOT contain >>> 0, just the addition
-    expect(text).not.toContain('>>> 0');
-    expect(text).not.toContain('>> 0');
-    expect(text).toContain('w_a');
-    expect(text).toContain('w_b');
-  });
-
-  it('handles destructuring rename ({ in: a })', () => {
-    const fn = ({ in: a }: any) => ({ out: a ? 0 : 1 });
-    const parsed = parseBehaviorSource(fn)!;
-    const ctx = makeCtx('MyNot', { in: 'w_in' }, { out: 'w_out' });
-    const result = emitVerilogFromEval(parsed, fn, ctx, ['in'], ['out']);
-    expect(result.lines.some((l) => l.includes('w_in'))).toBe(true);
-    expect(result.lines.some((l) => l.includes('w_out'))).toBe(true);
-  });
-
-  it('emits numeric literals correctly', () => {
-    // Note: V8 normalizes 0xFF to 255 in fn.toString(), so hex is lost.
-    // The transpiler emits decimal. This is correct — Verilog accepts decimal.
-    const fn = ({ a }: any) => ({ out: a & 0xff });
-    const parsed = parseBehaviorSource(fn)!;
-    const ctx = makeCtx('MyMask', { a: 'w_a' }, { out: 'w_out' });
-    const result = emitVerilogFromEval(parsed, fn, ctx, ['a'], ['out']);
-    const text = result.lines.join('\n');
-    expect(text).toContain('assign w_out');
-    expect(text).toContain('255');
-  });
-});
-
-// ── tryEmitFromEval (integration) ────────────────────────────────────────
-
-describe('tryEmitFromEval', () => {
-  it("returns Verilog for an eval in the compile's table", () => {
-    const MyGate = circuit('TestSynthGate', {
-      inputs: { a: bit, b: bit },
-      outputs: { out: bit },
-      eval: ({ a, b }) => ({ out: a && b ? 1 : 0 }),
-    });
-
-    const table = libraryOf(MyGate).behaviors;
-    const ctx = makeCtx('TestSynthGate', { a: 'w_a', b: 'w_b' }, { out: 'w_out' }, {}, table);
-    const result = tryEmitFromEval(ctx, lookup(table));
-    expect(result).not.toBeNull();
-    expect(result!.lines.some((l) => l.includes('assign'))).toBe(true);
-  });
-
-  it('returns null for unknown primitive', () => {
-    const ctx = makeCtx('NonExistent', {}, {});
-    const result = tryEmitFromEval(ctx, lookup(getStdLibrary().behaviors));
-    expect(result).toBeNull();
-  });
-
-  it('transpiles sequential Register with eval + onTick', () => {
-    // Register has stateKeys — now handled by eval-synth
-    const ctx = makeCtx('Register', { data: 'w_d', we: 'w_we', rst: 'w_rst' }, { q: 'w_q' });
-    const result = tryEmitFromEval(ctx, lookup(getStdLibrary().behaviors));
-    expect(result).not.toBeNull();
-    const text = result!.lines.join('\n');
-    expect(text).toContain('assign'); // eval outputs
-    expect(text).toContain('always @(posedge'); // onTick
-  });
-});
-
-// ── Stdlib eval validation ───────────────────────────────────────────────
-
-describe('stdlib eval synthesizability', () => {
-  it('And eval is synthesizable', () => {
-    const entry = internalsOf(And).behavior;
-    expect(entry).toBeDefined();
-    const result = checkEvalSynthesizable(entry!.evalFn, entry!.inputNames, entry!.outputNames);
-    expect(result.valid).toBe(true);
-  });
-
-  it('Xor eval is synthesizable', () => {
-    const entry = internalsOf(Xor).behavior;
-    expect(entry).toBeDefined();
-    const result = checkEvalSynthesizable(entry!.evalFn, entry!.inputNames, entry!.outputNames);
-    expect(result.valid).toBe(true);
-  });
-
-  // Parameterized factories — Verilog goes through primitive-map; eval is parameter-aware
-  it.skip('Adder eval is synthesizable', () => {
-    const entry = getStdLibrary().behaviors.get('Adder');
-    expect(entry).toBeDefined();
-    const result = checkEvalSynthesizable(entry!.evalFn, entry!.inputNames, entry!.outputNames);
-    expect(result.valid).toBe(true);
+  it('gives the reason for one it refuses', () => {
+    const result = checkEvalSynthesizable(({ a }) => ({ y: Math.abs(a as number) }), ['a'], ['y']);
+    expect(result).toEqual({ valid: false, errors: ['eval: it calls Math.abs()'] });
   });
 });
 
@@ -554,6 +391,3 @@ describe('top-level primitive simulation', () => {
     expect(vals.get('__top__.q')).toBe(42);
   });
 });
-
-// Declare globalVar to avoid TS error in the undeclared identifier test
-declare const globalVar: any;

@@ -107,13 +107,6 @@ interface Case {
 // Known bugs. The filed ones name their issue; "unfiled" ones were found by
 // this test and still need an issue.
 const BUG = {
-  logicalAnd: '#429: && on buses is emitted as bitwise &',
-  logicalOps: '#429: && and ! on buses are emitted as bitwise & and ~',
-  signedShift: '#429: JS >> is emitted as logical >>',
-  onTickPorts: '#429: an onTick primitive gets no clk/rst_n port',
-  timingLogic:
-    "#429: MOS6502_TimingLogic's eval reads unconnected inputs as undeclared regs and drops let initial values",
-  stateInit: '#429 (no clk/rst_n port), then #131: state resets to 0, not its initial value',
   xMemory: '#436: unwritten memory reads 0 in the simulator and x in Verilog',
   busMux:
     "#499: MemBusMux's local_addr isn't offset by its range base, and a sink's outputs (Console read_data) are left undriven",
@@ -217,7 +210,7 @@ for (const w of [1, 8, 16, 32]) {
 }
 std('LogicAnd w1', () => LogicAnd({ aWidth: 1, bWidth: 1 }));
 for (const w of [8, 16, 32]) {
-  std(`LogicAnd w${w}`, () => LogicAnd({ aWidth: w, bWidth: w }), { bug: BUG.logicalAnd });
+  std(`LogicAnd w${w}`, () => LogicAnd({ aWidth: w, bWidth: w }));
   std(`Subtractor w${w}`, () => Subtractor({ width: w }));
   // The outputs the exporter drives; the all-ports cases below cover the rest.
   const cmp = `Comparator w${w}, eq/lt/gt`;
@@ -510,7 +503,14 @@ evalCase(
     outputs: { both: bit, none: bit },
     eval: ({ a, b }) => ({ both: a && b ? 1 : 0, none: !a ? 1 : 0 }),
   }),
-  BUG.logicalOps,
+);
+evalCase(
+  'eval && and || as values',
+  circuit('EvLogicalValues', {
+    inputs: { a: bus(8), b: bus(8) },
+    outputs: { both: bus(8), either: bus(8) },
+    eval: ({ a, b }) => ({ both: a && b, either: a || b }),
+  }),
 );
 evalCase(
   'eval >> on 32 bits',
@@ -519,7 +519,71 @@ evalCase(
     outputs: { y: bus(32) },
     eval: ({ a }) => ({ y: a >> 3 }),
   }),
-  BUG.signedShift,
+);
+evalCase(
+  'eval const wider than one bit, no width argument',
+  circuit('EvWideConst', {
+    inputs: { a: bus(8), b: bus(8) },
+    outputs: { avg: bus(8), carry: bit },
+    eval: ({ a, b }) => {
+      const sum = a + b;
+      return { avg: sum >> 1, carry: sum > 255 ? 1 : 0 };
+    },
+  }),
+);
+evalCase(
+  'eval let with an initial value',
+  circuit('EvLetInit', {
+    inputs: { a: bus(8), sel: bus(2) },
+    outputs: { y: bus(8) },
+    eval: ({ a, sel }) => {
+      let y = a;
+      if (sel === 1) y = a ^ 0xff;
+      else if (sel === 2) y = 0;
+      return { y };
+    },
+  }),
+);
+evalCase(
+  'eval switch with early returns',
+  circuit('EvSwitch', {
+    inputs: { op: bus(2), a: bus(8), b: bus(8) },
+    outputs: { y: bus(8) },
+    eval: ({ op, a, b }) => {
+      switch (op) {
+        case 0:
+          return { y: (a + b) & 0xff };
+        case 1:
+          return { y: (a - b) & 0xff };
+        case 2:
+          return { y: a & b };
+        default:
+          return { y: ~a & 0xff };
+      }
+    },
+  }),
+);
+evalCase(
+  'eval << past 32 bits wraps',
+  circuit('EvShiftWrap', {
+    inputs: { a: bus(32), s: bus(6) },
+    outputs: { y: bus(32), neg: bit },
+    eval: ({ a, s }) => ({ y: a << s, neg: a << s < 0 ? 1 : 0 }),
+  }),
+);
+evalCase(
+  'onTick const and if',
+  circuit('EvTickConst', {
+    inputs: { en: bit, step: bus(4) },
+    outputs: { count: bus(8) },
+    state: { n: 0 },
+    eval: ({ n }) => ({ count: n }),
+    onTick: ({ en, step, n }) => {
+      const next = (n + step) & 0xff;
+      if (en) return { n: next };
+      return { n };
+    },
+  }),
 );
 evalCase(
   'onTick counter',
@@ -530,7 +594,6 @@ evalCase(
     eval: ({ n }) => ({ count: n & 0xff }),
     onTick: ({ en, n }) => ({ n: en ? (n + 1) & 0xff : n }),
   }),
-  BUG.onTickPorts,
 );
 evalCase(
   'onTick early return',
@@ -544,7 +607,6 @@ evalCase(
       return { n: (n + 1) & 0xff };
     },
   }),
-  BUG.onTickPorts,
 );
 evalCase(
   'onTick nonzero initial state',
@@ -555,7 +617,6 @@ evalCase(
     eval: ({ n }) => ({ count: n & 0xff }),
     onTick: ({ en, n }) => ({ n: en ? (n + 1) & 0xff : n }),
   }),
-  BUG.stateInit,
 );
 
 // ── bundled examples ────────────────────────────────────────────────────
@@ -569,7 +630,7 @@ for (const [id, cycles, bug] of [
   ['tpu-3x3', 64, undefined],
   ['snake', 200, BUG.screen],
   ['rv32i-computer', 300, BUG.busMux],
-  ['6502-computer', 300, BUG.timingLogic],
+  ['6502-computer', 300, BUG.xMemory],
 ] as const) {
   cases.push({ name: `example ${id}`, target: () => example(id), opts: { cycles }, bug });
 }

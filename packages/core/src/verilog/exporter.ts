@@ -23,7 +23,7 @@ import type {
   FlatConnection,
   FlatNode,
 } from '../simulator/types.js';
-import { checkEvalSynthesizable, type SynthValidation } from './eval-synth.js';
+import type { SynthValidation } from './eval-synth.js';
 import {
   emitPrimitive,
   isSequentialPrimitive,
@@ -31,7 +31,6 @@ import {
   type PrimitiveContext,
   type PrimitiveWires,
   type StateInit,
-  UNSUPPORTED_MARKER,
   usesStdMapping,
 } from './primitive-map.js';
 import type { ExportResult, VerilogExportOptions } from './types.js';
@@ -58,6 +57,10 @@ const PER_WIDTH = /^(Splitter|Combiner)_\d+w$/;
 
 function sanitizeId(id: string): string {
   return id.replace(/[.-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
+}
+
+function widthOf(pt: PortType): number {
+  return pt.kind === 'bus' ? pt.width : 1;
 }
 
 function portTypeToVerilog(pt: PortType): string {
@@ -103,9 +106,18 @@ function collectStateInits(
  */
 export function exportVerilogFromIR(
   circuit: CircuitIR,
-  { definitions, behaviors }: Library,
+  library: Library,
   options?: VerilogExportOptions,
 ): ExportResult {
+  return exportWithReasons(circuit, library, options).result;
+}
+
+/** The export, and why each unsupported primitive type couldn't be exported. */
+function exportWithReasons(
+  circuit: CircuitIR,
+  { definitions, behaviors }: Library,
+  options?: VerilogExportOptions,
+): { result: ExportResult; reasons: Map<string, string> } {
   const opts: ResolvedOptions = { ...DEFAULT_OPTIONS, ...options, behaviors };
   const flatCircuit = elaborate(circuit, definitions, false, { expandReferences: true });
   return emitFlatModule(circuit, flatCircuit, definitions, opts);
@@ -140,18 +152,8 @@ export function exportVerilog(top: Circuit, options?: VerilogExportOptions): Exp
  * is the reason, what in it can't be translated.
  */
 export function checkSynthesizable(top: Circuit): SynthValidation {
-  const { unsupported } = exportVerilog(top);
-  const { behaviors } = libraryOf(top);
-  const errors: string[] = [];
-  for (const name of Object.keys(unsupported ?? {})) {
-    const behavior = behaviors.get(name);
-    const evalErrors = behavior
-      ? checkEvalSynthesizable(behavior.evalFn, behavior.inputNames, behavior.outputNames).errors
-      : [];
-    if (evalErrors.length === 0)
-      evalErrors.push('no Verilog mapping, and its behavior cannot be translated');
-    for (const e of evalErrors) errors.push(`${name}: ${e}`);
-  }
+  const { reasons } = exportWithReasons(internalsOf(top).ir, libraryOf(top));
+  const errors = [...reasons].map(([name, reason]) => `${name}: ${reason}`);
   return { valid: errors.length === 0, errors };
 }
 
@@ -162,10 +164,12 @@ function emitFlatModule(
   flat: FlatCircuit,
   definitions: CircuitDefinitions,
   opts: ResolvedOptions,
-): ExportResult {
+): { result: ExportResult; reasons: Map<string, string> } {
   const moduleName = opts.topModuleName || sanitizeId(circuit.name);
   /** primitiveType -> node ids the exporter had no mapping for. */
   const unsupported: Record<string, string[]> = {};
+  /** primitiveType -> why (the first node's reason). */
+  const reasons = new Map<string, string>();
   // Sidecar files (hex) filled in by primitive-map as it emits memory init
   // above the inline threshold. Drained into ExportResult.files at the end.
   const sidecarFiles: Record<string, string> = {};
@@ -182,8 +186,8 @@ function emitFlatModule(
   // Detect if circuit needs a clock (and matching reset).
   // Kept as separate flags so they can diverge later (e.g. clock-only debug
   // wrappers) without splitting the call site.
-  const needsClock = flat.nodes.some((n) => isSequentialPrimitive(n.primitiveType));
-  const needsReset = needsClock;
+  // A primitive translated from its behavior can need them too; see below.
+  let needsClock = flat.nodes.some((n) => isSequentialPrimitive(n.primitiveType));
 
   // Whether each primitive is std's own, so its hand-written mapping (and the
   // name-keyed handling below) applies. One answer per name.
@@ -343,37 +347,6 @@ function emitFlatModule(
   // No timing transformation is needed — the wire map is used as-is.
   const consumerWireOverrides = new Map<string, string>(); // empty — no overrides
 
-  // ── Module header ──────────────────────────────────────────────────
-  const ports: string[] = [];
-
-  if (needsClock) {
-    ports.push(`input ${opts.clockName}`);
-  }
-  if (needsReset) {
-    ports.push(`input ${RESET_NAME}`);
-  }
-
-  for (const input of flat.topLevelInputs) {
-    const widthStr = portTypeToVerilog(input.portType);
-    ports.push(`input ${widthStr}${input.name}`);
-  }
-
-  for (const output of flat.topLevelOutputs) {
-    const widthStr = portTypeToVerilog(output.portType);
-    ports.push(`output ${widthStr}${output.name}`);
-  }
-
-  lines.push(`module ${moduleName} (`);
-  lines.push(`  ${ports.join(',\n  ')}`);
-  lines.push(`);`);
-  lines.push('');
-
-  // ── Wire declarations ──────────────────────────────────────────────
-  for (const decl of wireDeclarations.values()) {
-    lines.push(`  ${decl}`);
-  }
-  if (wireDeclarations.size > 0) lines.push('');
-
   // ── Register declarations + logic ──────────────────────────────────
   const allDeclarations: string[] = [];
   const allLogicLines: string[] = [];
@@ -408,6 +381,11 @@ function emitFlatModule(
       clockName: opts.clockName,
       resetName: RESET_NAME,
       target: opts.target,
+      ports: {
+        inputs: new Map(node.inputs.map((p) => [p.name, widthOf(p.portType)])),
+        outputs: new Map(node.outputs.map((p) => [p.name, widthOf(p.portType)])),
+      },
+      state: definitions.resolveCircuit(node.primitiveType)?.state,
       stateInits: collectStateInits(node, definitions),
       inlineMemoryThreshold,
       sidecarFiles,
@@ -418,11 +396,13 @@ function emitFlatModule(
     // Record gaps as they happen rather than probing emitPrimitive afterwards
     // with empty wires and no args, which can differ from what a real node
     // produces. Here the node is the one actually being emitted.
-    if (result.lines.some((l) => l.includes(UNSUPPORTED_MARKER))) {
+    if (result.unsupported !== undefined) {
       const ids = unsupported[node.primitiveType] ?? [];
       ids.push(node.id);
       unsupported[node.primitiveType] = ids;
+      if (!reasons.has(node.primitiveType)) reasons.set(node.primitiveType, result.unsupported);
     }
+    if (result.clocked) needsClock = true;
     allDeclarations.push(...result.declarations);
     if (result.lines.length > 0) {
       allLogicLines.push(`  // ${node.primitiveType} "${sanitizeId(node.id)}"`);
@@ -430,6 +410,34 @@ function emitFlatModule(
       allLogicLines.push('');
     }
   }
+
+  // ── Module header ──────────────────────────────────────────────────
+  const ports: string[] = [];
+
+  if (needsClock) {
+    ports.push(`input ${opts.clockName}`, `input ${RESET_NAME}`);
+  }
+
+  for (const input of flat.topLevelInputs) {
+    const widthStr = portTypeToVerilog(input.portType);
+    ports.push(`input ${widthStr}${input.name}`);
+  }
+
+  for (const output of flat.topLevelOutputs) {
+    const widthStr = portTypeToVerilog(output.portType);
+    ports.push(`output ${widthStr}${output.name}`);
+  }
+
+  lines.push(`module ${moduleName} (`);
+  lines.push(`  ${ports.join(',\n  ')}`);
+  lines.push(`);`);
+  lines.push('');
+
+  // ── Wire declarations ──────────────────────────────────────────────
+  for (const decl of wireDeclarations.values()) {
+    lines.push(`  ${decl}`);
+  }
+  if (wireDeclarations.size > 0) lines.push('');
 
   // Emit register declarations
   for (const decl of allDeclarations) {
@@ -461,8 +469,11 @@ function emitFlatModule(
   lines.push('');
 
   return {
-    verilog: lines.join('\n'),
-    files: sidecarFiles,
-    ...(Object.keys(unsupported).length > 0 ? { unsupported } : {}),
+    result: {
+      verilog: lines.join('\n'),
+      files: sidecarFiles,
+      ...(Object.keys(unsupported).length > 0 ? { unsupported } : {}),
+    },
+    reasons,
   };
 }

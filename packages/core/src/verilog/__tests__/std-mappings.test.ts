@@ -63,7 +63,9 @@ describe("hand-written mappings apply only to std's own primitives", () => {
       const { verilog, unsupported } = exportVerilog(addTop(MyAdder));
       expect(unsupported).toBeUndefined();
       expect(verilog).not.toContain(STD_ADDER_LINE);
-      expect(verilog).toContain('assign w_add_sum = ((a - b) & 255);');
+      expect(verilog).toContain(
+        "assign w_add_sum = (($signed({1'b0, a}) - $signed({1'b0, b})) & 255);",
+      );
       expect(verilog).toContain('assign w_add_carry_out = 0;');
     });
 
@@ -80,7 +82,9 @@ describe("hand-written mappings apply only to std's own primitives", () => {
       const { verilog, unsupported } = exportVerilogFromIR(internalsOf(top).ir, libraryOf(top));
       expect(unsupported).toBeUndefined();
       expect(verilog).not.toContain(STD_ADDER_LINE);
-      expect(verilog).toContain('assign w_add_sum = ((a - b) & 255);');
+      expect(verilog).toContain(
+        "assign w_add_sum = (($signed({1'b0, a}) - $signed({1'b0, b})) & 255);",
+      );
     });
 
     it("gives the editor's user Adder no std behavior, so it is unsupported", () => {
