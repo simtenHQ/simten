@@ -27,7 +27,7 @@ function PrivacyPage() {
     <article className="mx-auto max-w-3xl px-4 py-16 text-foreground">
       <header className="mb-10">
         <h1 className="text-3xl font-semibold tracking-tight">Privacy Policy</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Effective: 2026-05-28</p>
+        <p className="mt-2 text-sm text-muted-foreground">Effective: 2026-10-27</p>
       </header>
 
       <Prose>
@@ -48,21 +48,21 @@ function PrivacyPage() {
           or sell them. We use them only to debug outages and abuse.
         </p>
         <p>
-          <strong>Cloudflare Analytics Engine, share events only.</strong> When you create or load a
-          shared circuit, we increment two counters in Cloudflare&apos;s first-party analytics
-          product: <code>share_create</code> (with the hash and source byte length) and{' '}
-          <code>share_read</code> (with the hash). No IP, no user agent, no personal data is logged
-          here; we use it to size capacity and spot abuse patterns. There is no tracker on any page,
-          no Google Analytics, no PostHog, no Sentry, no Plausible. We considered them and chose not
-          to ship them.
+          <strong>Cloudflare Analytics Engine, share events only.</strong> When you create, load or
+          view an embedded shared circuit, we increment a counter in Cloudflare&apos;s first-party
+          analytics product: <code>share_create</code> (with the hash and source byte length),{' '}
+          <code>share_read</code> or <code>embed_view</code> (with the hash). No IP, no user agent,
+          no personal data is logged here; we use it to size capacity and spot abuse patterns. There
+          is no tracker on any page, no Google Analytics, no PostHog, no Sentry, no Plausible. We
+          considered them and chose not to ship them.
         </p>
         <p>
           <strong>Shared circuit source (Cloudflare KV).</strong> If you press the
           &ldquo;Share&rdquo; button in the editor, the circuit source code is stored verbatim in
-          Cloudflare KV under a content hash, so anyone with the link can load it. Source ≤ 100 KB.
-          TTL is 2 years, renewed when the link is opened in its final year (links that are still
-          being opened don&apos;t expire). Sharing is rate-limited (30 shares per IP per 60 seconds,
-          and a site-wide daily cap).
+          Cloudflare KV under a content hash, so anyone with the link can load it, on simten.dev or
+          embedded in another site through embed.simten.dev. Source ≤ 100 KB. Links don&apos;t
+          expire, so an embedded circuit keeps working. Sharing is rate-limited (30 shares per IP
+          per 60 seconds, and a site-wide daily cap).
         </p>
 
         <H2>What we don&apos;t collect</H2>
@@ -157,7 +157,7 @@ function PrivacyPage() {
             Cloudflare Analytics Engine share counters: indefinite, but contain no personal data.
           </li>
           <li>
-            Shared circuits in KV: 2 years, renewed when opened in the final year. Email{' '}
+            Shared circuits in KV: kept until deleted. Email{' '}
             <a
               href="mailto:privacy@simten.dev"
               className="text-foreground underline underline-offset-2 hover:text-foreground/80"

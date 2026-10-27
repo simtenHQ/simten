@@ -1,7 +1,2 @@
-export {
-  decodeSourceFromUrl,
-  encodeSourceForUrl,
-  hashSource,
-  INLINE_URL_THRESHOLD,
-  shouldUseShortLink,
-} from './encode-source.js';
+export { decodeSourceFromUrl, hashSource } from './encode-source.js';
+export { isShareHash, loadShare, type ShareKV, saveShare, validateShareHash } from './store.js';

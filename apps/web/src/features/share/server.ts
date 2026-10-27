@@ -1,7 +1,8 @@
 import { env } from 'cloudflare:workers';
+import { loadShare, validateShareHash } from '@simten/ui/share';
 import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeader } from '@tanstack/react-start/server';
-import { createShare, loadShare, validateShareHash, validateShareInput } from './store';
+import { createShare, validateShareInput } from './store';
 
 export const shareCircuit = createServerFn({ method: 'POST' })
   .inputValidator(validateShareInput)

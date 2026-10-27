@@ -1,21 +1,16 @@
-import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
+import { decompressFromEncodedURIComponent } from 'lz-string';
 
-export const INLINE_URL_THRESHOLD = 4000;
-
-export function encodeSourceForUrl(source: string): string {
-  return compressToEncodedURIComponent(source);
-}
-
+/**
+ * Decodes the source from a `/circuit/<encoded>` link. Share links have been
+ * short (`/circuit/s/<hash>`) since #368; this stays so links shared before
+ * then keep opening.
+ */
 export function decodeSourceFromUrl(encoded: string): string | null {
   try {
     return decompressFromEncodedURIComponent(encoded) || null;
   } catch {
     return null;
   }
-}
-
-export function shouldUseShortLink(encoded: string): boolean {
-  return encoded.length > INLINE_URL_THRESHOLD;
 }
 
 /**
