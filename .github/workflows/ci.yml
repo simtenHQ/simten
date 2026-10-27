@@ -1,7 +1,7 @@
 name: CI
 
 # Every workspace test suite, the Go container tests, typecheck, lint,
-# package builds and the web build. Embed Playwright e2e is not run yet (#432).
+# package builds, the web build, and the embed and sandbox browser tests.
 
 on:
   push:
@@ -187,6 +187,56 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: pnpm --filter @simten/web build
+
+  e2e:
+    name: browser tests (embed, sandbox)
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+
+      - name: Install Chromium
+        # Headless shell only, and no `--with-deps`: the runner image already
+        # has the system libraries, and installing them through apt took four
+        # of this job's five minutes.
+        run: pnpm exec playwright install --only-shell chromium
+
+      - name: Build core and ui
+        # The embed bundle resolves both through their built `dist/`. Two steps
+        # so ui never builds ahead of core (see the workspace build above).
+        run: |
+          pnpm --filter @simten/core build
+          pnpm --filter @simten/ui build
+
+      - name: Embed (Playwright)
+        # Builds the sandbox and an embed bundle pointed at it, then runs the
+        # <circuit-embed> suite against both, so it tests this commit's
+        # sandbox rather than the deployed one.
+        run: pnpm --filter @simten/embed test:e2e
+
+      - name: Sandbox watchdog
+        # An infinite loop in user code times out, the page stays responsive,
+        # and the next compile works.
+        run: pnpm --filter @simten/sandbox test:e2e
 
   go:
     name: container tests (${{ matrix.app }})
