@@ -16,36 +16,42 @@
  * source in the main frame would defeat the sandbox.
  */
 
-import type { CircuitIR } from '@simten/core/internal';
-import { createEngine, elaborate, executeCircuitCode } from '@simten/core/internal';
+import type { Behavior, CircuitIR } from '@simten/core/internal';
+import { createEngine, elaborate, executeCircuitCode, getStdLibrary } from '@simten/core/internal';
 import type { GradeRuntime } from '../runtime';
 import { RuntimeFailure, readOutputs } from '../runtime';
 
 export function localRuntime(): GradeRuntime {
-  let library: CircuitIR[] = [];
+  let compiled: CircuitIR[] = [];
+  let behaviors: ReadonlyMap<string, Behavior> = new Map();
   let engine: ReturnType<typeof createEngine> | null = null;
 
   return {
     async compile(source) {
       const result = executeCircuitCode(source);
       if (result.error) throw new RuntimeFailure(result.error);
-      library = result.library
+      const { definitions } = result.library;
+      compiled = definitions
         .getAllCircuitNames()
-        .map((n) => result.library.resolveCircuit(n))
+        .map((n) => definitions.resolveCircuit(n))
         .filter((c): c is CircuitIR => c != null);
-      return { circuits: result.circuits, libraryCircuits: library };
+      behaviors = result.library.behaviors;
+      return { circuits: result.circuits, libraryCircuits: compiled };
     },
 
     async select(target, all) {
-      const byName = new Map([...library, ...all].map((c) => [c.name, c]));
-      const lib = {
+      const byName = new Map([...compiled, ...all].map((c) => [c.name, c]));
+      const definitions = {
         resolveCircuit: (name: string) => byName.get(name),
         getAllPrimitiveNames: () =>
           [...byName.values()]
             .filter((c) => c.implementation?.kind === 'primitive')
             .map((c) => c.name),
       };
-      engine = createEngine(elaborate(target, lib), { componentLibrary: lib });
+      // As the sandbox's compile-ir: std's behavior under the compiled source's.
+      engine = createEngine(elaborate(target, definitions), {
+        library: { definitions, behaviors: new Map([...getStdLibrary().behaviors, ...behaviors]) },
+      });
     },
 
     async evaluate(inputs, outputs) {

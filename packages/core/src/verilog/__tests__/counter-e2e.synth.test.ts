@@ -16,7 +16,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { CircuitLibrary } from '../../ir/circuit-ir.js';
+import type { CircuitDefinitions } from '../../ir/circuit-ir.js';
 import { Adder, Constant, Mux, Or, Register } from '../../std/index.js';
 import { exportVerilog } from '../exporter.js';
 import { hasSynth, synthesizeVerilog } from './synth.js';
@@ -45,7 +45,7 @@ function buildCounter() {
     ],
   });
 
-  const lib: CircuitLibrary = {
+  const definitions: CircuitDefinitions = {
     resolveCircuit: (name) => {
       if (name === 'Counter') return Counter.circuit;
       return Counter._dependencies.get(name)?.circuit;
@@ -53,15 +53,15 @@ function buildCounter() {
     getAllPrimitiveNames: () => [...Counter._dependencies.keys()],
   };
 
-  return { circuit: Counter.circuit, lib };
+  return { circuit: Counter.circuit, definitions };
 }
 
 const d = describe.skipIf(!hasSynth());
 
 d('Counter (Register+Adder+Mux+Or) — Yosys synthesis', () => {
   it('synthesizes cleanly and includes sequential (DFF) cells', { timeout: 30000 }, async () => {
-    const { circuit, lib } = buildCounter();
-    const result = exportVerilog(circuit, lib, { target: 'synthesis' });
+    const { circuit, definitions } = buildCounter();
+    const result = exportVerilog(circuit, definitions, { target: 'synthesis' });
 
     const resp = await synthesizeVerilog(result, 'Counter');
 

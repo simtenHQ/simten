@@ -77,9 +77,9 @@ function recompile(source: string): Circuit {
 }
 
 function importedTop(): Circuit {
-  const { top, library } = importNetlist(netlist, 'top');
-  const deps = [...library.values()].filter((c) => c.name !== top.name);
-  return buildFromIR(top, deps);
+  const { top, definitions, behaviors } = importNetlist(netlist, 'top');
+  const deps = [...definitions.values()].filter((c) => c.name !== top.name);
+  return buildFromIR(top, deps, behaviors);
 }
 
 describe('memory contents survive the round trip through generated source', () => {
@@ -153,11 +153,11 @@ describe('real design (RV32I_CPU_Core) serializes fully clean and re-simulates',
         readFileSync(fileURLToPath(new URL('../__fixtures__/rv32i_cpu.json.gz', import.meta.url))),
       ).toString('utf8'),
     ) as YosysNetlist;
-    const { top, library } = importNetlist(rv32i, 'RV32I_CPU_Core');
+    const { top, definitions } = importNetlist(rv32i, 'RV32I_CPU_Core');
     const source = circuitToSource(
       buildFromIR(
         top,
-        [...library.values()].filter((c) => c.name !== top.name),
+        [...definitions.values()].filter((c) => c.name !== top.name),
       ),
     );
 

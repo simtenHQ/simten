@@ -12,7 +12,7 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { bit, bus, circuit } from '@simten/core/circuit';
-import type { CircuitLibrary } from '@simten/core/internal';
+import type { CircuitDefinitions } from '@simten/core/internal';
 import { Constant, RV32I_Core as RV32I_CoreDef } from '@simten/core/std';
 import { exportVerilog } from '@simten/core/verilog';
 
@@ -156,7 +156,7 @@ export function buildCPUCore() {
     ],
   });
 
-  const lib: CircuitLibrary = {
+  const lib: CircuitDefinitions = {
     resolveCircuit: (name) => {
       if (name === 'RV32I_CPU_Core') return RV32I_CPU_Core.circuit;
       if (name === 'RV32I_Core') return RV32I_Core.circuit;

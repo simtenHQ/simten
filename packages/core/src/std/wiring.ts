@@ -9,16 +9,16 @@
  * clean and editable (see import/component-homes.ts for the classification).
  *
  * Every instance shares a fixed set of port NAMES (`in`/`out`), varying only
- * widths per instance — the eval registry keys behaviour by circuit name, so
+ * widths per instance. A compile keys behavior by circuit name, so
  * structural args (`inWidth`/`offset`/`width`/`outWidth`) are read from the eval
  * input bag (fed from node.arguments by the bridge merge), never closed over.
  * Same contract as `Adder`/`Register`.
  *
  * That extends to the fallbacks and to the bodies: defaults are literals and
  * mask/sign-extend arithmetic is spelled out inline rather than calling a
- * module-scope helper. Last write wins in the registry, so a closed-over
- * `width` would let the last-defined instance set the fallback for every
- * bare one, and a closed-over helper cannot survive the sandbox's
+ * module-scope helper. One instance's closure serves every instance of a
+ * name, so a closed-over `width` would let one instance set the fallback for
+ * every bare one, and a closed-over helper cannot survive the sandbox's
  * `new Function(fn.toString())` rebuild.
  */
 

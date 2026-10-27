@@ -70,8 +70,8 @@ describe('nodes are named after the RTL signals they drive', () => {
   });
 
   it('keeps every node id unique', () => {
-    const { top, library } = importNetlist(fix('net-names.json'), 'net_names');
-    for (const circuit of [top, ...library.values()]) {
+    const { top, definitions } = importNetlist(fix('net-names.json'), 'net_names');
+    for (const circuit of [top, ...definitions.values()]) {
       const ids = circuit.nodes.map((n) => n.id);
       expect(new Set(ids).size, `duplicate node id in ${circuit.name}`).toBe(ids.length);
     }

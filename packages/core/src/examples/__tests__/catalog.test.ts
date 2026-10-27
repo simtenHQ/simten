@@ -54,7 +54,7 @@ describe('example catalog', () => {
     )!;
     const sim = simulate(top);
     sim.tickN(400);
-    const state = sim.session.getState().sequentialState?.currentState;
+    const state = sim.snapshot().sequentialState?.currentState;
     const text = [...(state?.entries() ?? [])].find(([id]) => id === 'console')?.[1];
     expect(text).toBe('Hello from the 6502!\n');
   });

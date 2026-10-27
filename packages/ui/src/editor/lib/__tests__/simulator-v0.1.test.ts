@@ -5,18 +5,23 @@
  * Focus on end-to-end circuit simulation, edge cases, and critical behaviors.
  */
 
-import { type CircuitLibrary, createEngine, elaborate } from '@simten/core/internal';
+import {
+  type CircuitDefinitions,
+  createEngine,
+  elaborate,
+  getStdLibrary,
+} from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useCircuitLibraryStore } from '../../stores/circuit-library-store';
+import { useCircuitDefinitionsStore } from '../../stores/circuit-definitions-store';
 import { bitType, busType, type CircuitIR } from '../../types/circuit';
 
 const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
   (c) => c.implementation.kind === 'primitive',
 );
 
-function getLibrary(): CircuitLibrary {
-  const store = useCircuitLibraryStore.getState();
+function storeDefinitions(): CircuitDefinitions {
+  const store = useCircuitDefinitionsStore.getState();
   return {
     resolveCircuit: (name) => store.resolveCircuit(name),
     getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
@@ -24,12 +29,12 @@ function getLibrary(): CircuitLibrary {
 }
 
 describe('Simulator', () => {
-  let library: ReturnType<typeof useCircuitLibraryStore.getState>;
+  let store: ReturnType<typeof useCircuitDefinitionsStore.getState>;
 
   beforeEach(() => {
-    library = useCircuitLibraryStore.getState();
-    library.clear();
-    library.addCircuits(PRIMITIVES as any[]);
+    store = useCircuitDefinitionsStore.getState();
+    store.clear();
+    store.addCircuits(PRIMITIVES);
   });
 
   describe('Basic Combinational Simulation', () => {
@@ -73,9 +78,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const result = sim.runCombinational();
 
       // Check that Switch outputs 1
@@ -128,9 +135,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const result = sim.runCombinational();
 
       expect(result.portValues.get('switch1.out')).toBe(0);
@@ -210,9 +219,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const result = sim.runCombinational();
 
       // true AND true = true
@@ -278,9 +289,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const result = sim.runCombinational();
 
       // true OR false = true
@@ -327,9 +340,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const result = sim.runCombinational();
 
       // NOT true = false
@@ -461,9 +476,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const result = sim.runCombinational();
 
       // (true AND false) OR (true AND true) = false OR true = true
@@ -488,9 +505,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const result = sim.runCombinational();
 
       expect(result.portValues.size).toBe(0);
@@ -529,9 +548,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const result = sim.runCombinational();
 
       expect(result.portValues.get('switch1.out')).toBe(1);
@@ -566,9 +587,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const result = sim.runCombinational();
 
       // Unconnected inputs should default to false, so false AND false = false
@@ -640,9 +663,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const result = sim.runCombinational();
 
       // Both circuits should work independently
@@ -679,9 +704,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const seqState = sim.getState();
 
       // Should initialize state for DFF
@@ -720,9 +747,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const seqState = sim.getState();
 
       // Should initialize state for Register
@@ -807,9 +836,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const result = sim.tick();
 
       // After one tick with d=true and rising clock edge, q should be true
@@ -883,9 +914,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const result = sim.runCombinational();
 
       // Check that output ports are stored
@@ -949,9 +982,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const seqState = sim.getState();
 
       // Should initialize with custom value
@@ -1008,9 +1043,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const seqState = sim.getState();
 
       // Should initialize with Map containing the init data
@@ -1071,9 +1108,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const seqState = sim.getState();
 
       // Should initialize with Map containing the array data
@@ -1133,9 +1172,11 @@ describe('Simulator', () => {
         implementation: { kind: 'composite' },
       };
 
-      const simLibrary = getLibrary();
+      const definitions = storeDefinitions();
 
-      const sim = createEngine(elaborate(circuit, simLibrary), { componentLibrary: simLibrary });
+      const sim = createEngine(elaborate(circuit, definitions), {
+        library: { definitions, behaviors: getStdLibrary().behaviors },
+      });
       const seqState = sim.getState();
 
       // Should initialize with empty Map

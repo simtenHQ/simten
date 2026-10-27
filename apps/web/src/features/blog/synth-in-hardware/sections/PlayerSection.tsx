@@ -52,7 +52,7 @@ export function PlayerSection() {
         <div className="h-[520px] bg-gray-50 dark:bg-gray-950">
           <CircuitCanvas
             circuit={voice.circuit}
-            componentLibrary={sim.componentLibrary ?? undefined}
+            definitions={sim.definitions ?? undefined}
             portValues={sim.portValues}
             sequentialState={sim.sequentialState}
             draggable={false}

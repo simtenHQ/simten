@@ -17,7 +17,7 @@
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { buildSnake } from '../../examples/snake.js';
-import type { CircuitIR, CircuitLibrary } from '../../internal.js';
+import type { CircuitDefinitions, CircuitIR } from '../../internal.js';
 import { BitSlice, Register, SignExtend, ZeroExtend } from '../../std/index.js';
 import { exportVerilog } from '../index.js';
 
@@ -34,7 +34,7 @@ function libraryFor(top: { circuit: CircuitIR; _dependencies?: ReadonlyMap<strin
   return {
     resolveCircuit: (name: string) => byName.get(name),
     getAllPrimitiveNames: () => [...byName.keys()],
-  } as unknown as CircuitLibrary;
+  } as unknown as CircuitDefinitions;
 }
 
 describe('width adaptation exports to Verilog', () => {

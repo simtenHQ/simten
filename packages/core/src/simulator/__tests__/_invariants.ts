@@ -42,7 +42,7 @@
  *     circuits the project already depends on)
  */
 
-import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
+import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import { TOP_LEVEL_NODE } from '../../ir/circuit-ir.js';
 import { elaborate } from '../elaboration.js';
 import type { FlatCircuit, FlatNode } from '../types.js';
@@ -64,7 +64,7 @@ type CircuitLike = {
 
 export function elaborateBuilt(built: CircuitLike): FlatCircuit {
   const circuitMap = new Map<string, CircuitIR>();
-  const library: CircuitLibrary & { addCircuit(c: CircuitIR): void } = {
+  const library: CircuitDefinitions & { addCircuit(c: CircuitIR): void } = {
     resolveCircuit: (name) => circuitMap.get(name),
     getAllPrimitiveNames: () =>
       [...circuitMap.entries()]

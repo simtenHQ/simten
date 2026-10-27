@@ -2,9 +2,10 @@
  * A bare `Adder()` must keep its own 8-bit default even when a 32-bit Adder is
  * defined after it.
  *
- * The eval registry keys by component NAME and last write wins, so there is one
- * registered lambda per name no matter how many widths get instantiated, and
- * the simulator resolves it at `simulate()` time. An eval whose width default
+ * Behavior was keyed by component NAME in a global registry where the last
+ * write won, so there was one lambda per name no matter how many widths got
+ * instantiated, resolved at `simulate()` time. (A compile's own table is still
+ * keyed by name, so one instance's closure serves every instance.) An eval whose width default
  * read the factory closure — `width: w = width` — therefore handed every bare
  * instance the width of whichever instance was defined LAST.
  *

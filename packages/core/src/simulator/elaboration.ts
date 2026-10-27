@@ -11,7 +11,7 @@
  * - Eliminates runtime composite evaluation complexity
  */
 
-import type { CircuitIR, CircuitLibrary, PortPath } from '../ir/circuit-ir.js';
+import type { CircuitDefinitions, CircuitIR, PortPath } from '../ir/circuit-ir.js';
 import type { FlatCircuit, FlatConnection, FlatNode, HierarchyNode } from './types.js';
 import { SEQUENTIAL_INPUT_PORTS, TOP_LEVEL_NODE } from './types.js';
 
@@ -33,13 +33,13 @@ export interface ElaborateOptions {
  * It transforms a hierarchical circuit into a flat netlist of primitives.
  *
  * @param circuit - The circuit to elaborate
- * @param library - Component library for resolving component definitions
+ * @param definitions - Circuit definitions to resolve components against
  * @param debug - Enable debug logging
  * @returns Flattened circuit with only primitives
  */
 export function elaborate(
   circuit: CircuitIR,
-  library: CircuitLibrary,
+  definitions: CircuitDefinitions,
   debug: boolean = false,
   _options?: ElaborateOptions,
 ): FlatCircuit {
@@ -63,7 +63,7 @@ export function elaborate(
   ): void {
     for (const node of circ.nodes) {
       const fullPath = pathPrefix + node.id;
-      const component = library.resolveCircuit(node.componentRef);
+      const component = definitions.resolveCircuit(node.componentRef);
 
       if (!component) {
         throw new Error(`Unknown component: ${node.componentRef} (referenced by node ${fullPath})`);
@@ -218,7 +218,7 @@ export function elaborate(
     circuit,
     connections,
     nodes,
-    library,
+    definitions,
     '',
     debug,
   );
@@ -246,7 +246,7 @@ function stitchCompositeConnections(
   circuit: CircuitIR,
   connections: FlatConnection[],
   flatNodes: FlatNode[],
-  library: CircuitLibrary,
+  definitions: CircuitDefinitions,
   pathPrefix: string,
   debug: boolean = false,
 ): FlatConnection[] {
@@ -264,7 +264,7 @@ function stitchCompositeConnections(
   ): void {
     for (const node of circ.nodes) {
       const fullPath = prefix + node.id;
-      const component = library.resolveCircuit(node.componentRef);
+      const component = definitions.resolveCircuit(node.componentRef);
 
       if (!component) continue;
 
@@ -276,7 +276,7 @@ function stitchCompositeConnections(
         if (debug) {
           console.log(`\n=== Tracing composite: ${fullPath} (${node.componentRef}) ===`);
         }
-        traceCompositePorts(component, fullPath, portForwarding, library, debug);
+        traceCompositePorts(component, fullPath, portForwarding, definitions, debug);
 
         const childStack = new Set(elaborationStack);
         childStack.add(node.componentRef);
@@ -564,14 +564,19 @@ function traceCompositePorts(
   composite: CircuitIR,
   compositePath: string,
   portForwarding: Map<string, PortPath[]>,
-  library: CircuitLibrary,
+  definitions: CircuitDefinitions,
   debug: boolean = false,
 ): void {
   for (const conn of composite.connections) {
     // Case 1: Circuit input connects to internal node
     if (conn.source.nodeId === '' && conn.target.nodeId !== '') {
       const compositeInputKey = `${compositePath}.${conn.source.portName}`;
-      const internalTargets = resolveInternalPorts(compositePath, conn.target, composite, library);
+      const internalTargets = resolveInternalPorts(
+        compositePath,
+        conn.target,
+        composite,
+        definitions,
+      );
       if (!portForwarding.has(compositeInputKey)) {
         portForwarding.set(compositeInputKey, []);
       }
@@ -588,7 +593,12 @@ function traceCompositePorts(
     // Case 2: Internal node connects to circuit output
     if (conn.source.nodeId !== '' && conn.target.nodeId === '') {
       const compositeOutputKey = `${compositePath}.${conn.target.portName}`;
-      const internalSources = resolveInternalPorts(compositePath, conn.source, composite, library);
+      const internalSources = resolveInternalPorts(
+        compositePath,
+        conn.source,
+        composite,
+        definitions,
+      );
       if (!portForwarding.has(compositeOutputKey)) {
         portForwarding.set(compositeOutputKey, []);
       }
@@ -630,7 +640,7 @@ function resolveInternalPorts(
   compositePath: string,
   portRef: PortPath,
   composite: CircuitIR,
-  library: CircuitLibrary,
+  definitions: CircuitDefinitions,
   visited: Set<string> = new Set(),
 ): PortPath[] {
   if (portRef.nodeId === '') {
@@ -644,7 +654,7 @@ function resolveInternalPorts(
     return [{ nodeId: fullPath, portName: portRef.portName }];
   }
 
-  const component = library.resolveCircuit(node.componentRef);
+  const component = definitions.resolveCircuit(node.componentRef);
   if (!component || component.implementation.kind !== 'composite') {
     return [{ nodeId: fullPath, portName: portRef.portName }];
   }
@@ -665,7 +675,7 @@ function resolveInternalPorts(
         fullPath,
         conn.source,
         component,
-        library,
+        definitions,
         childVisited,
       );
       results.push(...resolved);
@@ -676,7 +686,7 @@ function resolveInternalPorts(
         fullPath,
         conn.target,
         component,
-        library,
+        definitions,
         childVisited,
       );
       results.push(...resolved);
@@ -751,7 +761,7 @@ export function isFlatCircuit(value: unknown): value is FlatCircuit {
 export function topologicalSortFlat(
   nodes: FlatNode[],
   connections: FlatConnection[],
-  library: CircuitLibrary,
+  definitions: CircuitDefinitions,
 ): string[] | null {
   const stateOutputNodes = new Set<string>();
   const stateReadNodes = new Set<string>();
@@ -759,7 +769,7 @@ export function topologicalSortFlat(
   const dependentNodes: string[] = [];
 
   for (const node of nodes) {
-    const component = library.resolveCircuit(node.primitiveType);
+    const component = definitions.resolveCircuit(node.primitiveType);
     if (!component) continue;
 
     const isSink = component.metadata?.timing === 'sink';

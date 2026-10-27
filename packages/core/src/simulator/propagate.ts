@@ -6,8 +6,7 @@
  */
 
 import type { BitValue, BusValue } from '../ir/circuit-ir.js';
-import { getOnTickFunction } from './eval-bridge.js';
-import { EVALUATORS, type EvalContext } from './evaluators/index.js';
+import type { EvalContext } from './evaluators/types.js';
 import type { NumericEventQueue } from './numeric-event-queue.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 import type { NumericPortValues } from './numeric-values.js';
@@ -131,6 +130,8 @@ export function propagate(
   }
 
   const maxIterations = maxPropagationIterations(circuit.nodeCount);
+  const evaluators = circuit.evaluators;
+  const typeIndex = circuit.primitiveTypeIndex;
 
   // Create evaluation context (reused for all evaluations)
   const ctx: EvalContext = {
@@ -175,17 +176,14 @@ export function propagate(
       wasInitialized[i] = values.initialized[outputStart + i];
     }
 
-    // Get evaluator from table
-    const typeIdx = circuit.primitiveTypeIndex[nodeIndex];
-    const evaluator = EVALUATORS[typeIdx];
+    // Dispatch via this compile's evaluator table: no Map allocation, no string keys.
+    const evaluator = evaluators[typeIndex[nodeIndex]];
 
     if (evaluator) {
-      // Dispatch via the evaluator table — no Map allocation, no string keys.
       evaluator(ctx);
     } else {
-      // Slot is null: registration contract was violated. The fallback throws
-      // with a useful error naming the primitive.
-      evaluateNodeFallback(circuit, nodeIndex, values, seqState, topLevelInputs);
+      // The compile had no behavior for this type. Throws, naming it.
+      missingBehavior(circuit, nodeIndex);
     }
 
     // Check for changes and enqueue dependents. A port counts as "changed"
@@ -214,31 +212,17 @@ export function propagate(
 }
 
 /**
- * Fallback: zero outputs for unknown primitives.
- * Should not be reached if all circuits have evals registered via circuit().
+ * A node whose primitive type has no behavior in this compile's table.
+ * Throwing is far more useful than silently zeroing outputs and producing
+ * nonsense state.
  */
-function evaluateNodeFallback(
-  circuit: NumericCircuit,
-  nodeIndex: number,
-  values: NumericPortValues,
-  _seqState: NumericSequentialState | undefined,
-  _topLevelInputs: FlatPortValueMap | undefined,
-): void {
+function missingBehavior(circuit: NumericCircuit, nodeIndex: number): never {
   const node = circuit.flatCircuit.nodes[nodeIndex];
-  void values;
-  // Contract: every primitive type must have an evaluator registered before
-  // simulation. Built-ins are registered when `@simten/core/std` is imported
-  // (or any module that uses circuit() to define them); user primitives are
-  // registered automatically by circuit() at definition time. A missing slot
-  // almost always means "forgot to import std" or "constructed a raw IR
-  // without going through circuit()". Throwing is far more useful than
-  // silently zeroing outputs and producing nonsense state.
   throw new Error(
-    `Primitive '${node.primitiveType}' has no registered evaluator. ` +
-      `Either import '@simten/core/std' to register the standard library, ` +
-      `or register the primitive's eval lambda explicitly via registerEvalFunction(). ` +
-      `If you constructed a Circuit IR by hand (rather than via circuit()), ` +
-      `you must register its evaluator yourself.`,
+    `Primitive '${node.primitiveType}' has no behavior in this compile. ` +
+      'The engine runs the behavior table it was given (`behaviors`), which ' +
+      'a compile collects from the circuits it built. A Circuit IR built by hand ' +
+      'needs its behavior added to that table.',
   );
 }
 
@@ -313,7 +297,7 @@ export function updateSequentialStates(
     if (!circuit.hasState[nodeIdx]) continue;
 
     const node = circuit.flatCircuit.nodes[nodeIdx];
-    const onTick = getOnTickFunction(node.primitiveType);
+    const onTick = circuit.onTicks[circuit.primitiveTypeIndex[nodeIdx]];
     if (!onTick) continue;
 
     // Build inputs Map (same as evaluateNode fallback path)

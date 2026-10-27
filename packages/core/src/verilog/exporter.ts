@@ -11,10 +11,17 @@
  * - No combinational loops
  */
 
+import type { BehaviorTable } from '../circuit/behavior.js';
 import type { CircuitIR, MemoryValue, PortType } from '../ir/circuit-ir.js';
 import { memoryContentsToMap } from '../ir/memory-contents.js';
 import { elaborate } from '../simulator/elaboration.js';
-import type { CircuitLibrary, FlatCircuit, FlatConnection, FlatNode } from '../simulator/types.js';
+import type {
+  CircuitDefinitions,
+  FlatCircuit,
+  FlatConnection,
+  FlatNode,
+} from '../simulator/types.js';
+import { getStdLibrary } from '../std/library.js';
 import {
   emitPrimitive,
   isSequentialPrimitive,
@@ -27,7 +34,11 @@ import {
 import type { ExportResult, VerilogExportOptions } from './types.js';
 import { INLINE_MEMORY_THRESHOLD } from './types.js';
 
-const DEFAULT_OPTIONS: Required<VerilogExportOptions> = {
+type ResolvedOptions = Required<Omit<VerilogExportOptions, 'behaviors'>> & {
+  behaviors: BehaviorTable;
+};
+
+const DEFAULT_OPTIONS: Required<Omit<VerilogExportOptions, 'behaviors'>> = {
   mode: 'flat',
   topModuleName: '',
   clockName: 'clk',
@@ -49,15 +60,18 @@ function portTypeToVerilog(pt: PortType): string {
 
 /**
  * Collect preloaded memory state from the component definition for a flat
- * node. Looks up `node.primitiveType` in the library and extracts memory
+ * node. Looks up `node.primitiveType` in the definitions and extracts memory
  * state blocks that have non-empty `initialValue.data` contents. Returned
  * array is handed to primitive-map via `PrimitiveContext.stateInits` so
  * each primitive can emit `initial begin …` using its own reg-name
  * convention. Circuits without memory state (or with empty init) yield
  * `undefined`, which primitives treat as a no-op.
  */
-function collectStateInits(node: FlatNode, library: CircuitLibrary): StateInit[] | undefined {
-  const def = library.resolveCircuit(node.primitiveType);
+function collectStateInits(
+  node: FlatNode,
+  definitions: CircuitDefinitions,
+): StateInit[] | undefined {
+  const def = definitions.resolveCircuit(node.primitiveType);
   if (!def?.state || def.state.length === 0) return undefined;
 
   const inits: StateInit[] = [];
@@ -79,12 +93,16 @@ function collectStateInits(node: FlatNode, library: CircuitLibrary): StateInit[]
  */
 export function exportVerilogFlat(
   circuit: CircuitIR,
-  library: CircuitLibrary,
+  definitions: CircuitDefinitions,
   options?: VerilogExportOptions,
 ): ExportResult {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
-  const flatCircuit = elaborate(circuit, library, false, { expandReferences: true });
-  return emitFlatModule(circuit, flatCircuit, library, opts);
+  const opts: ResolvedOptions = {
+    ...DEFAULT_OPTIONS,
+    ...options,
+    behaviors: options?.behaviors ?? getStdLibrary().behaviors,
+  };
+  const flatCircuit = elaborate(circuit, definitions, false, { expandReferences: true });
+  return emitFlatModule(circuit, flatCircuit, definitions, opts);
 }
 
 /**
@@ -97,15 +115,11 @@ export function exportVerilogFlat(
  */
 export function exportVerilog(
   circuit: CircuitIR,
-  library: CircuitLibrary,
+  definitions: CircuitDefinitions,
   options?: VerilogExportOptions,
 ): ExportResult {
-  const opts = { ...DEFAULT_OPTIONS, ...options };
-  if (opts.mode === 'hierarchical') {
-    // TODO: hierarchical mode (emit sub-modules)
-    // For now, fall back to flat
-  }
-  return exportVerilogFlat(circuit, library, opts);
+  // TODO: hierarchical mode (emit sub-modules). For now every mode is flat.
+  return exportVerilogFlat(circuit, definitions, options);
 }
 
 // ── Flat module emission ────────────────────────────────────────────────
@@ -113,8 +127,8 @@ export function exportVerilog(
 function emitFlatModule(
   circuit: CircuitIR,
   flat: FlatCircuit,
-  library: CircuitLibrary,
-  opts: Required<VerilogExportOptions>,
+  definitions: CircuitDefinitions,
+  opts: ResolvedOptions,
 ): ExportResult {
   const moduleName = opts.topModuleName || sanitizeId(circuit.name);
   /** primitiveType -> node ids the exporter had no mapping for. */
@@ -338,14 +352,15 @@ function emitFlatModule(
     }
 
     const ctx: PrimitiveContext = {
+      behaviors: opts.behaviors,
       nodeId: node.id,
       primitiveType: node.primitiveType,
-      args: node.arguments as Record<string, any>,
+      args: node.arguments,
       wires,
       clockName: opts.clockName,
       resetName: RESET_NAME,
       target: opts.target,
-      stateInits: collectStateInits(node, library),
+      stateInits: collectStateInits(node, definitions),
       inlineMemoryThreshold,
       sidecarFiles,
       moduleName,

@@ -7,11 +7,11 @@
  * Source: second half of src/core/simulator/types.ts (lines 194-420)
  */
 
+import type { Library } from '../circuit/behavior.js';
 import type {
   ArgumentValue,
   BitValue,
   BusValue,
-  CircuitLibrary,
   ClockInstance,
   PortDescriptor,
   PortInstance,
@@ -21,7 +21,7 @@ import type {
 
 // Re-export the types that simulator consumers typically need alongside the
 // engine interface, so they can import everything from one place.
-export type { BitValue, BusValue, CircuitLibrary } from '../ir/circuit-ir.js';
+export type { BitValue, BusValue, CircuitDefinitions } from '../ir/circuit-ir.js';
 // Re-export TOP_LEVEL_NODE so consumers can import it from either file.
 export { TOP_LEVEL_NODE } from '../ir/circuit-ir.js';
 
@@ -151,8 +151,11 @@ export interface FlatSimulationResult {
  * Options for initializing the simulator.
  */
 export interface InitOptions {
-  /** Circuit library for resolving circuit definitions */
-  componentLibrary: CircuitLibrary;
+  /**
+   * The circuit definitions and behavior (eval/onTick) this compile runs. Collect
+   * them from the circuit tree with `libraryOf`.
+   */
+  library: Library;
   /** Initial memory data for ROM/RAM components (nodeId -> address -> value) */
   initialMemory?: Map<string, Map<number, number>>;
 }

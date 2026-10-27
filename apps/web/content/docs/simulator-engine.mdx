@@ -121,9 +121,9 @@ portIsBus:    Uint8Array[portIdx]  → 1 if bus, 0 if bit
 inputPortNames: string[portIdx]    → port name (for evaluator context)
 ```
 
-**Step 4, evaluator dispatch**: Map each node to its evaluator function index:
+**Step 4, evaluator dispatch**: Map each node to its primitive type's index in this compile's evaluator table:
 ```
-primitiveTypeIndex: Uint8Array[nodeIdx] → index into EVALUATORS table
+primitiveTypeIndex: Uint16Array[nodeIdx] → index into circuit.evaluators
 ```
 
 **Step 5, dependency graph**: Convert string-based dependents to numeric:
@@ -186,18 +186,17 @@ class NumericEventQueue {
 
 ## Evaluator System
 
-`packages/core/src/simulator/evaluators/`
+`packages/core/src/simulator/eval-bridge.ts`
 
 ### Dispatch Table
 
+Every primitive's behavior is its `eval` (and `onTick`) from `circuit()`. A compile collects the circuits it built into a library: their definitions plus a behavior table keyed by name. `createEngine` runs that library. When the circuit is compiled, each primitive type it uses gets an index and a wrapper around its `eval` that reads the node's inputs from the typed arrays, calls the eval, and writes the outputs back:
+
 ```typescript
-const EVALUATORS: (NumericEvaluator | null)[] = [];
-EVALUATORS[PRIMITIVE_TYPE_INDICES.And] = evalAnd;
-EVALUATORS[PRIMITIVE_TYPE_INDICES.Or] = evalOr;
-// ... one entry per primitive type
+circuit.evaluators[typeIdx] = generateEvalWrapper(inputNames, outputNames, evalFn, stateKeys);
 ```
 
-Hot path lookup: `EVALUATORS[primitiveTypeIndex[nodeIndex]](ctx)`: single array index, no branching.
+Hot path lookup: `circuit.evaluators[primitiveTypeIndex[nodeIndex]](ctx)`: single array index, no branching. The table belongs to the compiled circuit, so two compiles never share behavior, even for circuits with the same name.
 
 ### Evaluation Context
 
@@ -232,16 +231,6 @@ function writeOutput(ctx: EvalContext, outputIndex: number, value: number): void
 }
 ```
 
-### Evaluator Categories
-
-| Module | Primitives | Notes |
-|--------|-----------|-------|
-| Inline (index.ts) | And, Or, Not, Nand, Nor, Xor, Xnor, Buffer, Switch, Led, Input, Constant, Probe | Simple enough to inline |
-| arithmetic.ts | Adder, Subtractor, Multiplier, Comparator, Shifters, Signed variants | Width-aware, carry/overflow detection |
-| routing.ts | Mux, Decoder, Splitter, Combiner, NibbleSplitter, BitSlice, Concat | Pure wire routing, often zero logic cost |
-| sequential.ts | DFlipFlop, Register, Screen, RasterDisplay, Console | Read from `currentState[nodeIndex]` |
-| memory.ts | ROM, RAM, DualPortRAM | Sparse Map storage, combinational read path |
-
 Sequential evaluators only read state for their outputs; state updates happen in a separate phase.
 
 
@@ -261,7 +250,7 @@ and nodes reading top-level inputs. Then propagates:
 while queue is not empty:
   node = dequeue()
   capture old output values
-  evaluator = EVALUATORS[primitiveTypeIndex[node]]
+  evaluator = evaluators[primitiveTypeIndex[node]]
   evaluator(ctx)              // reads inputs, writes outputs
   if any output changed:
     enqueueAll(dependents[node])
@@ -350,7 +339,7 @@ state sharing between cycles.
 
 ```typescript
 const engine = createEngine(flatCircuit, {
-  componentLibrary,
+  library,         // definitions + behavior, e.g. libraryOf(top)
   initialMemory,   // Map<pattern, Map<address, value>>
 });
 

@@ -150,7 +150,7 @@ describe('executeCircuitCode', () => {
       })
     `);
 
-    expect(result.library.resolveCircuit('MyGate')).toBeDefined();
+    expect(result.library.definitions.resolveCircuit('MyGate')).toBeDefined();
   });
 });
 

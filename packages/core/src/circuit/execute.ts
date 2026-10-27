@@ -24,9 +24,9 @@
 
 import { transform } from 'sucrase';
 import { Dlatch, Mem, Pmux } from '../import/primitives.js';
-import type { CircuitIR, CircuitLibrary } from '../ir/circuit-ir.js';
+import type { CircuitIR } from '../ir/circuit-ir.js';
 import * as std from '../std/index.js';
-import { beginDefinitionScope } from './behavior-registry.js';
+import { addToLibrary, emptyLibrary, type MutableLibrary } from './behavior.js';
 import { bit, bus, mem, reg } from './bit-bus.js';
 import type { Circuit } from './builder-types.js';
 import { circuit } from './circuit.js';
@@ -51,8 +51,12 @@ export interface ExecuteResult {
   exportedCircuits: CircuitIR[];
   /** All Circuits found */
   builtCircuits: Circuit[];
-  /** The circuit library (stdlib + user-defined circuits) */
-  library: CircuitLibrary & { addCircuit(c: CircuitIR): void; getAllCircuitNames(): string[] };
+  /**
+   * Every circuit the code built, with its dependencies (std and user-defined),
+   * and their behavior (eval/onTick). Owned by this run: nothing the code
+   * defines is visible to any other compile.
+   */
+  library: MutableLibrary;
   /** Error message if execution failed */
   error: string | null;
 }
@@ -192,7 +196,7 @@ function asCircuit(value: unknown): Circuit | null {
  * Deliberately a regex over the same lines `stripExports` rewrites, rather than
  * a parse. It runs on every keystroke in the editor, the shapes it has to catch
  * are the ones that survive stripping, and anything it misses simply falls back
- * to today's behaviour.
+ * to today's behavior.
  */
 function exportedNames(code: string): string[] {
   const names = new Set<string>();
@@ -225,28 +229,12 @@ function exportedNames(code: string): string[] {
  * @returns Execution result with circuits and any error
  */
 export function executeJsCode(jsCode: string, extraScope?: Record<string, unknown>): ExecuteResult {
-  // Each run is a new version of the source, not a second definition.
-  beginDefinitionScope();
   const { names, values } = getScope();
 
   const allNames = extraScope ? [...names, ...Object.keys(extraScope)] : names;
   const allValues = extraScope ? [...values, ...Object.values(extraScope)] : values;
 
-  const circuitMap = new Map<string, CircuitIR>();
-  const library: CircuitLibrary & {
-    addCircuit(c: CircuitIR): void;
-    getAllCircuitNames(): string[];
-  } = {
-    resolveCircuit: (name) => circuitMap.get(name),
-    getAllPrimitiveNames: () =>
-      [...circuitMap.entries()]
-        .filter(([, c]) => c.implementation.kind === 'primitive')
-        .map(([n]) => n),
-    addCircuit: (c) => {
-      circuitMap.set(c.name, c);
-    },
-    getAllCircuitNames: () => [...circuitMap.keys()],
-  };
+  const library = emptyLibrary();
   const builtCircuits: Circuit[] = [];
   const circuits: CircuitIR[] = [];
   const exportedCircuits: CircuitIR[] = [];
@@ -290,13 +278,8 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
       if (built && built.circuit) {
         builtCircuits.push(built);
         circuits.push(built.circuit);
-        library.addCircuit(built.circuit);
-        // Add all transitive dependencies (stdlib + user-defined)
-        if (built._dependencies) {
-          for (const [, dep] of built._dependencies) {
-            library.addCircuit(dep.circuit);
-          }
-        }
+        // The circuit and all its transitive dependencies (stdlib + user-defined)
+        addToLibrary(library, built);
       }
     }
 
@@ -309,10 +292,7 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
       if (!built || defined.has(built.circuit.name)) continue;
       defined.add(built.circuit.name);
       exportedCircuits.push(built.circuit);
-      library.addCircuit(built.circuit);
-      if (built._dependencies) {
-        for (const [, dep] of built._dependencies) library.addCircuit(dep.circuit);
-      }
+      addToLibrary(library, built);
     }
 
     return {

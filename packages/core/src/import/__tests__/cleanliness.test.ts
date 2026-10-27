@@ -37,11 +37,14 @@ const fixGz = (name: string) =>
   gunzipSync(readFileSync(fileURLToPath(new URL(`../__fixtures__/${name}`, import.meta.url))));
 
 function measure(file: string, top: string) {
-  const { top: t, library } = importNetlist(
-    JSON.parse(fixGz(file).toString('utf8')) as YosysNetlist,
-    top,
+  const {
+    top: t,
+    definitions,
+    behaviors,
+  } = importNetlist(JSON.parse(fixGz(file).toString('utf8')) as YosysNetlist, top);
+  const mods = [...definitions.values()].filter((c) =>
+    c.metadata?.description?.includes('Imported'),
   );
-  const mods = [...library.values()].filter((c) => c.metadata?.description?.includes('Imported'));
   let recon = 0;
   let semantic = 0;
   let rtl = 0;
@@ -54,7 +57,16 @@ function measure(file: string, top: string) {
       else semantic++;
     }
   }
-  return { t, library, recon, semantic, rtl, maxNodes, ratio: recon / Math.max(1, semantic) };
+  return {
+    t,
+    definitions,
+    behaviors,
+    recon,
+    semantic,
+    rtl,
+    maxNodes,
+    ratio: recon / Math.max(1, semantic),
+  };
 }
 
 describe('cleanliness — RV32I_CPU_Core scale guard (measured-then-ratcheted)', () => {
@@ -83,8 +95,8 @@ describe('cleanliness — RV32I_CPU_Core scale guard (measured-then-ratcheted)',
   });
 
   it('still builds and simulates (structure valid)', () => {
-    const deps = [...m.library.values()].filter((c) => c.name !== m.t.name);
-    const sim = simulate(buildFromIR(m.t, deps));
+    const deps = [...m.definitions.values()].filter((c) => c.name !== m.t.name);
+    const sim = simulate(buildFromIR(m.t, deps, m.behaviors));
     sim.tick();
     sim.dispose();
   });
@@ -115,8 +127,8 @@ describe('cleanliness — SERV serv_rf_top, unmodified third-party RTL', () => {
   });
 
   it('still builds and simulates (structure valid)', () => {
-    const deps = [...m.library.values()].filter((c) => c.name !== m.t.name);
-    const sim = simulate(buildFromIR(m.t, deps));
+    const deps = [...m.definitions.values()].filter((c) => c.name !== m.t.name);
+    const sim = simulate(buildFromIR(m.t, deps, m.behaviors));
     sim.tick();
     sim.dispose();
   });

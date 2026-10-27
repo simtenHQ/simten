@@ -5,12 +5,19 @@
  */
 
 export { autoHarness } from './circuit/auto-harness.js';
-export type { BehaviorEntry } from './circuit/behavior-registry.js';
 export {
-  getAllCircuitBehaviors,
-  getCircuitBehavior,
-  registerCircuitBehavior,
-} from './circuit/behavior-registry.js';
+  addToLibrary,
+  type Behavior,
+  type BehaviorFn,
+  type BehaviorTable,
+  type BehaviorValues,
+  behaviorOf,
+  createDefinitions,
+  emptyLibrary,
+  type Library,
+  libraryOf,
+  type MutableLibrary,
+} from './circuit/behavior.js';
 export { buildFromIR } from './circuit/build-from-ir.js';
 export {
   type CircuitNameSite,
@@ -34,5 +41,6 @@ export {
   type SignalMetrics,
   type SimulationTrace,
 } from './simulator/trace-analysis.js';
+export { getStdLibrary } from './std/library.js';
 export * from './tools/index.js';
 export { slugify } from './util/test-name.js';

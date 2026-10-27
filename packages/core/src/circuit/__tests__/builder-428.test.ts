@@ -66,17 +66,29 @@ describe('factory default state (#428)', () => {
 });
 
 describe('same-name definitions (#428)', () => {
-  it('warns when two different primitives share a name', () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    circuit('B428_Twice', { inputs: { a: bit }, outputs: { o: bit }, eval: ({ a }) => ({ o: a }) });
-    circuit('B428_Twice', {
+  it('rejects two different primitives under one name in one design', () => {
+    const One = circuit('B428_Twice', {
+      inputs: { a: bit },
+      outputs: { o: bit },
+      eval: ({ a }) => ({ o: a }),
+    });
+    const Other = circuit('B428_Twice', {
       inputs: { a: bit },
       outputs: { o: bit },
       eval: ({ a }) => ({ o: a ? 0 : 1 }),
     });
-    expect(warn).toHaveBeenCalledWith(
-      expect.stringContaining("Two different circuits are named 'B428_Twice'"),
-    );
+    expect(() =>
+      circuit('B428_TwiceTop', {
+        inputs: { a: bit },
+        outputs: { x: bit, y: bit },
+        nodes: { one: One, other: Other },
+        connect: ({ inputs, outputs, nodes: { one, other } }) => [
+          inputs.a.to(one.a, other.a),
+          one.o.to(outputs.x),
+          other.o.to(outputs.y),
+        ],
+      }),
+    ).toThrow(/Two different circuits are named 'B428_Twice' in this design/);
   });
 
   it('does not warn for specialisations of one factory', () => {
@@ -185,7 +197,7 @@ describe('differently built composites under one name (#428)', () => {
           two.out.to(outputs.y),
         ],
       }),
-    ).toThrow(/Two different definitions of 'B428_Chain' are used here/);
+    ).toThrow(/Two different circuits are named 'B428_Chain' in this design/);
   });
 
   it('allows the same specialisation twice', () => {

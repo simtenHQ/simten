@@ -6,25 +6,15 @@
  * circuits with `simulate()` from `@simten/core`.
  *
  * ```typescript
- * const flat = elaborate(circuit, library);
- * const engine = createEngine(flat, { componentLibrary: library });
+ * const library = libraryOf(top);
+ * const flat = elaborate(top.circuit, library.definitions);
+ * const engine = createEngine(flat, { library });
  * engine.setNode('switch1', 1);
  * const result = engine.tick();
  * ```
  *
  * See `apps/web/content/docs/architecture.mdx`, "Runtime topology".
  */
-
-// Side-effect import: every primitive in std/* registers its eval lambda via
-// circuit() at module init. After 2c586d9 deleted the hand-written numeric
-// evaluators in simulator/evaluators/* that used to pre-populate EVALUATORS,
-// std is the sole registration mechanism — importing the simulator now
-// requires std to be loaded, or compile-circuit.ts throws "Primitive 'X' has
-// no registered evaluator" on the first non-trivial circuit. The bare import
-// here makes that dependency explicit and bundler-proof. (The sideEffects
-// glob in packages/core/package.json still prevents intra-std DCE from
-// dropping individual primitive declarations.)
-import '../std/index.js';
 
 // ============================================================================
 // Type Exports
@@ -37,10 +27,10 @@ export type {
   BitValue,
   BusType,
   BusValue,
+  // Circuit library
+  CircuitDefinitions,
   // Circuit types
   CircuitIR,
-  // Circuit library
-  CircuitLibrary,
   CircuitMetadata,
   CircuitTiming,
   ClockDescriptor,
@@ -50,7 +40,7 @@ export type {
   Implementation,
   MemoryType,
   MemoryValue,
-  MutableCircuitLibrary,
+  MutableCircuitDefinitions,
   Node,
   PortDescriptor,
   PortInstance,
@@ -152,12 +142,8 @@ export {
   createNumericSequentialState,
   toFlatSequentialState,
 } from './compile-circuit.js';
-// Recompiles a component's evaluator from its current registry entry. Running
-// simulators dispatch through a shared table, so this changes them too.
-export { ensureEvaluatorRegistered } from './eval-bridge.js';
 export { NumericEventQueue } from './numeric-event-queue.js';
 export type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
-export { PRIMITIVE_INDEX_TO_NAME, PRIMITIVE_TYPE_INDICES } from './numeric-types.js';
 export type { NumericPortValues } from './numeric-values.js';
 export { copyPortValues, createNumericPortValues, resetChangeFlags } from './numeric-values.js';
 export {
@@ -179,4 +165,4 @@ export { tracePropagation } from './trace.js';
 // Engine
 // ============================================================================
 
-export { createCircuitLibrary, createEngine } from './engine.js';
+export { createEngine } from './engine.js';

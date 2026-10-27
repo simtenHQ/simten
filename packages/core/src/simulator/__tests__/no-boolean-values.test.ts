@@ -43,8 +43,9 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { libraryOf } from '../../circuit/behavior.js';
 import { bit, circuit } from '../../circuit/index.js';
-import type { CircuitIR, CircuitLibrary } from '../../ir/circuit-ir.js';
+import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import { DFlipFlop } from '../../std/index.js';
 import { createEngine, elaborate } from '../index.js';
 import { simulate } from '../simulate.js';
@@ -79,7 +80,7 @@ const Top = circuit('Top', {
   connect: ({ inputs, outputs, nodes: { ff } }) => [inputs.a.to(ff.d), ff.q.to(outputs.q)],
 });
 
-function libraryFor(circuits: CircuitIR[]): CircuitLibrary {
+function libraryFor(circuits: CircuitIR[]): CircuitDefinitions {
   const byName = new Map(circuits.map((c) => [c.name, c]));
   return {
     resolveCircuit: (name) => byName.get(name),
@@ -105,8 +106,10 @@ describe('no booleans in the value domain', () => {
     const ff = structuredClone(BoolStateFF.circuit);
     (ff.state[0] as { initialValue: unknown }).initialValue = false;
 
-    const library = libraryFor([ff, Top.circuit]);
-    const sim = createEngine(elaborate(Top.circuit, library), { componentLibrary: library });
+    const definitions = libraryFor([ff, Top.circuit]);
+    const sim = createEngine(elaborate(Top.circuit, definitions), {
+      library: { definitions, behaviors: libraryOf(Top).behaviors },
+    });
     sim.runCombinational();
 
     const found: string[] = [];

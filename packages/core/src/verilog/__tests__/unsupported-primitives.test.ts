@@ -23,7 +23,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { bus, circuit } from '../../circuit/index.js';
-import type { CircuitIR, CircuitLibrary } from '../../internal.js';
+import type { CircuitDefinitions, CircuitIR } from '../../internal.js';
 import { And, Slice } from '../../std/index.js';
 import { exportVerilog } from '../index.js';
 import { UNSUPPORTED_MARKER } from '../primitive-map.js';
@@ -35,7 +35,7 @@ function libraryFor(c: {
   _dependencies: ReadonlyMap<string, { circuit: CircuitIR }>;
 }) {
   const byName = new Map<string, CircuitIR>();
-  const lib: CircuitLibrary & { addCircuit(x: CircuitIR): void } = {
+  const definitions: CircuitDefinitions & { addCircuit(x: CircuitIR): void } = {
     resolveCircuit: (name) => byName.get(name),
     getAllPrimitiveNames: () =>
       [...byName.entries()]
@@ -45,10 +45,10 @@ function libraryFor(c: {
       byName.set(x.name, x);
     },
   };
-  lib.addCircuit(c.circuit);
+  definitions.addCircuit(c.circuit);
   for (const [, dep] of c._dependencies)
-    lib.addCircuit(dep.circuit ?? (dep as unknown as CircuitIR));
-  return lib;
+    definitions.addCircuit(dep.circuit ?? (dep as unknown as CircuitIR));
+  return definitions;
 }
 
 describe('verilog export: unsupported primitives', () => {

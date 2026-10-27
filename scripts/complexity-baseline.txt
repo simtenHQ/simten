@@ -12,7 +12,6 @@ hardware/ulx3s/projects/cpu/sim.ts runSim
 hardware/ulx3s/projects/cpu/verify.ts runSuite
 hardware/ulx3s/run_on_fpga.ts main
 packages/core/src/circuit/auto-harness.ts autoHarness
-packages/core/src/circuit/execute.ts executeJsCode
 packages/core/src/import/import-netlist.ts moduleShapes
 packages/core/src/import/import-netlist.ts rtlSignalNames
 packages/core/src/import/import-netlist.ts translateModule
@@ -21,7 +20,6 @@ packages/core/src/simulator/elaboration.ts flattenCircuit
 packages/core/src/simulator/elaboration.ts stitchCompositeConnections
 packages/core/src/simulator/elaboration.ts topologicalSortFlat
 packages/core/src/simulator/elaboration.ts traceCompositePorts
-packages/core/src/simulator/eval-bridge.ts userEvalWrapperWithState
 packages/core/src/simulator/propagate.ts updateSequentialStates
 packages/core/src/simulator/sequential-init.ts resolveBlockInitial
 packages/core/src/std/mos6502.ts (anonymous)

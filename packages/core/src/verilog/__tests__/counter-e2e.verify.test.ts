@@ -18,9 +18,10 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { CircuitLibrary } from '../../ir/circuit-ir.js';
+import type { CircuitDefinitions } from '../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
 import { Adder, Constant, Mux, Or, Register } from '../../std/index.js';
+import { getStdLibrary } from '../../std/library.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { hasVerifier, verifyVerilog } from './verify.js';
@@ -86,7 +87,7 @@ function buildCounter() {
     ],
   });
 
-  const lib: CircuitLibrary = {
+  const definitions: CircuitDefinitions = {
     resolveCircuit: (name) => {
       if (name === 'Counter') return Counter.circuit;
       const dep = Counter._dependencies.get(name);
@@ -95,12 +96,14 @@ function buildCounter() {
     getAllPrimitiveNames: () => [...Counter._dependencies.keys()],
   };
 
-  return { circuit: Counter.circuit, lib };
+  return { circuit: Counter.circuit, definitions };
 }
 
 function runSimulator(steps: Step[]): number[] {
-  const { circuit, lib } = buildCounter();
-  const sim = createEngine(elaborate(circuit, lib), { componentLibrary: lib });
+  const { circuit, definitions } = buildCounter();
+  const sim = createEngine(elaborate(circuit, definitions), {
+    library: { definitions, behaviors: getStdLibrary().behaviors },
+  });
   const outputs: number[] = [];
   for (const step of steps) {
     sim.setNode('enable', step.enable);
@@ -137,8 +140,8 @@ d('Counter (Register+Adder+Mux+Or) — end-to-end co-simulation', () => {
     expect(simOutputs[9]).toBe(0); // clear
     expect(simOutputs[19]).toBe(10); // 10 increments after clear
 
-    const { circuit, lib } = buildCounter();
-    const { verilog } = exportVerilog(circuit, lib);
+    const { circuit, definitions } = buildCounter();
+    const { verilog } = exportVerilog(circuit, definitions);
     const testbench = generateSequentialTestbench(circuit, buildVectors(SEQUENCE));
 
     const result = await verifyVerilog(verilog, testbench);

@@ -2,8 +2,8 @@
  * Editor store exports
  */
 
-export type { CircuitLibraryStore } from './circuit-library-store';
-export { useCircuitLibraryStore } from './circuit-library-store';
+export type { CircuitDefinitionsStore } from './circuit-definitions-store';
+export { useCircuitDefinitionsStore } from './circuit-definitions-store';
 export type { CircuitPreviewStore } from './circuit-preview-store';
 export { useCircuitPreviewStore } from './circuit-preview-store';
 

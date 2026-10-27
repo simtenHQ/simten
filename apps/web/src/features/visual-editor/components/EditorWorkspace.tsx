@@ -18,7 +18,7 @@ import {
 } from '@simten/ui/editor/components';
 
 import {
-  useCircuitLibraryStore,
+  useCircuitDefinitionsStore,
   useCircuitPreviewStore,
   useCircuitStore,
 } from '@simten/ui/editor/stores';
@@ -223,21 +223,21 @@ export function EditorWorkspace({
   // Track whether we've loaded content so we can skip the first MCP cache replay
   const hasLoadedContentRef = useRef(false);
 
-  // Export to Verilog, uses library store
+  // Export to Verilog, uses the definitions store
   const handleExportVerilog = useCallback(() => {
-    const lib = useCircuitLibraryStore.getState();
+    const store = useCircuitDefinitionsStore.getState();
     let currentCircuit = useCircuitStore.getState().circuit;
-    if (!currentCircuit || !lib.library) return;
+    if (!currentCircuit || !store.definitions) return;
 
     // If this is an auto-generated harness, export the real circuit instead
     if (isHarnessName(currentCircuit.name)) {
       const baseName = currentCircuit.name.replace(/(Demo|Harness)$/, '');
-      const realCircuit = lib.resolveCircuit(baseName);
+      const realCircuit = store.resolveCircuit(baseName);
       if (realCircuit) currentCircuit = realCircuit;
     }
 
     try {
-      const { verilog, files, unsupported } = exportVerilog(currentCircuit, lib);
+      const { verilog, files, unsupported } = exportVerilog(currentCircuit, store);
 
       // An export with unmapped primitives is the dangerous case: it parses,
       // it synthesizes, and it does not do what the circuit does. Yosys will
@@ -344,10 +344,10 @@ export function EditorWorkspace({
     ),
   );
 
-  // Build library interface for CircuitCanvas from store
-  const resolveCircuit = useCircuitLibraryStore((s) => s.resolveCircuit);
-  const getAllPrimitiveNames = useCircuitLibraryStore((s) => s.getAllPrimitiveNames);
-  const componentLibrary = useMemo(
+  // Circuit definitions for CircuitCanvas, from the store
+  const resolveCircuit = useCircuitDefinitionsStore((s) => s.resolveCircuit);
+  const getAllPrimitiveNames = useCircuitDefinitionsStore((s) => s.getAllPrimitiveNames);
+  const definitions = useMemo(
     () => ({
       resolveCircuit,
       getAllPrimitiveNames,
@@ -413,14 +413,14 @@ export function EditorWorkspace({
   });
 
   // On each successful compile, push the result into the selection stores. Set
-  // the library FIRST; applyToCanvas fires inside setCompiledCircuits and needs
-  // the full library (including user circuits) before adding harness components.
+  // the definitions FIRST; applyToCanvas fires inside setCompiledCircuits and needs
+  // every definition (including user circuits) before adding harness components.
   // Also acknowledges an in-flight show_circuit render request (success).
   useEffect(() => {
     const result = compiler.result;
     if (!result) return;
-    if (compiler.library) {
-      useCircuitLibraryStore.getState().setLibrary(compiler.library);
+    if (compiler.definitions) {
+      useCircuitDefinitionsStore.getState().setDefinitions(compiler.definitions);
     }
     setCompiledCircuits(result.circuits, codeRef.current);
     if (pendingRenderRef.current) {
@@ -432,7 +432,7 @@ export function EditorWorkspace({
         null;
       sendRenderResult(reqId, { ok: true, circuitName: name });
     }
-  }, [compiler.result, compiler.library, setCompiledCircuits, sendRenderResult]);
+  }, [compiler.result, compiler.definitions, setCompiledCircuits, sendRenderResult]);
 
   // On a compile failure, acknowledge an in-flight show_circuit render request.
   useEffect(() => {
@@ -655,7 +655,7 @@ export function EditorWorkspace({
                     <ResizablePanel defaultSize={65} minSize={20} style={CLIP}>
                       <CircuitCanvas
                         circuit={circuit}
-                        componentLibrary={componentLibrary}
+                        definitions={definitions}
                         theme={theme}
                         showControls
                         renderEmptyState={bootDone && codeEmpty ? renderEmptyState : undefined}
@@ -687,7 +687,7 @@ export function EditorWorkspace({
                 ) : (
                   <CircuitCanvas
                     circuit={circuit}
-                    componentLibrary={componentLibrary}
+                    definitions={definitions}
                     theme={theme}
                     showControls
                     renderEmptyState={bootDone && codeEmpty ? renderEmptyState : undefined}

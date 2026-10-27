@@ -9,9 +9,10 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { CircuitLibrary } from '../../ir/circuit-ir.js';
+import type { CircuitDefinitions } from '../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
 import { Register } from '../../std/index.js';
+import { getStdLibrary } from '../../std/library.js';
 import { exportVerilog } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { hasVerifier, verifyVerilog } from './verify.js';
@@ -45,18 +46,20 @@ function buildRegister() {
     ],
   });
 
-  const lib: CircuitLibrary = {
+  const definitions: CircuitDefinitions = {
     resolveCircuit: (name) =>
       name === 'RegWrapper' ? RegWrapper.circuit : name === 'Register' ? Reg.circuit : undefined,
     getAllPrimitiveNames: () => ['Register'],
   };
 
-  return { circuit: RegWrapper.circuit, lib };
+  return { circuit: RegWrapper.circuit, definitions };
 }
 
 function runSimulator(steps: Step[]): number[] {
-  const { circuit, lib } = buildRegister();
-  const sim = createEngine(elaborate(circuit, lib), { componentLibrary: lib });
+  const { circuit, definitions } = buildRegister();
+  const sim = createEngine(elaborate(circuit, definitions), {
+    library: { definitions, behaviors: getStdLibrary().behaviors },
+  });
   const outputs: number[] = [];
 
   for (const step of steps) {
@@ -83,8 +86,8 @@ d('Register — JS simulator vs iverilog co-simulation', () => {
   it('holds value when we=0, updates on posedge when we=1', { timeout: 30000 }, async () => {
     const simOutputs = runSimulator(SEQUENCE);
 
-    const { circuit, lib } = buildRegister();
-    const { verilog } = exportVerilog(circuit, lib);
+    const { circuit, definitions } = buildRegister();
+    const { verilog } = exportVerilog(circuit, definitions);
     const testbench = generateSequentialTestbench(circuit, buildVectors(SEQUENCE));
 
     const result = await verifyVerilog(verilog, testbench);

@@ -5,8 +5,9 @@
  * This is a one-time operation during initialization.
  */
 
-import type { CircuitIR, CircuitLibrary, PortType } from '../ir/circuit-ir.js';
-import { ensureEvaluatorRegistered } from './eval-bridge.js';
+import type { Library } from '../circuit/behavior.js';
+import type { CircuitIR, PortType } from '../ir/circuit-ir.js';
+import { createDispatchTables, typeIndexFor } from './eval-bridge.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 import type { FlatCircuit, FlatNode, PrimitiveState } from './types.js';
 import { TOP_LEVEL_NODE } from './types.js';
@@ -15,13 +16,11 @@ import { TOP_LEVEL_NODE } from './types.js';
  * Compile a FlatCircuit to a NumericCircuit for fast simulation.
  *
  * @param flatCircuit - The flattened circuit to compile
- * @param library - Component library for resolving component definitions
+ * @param library - The definitions and behavior this compile runs
  * @returns Compiled numeric circuit
  */
-export function compileForSimulation(
-  flatCircuit: FlatCircuit,
-  library: CircuitLibrary,
-): NumericCircuit {
+export function compileForSimulation(flatCircuit: FlatCircuit, library: Library): NumericCircuit {
+  const { definitions, behaviors } = library;
   const nodeCount = flatCircuit.nodes.length;
 
   // ============================================================================
@@ -149,15 +148,13 @@ export function compileForSimulation(
   // Step 4: Build primitive type indices
   // ============================================================================
 
+  // One type index per primitive type in this circuit, into dispatch tables
+  // built from this compile's behavior and nothing else.
   const primitiveTypeIndex = new Uint16Array(nodeCount);
+  const dispatch = createDispatchTables();
 
   for (let i = 0; i < nodeCount; i++) {
-    const node = flatCircuit.nodes[i];
-    // Always call ensureEvaluatorRegistered: for built-ins it returns the
-    // static index and lazily populates the EVALUATORS slot from the registry
-    // if it's null; for user primitives it allocates a dynamic index and
-    // wraps their eval lambda. Idempotent — no-op when the slot is already set.
-    primitiveTypeIndex[i] = ensureEvaluatorRegistered(node.primitiveType);
+    primitiveTypeIndex[i] = typeIndexFor(dispatch, flatCircuit.nodes[i].primitiveType, behaviors);
   }
 
   // ============================================================================
@@ -233,7 +230,7 @@ export function compileForSimulation(
     isSourceNode[i] = node.inputs.length === 0 ? 1 : 0;
 
     // Has state: check if the component has state blocks
-    const resolvedComp = library.resolveCircuit(node.primitiveType);
+    const resolvedComp = definitions.resolveCircuit(node.primitiveType);
     if (resolvedComp) checkClocking(node, resolvedComp);
     if (resolvedComp?.state && resolvedComp.state.length > 0) {
       hasState[i] = 1;
@@ -258,6 +255,9 @@ export function compileForSimulation(
     portKeyToIndex,
     indexToPortKey,
     primitiveTypeIndex,
+    primitiveTypeNames: dispatch.typeNames,
+    evaluators: dispatch.evaluators,
+    onTicks: dispatch.onTicks,
     nodePortStart,
     nodeInputCount,
     nodeOutputCount,
