@@ -31,7 +31,13 @@
 import { writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { simulate } from '@simten/core';
+import {
+  createEngine,
+  elaborate,
+  internalsOf,
+  libraryOf,
+  SimulationSession,
+} from '@simten/core/internal';
 import { buildCPUCore } from './index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -98,8 +104,21 @@ const hex = (v: number, w = 8) => '0x' + (v >>> 0).toString(16).padStart(w, '0')
 // ─── Run TS sim ────────────────────────────────────────────────────────────
 
 function runTsSim(): Array<Map<string, number>> {
+  // Driven through the engine rather than simulate(): the trace reads every
+  // internal port value, which the public handle doesn't expose.
   const { built } = buildCPUCore();
-  const cpu = simulate(built);
+  const library = libraryOf(built);
+  const engine = createEngine(elaborate(internalsOf(built).ir, library.definitions), { library });
+  engine.runCombinational();
+  const session = new SimulationSession(engine, { isSequential: true });
+  const cpu = {
+    set: (values: Record<string, number>) => {
+      for (const [port, value] of Object.entries(values)) session.setNode(port, value);
+    },
+    get: (port: string) => Number(session.getState().portValues.get(`__top__.${port}`)),
+    tick: () => session.tick(),
+    dispose: () => session.dispose(),
+  };
   cpu.set({ instruction: 0, data_read: 0 });
 
   const DMEM_BASE = 0x00010000;
@@ -108,7 +127,7 @@ function runTsSim(): Array<Map<string, number>> {
 
   for (let cycle = 0; cycle < N_CYCLES; cycle++) {
     const snapshot = new Map<string, number>();
-    const portValues = cpu.session.getState().portValues;
+    const portValues = session.getState().portValues;
     for (const [key, val] of portValues) {
       const cleanKey = key.startsWith('__top__.') ? key.slice('__top__.'.length) : key;
       // Normalize to unsigned so cross-side `===` works regardless of JS's
@@ -120,11 +139,11 @@ function runTsSim(): Array<Map<string, number>> {
     }
     trace.push(snapshot);
 
-    const instrAddr = (cpu.get('instr_addr') as number) >>> 0;
-    const dataAddr = (cpu.get('data_addr') as number) >>> 0;
-    const memW = cpu.get('data_mem_write') as unknown as number;
-    const dataWrite = (cpu.get('data_write') as number) >>> 0;
-    const f3 = cpu.get('data_funct3') as unknown as number;
+    const instrAddr = cpu.get('instr_addr') >>> 0;
+    const dataAddr = cpu.get('data_addr') >>> 0;
+    const memW = cpu.get('data_mem_write');
+    const dataWrite = cpu.get('data_write') >>> 0;
+    const f3 = cpu.get('data_funct3');
     const instr = FIRMWARE[(instrAddr >>> 2) & 0x1ff] ?? 0;
 
     // Matches the iverilog testbench's data_read mux: UART poll returns 1,
