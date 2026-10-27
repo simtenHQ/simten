@@ -15,8 +15,14 @@
  * hold across non-arrow keys, and the core-to-RAM wiring of the harness.
  */
 
-import { simulate } from '@simten/core';
-import { executeCircuitCode } from '@simten/core/internal';
+import {
+  createEngine,
+  elaborate,
+  executeCircuitCode,
+  internalsOf,
+  libraryOf,
+  SimulationSession,
+} from '@simten/core/internal';
 import { EXAMPLES } from '../../../../apps/web/src/features/visual-editor/examples.js';
 import { renderFb } from './cosim-lib.js';
 import { FB_SIZE, SnakeRefModel } from './ref-model.js';
@@ -40,12 +46,17 @@ if (!playable) {
   process.exit(1);
 }
 
-const sim = simulate(playable);
+// Driven through the engine rather than simulate(), whose snapshot is opaque:
+// the check reads the framebuffer RAM out of the sequential state.
+const library = libraryOf(playable);
+const engine = createEngine(elaborate(internalsOf(playable).ir, library.definitions), { library });
+engine.runCombinational();
+const session = new SimulationSession(engine, { isSequential: true });
 const model = new SnakeRefModel();
 
 function readFb(): Uint8Array {
   const fb = new Uint8Array(FB_SIZE);
-  const seq = sim.session.getState().sequentialState;
+  const seq = session.getState().sequentialState;
   const ram = seq?.currentState.get('ram');
   if (!(ram instanceof Map)) throw new Error('ram state not found in sequential state');
   for (let a = 0; a < FB_SIZE; a++) fb[a] = (ram as Map<number, number>).get(a) ?? 0;
@@ -88,12 +99,12 @@ expectFbEqual('initial state');
 for (let i = 0; i < KEYPRESSES.length; i++) {
   const press = KEYPRESSES[i];
   if (press === 'hold:30') {
-    sim.setNode('keyboard', 30); // KeyA — decoder must hold the last direction
+    engine.setNode('keyboard', 30); // KeyA — decoder must hold the last direction
   } else if (press) {
-    sim.setNode('keyboard', SCAN[press]);
+    engine.setNode('keyboard', SCAN[press]);
     lastDir = DIR[press];
   }
-  sim.tickN(4);
+  for (let t = 0; t < 4; t++) session.tick();
   model.step(lastDir);
   expectFbEqual(`tick ${i + 1} (press=${press ?? 'none'}, dir=${lastDir})`);
 }
@@ -101,7 +112,7 @@ if (model.eaten < 1) {
   console.error(`❌ script expected at least one eat, got ${model.eaten}`);
   process.exit(1);
 }
-sim.dispose();
+session.dispose();
 console.log(
   `✅ playable harness works: ${KEYPRESSES.length} ticks driven by scan codes, fb matches model throughout (${model.eaten} food eaten, non-arrow key held direction)`,
 );
