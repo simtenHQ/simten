@@ -80,10 +80,10 @@ See the [Simulator Engine](/docs/simulator-engine) page for deep details on the 
 
 ## Circuit IR
 
-Everything in the system (primitives, user circuits, elaborated results) uses the same `Circuit` interface:
+Everything in the system (primitives, user circuits, elaborated results) uses the same `CircuitIR` interface. It's internal: the `Circuit` that `circuit()` returns shows only its `name`, `inputs` and `outputs`, and carries its IR alongside.
 
 ```typescript
-interface Circuit {
+interface CircuitIR {
   name: string;
   inputs: PortDescriptor[];
   outputs: PortDescriptor[];
@@ -268,7 +268,7 @@ useCircuitStore         (the active circuit)
 | Import | Contents |
 |--------|----------|
 | `@simten/core` | `circuit`, `bit`, `bus`, `simulate`, `Circuit`: the public API. Components come from `@simten/core/std` |
-| `@simten/core/internal` | `elaborate`, `createEngine`, `SimulationSession`, `SimulatorEngine`, the IR types (`CircuitIR`), libraries of definitions and behavior (`libraryOf`, `behaviorOf`), `executeCircuitCode`, `captureEnvironmentalState`, `restoreEnvironmentalState`: for Simten's own packages, no stability promise |
+| `@simten/core/internal` | `elaborate`, `createEngine`, `SimulationSession`, `SimulatorEngine`, the IR types (`CircuitIR`), a built circuit's internals (`internalsOf`), libraries of definitions and behavior (`libraryOf`), `executeCircuitCode`, `captureEnvironmentalState`, `restoreEnvironmentalState`: for Simten's own packages, no stability promise |
 | `@simten/embed` | `CircuitViewer`, `CircuitEmbed`, `<circuit-embed>` web component: everything needed to embed a circuit |
 | `@simten/ui/canvas` | `CircuitCanvas`, `ClockControls`: shared simulation UI |
 | `@simten/ui/sandbox` | `useSandbox`, `SandboxProvider`: sandbox iframe context used by `useCircuitSimulator` |

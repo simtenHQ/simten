@@ -27,7 +27,7 @@ Circuits export to synthesizable Verilog. The exporter maps 60+ primitives to st
 ```typescript
 import { exportVerilog } from '@simten/core/verilog';
 
-const { verilog, files } = exportVerilog(circuit, library, { target: 'synthesis' });
+const { verilog, files } = exportVerilog(HalfAdder, { target: 'synthesis' });
 // `verilog` is the .v source; `files` is a map of sidecar filename → contents
 // (hex files referenced by $readmemh for large preloaded memories).
 ```
