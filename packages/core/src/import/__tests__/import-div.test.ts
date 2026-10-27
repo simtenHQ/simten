@@ -56,6 +56,5 @@ describe('divide/remainder import ($div/$mod → Divider/Modulo + Signed*)', () 
         ).toBe(want);
       }
     });
-    sim.dispose();
   });
 });

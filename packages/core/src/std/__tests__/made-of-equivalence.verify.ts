@@ -25,8 +25,8 @@ import * as fc from 'fast-check';
 import type { Circuit } from '../../circuit/builder-types.js';
 import { circuit } from '../../circuit/circuit.js';
 import type { PortType } from '../../ir/circuit-ir.js';
-import type { SimulationHandle } from '../../simulator/simulate.js';
 import { simulate } from '../../simulator/simulate.js';
+import type { Simulation } from '../../simulator/simulation.js';
 import { declareOracle, describe, verify } from '../../verify/harness.js';
 import { Adder, Comparator, Incrementer, Subtractor } from '../arithmetic.js';
 import { MADE_OF } from '../made-of.js';
@@ -45,12 +45,6 @@ declareOracle({
 });
 
 // ── Harness ──────────────────────────────────────────────────────────────────
-
-const open: SimulationHandle[] = [];
-const track = <T extends SimulationHandle>(h: T): T => {
-  open.push(h as SimulationHandle);
-  return h;
-};
 
 /**
  * A parameterized primitive only sees its `width` when it is a *node* — the
@@ -108,8 +102,8 @@ function subject(label: string, made: unknown, prim: Circuit): Subject {
 
 /** Compare every output of the two circuits for one input assignment. */
 function agree(
-  a: SimulationHandle,
-  b: SimulationHandle,
+  a: Simulation,
+  b: Simulation,
   names: string[],
   vals: number[],
   outputs: string[],
@@ -125,8 +119,8 @@ function agree(
 
 /** Exhaustive equivalence over the primitive's whole input space. */
 function proveExhaustive(s: Subject): void {
-  const made = track(simulate(s.made));
-  const ref = track(simulate(s.ref));
+  const made = simulate(s.made);
+  const ref = simulate(s.ref);
   const outputs = Object.keys((s.ref as unknown as { outputs: object }).outputs);
   verify.exhaustive(`${s.label} matches its primitive on every input`, s.spaces, (...vals) =>
     agree(made, ref, s.inputNames, vals, outputs),
@@ -135,8 +129,8 @@ function proveExhaustive(s: Subject): void {
 
 /** Sampled equivalence, for spaces too large to sweep. */
 function proveSampled(s: Subject, numRuns: number): void {
-  const made = track(simulate(s.made));
-  const ref = track(simulate(s.ref));
+  const made = simulate(s.made);
+  const ref = simulate(s.ref);
   const outputs = Object.keys((s.ref as unknown as { outputs: object }).outputs);
   // One arbitrary per input port; fc.property's variadic overload does not
   // survive a spread of a computed array, so build the tuple then assert it.
@@ -211,7 +205,5 @@ verify.exhaustive('every MADE_OF entry is covered by a subject', [1], () => {
   }
   return true;
 });
-
-for (const h of open) h.dispose();
 
 verify.run();

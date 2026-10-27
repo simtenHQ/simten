@@ -159,7 +159,6 @@ describe('no booleans in the value domain', () => {
       findBooleans(`state.${k}`, v, found);
     }
     expect(found).toEqual([]);
-    sim.dispose();
   });
 
   it('keeps authored state and port values numeric end to end', () => {
@@ -177,6 +176,5 @@ describe('no booleans in the value domain', () => {
       findBooleans(`state.${k}`, v, found);
     }
     expect(found).toEqual([]);
-    sim.dispose();
   });
 });

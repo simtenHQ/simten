@@ -35,7 +35,6 @@ function run1(prim: Circuit, inW: number, outW: number, v: number): number {
   const sim = simulate(w);
   sim.set({ in: v });
   const out = sim.get('out') >>> 0;
-  sim.dispose();
   return out;
 }
 
@@ -54,7 +53,6 @@ function run2(prim: Circuit, hiW: number, loW: number, hi: number, lo: number): 
   const sim = simulate(w);
   sim.set({ high: hi, low: lo });
   const out = sim.get('out') >>> 0;
-  sim.dispose();
   return out;
 }
 

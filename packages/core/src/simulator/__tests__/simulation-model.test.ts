@@ -27,12 +27,8 @@ describe('outputs are masked to their port width', () => {
       eval: ({ a, b }) => ({ sum: a + b }),
     });
     const sim = simulate(Add8);
-    try {
-      sim.set({ a: 200, b: 100 });
-      expect(sim.get('sum')).toBe(44);
-    } finally {
-      sim.dispose();
-    }
+    sim.set({ a: 200, b: 100 });
+    expect(sim.get('sum')).toBe(44);
   });
 
   it('a bit output keeps only bit 0', () => {
@@ -42,14 +38,10 @@ describe('outputs are masked to their port width', () => {
       eval: ({ a }) => ({ y: a }),
     });
     const sim = simulate(Wide);
-    try {
-      sim.set({ a: 6 });
-      expect(sim.get('y')).toBe(0);
-      sim.set({ a: 7 });
-      expect(sim.get('y')).toBe(1);
-    } finally {
-      sim.dispose();
-    }
+    sim.set({ a: 6 });
+    expect(sim.get('y')).toBe(0);
+    sim.set({ a: 7 });
+    expect(sim.get('y')).toBe(1);
   });
 
   it('32-bit values read back unsigned, inside and out', () => {
@@ -61,15 +53,11 @@ describe('outputs are masked to their port width', () => {
       eval: ({ a }) => ({ y: ~a, top: a >= 0x80000000 ? 1 : 0 }),
     });
     const sim = simulate(Ones);
-    try {
-      sim.set({ a: 0 });
-      expect(sim.get('y')).toBe(0xffffffff);
-      sim.set({ a: 0xffffffff });
-      expect(sim.get('y')).toBe(0);
-      expect(sim.get('top')).toBe(1);
-    } finally {
-      sim.dispose();
-    }
+    sim.set({ a: 0 });
+    expect(sim.get('y')).toBe(0xffffffff);
+    sim.set({ a: 0xffffffff });
+    expect(sim.get('y')).toBe(0);
+    expect(sim.get('top')).toBe(1);
   });
 
   it('a bus wider than 32 bits is a compile error suggesting a split', () => {

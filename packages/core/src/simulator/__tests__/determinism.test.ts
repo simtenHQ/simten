@@ -87,26 +87,9 @@ const Accumulator = circuit('Accumulator', {
 // between runs.
 // ============================================================================
 
-function runTwice<T>(
-  build: () => { tick(): void; dispose(): void },
-  drive: (sim: any) => T[],
-): { a: T[]; b: T[] } {
-  const simA = build();
-  let a: T[];
-  try {
-    a = drive(simA);
-  } finally {
-    simA.dispose();
-  }
-
-  const simB = build();
-  let b: T[];
-  try {
-    b = drive(simB);
-  } finally {
-    simB.dispose();
-  }
-
+function runTwice<S, T>(build: () => S, drive: (sim: S) => T[]): { a: T[]; b: T[] } {
+  const a = drive(build());
+  const b = drive(build());
   return { a, b };
 }
 
@@ -227,23 +210,19 @@ describe('determinism — sequential', () => {
 
   it('reset followed by the same inputs reproduces the original trace', () => {
     const sim = simulate(Counter2Bit);
-    try {
-      const drive = () => {
-        const trace: number[] = [];
-        for (let i = 0; i < 8; i++) {
-          sim.tick();
-          trace.push((sim.get('bit1') << 1) | sim.get('bit0'));
-        }
-        return trace;
-      };
+    const drive = () => {
+      const trace: number[] = [];
+      for (let i = 0; i < 8; i++) {
+        sim.tick();
+        trace.push((sim.get('bit1') << 1) | sim.get('bit0'));
+      }
+      return trace;
+    };
 
-      const first = drive();
-      sim.reset();
-      const second = drive();
+    const first = drive();
+    sim.reset();
+    const second = drive();
 
-      expect(second).toEqual(first);
-    } finally {
-      sim.dispose();
-    }
+    expect(second).toEqual(first);
   });
 });

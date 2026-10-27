@@ -135,7 +135,6 @@ export function runDut(
   for (let a = beginSig; a < endSig; a += 4) {
     out.push(fetchWord(dmem, DMEM_BASE, a).toString(16).padStart(8, '0'));
   }
-  cpu.dispose();
   return out;
 }
 

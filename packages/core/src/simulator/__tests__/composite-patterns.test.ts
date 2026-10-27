@@ -65,14 +65,10 @@ describe('P-bus-feedthrough-chain — bus(N) feedthrough across chained composit
       const c = chain(depth);
       assertFlatCircuitInvariants(elaborateBuilt(c));
       const sim = simulate(c);
-      try {
-        sim.set({ x: 0xa5 });
-        expect(sim.get('y')).toBe(0xa5);
-        sim.set({ x: 0x00 });
-        expect(sim.get('y')).toBe(0x00);
-      } finally {
-        sim.dispose();
-      }
+      sim.set({ x: 0xa5 });
+      expect(sim.get('y')).toBe(0xa5);
+      sim.set({ x: 0x00 });
+      expect(sim.get('y')).toBe(0x00);
     });
   }
 });
@@ -103,16 +99,12 @@ describe('P-feedthrough-fanout-from-input — one input feeds multiple outputs',
   it('both feedthrough outputs carry the input', () => {
     assertFlatCircuitInvariants(elaborateBuilt(Wrap));
     const sim = simulate(Wrap);
-    try {
-      sim.set({ a: 1 });
-      expect(sim.get('y')).toBe(1);
-      expect(sim.get('z')).toBe(1);
-      sim.set({ a: 0 });
-      expect(sim.get('y')).toBe(0);
-      expect(sim.get('z')).toBe(0);
-    } finally {
-      sim.dispose();
-    }
+    sim.set({ a: 1 });
+    expect(sim.get('y')).toBe(1);
+    expect(sim.get('z')).toBe(1);
+    sim.set({ a: 0 });
+    expect(sim.get('y')).toBe(0);
+    expect(sim.get('z')).toBe(0);
   });
 });
 
@@ -150,16 +142,12 @@ describe('P-crcstep-shape — mixed gated + feedthrough composite, chained', () 
       const c = chain(depth);
       assertFlatCircuitInvariants(elaborateBuilt(c));
       const sim = simulate(c);
-      try {
-        sim.set({ x: 1 });
-        expect(sim.get('y_gate')).toBe(1); // NOT NOT 1 = 1, chained = 1
-        expect(sim.get('y_pass')).toBe(1); // final step's feedthrough of the chained gate output
-        sim.set({ x: 0 });
-        expect(sim.get('y_gate')).toBe(0);
-        expect(sim.get('y_pass')).toBe(0);
-      } finally {
-        sim.dispose();
-      }
+      sim.set({ x: 1 });
+      expect(sim.get('y_gate')).toBe(1); // NOT NOT 1 = 1, chained = 1
+      expect(sim.get('y_pass')).toBe(1); // final step's feedthrough of the chained gate output
+      sim.set({ x: 0 });
+      expect(sim.get('y_gate')).toBe(0);
+      expect(sim.get('y_pass')).toBe(0);
     });
   }
 });
@@ -191,19 +179,15 @@ describe('P-fanout-composite-output — composite output fans out to multiple pr
   it('all three fan-out targets see the same gated value', () => {
     assertFlatCircuitInvariants(elaborateBuilt(Wrap));
     const sim = simulate(Wrap);
-    try {
-      sim.set({ a: 0 });
-      // g.y = NOT 0 = 1; nN.out = NOT 1 = 0
-      expect(sim.get('o1')).toBe(0);
-      expect(sim.get('o2')).toBe(0);
-      expect(sim.get('o3')).toBe(0);
-      sim.set({ a: 1 });
-      expect(sim.get('o1')).toBe(1);
-      expect(sim.get('o2')).toBe(1);
-      expect(sim.get('o3')).toBe(1);
-    } finally {
-      sim.dispose();
-    }
+    sim.set({ a: 0 });
+    // g.y = NOT 0 = 1; nN.out = NOT 1 = 0
+    expect(sim.get('o1')).toBe(0);
+    expect(sim.get('o2')).toBe(0);
+    expect(sim.get('o3')).toBe(0);
+    sim.set({ a: 1 });
+    expect(sim.get('o1')).toBe(1);
+    expect(sim.get('o2')).toBe(1);
+    expect(sim.get('o3')).toBe(1);
   });
 });
 
@@ -231,16 +215,12 @@ describe('P-fanout-feedthrough-cross-composite — feedthrough output drives mul
   it('feedthrough output fans out to multiple composite consumers', () => {
     assertFlatCircuitInvariants(elaborateBuilt(Cross));
     const sim = simulate(Cross);
-    try {
-      sim.set({ a: 1 });
-      expect(sim.get('y1')).toBe(1);
-      expect(sim.get('y2')).toBe(1);
-      sim.set({ a: 0 });
-      expect(sim.get('y1')).toBe(0);
-      expect(sim.get('y2')).toBe(0);
-    } finally {
-      sim.dispose();
-    }
+    sim.set({ a: 1 });
+    expect(sim.get('y1')).toBe(1);
+    expect(sim.get('y2')).toBe(1);
+    sim.set({ a: 0 });
+    expect(sim.get('y1')).toBe(0);
+    expect(sim.get('y2')).toBe(0);
   });
 });
 
@@ -291,14 +271,10 @@ describe('P-nesting-feedthrough-3-4-levels — feedthrough threaded through deep
   it.fails('depth-4 feedthrough nesting elaborates cleanly and propagates — currently malformed, see #146', () => {
     expect(() => assertFlatCircuitInvariants(elaborateBuilt(L1))).not.toThrow();
     const sim = simulate(L1);
-    try {
-      sim.set({ x: 1 });
-      expect(sim.get('y')).toBe(1);
-      sim.set({ x: 0 });
-      expect(sim.get('y')).toBe(0);
-    } finally {
-      sim.dispose();
-    }
+    sim.set({ x: 1 });
+    expect(sim.get('y')).toBe(1);
+    sim.set({ x: 0 });
+    expect(sim.get('y')).toBe(0);
   });
 });
 
@@ -327,14 +303,10 @@ describe('P-nesting-with-inner-gates — deep nesting with a gate at the innermo
   it('gate at depth 3 inverts the signal', () => {
     assertFlatCircuitInvariants(elaborateBuilt(Outer));
     const sim = simulate(Outer);
-    try {
-      sim.set({ x: 1 });
-      expect(sim.get('y')).toBe(0);
-      sim.set({ x: 0 });
-      expect(sim.get('y')).toBe(1);
-    } finally {
-      sim.dispose();
-    }
+    sim.set({ x: 1 });
+    expect(sim.get('y')).toBe(0);
+    sim.set({ x: 0 });
+    expect(sim.get('y')).toBe(1);
   });
 });
 
@@ -450,14 +422,10 @@ describe('P-instance-pathing — same composite type, multiple instance ids', ()
   it('three instances of the same composite produce independent outputs', () => {
     assertFlatCircuitInvariants(elaborateBuilt(Triple));
     const sim = simulate(Triple);
-    try {
-      sim.set({ a: 1, b: 0, c: 1 });
-      expect(sim.get('x')).toBe(0);
-      expect(sim.get('y')).toBe(1);
-      expect(sim.get('z')).toBe(0);
-    } finally {
-      sim.dispose();
-    }
+    sim.set({ a: 1, b: 0, c: 1 });
+    expect(sim.get('x')).toBe(0);
+    expect(sim.get('y')).toBe(1);
+    expect(sim.get('z')).toBe(0);
   });
 });
 
@@ -529,12 +497,8 @@ describe('P-stateful-feedthrough-clk — composite forwards we through to an int
   it('Register inside composite latches on tick when we is driven via feedthrough', () => {
     assertFlatCircuitInvariants(elaborateBuilt(Top));
     const sim = simulate(Top);
-    try {
-      sim.tick();
-      expect(sim.get('q')).toBe(5);
-    } finally {
-      sim.dispose();
-    }
+    sim.tick();
+    expect(sim.get('q')).toBe(5);
   });
 });
 
@@ -575,17 +539,13 @@ describe('P-self-loop-feedback-through-composite — register feedback crossing 
   it('register feedback through a composite still increments the counter', () => {
     assertFlatCircuitInvariants(elaborateBuilt(Top));
     const sim = simulate(Top);
-    try {
-      expect(sim.get('q')).toBe(0);
-      sim.tick();
-      expect(sim.get('q')).toBe(1);
-      sim.tick();
-      expect(sim.get('q')).toBe(2);
-      sim.tick();
-      expect(sim.get('q')).toBe(3);
-    } finally {
-      sim.dispose();
-    }
+    expect(sim.get('q')).toBe(0);
+    sim.tick();
+    expect(sim.get('q')).toBe(1);
+    sim.tick();
+    expect(sim.get('q')).toBe(2);
+    sim.tick();
+    expect(sim.get('q')).toBe(3);
   });
 });
 
@@ -614,11 +574,7 @@ describe('P-width-bit-bus — bit counts as bus(1) in the width check (#144)', (
       });
       expect(warn).toHaveBeenCalledWith(expect.stringMatching(/widens.*one\.out bit.*bus\(8\)/i));
       const sim = simulate(Widen);
-      try {
-        expect(sim.get('out')).toBe(1);
-      } finally {
-        sim.dispose();
-      }
+      expect(sim.get('out')).toBe(1);
     } finally {
       warn.mockRestore();
     }
@@ -693,13 +649,9 @@ describe('P-empty-composite-passthrough-only — composite with a single passthr
   it('node-less passthrough composite propagates the signal (#147)', () => {
     assertFlatCircuitInvariants(elaborateBuilt(Wrap));
     const sim = simulate(Wrap);
-    try {
-      sim.set({ a: 1 });
-      expect(sim.get('y')).toBe(1);
-      sim.set({ a: 0 });
-      expect(sim.get('y')).toBe(0);
-    } finally {
-      sim.dispose();
-    }
+    sim.set({ a: 1 });
+    expect(sim.get('y')).toBe(1);
+    sim.set({ a: 0 });
+    expect(sim.get('y')).toBe(0);
   });
 });

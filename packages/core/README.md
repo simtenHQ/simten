@@ -40,7 +40,7 @@ console.log(sim.get('sum'));    // 0
 console.log(sim.get('carry'));  // 1
 ```
 
-The `SimulationHandle` returned by `simulate()` has a plain `dispose()` method if you need explicit cleanup; explicit-resource-management (`using`) is not currently supported.
+`simulate()` returns a `Simulation`. There is nothing to clean up afterwards. `sim.tick(n)` runs n clock edges, `sim.reset()` goes back to cycle 0, and `simulate(top, { history: 100 })` keeps the last 100 steps for `stepBack()`, `stepForward()` and `seek(index)`.
 
 ### Running it
 

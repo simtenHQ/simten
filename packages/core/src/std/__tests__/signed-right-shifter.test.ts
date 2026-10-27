@@ -28,7 +28,6 @@ function sshr(width: number, value: number, shift: number): number {
   const sim = simulate(w);
   sim.set({ value, shift });
   const out = sim.get('result') >>> 0;
-  sim.dispose();
   return out;
 }
 
