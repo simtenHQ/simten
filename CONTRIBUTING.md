@@ -47,7 +47,7 @@ pnpm --filter @simten/synth dev        # Yosys synthesis
 pnpm --filter @simten/verifier dev     # iverilog cross-validation
 ```
 
-The `@simten/web` app falls back to `localhost:55001` for Verilog export when there's no production binding, so running the compiler container locally is enough to test the flow end-to-end.
+On the dev server (`vite dev`) the `@simten/web` app calls the containers on localhost when there's no service binding, and skips rate limits it has no binding for, so running the compiler container locally is enough to test the flow end-to-end. A deployed build never does either; see `apps/web/src/api/deploy-mode.ts`.
 
 ### Tier 3: FPGA hardware flow (`hardware/ulx3s/`)
 

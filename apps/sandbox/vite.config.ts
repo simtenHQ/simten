@@ -1,6 +1,8 @@
+import { readFileSync } from 'node:fs';
 import { defineConfig } from 'vite';
 
-// Sandbox CSP — kept in sync with apps/sandbox/public/_headers (prod).
+// Sandbox CSP. Production headers are in public/_headers; the dev and preview
+// servers send that file's `/*` block too, so the policy is written once.
 //
 // default-src 'none' closes the script-src hole: prior to this, only connect-src
 // was set, which left `import()`, inline scripts, and loaded styles ungoverned.
@@ -20,23 +22,39 @@ import { defineConfig } from 'vite';
 //   worker-src 'self'             — Web Worker constructed from a same-origin URL.
 //   base-uri / form-action /
 //   object-src 'none'             — cheap defense-in-depth; sandbox uses none of these.
-//
-// No frame-ancestors directive: the sandbox is iframed by simten.dev AND by
-// third-party @simten/embed consumers. Default ('*') is intentional.
+//   frame-ancestors http: https: — any web page may embed the sandbox: it
+//                                   is iframed by simten.dev, play.simten.dev
+//                                   and third-party @simten/embed pages.
 //
 // Dev caveat: this tightens dev to match prod. If Vite's HMR error overlay
 // breaks (it uses inline styles which `default-src 'none'` blocks), comment
-// out the headers blocks below temporarily — errors still appear in the console.
-const CSP =
-  "default-src 'none'; script-src 'self' 'unsafe-eval' blob: https://esm.sh; connect-src 'self' https://esm.sh; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none';";
+// out `server: { headers }` below temporarily — errors still appear in the console.
+const headers = siteWideHeaders(
+  readFileSync(new URL('./public/_headers', import.meta.url), 'utf8'),
+);
+
+/** The `Name: value` lines of the `/*` block in a Cloudflare `_headers` file. */
+function siteWideHeaders(file: string): Record<string, string> {
+  const headers: Record<string, string> = {};
+  let inBlock = false;
+  for (const line of file.split('\n')) {
+    if (line.trim() === '' || line.trimStart().startsWith('#')) continue;
+    if (!/^\s/.test(line)) {
+      inBlock = line.trim() === '/*';
+      continue;
+    }
+    const colon = line.indexOf(':');
+    if (inBlock && colon > 0) headers[line.slice(0, colon).trim()] = line.slice(colon + 1).trim();
+  }
+  if (!headers['Content-Security-Policy']) {
+    throw new Error('public/_headers has no Content-Security-Policy in its /* block');
+  }
+  return headers;
+}
 
 export default defineConfig({
-  server: {
-    headers: { 'Content-Security-Policy': CSP },
-  },
-  preview: {
-    headers: { 'Content-Security-Policy': CSP },
-  },
+  server: { headers },
+  preview: { headers },
   resolve: {
     dedupe: ['@simten/core'],
   },

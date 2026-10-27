@@ -24,6 +24,7 @@ import type {
   WorkerRequest,
   WorkerResponse,
 } from '@simten/ui/sandbox/protocol';
+import { createParentChannel, reportedParentOrigin } from './parent-channel';
 
 const TIMEOUT_MS = 5000;
 const TIMED_OUT_ERROR = 'Execution timed out. The simulation was restarted from cycle 0.';
@@ -64,13 +65,18 @@ function startWorker(): Worker {
 // Page ↔ worker
 // ============================================================================
 
-// Parent origin is pinned on the first inbound message. Until then only the
-// benign `ready` signal goes out, with a wildcard.
-let parentOrigin: string | null = null;
+// Only the embedding page may send requests, and responses go only to its
+// origin. Until that origin is known only the benign `ready` signal goes out,
+// with a wildcard.
+const parentChannel = createParentChannel(
+  parent === self ? null : parent,
+  reportedParentOrigin(location),
+);
 
 function respond(response: SandboxResponse) {
-  if (!parentOrigin) return;
-  parent.postMessage(response, parentOrigin);
+  const origin = parentChannel.origin();
+  if (!origin) return;
+  parent.postMessage(response, origin);
 }
 
 function send(req: SandboxRequest) {
@@ -190,18 +196,10 @@ function replay(req: CompileRequest): Promise<WorkerResponse | 'timeout'> {
 self.addEventListener('message', (event: MessageEvent) => {
   const req = event.data as SandboxRequest;
   if (!req?.id || !req?.type) return;
-
-  // Pin the parent origin on the first valid message and drop anything from
-  // another origin after that, so a peer frame can't impersonate the parent.
-  if (parentOrigin === null) {
-    parentOrigin = event.origin;
-  } else if (event.origin !== parentOrigin) {
-    return;
-  }
-
+  if (!parentChannel.accepts(event)) return;
   send(req);
 });
 
-// We can't know the parent's origin until it messages us, so this one signal
-// uses '*'. It carries nothing but the ready bit.
+// Not every browser tells us the parent's origin before it messages us, so
+// this one signal uses '*'. It carries nothing but the ready bit.
 parent.postMessage({ type: 'ready' }, '*');
