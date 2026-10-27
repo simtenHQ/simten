@@ -28,12 +28,6 @@ packages/core/src/std/mos6502.ts eval
 packages/core/src/std/mos6502.ts eval
 packages/core/src/std/networking.ts (anonymous)
 packages/core/src/std/networking.ts (anonymous)
-packages/core/src/verilog/eval-synth.ts emitExpr
-packages/core/src/verilog/eval-synth.ts emitIfBody
-packages/core/src/verilog/eval-synth.ts emitSwitch
-packages/core/src/verilog/eval-synth.ts tryEmitFromEval
-packages/core/src/verilog/eval-synth.ts validateExpr
-packages/core/src/verilog/eval-synth.ts validateNode
 packages/core/src/verilog/exporter.ts emitFlatModule
 packages/core/src/verilog/primitive-map.ts emitPrimitive
 packages/core/src/verilog/testbench-gen.ts generateTestbench

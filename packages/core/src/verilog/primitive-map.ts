@@ -14,7 +14,7 @@
  */
 
 import type { BehaviorTable } from '../circuit/behavior.js';
-import type { ArgumentValue } from '../ir/circuit-ir.js';
+import type { ArgumentValue, StateBlock } from '../ir/circuit-ir.js';
 import { isStdBehavior } from '../std/library.js';
 
 /**
@@ -27,7 +27,8 @@ import { isStdBehavior } from '../std/library.js';
  */
 export const UNSUPPORTED_MARKER = 'WARNING: Unsupported primitive';
 
-import { tryEmitFromEval } from './eval-synth.js';
+import { synthesizeBehavior } from './eval-synth.js';
+import { Unsupported } from './eval-values.js';
 
 export interface PrimitiveWires {
   /** Map of input port name → wire/port name in Verilog */
@@ -52,9 +53,29 @@ export interface StateInit {
   width: number;
 }
 
+/** Port widths of one node, by port name. */
+export interface PortWidths {
+  inputs: ReadonlyMap<string, number>;
+  outputs: ReadonlyMap<string, number>;
+}
+
+/** What `emitPrimitive` produces for one node. */
+interface Emitted {
+  lines: string[];
+  declarations: string[];
+  /** It uses the module's clock and reset. */
+  clocked?: boolean;
+  /** Why it couldn't be exported; the lines then hold only a warning. */
+  unsupported?: string;
+}
+
 export interface PrimitiveContext {
   /** Behavior by primitive name, for eval-synth when there is no mapping. */
   behaviors: BehaviorTable;
+  /** The node's port widths, which eval-synth reads (32 bits where absent). */
+  ports?: PortWidths;
+  /** The primitive's state blocks, for eval-synth. */
+  state?: readonly StateBlock[];
   nodeId: string;
   primitiveType: string;
   args: Record<string, ArgumentValue>;
@@ -244,14 +265,21 @@ export function usesStdMapping(primitiveType: string, behaviors: BehaviorTable):
   return isStdBehavior(primitiveType, behaviors.get(primitiveType));
 }
 
-/** A primitive with no hand-written mapping: translate its behavior, or report it. */
-function emitFromBehavior(ctx: PrimitiveContext): { lines: string[]; declarations: string[] } {
-  const synthResult = tryEmitFromEval(ctx, (name) => ctx.behaviors.get(name));
-  if (synthResult) return synthResult;
-  return {
-    lines: [`// ${UNSUPPORTED_MARKER} "${ctx.primitiveType}" (${sanitizeId(ctx.nodeId)})`],
-    declarations: [],
-  };
+/** A primitive with no hand-written mapping: translate its behavior, or say why not. */
+function emitFromBehavior(ctx: PrimitiveContext): Emitted {
+  try {
+    return synthesizeBehavior(ctx, ctx.behaviors.get(ctx.primitiveType));
+  } catch (e) {
+    if (!(e instanceof Unsupported)) throw e;
+    const reason = e.message.replace(/\s+/g, ' ');
+    return {
+      lines: [
+        `// ${UNSUPPORTED_MARKER} "${ctx.primitiveType}" (${sanitizeId(ctx.nodeId)}): ${reason}`,
+      ],
+      declarations: [],
+      unsupported: reason,
+    };
+  }
 }
 
 /**
@@ -260,7 +288,7 @@ function emitFromBehavior(ctx: PrimitiveContext): { lines: string[]; declaration
  * - lines: assign/always statements
  * - declarations: reg/wire declarations needed for this primitive
  */
-export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declarations: string[] } {
+export function emitPrimitive(ctx: PrimitiveContext): Emitted {
   if (!usesStdMapping(ctx.primitiveType, ctx.behaviors)) return emitFromBehavior(ctx);
   const { primitiveType, args, wires, clockName, resetName, nodeId } = ctx;
   const w = getWidth(args);
@@ -1164,7 +1192,7 @@ export function emitPrimitive(ctx: PrimitiveContext): { lines: string[]; declara
         declarations: [],
       };
 
-    // ── Unknown — try eval-synth auto-transpilation ────────────────
+    // ── Unknown — translate its behavior ────────────────────────────
     default:
       return emitFromBehavior(ctx);
   }
