@@ -48,7 +48,7 @@ describe('example catalog', () => {
 
   it('"6502-computer" prints its message to the console', () => {
     const ex = EXAMPLES.find((e) => e.id === '6502-computer')!;
-    const top = executeCircuitCode(ex.code).builtCircuits.find((c) => c.name === 'Computer6502')!;
+    const top = executeCircuitCode(ex.code).circuits.find((c) => c.name === 'Computer6502')!;
     const sim = simulate(top);
     sim.tickN(400);
     const snapshot = sim.snapshot() as unknown as SimulatorSnapshot;

@@ -5,7 +5,12 @@
  * Accepts TypeScript code using the circuit() API.
  */
 
-import { type CircuitIR, executeCircuitCode, type MutableLibrary } from '@simten/core/internal';
+import {
+  type CircuitIR,
+  executeCircuitCode,
+  internalsOf,
+  type MutableLibrary,
+} from '@simten/core/internal';
 
 interface CompileSourceResult {
   circuits: CircuitIR[];
@@ -29,5 +34,5 @@ export function compileSource(source: string, _sourceName?: string): CompileSour
       error: 'No circuits found. Call .build() on your component() definitions.',
     };
   }
-  return { circuits: result.circuits, library, error: null };
+  return { circuits: result.circuits.map((c) => internalsOf(c).ir), library, error: null };
 }

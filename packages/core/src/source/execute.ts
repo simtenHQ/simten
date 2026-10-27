@@ -1,7 +1,7 @@
 /**
  * Circuit Code Execution Engine
  *
- * Executes TypeScript circuit code and extracts Circuit IR.
+ * Executes TypeScript circuit code and collects the circuits it builds.
  * Uses sucrase for fast type stripping (microseconds).
  * Standard library is injected as scope — no imports needed.
  *
@@ -19,7 +19,7 @@
  *       ],
  *     })
  *   `)
- *   result.circuit // → Circuit IR
+ *   result.circuits[0] // → the HalfAdder circuit
  */
 
 import { transform } from 'sucrase';
@@ -27,9 +27,8 @@ import { addToLibrary, emptyLibrary, type MutableLibrary } from '../circuit/beha
 import { bit, bus, mem, reg } from '../circuit/bit-bus.js';
 import type { Circuit } from '../circuit/builder-types.js';
 import { circuit } from '../circuit/circuit.js';
-import { internalsOf, isCircuit } from '../circuit/internals.js';
+import { isCircuit } from '../circuit/internals.js';
 import { Dlatch, Mem, Pmux } from '../import/primitives.js';
-import type { CircuitIR } from '../ir/circuit-ir.js';
 import * as std from '../std/index.js';
 
 // ============================================================================
@@ -37,28 +36,24 @@ import * as std from '../std/index.js';
 // ============================================================================
 
 export interface ExecuteResult {
-  /** The last/main circuit found in the code (built) */
-  circuit: CircuitIR | null;
-  /** All circuits found (if code defines multiple) */
-  circuits: CircuitIR[];
+  /** Every circuit the source built with `circuit(...)`, in the order it built them. */
+  circuits: Circuit[];
   /**
-   * Circuits the code exported without defining, e.g. `export default FullAdder`.
+   * Circuits the source exports, defined there or not (`export default FullAdder`).
    *
-   * Kept apart from `circuits`, which means "constructed here" and is reported
-   * as such by the MCP tools. Re-exporting a stdlib component defines nothing,
-   * but it is a reasonable thing to want to look at, so a renderer can fall
-   * back to this rather than reporting an empty source.
+   * Re-exporting a stdlib component defines nothing, but it is a reasonable
+   * thing to want to look at, so a renderer can fall back to this rather than
+   * reporting an empty source. A circuit the source built is the same object
+   * here as in `circuits`.
    */
-  exportedCircuits: CircuitIR[];
-  /** All Circuits found */
-  builtCircuits: Circuit[];
+  exported: Circuit[];
   /**
    * Every circuit the code built, with its dependencies (std and user-defined),
    * and their behavior (eval/onTick). Owned by this run: nothing the code
    * defines is visible to any other compile.
    */
   library: MutableLibrary;
-  /** Error message if execution failed */
+  /** Set when the source threw or failed to parse; the lists are then empty. */
   error: string | null;
 }
 
@@ -235,9 +230,8 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
   const allValues = extraScope ? [...values, ...Object.values(extraScope)] : values;
 
   const library = emptyLibrary();
-  const builtCircuits: Circuit[] = [];
-  const circuits: CircuitIR[] = [];
-  const exportedCircuits: CircuitIR[] = [];
+  const circuits: Circuit[] = [];
+  const exported: Circuit[] = [];
 
   try {
     // new Function bodies can't contain import/export — strip both defensively
@@ -246,8 +240,9 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
     const cleaned = stripExports(withoutImports);
     // The names the source exported, read before stripping. Collected from
     // inside the block so a re-exported component comes back with the rest.
-    const exported = exportedNames(withoutImports);
-    const exportedList = exported.map((n) => `(typeof ${n} !== 'undefined' ? ${n} : undefined)`);
+    const exportedList = exportedNames(withoutImports).map(
+      (n) => `(typeof ${n} !== 'undefined' ? ${n} : undefined)`,
+    );
     // Wrap: intercept circuit()/component() calls to collect all created circuits
     const wrappedCode = `
       "use strict";
@@ -276,44 +271,33 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
 
     for (const built of collected) {
       if (isCircuit(built)) {
-        builtCircuits.push(built);
-        circuits.push(internalsOf(built).ir);
+        circuits.push(built);
         // The circuit and all its transitive dependencies (stdlib + user-defined)
         addToLibrary(library, built);
       }
     }
 
-    // Exported components the source did not build: `export default FullAdder`
-    // and friends. A parameterised component is exported as its factory, so a
-    // bare function is called with no arguments to get its default instance.
-    const defined = new Set(circuits.map((c) => c.name));
+    // Exported components, once each by name. One the source built is reported
+    // as the circuit it built; one it didn't (`export default FullAdder` and
+    // friends) is added to the library too. A parameterised component is
+    // exported as its factory, so a bare function is called with no arguments
+    // to get its default instance.
+    const builtByName = new Map(circuits.map((c) => [c.name, c]));
+    const seen = new Set<string>();
     for (const value of exportedValues) {
-      const built = asCircuit(value);
-      if (!built || defined.has(built.name)) continue;
-      defined.add(built.name);
-      exportedCircuits.push(internalsOf(built).ir);
-      addToLibrary(library, built);
+      const made = asCircuit(value);
+      if (!made || seen.has(made.name)) continue;
+      seen.add(made.name);
+      const built = circuits.includes(made) ? made : builtByName.get(made.name);
+      if (!built) addToLibrary(library, made);
+      exported.push(built ?? made);
     }
 
-    return {
-      // What to simulate when the source defined nothing: the exported
-      // component. Without it a re-export reads as an empty file.
-      circuit:
-        circuits.length > 0
-          ? circuits[circuits.length - 1]
-          : (exportedCircuits[exportedCircuits.length - 1] ?? null),
-      circuits,
-      exportedCircuits,
-      builtCircuits,
-      library,
-      error: null,
-    };
+    return { circuits, exported, library, error: null };
   } catch (e) {
     return {
-      circuit: null,
       circuits: [],
-      exportedCircuits: [],
-      builtCircuits: [],
+      exported: [],
       library,
       error: e instanceof Error ? e.message : String(e),
     };
@@ -321,11 +305,11 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
 }
 
 /**
- * Execute TypeScript circuit code and extract Circuit IR.
+ * Execute TypeScript circuit code and collect the circuits it builds.
  *
  * The code is type-stripped, then run in a function scope with the
- * standard library injected. All component() calls are tracked and
- * the last one becomes the main circuit.
+ * standard library injected. Every circuit() call is tracked; callers
+ * pick the circuit they want from the result.
  *
  * @param code - TypeScript or JavaScript circuit code
  * @returns Execution result with circuits and any error

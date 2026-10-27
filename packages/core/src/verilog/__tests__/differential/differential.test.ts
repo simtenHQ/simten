@@ -152,8 +152,9 @@ function example(id: string): DiffTarget {
   if (!ex) throw new Error(`no example '${id}'`);
   const compiled = executeCircuitCode(ex.code);
   if (compiled.error) throw new Error(`${id}: ${compiled.error}`);
+  // An example's top is the last circuit it builds, the one the editor runs.
   return {
-    top: compiled.circuits[compiled.circuits.length - 1],
+    top: internalsOf(compiled.circuits[compiled.circuits.length - 1]).ir,
     library: compiled.library,
   };
 }

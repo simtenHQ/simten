@@ -40,7 +40,7 @@ if (result.error) {
   console.error(`❌ example failed to execute: ${result.error}`);
   process.exit(1);
 }
-const playable = result.builtCircuits.find((c) => c.name === 'SnakePlayable');
+const playable = result.circuits.find((c) => c.name === 'SnakePlayable');
 if (!playable) {
   console.error('❌ SnakePlayable not among built circuits');
   process.exit(1);

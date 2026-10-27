@@ -34,7 +34,8 @@ describe('Snake example source', () => {
     expect(canonical.length).toBeGreaterThan(1);
     for (const ir of canonical) {
       const fromExample = compiled.circuits.find((c) => c.name === ir.name);
-      expect(fromExample, ir.name).toEqual(ir);
+      expect(fromExample, ir.name).toBeDefined();
+      expect(fromExample && internalsOf(fromExample).ir, ir.name).toEqual(ir);
     }
   });
 });

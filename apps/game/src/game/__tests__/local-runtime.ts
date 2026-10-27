@@ -17,7 +17,13 @@
  */
 
 import type { Behavior, CircuitIR } from '@simten/core/internal';
-import { createEngine, elaborate, executeCircuitCode, getStdLibrary } from '@simten/core/internal';
+import {
+  createEngine,
+  elaborate,
+  executeCircuitCode,
+  getStdLibrary,
+  internalsOf,
+} from '@simten/core/internal';
 import type { GradeRuntime } from '../runtime';
 import { RuntimeFailure, readOutputs } from '../runtime';
 
@@ -36,7 +42,7 @@ export function localRuntime(): GradeRuntime {
         .map((n) => definitions.resolveCircuit(n))
         .filter((c): c is CircuitIR => c != null);
       behaviors = result.library.behaviors;
-      return { circuits: result.circuits, libraryCircuits: compiled };
+      return { circuits: result.circuits.map((c) => internalsOf(c).ir), libraryCircuits: compiled };
     },
 
     async select(target, all) {
