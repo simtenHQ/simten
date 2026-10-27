@@ -113,9 +113,7 @@ const BUG = {
   negedge: '#430: imported negedge $dff becomes posedge',
   shiftWidth: '#430: imported shift amount is sliced to the result width',
   noMapping: 'unfiled: no Verilog mapping, exported as an UNSUPPORTED comment',
-  cmpPorts: 'unfiled: Comparator ne/le/ge (and SignedComparator ne/le/ge) are never assigned',
-  combiner: 'unfiled: Combiner bit inputs driven by internal nets get width-wide wires',
-  switches: 'unfiled: Switch and Input nodes export as undriven wires',
+  screen: "unfiled: a Screen's addrB output is left undriven, then #436: unwritten RAM reads x",
   dualPortRom: 'unfiled: DualPortROM exports reads of a memory it never declares',
   ramInit: 'unfiled: RAM drops its memory contents on export',
 } as const;
@@ -238,10 +236,10 @@ std('LeftShifter w32, shift < 32', () => LeftShifter({ width: 32 }), {
 std('RightShifter w32, shift < 32', () => RightShifter({ width: 32 }), {
   opts: { inputMask: { shift: 31 } },
 });
-std('Comparator w8, all ports', () => Comparator({ width: 8 }), { bug: BUG.cmpPorts });
-std('SignedComparator w8, all ports', () => SignedComparator({ width: 8 }), {
-  bug: BUG.cmpPorts,
-});
+for (const w of [8, 32]) {
+  std(`Comparator w${w}, all ports`, () => Comparator({ width: w }));
+  std(`SignedComparator w${w}, all ports`, () => SignedComparator({ width: w }));
+}
 std('Splitter w4', () => Splitter({ width: 4 }));
 std('Combiner w4', () => Combiner({ width: 4 }));
 std('Concat 1+7', () => Concat({ hiWidth: 1, loWidth: 7 }));
@@ -334,6 +332,67 @@ cases.push({
       }),
     ),
 });
+// borrow_out read by a wider consumer: only bit 0 of the net may be set.
+cases.push({
+  name: 'Subtractor borrow_out, zero-extended',
+  target: () =>
+    target(
+      circuit('BorrowWide', {
+        inputs: { a: bus(8), b: bus(8), bin: bit },
+        outputs: { d: bus(8), borrow: bus(8) },
+        nodes: { sub: Subtractor({ width: 8 }), ext: ZeroExtend({ inWidth: 1, outWidth: 8 }) },
+        connect: ({ inputs, outputs, nodes: { sub, ext } }) => [
+          inputs.a.to(sub.a),
+          inputs.b.to(sub.b),
+          inputs.bin.to(sub.borrow_in),
+          sub.difference.to(outputs.d),
+          sub.borrow_out.to(ext.in),
+          ext.out.to(outputs.borrow),
+        ],
+      }),
+    ),
+});
+// A Splitter's bits read by wider consumers: each net is one bit.
+cases.push({
+  name: 'Splitter bits, zero-extended',
+  target: () =>
+    target(
+      circuit('SplitWide', {
+        inputs: { a: bus(4) },
+        outputs: { hi: bus(8), lo: bus(8) },
+        nodes: {
+          s: Splitter({ width: 4 }),
+          e3: ZeroExtend({ inWidth: 1, outWidth: 8 }),
+          e0: ZeroExtend({ inWidth: 1, outWidth: 8 }),
+        },
+        connect: ({ inputs, outputs, nodes: { s, e3, e0 } }) => [
+          inputs.a.to(s.in),
+          s.bit3.to(e3.in),
+          s.bit0.to(e0.in),
+          e3.out.to(outputs.hi),
+          e0.out.to(outputs.lo),
+        ],
+      }),
+    ),
+});
+cases.push({
+  name: 'Xor into Combiner w2',
+  target: () =>
+    target(
+      circuit('XorCombine', {
+        inputs: { a: bit, b: bit, c: bit },
+        outputs: { y: bus(2) },
+        nodes: { x: Xor, j: Combiner({ width: 2 }) },
+        connect: ({ inputs, outputs, nodes: { x, j } }) => [
+          inputs.a.to(x.a),
+          inputs.b.to(x.b),
+          x.out.to(j.bit0),
+          inputs.c.to(j.bit1),
+          j.out.to(outputs.y),
+        ],
+      }),
+    ),
+});
 cases.push({
   name: 'ShiftChain3',
   target: () =>
@@ -353,7 +412,6 @@ cases.push({
 });
 cases.push({
   name: 'RippleAdder4',
-  bug: BUG.combiner,
   target: () =>
     target(
       circuit('RippleAdder4', {
@@ -484,10 +542,10 @@ for (const [id, cycles, bug] of [
   ['hack-alu', 200, undefined],
   ['fibonacci', 64, undefined],
   ['rule30', 64, undefined],
-  ['half-adder', 32, BUG.switches],
-  ['alu', 64, BUG.switches],
-  ['tpu-3x3', 64, BUG.switches],
-  ['snake', 200, BUG.switches],
+  ['half-adder', 32, undefined],
+  ['alu', 64, undefined],
+  ['tpu-3x3', 64, undefined],
+  ['snake', 200, BUG.screen],
   ['rv32i-computer', 300, BUG.dualPortRom],
 ] as const) {
   cases.push({ name: `example ${id}`, target: () => example(id), opts: { cycles }, bug });
