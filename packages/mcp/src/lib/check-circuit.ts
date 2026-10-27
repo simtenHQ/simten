@@ -4,7 +4,7 @@
  * Validates TypeScript circuit source code by executing it.
  */
 
-import type { CircuitDefinitions } from '../ir/circuit-ir.js';
+import type { CircuitDefinitions } from '@simten/core/internal';
 import { compileSource } from './compile-source.js';
 
 export interface CheckResult {

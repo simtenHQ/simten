@@ -23,7 +23,7 @@ import { bit, bus, circuit } from '../../../circuit/index.js';
 import { internalsOf } from '../../../circuit/internals.js';
 import { EXAMPLES } from '../../../examples/catalog.js';
 import { importNetlist, type YosysNetlist } from '../../../import/index.js';
-import { buildFromIR, libraryOf } from '../../../internal.js';
+import { buildFromIR, executeCircuitCode, libraryOf } from '../../../internal.js';
 import type { PortType } from '../../../ir/circuit-ir.js';
 import {
   Adder,
@@ -83,7 +83,6 @@ import {
   Xor,
   ZeroExtend,
 } from '../../../std/index.js';
-import { compileSource } from '../../../tools/compile-source.js';
 import {
   type DiffOptions,
   type DiffTarget,
@@ -156,7 +155,7 @@ function wrap(name: string, inner: Circuit, outputs?: readonly string[]): DiffTa
 function example(id: string): DiffTarget {
   const ex = EXAMPLES.find((e) => e.id === id);
   if (!ex) throw new Error(`no example '${id}'`);
-  const compiled = compileSource(ex.code);
+  const compiled = executeCircuitCode(ex.code);
   if (compiled.error) throw new Error(`${id}: ${compiled.error}`);
   return {
     top: compiled.circuits[compiled.circuits.length - 1],

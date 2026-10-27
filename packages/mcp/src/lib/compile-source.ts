@@ -5,9 +5,7 @@
  * Accepts TypeScript code using the circuit() API.
  */
 
-import type { MutableLibrary } from '../circuit/behavior.js';
-import { executeCircuitCode } from '../circuit/execute.js';
-import type { CircuitIR } from '../ir/circuit-ir.js';
+import { type CircuitIR, executeCircuitCode, type MutableLibrary } from '@simten/core/internal';
 
 export interface CompileSourceResult {
   circuits: CircuitIR[];

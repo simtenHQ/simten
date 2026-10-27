@@ -4,18 +4,18 @@
  * Demonstrates that composites with internal registers no longer trigger false cycle detection
  */
 
-import {
-  type Behavior,
-  type CircuitDefinitions,
-  createEngine,
-  elaborate,
-  getStdLibrary,
-  internalsOf,
-} from '@simten/core/internal';
-import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useCircuitDefinitionsStore } from '../../stores/circuit-definitions-store';
-import { bitType, busType, type CircuitIR } from '../../types/circuit';
+import { type Behavior, createDefinitions } from '../../circuit/behavior.js';
+import { internalsOf } from '../../circuit/internals.js';
+import {
+  bitType,
+  busType,
+  type CircuitIR,
+  type MutableCircuitDefinitions,
+} from '../../ir/circuit-ir.js';
+import { STDLIB_CIRCUITS } from '../../std/index.js';
+import { getStdLibrary } from '../../std/library.js';
+import { createEngine, elaborate } from '../index.js';
 
 // Behavior for the local 'Add' primitive defined below, on top of std's. The
 // engine runs only the behavior table it is given, so any primitive a test
@@ -38,19 +38,11 @@ const PRIMITIVES = STDLIB_CIRCUITS.map((c) => internalsOf(c).ir).filter(
   (c) => c.implementation.kind === 'primitive',
 );
 
-function storeDefinitions(): CircuitDefinitions {
-  const store = useCircuitDefinitionsStore.getState();
-  return {
-    resolveCircuit: (name) => store.resolveCircuit(name),
-    getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
-  };
-}
-
 describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
-  let store: ReturnType<typeof useCircuitDefinitionsStore.getState>;
+  let definitions: MutableCircuitDefinitions;
 
   // Minimal Add circuit (8-bit adder, no carry) for tests that reference 'Add'
-  const Add: import('../../types/circuit').CircuitIR = {
+  const Add: CircuitIR = {
     version: 1,
     name: 'Add',
     inputs: [
@@ -66,10 +58,8 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
   };
 
   beforeEach(() => {
-    store = useCircuitDefinitionsStore.getState();
-    store.clear();
-    store.addCircuits(PRIMITIVES);
-    store.addCircuit(Add);
+    definitions = createDefinitions(PRIMITIVES);
+    definitions.addCircuit(Add);
   });
 
   it('should compile a multi-level hierarchy with state machines', () => {
@@ -162,7 +152,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
       implementation: { kind: 'composite' },
     };
 
-    store.addCircuit(fsm);
+    definitions.addCircuit(fsm);
 
     // Create a Controller that contains the FSM
     const controller: CircuitIR = {
@@ -200,7 +190,7 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
       implementation: { kind: 'composite' },
     };
 
-    store.addCircuit(controller);
+    definitions.addCircuit(controller);
 
     // Create a top-level system with multiple controllers
     const system: CircuitIR = {
@@ -258,7 +248,6 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
 
     // Before the fix: This would fail with "Cycle detected in circuit"
     // After the fix: This should succeed because registers break the paths
-    const definitions = storeDefinitions();
     const sim = createEngine(elaborate(system, definitions), {
       library: { definitions, behaviors: BEHAVIORS },
     });
@@ -433,9 +422,9 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
       implementation: { kind: 'composite' },
     };
 
-    store.addCircuit(ingressController);
-    store.addCircuit(arbiter);
-    store.addCircuit(packetForwarder);
+    definitions.addCircuit(ingressController);
+    definitions.addCircuit(arbiter);
+    definitions.addCircuit(packetForwarder);
 
     // Create the network with apparent cycle:
     // IngressController → Arbiter → PacketForwarder → IngressController
@@ -501,7 +490,6 @@ describe('Hierarchical Cycle Detection - Real World Scenarios', () => {
 
     // OLD BEHAVIOR: Would falsely detect cycle
     // NEW BEHAVIOR: Correctly recognizes registers break the path
-    const definitions = storeDefinitions();
     const sim = createEngine(elaborate(network, definitions), {
       library: { definitions, behaviors: BEHAVIORS },
     });

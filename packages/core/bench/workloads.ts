@@ -1,7 +1,7 @@
 import { EXAMPLES } from '../src/examples/catalog.js';
 import { createEngine, elaborate } from '../src/simulator/index.js';
 import type { SimulatorEngine } from '../src/simulator/types.js';
-import { compileSource } from '../src/tools/compile-source.js';
+import { executeCircuitCode } from '../src/source/execute.js';
 
 export interface Workload {
   id: string;
@@ -30,7 +30,7 @@ export interface Loaded {
 export function load(workload: Workload): Loaded {
   const example = EXAMPLES.find((e) => e.id === workload.id);
   if (!example) throw new Error(`no example '${workload.id}'`);
-  const compiled = compileSource(example.code);
+  const compiled = executeCircuitCode(example.code);
   if (compiled.error) throw new Error(`${workload.id}: ${compiled.error}`);
   const top = compiled.circuits[compiled.circuits.length - 1];
   const engine = createEngine(elaborate(top, compiled.library.definitions), {

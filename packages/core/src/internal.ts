@@ -18,18 +18,6 @@ export {
   type MutableLibrary,
 } from './circuit/behavior.js';
 export { buildFromIR } from './circuit/build-from-ir.js';
-export {
-  type CircuitNameSite,
-  circuitNameSites,
-  firstCircuitName,
-} from './circuit/circuit-names.js';
-export { CircuitToSourceError, circuitToSource } from './circuit/circuit-to-source.js';
-export {
-  type ExecuteResult,
-  executeCircuitCode,
-  executeJsCode,
-  stripTypes,
-} from './circuit/execute.js';
 export { type CircuitInternals, internalsOf, isCircuit } from './circuit/internals.js';
 export { isSequentialCircuit } from './circuit/is-sequential.js';
 export * from './import/index.js';
@@ -41,7 +29,18 @@ export {
   type SignalMetrics,
   type SimulationTrace,
 } from './simulator/trace-analysis.js';
+export {
+  type CircuitNameSite,
+  circuitNameSites,
+  firstCircuitName,
+} from './source/circuit-names.js';
+export { CircuitToSourceError, circuitToSource } from './source/circuit-to-source.js';
+export {
+  type ExecuteResult,
+  executeCircuitCode,
+  executeJsCode,
+  stripTypes,
+} from './source/execute.js';
 export { getStdLibrary, stdBehaviorsFor } from './std/library.js';
-export * from './tools/index.js';
-export { slugify } from './util/test-name.js';
+export { slugify } from './verify/test-name.js';
 export { exportVerilogFromIR } from './verilog/exporter.js';

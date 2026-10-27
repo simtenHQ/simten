@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { traceSource } from '../simulate.js';
+import { traceSource } from './trace-source.js';
 
 // ============================================================================
 // Helpers

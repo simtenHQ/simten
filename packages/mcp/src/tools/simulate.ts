@@ -3,10 +3,10 @@
  */
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { traceSource } from '@simten/core/internal';
 import { z } from 'zod';
 import { readCircuitSource } from '../lib/file-reader.js';
 import { getPreviewServer } from '../lib/preview-singleton.js';
+import { traceSource } from '../lib/trace-source.js';
 
 export function registerSimulateTool(server: McpServer): void {
   server.tool(
@@ -39,7 +39,7 @@ export function registerSimulateTool(server: McpServer): void {
         .record(z.string(), z.record(z.string(), z.number()))
         .optional()
         .describe(
-          'Pre-load memory into sequential nodes. Keys are substring patterns matched against node IDs (e.g. "imem" matches any node containing "imem"). Values are { address: data } maps. Architecture-agnostic — works with any ROM/RAM primitive.',
+          'Memory contents to load before the first tick, as { node: { address: value } }, e.g. { "rom": { "0": 62, "1": 7 } }. A node is named by its ID ("rom") or its path inside the circuit ("cpu.imem"); a name that matches no node is an error. Addresses are decimal integers, values are numbers; addresses left out read 0. Works with any ROM or RAM primitive.',
         ),
       show: z
         .boolean()
@@ -55,16 +55,7 @@ export function registerSimulateTool(server: McpServer): void {
           'Why you are painting the canvas (required when show:true), e.g. "counterexample at a=255,b=1".',
         ),
     },
-    async ({
-      source,
-      filePath,
-      circuitName,
-      ticks,
-      inputs,
-      memoryData: memoryDataJson,
-      show,
-      reason,
-    }) => {
+    async ({ source, filePath, circuitName, ticks, inputs, memoryData, show, reason }) => {
       if (show && !reason) {
         return {
           content: [
@@ -82,19 +73,6 @@ export function registerSimulateTool(server: McpServer): void {
           content: [{ type: 'text' as const, text: `Error: ${read.error}` }],
           isError: true,
         };
-      }
-
-      // Convert JSON memoryData to Map<string, Map<number, number>>
-      let memoryData: Map<string, Map<number, number>> | undefined;
-      if (memoryDataJson) {
-        memoryData = new Map();
-        for (const [pattern, addrMap] of Object.entries(memoryDataJson)) {
-          const innerMap = new Map<number, number>();
-          for (const [addr, value] of Object.entries(addrMap)) {
-            innerMap.set(Number(addr), value);
-          }
-          memoryData.set(pattern, innerMap);
-        }
       }
 
       // Direct in-process call — the local agent's compute is trusted (same

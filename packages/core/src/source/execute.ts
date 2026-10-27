@@ -23,14 +23,14 @@
  */
 
 import { transform } from 'sucrase';
+import { addToLibrary, emptyLibrary, type MutableLibrary } from '../circuit/behavior.js';
+import { bit, bus, mem, reg } from '../circuit/bit-bus.js';
+import type { Circuit } from '../circuit/builder-types.js';
+import { circuit } from '../circuit/circuit.js';
+import { internalsOf, isCircuit } from '../circuit/internals.js';
 import { Dlatch, Mem, Pmux } from '../import/primitives.js';
 import type { CircuitIR } from '../ir/circuit-ir.js';
 import * as std from '../std/index.js';
-import { addToLibrary, emptyLibrary, type MutableLibrary } from './behavior.js';
-import { bit, bus, mem, reg } from './bit-bus.js';
-import type { Circuit } from './builder-types.js';
-import { circuit } from './circuit.js';
-import { internalsOf, isCircuit } from './internals.js';
 
 // ============================================================================
 // Execution result

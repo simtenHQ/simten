@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { slugify } from '../test-name.js';
+import { slugify } from './test-name.js';
 
 describe('slugify', () => {
   it('passes alphanumerics, underscore, and hyphen through unchanged', () => {

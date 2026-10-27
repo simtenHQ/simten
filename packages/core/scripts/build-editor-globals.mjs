@@ -4,7 +4,7 @@
 // Generates dist/editor-globals.dts.txt — a non-.d.ts ambient-globals shim
 // that the Monaco editor at /circuit loads via addExtraLib alongside the
 // bundled core types. The shim mirrors the runtime scope injected by
-// executeCircuitCode() (see circuit/execute.ts:55-73): every name that gets
+// executeCircuitCode() (see source/execute.ts:55-73): every name that gets
 // dropped into user code at execution time needs a corresponding `declare
 // global { const X: ... }` entry so Monaco recognises it without an import.
 //
@@ -55,13 +55,13 @@ const jsdocBySymbol = extractJsDocBySymbol(bundleSrc);
 
 // Import the freshly-built core stdlib to read its real exports. Must run
 // after tsc. We iterate the *stdlib* surface specifically — matching what
-// executeCircuitCode() injects (circuit/execute.ts:67-73) — so this shim
+// executeCircuitCode() injects (source/execute.ts:67-73) — so this shim
 // never accidentally exposes non-stdlib root exports like `elaborate` or
 // `executeCircuitCode` as if they were sandbox globals.
 const std = await import(join(here, '..', 'dist', 'std', 'index.js'));
 const { isCircuit } = await import(join(here, '..', 'dist', 'circuit', 'internals.js'));
 
-// Mirror executeCircuitCode's scope construction (circuit/execute.ts:55-73):
+// Mirror executeCircuitCode's scope construction (source/execute.ts:55-73):
 //   - Fixed core API: circuit, component (alias), bit, bus, reg, mem
 //   - Every stdlib Circuit injects under value.name
 //   - Every stdlib function injects under its export name
