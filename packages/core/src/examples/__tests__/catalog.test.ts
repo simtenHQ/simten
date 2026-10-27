@@ -2,19 +2,19 @@
  * Example Catalog Tests
  *
  * Drift guard for the bundled example catalog: every example's source must
- * compile cleanly via checkCircuit, so the editor empty state and the MCP
- * server never ship a broken example.
+ * compile cleanly, so the editor empty state and the MCP server never ship a
+ * broken example. (The MCP server's get_started test also runs each one
+ * through check_circuit.)
  */
 
 import { describe, expect, it } from 'vitest';
-import { executeCircuitCode } from '../../circuit/execute.js';
 import { simulate } from '../../simulator/simulate.js';
 import type { SimulatorSnapshot } from '../../simulator/types.js';
-import { checkCircuit } from '../../tools/check.js';
+import { executeCircuitCode } from '../../source/execute.js';
 import { EXAMPLES } from '../catalog.js';
 
 // Examples that import a non-@simten package (e.g. figlet) resolve via esm.sh
-// in the editor/canvas. checkCircuit runs in-process and can't fetch those, so
+// in the editor/canvas. executeCircuitCode runs in-process and can't fetch those, so
 // the compile assertion is skipped for them (they're validated where they run).
 const hasExternalImport = (code: string) =>
   /^\s*import\s.+from\s+['"](?!@simten)[^'".][^'"]*['"]/m.test(code);
@@ -38,13 +38,11 @@ describe('example catalog', () => {
   });
 
   for (const ex of EXAMPLES) {
-    it(`"${ex.id}" passes checkCircuit`, () => {
+    it(`"${ex.id}" compiles`, () => {
       if (hasExternalImport(ex.code)) return; // npm-importing example; see note above
-      const result = checkCircuit({ source: ex.code, sourceName: ex.id });
-      expect(result.diagnostics).toEqual([]);
-      expect(result.valid).toBe(true);
-      expect(result.analysis.unresolvedReferences).toEqual([]);
-      expect(result.analysis.circuitsDefined.length).toBeGreaterThan(0);
+      const result = executeCircuitCode(ex.code);
+      expect(result.error).toBeNull();
+      expect(result.circuits.length).toBeGreaterThan(0);
     });
   }
 

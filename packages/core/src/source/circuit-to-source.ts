@@ -21,6 +21,9 @@
  * Comments and any code outside `circuit()` calls are not preserved.
  */
 
+import { hasCallbacks } from '../circuit/behavior.js';
+import type { Circuit } from '../circuit/builder-types.js';
+import { internalsOf } from '../circuit/internals.js';
 import { importFactoryName, isKnownSerializablePrimitive } from '../import/component-homes.js';
 import type {
   ArgumentValue,
@@ -33,9 +36,6 @@ import type {
   StateBlock,
 } from '../ir/circuit-ir.js';
 import { STDLIB_CIRCUITS } from '../std/index.js';
-import { hasCallbacks } from './behavior.js';
-import type { Circuit } from './builder-types.js';
-import { internalsOf } from './internals.js';
 import { safeIdentifier } from './reserved-identifiers.js';
 
 const STDLIB_NAMES: ReadonlySet<string> = new Set(STDLIB_CIRCUITS.map((c) => c.name));

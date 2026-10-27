@@ -21,11 +21,11 @@ import { fileURLToPath } from 'node:url';
 import { gunzipSync } from 'node:zlib';
 import { describe, expect, it } from 'vitest';
 import type { Circuit } from '../../circuit/builder-types.js';
-import { circuitToSource } from '../../circuit/circuit-to-source.js';
-import { executeJsCode } from '../../circuit/execute.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { buildFromIR } from '../../internal.js';
 import { simulate } from '../../simulator/simulate.js';
+import { circuitToSource } from '../../source/circuit-to-source.js';
+import { executeJsCode } from '../../source/execute.js';
 import {
   Adder,
   Comparator,

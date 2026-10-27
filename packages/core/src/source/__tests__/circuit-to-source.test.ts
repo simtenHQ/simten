@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { bit, bus, circuit, reg } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import { And, Not, Or, Register, Xor } from '../../std/index.js';
 import { CircuitToSourceError, circuitToSource } from '../circuit-to-source.js';
 import { executeCircuitCode } from '../execute.js';
-import { bit, bus, circuit, reg } from '../index.js';
-import { internalsOf } from '../internals.js';
 
 /** Strip imports so executeCircuitCode (which runs in a Function scope with
  *  stdlib pre-injected) doesn't choke on module syntax. The serializer no

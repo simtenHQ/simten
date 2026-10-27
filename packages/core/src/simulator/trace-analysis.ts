@@ -1,5 +1,5 @@
 /**
- * Simulation-trace types and helpers consumed by `tools/simulate.ts`.
+ * Simulation-trace types and helpers consumed by the MCP server's `traceSource`.
  *
  * The richer validation/envelope/diagnostic surface that used to live here
  * was removed in the Diagnostics-sidebar cleanup (issue #99) — it had no

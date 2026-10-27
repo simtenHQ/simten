@@ -10,11 +10,12 @@
  */
 
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { getPrimitivesHandler, getStdLibrary } from '@simten/core/internal';
+import { getStdLibrary } from '@simten/core/internal';
 import {
   annotatePrimitivesWithOptions,
   getFactoryOptionSignatures,
 } from '../lib/primitive-params.js';
+import { getPrimitivesHandler } from '../lib/primitives-reference.js';
 import { GRAMMAR } from './grammar.js';
 
 // Static reference, built once. The grammar is the circuit() builder API +

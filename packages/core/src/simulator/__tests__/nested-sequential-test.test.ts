@@ -5,37 +5,28 @@
  * work correctly when instantiated as nodes within other circuits.
  */
 
-import {
-  type CircuitDefinitions,
-  createEngine,
-  elaborate,
-  getStdLibrary,
-  internalsOf,
-} from '@simten/core/internal';
-import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeAll, describe, expect, it } from 'vitest';
-import { useCircuitDefinitionsStore } from '../../stores/circuit-definitions-store';
-import { bitType, busType, type CircuitIR } from '../../types/circuit';
+import { createDefinitions } from '../../circuit/behavior.js';
+import { internalsOf } from '../../circuit/internals.js';
+import {
+  bitType,
+  busType,
+  type CircuitIR,
+  type MutableCircuitDefinitions,
+} from '../../ir/circuit-ir.js';
+import { STDLIB_CIRCUITS } from '../../std/index.js';
+import { getStdLibrary } from '../../std/library.js';
+import { createEngine, elaborate } from '../index.js';
 
 const PRIMITIVES = STDLIB_CIRCUITS.map((c) => internalsOf(c).ir).filter(
   (c) => c.implementation.kind === 'primitive',
 );
 
-function storeDefinitions(): CircuitDefinitions {
-  const store = useCircuitDefinitionsStore.getState();
-  return {
-    resolveCircuit: (name) => store.resolveCircuit(name),
-    getAllPrimitiveNames: () => store.getAllPrimitiveNames(),
-  };
-}
-
 describe('Nested Sequential Components', () => {
-  beforeAll(() => {
-    // Register primitives first (required for nested components to work)
-    const store = useCircuitDefinitionsStore.getState();
-    store.clear();
-    store.addCircuits(PRIMITIVES);
+  // Primitives first (required for nested components to work)
+  const definitions: MutableCircuitDefinitions = createDefinitions(PRIMITIVES);
 
+  beforeAll(() => {
     // Register the circuits so they can be instantiated as components
     const registerCircuit: CircuitIR = {
       version: 1,
@@ -188,9 +179,9 @@ describe('Nested Sequential Components', () => {
       implementation: { kind: 'composite' },
     };
 
-    // Register both circuits in the definitions store
-    store.addCircuit(registerCircuit);
-    store.addCircuit(counterCircuit);
+    // Register both circuits in the definitions
+    definitions.addCircuit(registerCircuit);
+    definitions.addCircuit(counterCircuit);
   });
 
   it('should handle a simple register in a nested circuit', () => {
@@ -244,7 +235,6 @@ describe('Nested Sequential Components', () => {
     };
 
     // Create simulator
-    const definitions = storeDefinitions();
     const sim = createEngine(elaborate(wrapperCircuit, definitions), {
       library: { definitions, behaviors: getStdLibrary().behaviors },
     });
@@ -302,7 +292,6 @@ describe('Nested Sequential Components', () => {
     };
 
     // Create simulator
-    const definitions = storeDefinitions();
     const sim = createEngine(elaborate(wrapperCircuit, definitions), {
       library: { definitions, behaviors: getStdLibrary().behaviors },
     });

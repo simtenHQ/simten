@@ -8,8 +8,7 @@
  * all internal node ports — equivalent to Verilog's $dumpvars(0, top).
  */
 
-import type { BitValue, BusValue } from '../ir/circuit-ir.js';
-import type { FlatNode } from '../simulator/types.js';
+import type { BitValue, BusValue, FlatNode } from '@simten/core/internal';
 
 export interface VCDExportParams {
   /** Top-level circuit name */
