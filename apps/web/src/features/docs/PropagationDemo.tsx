@@ -1,6 +1,7 @@
 import { bit, circuit } from '@simten/core/circuit';
 import {
   elaborate,
+  internalsOf,
   libraryOf,
   type PropagationStep,
   tracePropagation,
@@ -85,7 +86,7 @@ export function PropagationDemo() {
   const trace = useMemo((): PropagationStep[] => {
     try {
       const library = libraryOf(HalfAdderDemo);
-      const flat = elaborate(HalfAdderDemo.circuit, library.definitions);
+      const flat = elaborate(internalsOf(HalfAdderDemo).ir, library.definitions);
       return tracePropagation(flat, library);
     } catch (e) {
       console.error('Trace failed:', e);

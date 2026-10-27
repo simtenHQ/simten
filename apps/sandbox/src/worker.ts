@@ -35,6 +35,7 @@ import {
   executeCircuitCode,
   executeJsCode,
   getStdLibrary,
+  internalsOf,
   libraryOf,
   stripTypes,
 } from '@simten/core/internal';
@@ -331,7 +332,7 @@ async function compile(source: string, slotId: string = DEFAULT_SLOT): Promise<S
   for (const c of [...circuits, ...libraryCircuits]) definitions.addCircuit(c);
   const behaviors = new Map(result.library.behaviors);
   const targetIR = renderable[renderable.length - 1];
-  const built = result.builtCircuits.find((b) => b.circuit === targetIR);
+  const built = result.builtCircuits.find((b) => internalsOf(b).ir === targetIR);
   if (built) {
     const own = libraryOf(built);
     for (const name of own.definitions.getAllCircuitNames()) {

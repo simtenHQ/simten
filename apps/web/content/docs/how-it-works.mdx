@@ -111,7 +111,7 @@ The circuits you read are the same circuits we cycle-by-cycle verify against [Ic
 ```ts
 import { exportVerilog } from '@simten/core/verilog';
 
-const { verilog, files } = exportVerilog(HalfAdder, library, { target: 'synthesis' });
+const { verilog, files } = exportVerilog(HalfAdder, { target: 'synthesis' });
 ```
 
 The `synthesis` target strips simulation-only constructs. Memories above 2k words are emitted as `$readmemh` with the hex contents returned alongside, matching the Yosys/Vivado/Quartus convention.

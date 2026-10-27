@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import { circuitToSource } from '../../circuit/circuit-to-source.js';
 import { bus, circuit } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import { simulate } from '../../simulator/simulate.js';
 import { emitPrimitive } from '../../verilog/primitive-map.js';
 import { Combiner, Splitter } from '../routing.js';
@@ -47,9 +48,9 @@ const reverse4 = (v: number) => ((v & 1) << 3) | ((v & 2) << 1) | ((v & 4) >> 1)
 
 describe('Splitter and Combiner', () => {
   it('registers one primitive per width', () => {
-    expect(Splitter({ width: 4 }).circuit.name).toBe('Splitter_4w');
-    expect(Combiner({ width: 8 }).circuit.name).toBe('Combiner_8w');
-    expect(Object.keys(Splitter({ width: 4 }).circuit.outputs ?? {})).toHaveLength(4);
+    expect(internalsOf(Splitter({ width: 4 })).ir.name).toBe('Splitter_4w');
+    expect(internalsOf(Combiner({ width: 8 })).ir.name).toBe('Combiner_8w');
+    expect(Object.keys(internalsOf(Splitter({ width: 4 })).ir.outputs ?? {})).toHaveLength(4);
   });
 
   it('splits and recombines every value, at two widths in one circuit', () => {
@@ -127,7 +128,7 @@ describe('Splitter and Combiner', () => {
         ],
       }),
     ).toThrow();
-    expect([ok, s4Bad, c4Bad, s8Last, s8Bad, Typed.circuit.name]).toBeDefined();
+    expect([ok, s4Bad, c4Bad, s8Last, s8Bad, Typed.name]).toBeDefined();
   });
 
   it('accepts any bitN when the width is not a literal', () => {

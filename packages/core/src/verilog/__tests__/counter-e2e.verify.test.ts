@@ -17,12 +17,13 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { libraryOf } from '../../circuit/behavior.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { CircuitDefinitions } from '../../ir/circuit-ir.js';
+import { internalsOf } from '../../circuit/internals.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
 import { Adder, Constant, Mux, Or, Register } from '../../std/index.js';
 import { getStdLibrary } from '../../std/library.js';
-import { exportVerilog } from '../exporter.js';
+import { exportVerilogFromIR } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { hasVerifier, verifyVerilog } from './verify.js';
 
@@ -87,16 +88,9 @@ function buildCounter() {
     ],
   });
 
-  const definitions: CircuitDefinitions = {
-    resolveCircuit: (name) => {
-      if (name === 'Counter') return Counter.circuit;
-      const dep = Counter._dependencies.get(name);
-      return dep?.circuit;
-    },
-    getAllPrimitiveNames: () => [...Counter._dependencies.keys()],
-  };
+  const definitions = libraryOf(Counter).definitions;
 
-  return { circuit: Counter.circuit, definitions };
+  return { circuit: internalsOf(Counter).ir, definitions };
 }
 
 function runSimulator(steps: Step[]): number[] {
@@ -141,7 +135,10 @@ d('Counter (Register+Adder+Mux+Or) — end-to-end co-simulation', () => {
     expect(simOutputs[19]).toBe(10); // 10 increments after clear
 
     const { circuit, definitions } = buildCounter();
-    const { verilog } = exportVerilog(circuit, definitions);
+    const { verilog } = exportVerilogFromIR(circuit, {
+      definitions: definitions,
+      behaviors: getStdLibrary().behaviors,
+    });
     const testbench = generateSequentialTestbench(circuit, buildVectors(SEQUENCE));
 
     const result = await verifyVerilog(verilog, testbench);

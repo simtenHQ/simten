@@ -5,13 +5,16 @@
  */
 
 import { simulate } from '@simten/core';
+import { internalsOf } from '@simten/core/internal';
 import { describe, expect, it } from 'vitest';
 import { Systolic3x3, TestSystolic3x3 } from './circuits';
 
 const ENTRIES = ['00', '01', '02', '10', '11', '12', '20', '21', '22'] as const;
 
+const demoIR = internalsOf(TestSystolic3x3).ir;
+
 function inputArg(name: string): number {
-  const node = TestSystolic3x3.circuit.nodes.find((n) => n.id === name || n.label === name);
+  const node = demoIR.nodes.find((n) => n.id === name || n.label === name);
   const value = node?.arguments.value;
   if (typeof value !== 'number') throw new Error(`no Input value for ${name}`);
   return value;
@@ -57,7 +60,7 @@ describe('TPU post systolic array', () => {
   });
 
   it('wires every result to its display in the demo circuit', () => {
-    const ir = TestSystolic3x3.circuit;
+    const ir = demoIR;
     const idOf = (name: string) => ir.nodes.find((n) => n.id === name || n.label === name)?.id;
     const sys = idOf('sys');
     for (const rc of ENTRIES) {

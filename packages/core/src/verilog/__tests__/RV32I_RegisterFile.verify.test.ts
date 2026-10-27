@@ -15,11 +15,12 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import type { CircuitDefinitions } from '../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
 import { RV32I_RegisterFile } from '../../std/index.js';
 import { getStdLibrary } from '../../std/library.js';
-import { exportVerilog } from '../exporter.js';
+import { exportVerilogFromIR } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { hasVerifier, verifyVerilog } from './verify.js';
 
@@ -79,14 +80,14 @@ function buildRegfile() {
   const definitions: CircuitDefinitions = {
     resolveCircuit: (name) =>
       name === 'RegFileWrapper'
-        ? RegFileWrapper.circuit
+        ? internalsOf(RegFileWrapper).ir
         : name === 'RV32I_RegisterFile'
-          ? RV32I_RegisterFile.circuit
+          ? internalsOf(RV32I_RegisterFile).ir
           : undefined,
     getAllPrimitiveNames: () => ['RV32I_RegisterFile'],
   };
 
-  return { circuit: RegFileWrapper.circuit, definitions };
+  return { circuit: internalsOf(RegFileWrapper).ir, definitions };
 }
 
 interface SampleOut {
@@ -155,7 +156,10 @@ d('RV32I_RegisterFile — JS simulator vs iverilog co-simulation', () => {
     expect(x0Reads.debug_read).toBe(0);
 
     const { circuit, definitions } = buildRegfile();
-    const { verilog } = exportVerilog(circuit, definitions);
+    const { verilog } = exportVerilogFromIR(circuit, {
+      definitions: definitions,
+      behaviors: getStdLibrary().behaviors,
+    });
     const testbench = generateSequentialTestbench(circuit, buildVectors(SEQUENCE));
 
     const result = await verifyVerilog(verilog, testbench);

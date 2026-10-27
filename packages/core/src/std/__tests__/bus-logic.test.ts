@@ -9,6 +9,7 @@ import fc from 'fast-check';
 import { describe, it } from 'vitest';
 import type { Circuit } from '../../circuit/builder-types.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import { simulate } from '../../simulator/simulate.js';
 import { LogicAnd, LogicNot, LogicOr, ReduceAnd, ReduceOr, ReduceXor } from '../logic.js';
 
@@ -27,7 +28,7 @@ const parity = (a: number) => {
 
 /** The wrapper's ports must match the part under test, not a fixed 32 bits. */
 const portOf = (prim: Circuit, name: string) =>
-  prim.circuit.inputs.find((p) => p.name === name)?.portType ?? bus(32);
+  internalsOf(prim).ir.inputs.find((p) => p.name === name)?.portType ?? bus(32);
 
 function unary(prim: Circuit, v: number): number {
   const w = circuit(`U${uid++}`, {

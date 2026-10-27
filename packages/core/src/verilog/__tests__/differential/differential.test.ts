@@ -20,6 +20,7 @@ import { readFileSync } from 'node:fs';
 import { afterAll, describe, expect, it } from 'vitest';
 import type { Circuit, SinkPortRef, SourcePortRef } from '../../../circuit/builder-types.js';
 import { bit, bus, circuit } from '../../../circuit/index.js';
+import { internalsOf } from '../../../circuit/internals.js';
 import { EXAMPLES } from '../../../examples/catalog.js';
 import { importNetlist, type YosysNetlist } from '../../../import/index.js';
 import { buildFromIR, libraryOf } from '../../../internal.js';
@@ -122,7 +123,7 @@ const BUG = {
 
 /** Top circuit plus every transitive dependency and their behavior. */
 function target(top: Circuit): DiffTarget {
-  return { top: top.circuit, library: libraryOf(top) };
+  return { top: internalsOf(top).ir, library: libraryOf(top) };
 }
 
 /**
@@ -132,8 +133,10 @@ function target(top: Circuit): DiffTarget {
 function wrap(name: string, inner: Circuit, outputs?: readonly string[]): DiffTarget {
   const ports = (list: readonly { name: string; portType: PortType }[]) =>
     Object.fromEntries(list.map((p) => [p.name, p.portType]));
-  const ins = ports(inner.circuit.inputs);
-  const outs = ports(inner.circuit.outputs.filter((p) => !outputs || outputs.includes(p.name)));
+  const ins = ports(internalsOf(inner).ir.inputs);
+  const outs = ports(
+    internalsOf(inner).ir.outputs.filter((p) => !outputs || outputs.includes(p.name)),
+  );
   const top = circuit(`T_${name.replace(/[^a-zA-Z0-9_]/g, '_')}`, {
     inputs: ins,
     outputs: outs,

@@ -9,6 +9,7 @@
 import { describe, expect, it } from 'vitest';
 import { executeCircuitCode } from '../../circuit/execute.js';
 import { simulate } from '../../simulator/simulate.js';
+import type { SimulatorSnapshot } from '../../simulator/types.js';
 import { checkCircuit } from '../../tools/check.js';
 import { EXAMPLES } from '../catalog.js';
 
@@ -49,12 +50,11 @@ describe('example catalog', () => {
 
   it('"6502-computer" prints its message to the console', () => {
     const ex = EXAMPLES.find((e) => e.id === '6502-computer')!;
-    const top = executeCircuitCode(ex.code).builtCircuits.find(
-      (c) => c.circuit.name === 'Computer6502',
-    )!;
+    const top = executeCircuitCode(ex.code).builtCircuits.find((c) => c.name === 'Computer6502')!;
     const sim = simulate(top);
     sim.tickN(400);
-    const state = sim.snapshot().sequentialState?.currentState;
+    const snapshot = sim.snapshot() as unknown as SimulatorSnapshot;
+    const state = snapshot.sequentialState?.currentState;
     const text = [...(state?.entries() ?? [])].find(([id]) => id === 'console')?.[1];
     expect(text).toBe('Hello from the 6502!\n');
   });

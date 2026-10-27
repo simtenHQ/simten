@@ -30,6 +30,7 @@ import { addToLibrary, emptyLibrary, type MutableLibrary } from './behavior.js';
 import { bit, bus, mem, reg } from './bit-bus.js';
 import type { Circuit } from './builder-types.js';
 import { circuit } from './circuit.js';
+import { internalsOf, isCircuit } from './internals.js';
 
 // ============================================================================
 // Execution result
@@ -80,8 +81,8 @@ function buildScope(): { names: string[]; values: unknown[] } {
   // All stdlib exports — circuits inject by their internal `name` (And, Or, …),
   // helper functions inject by their export name (romFromBytes, …).
   for (const [exportName, value] of Object.entries(std)) {
-    if (value && typeof value === 'object' && 'circuit' in value) {
-      scope.set((value as Circuit).circuit.name, value);
+    if (isCircuit(value)) {
+      scope.set(value.name, value);
     } else if (typeof value === 'function') {
       scope.set(exportName, value);
     }
@@ -172,13 +173,12 @@ export function stripExports(code: string): string {
  * would give you.
  */
 function asCircuit(value: unknown): Circuit | null {
-  const built = value as Circuit | undefined;
-  if (built?.circuit?.name) return built;
+  if (isCircuit(value)) return value;
 
   if (typeof value === 'function') {
     try {
-      const made = (value as () => Circuit)();
-      if (made?.circuit?.name) return made;
+      const made: unknown = value();
+      if (isCircuit(made)) return made;
     } catch {
       // Not a component factory, or one that needs arguments. Nothing to show.
     }
@@ -270,14 +270,14 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
 
     const fn = new Function(...allNames, wrappedCode);
     const { collected, exported: exportedValues } = fn(...allValues) as {
-      collected: Circuit[];
+      collected: unknown[];
       exported: unknown[];
     };
 
     for (const built of collected) {
-      if (built && built.circuit) {
+      if (isCircuit(built)) {
         builtCircuits.push(built);
-        circuits.push(built.circuit);
+        circuits.push(internalsOf(built).ir);
         // The circuit and all its transitive dependencies (stdlib + user-defined)
         addToLibrary(library, built);
       }
@@ -289,9 +289,9 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
     const defined = new Set(circuits.map((c) => c.name));
     for (const value of exportedValues) {
       const built = asCircuit(value);
-      if (!built || defined.has(built.circuit.name)) continue;
-      defined.add(built.circuit.name);
-      exportedCircuits.push(built.circuit);
+      if (!built || defined.has(built.name)) continue;
+      defined.add(built.name);
+      exportedCircuits.push(internalsOf(built).ir);
       addToLibrary(library, built);
     }
 

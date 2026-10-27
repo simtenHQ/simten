@@ -30,8 +30,8 @@ const d = describe.skipIf(!hasSynth() || !hasBuild());
 d('Snake — full pipeline to ECP5 bitstream', () => {
   it('synth_ecp5 → nextpnr-ecp5 → ecppack → bitstream', { timeout: 300_000 }, async () => {
     // nextpnr is slower on a ~100-node circuit
-    const { circuit, definitions } = buildSnake();
-    const exportResult = exportVerilog(circuit, definitions, { target: 'synthesis' });
+    const { built } = buildSnake();
+    const exportResult = exportVerilog(built, { target: 'synthesis' });
 
     // Step 1: Synthesise for ECP5 target
     const synthResp = await synthesizeVerilog(exportResult, 'Snake', 'ecp5');

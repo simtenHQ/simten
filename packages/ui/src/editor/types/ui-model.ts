@@ -8,6 +8,7 @@
  */
 
 import type { CircuitIR } from '@simten/core/internal';
+import { internalsOf } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 
 // Build lookup structures from stdlib exports. `STDLIB_CIRCUITS` materializes
@@ -15,11 +16,11 @@ import { STDLIB_CIRCUITS } from '@simten/core/std';
 // so they appear here as concrete `Circuit` instances alongside the
 // singleton primitives.
 const STD_CIRCUIT_MAP: Map<string, CircuitIR> = new Map(
-  STDLIB_CIRCUITS.map((b) => [b.circuit.name, b.circuit]),
+  STDLIB_CIRCUITS.map((b) => [b.name, internalsOf(b).ir]),
 );
 const PRIMITIVE_NAMES: Set<string> = new Set(
-  STDLIB_CIRCUITS.filter((b) => b.circuit.implementation.kind === 'primitive').map(
-    (b) => b.circuit.name,
+  STDLIB_CIRCUITS.filter((b) => internalsOf(b).ir.implementation.kind === 'primitive').map(
+    (b) => b.name,
   ),
 );
 const isPrimitive = (name: string) => PRIMITIVE_NAMES.has(name);

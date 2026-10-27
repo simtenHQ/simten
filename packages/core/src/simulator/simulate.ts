@@ -14,6 +14,7 @@
 
 import { libraryOf } from '../circuit/behavior.js';
 import type { Circuit, PortMap } from '../circuit/builder-types.js';
+import { internalsOf } from '../circuit/internals.js';
 import { isSequentialCircuit } from '../circuit/is-sequential.js';
 import type {
   ArgumentValue,
@@ -30,6 +31,13 @@ import type { SimulatorSnapshot } from './types.js';
 // ============================================================================
 // Simulation handle type
 // ============================================================================
+
+declare const snapshotBrand: unique symbol;
+
+/** A saved simulation state from `snapshot()`. Opaque: pass it to `restore()`. */
+export interface Snapshot {
+  readonly [snapshotBrand]: true;
+}
 
 export interface SimulationHandle<Ins extends PortMap = PortMap, Outs extends PortMap = PortMap> {
   /** Set input values. For combinational circuits, outputs update immediately. */
@@ -63,10 +71,10 @@ export interface SimulationHandle<Ins extends PortMap = PortMap, Outs extends Po
   readonly isRunning: boolean;
 
   /** Save current state for later restoration. */
-  snapshot(): SimulatorSnapshot;
+  snapshot(): Snapshot;
 
   /** Restore a previously saved snapshot. */
-  restore(snap: SimulatorSnapshot): void;
+  restore(snap: Snapshot): void;
 
   /** Reset simulation to initial state. */
   reset(): void;
@@ -100,7 +108,7 @@ export interface SimulationHandle<Ins extends PortMap = PortMap, Outs extends Po
 export function simulate<Ins extends PortMap, Outs extends PortMap>(
   comp: Circuit<Ins, Outs>,
 ): SimulationHandle<Ins, Outs> {
-  const rawCircuit = comp.circuit;
+  const { ir: rawCircuit, args } = internalsOf(comp);
 
   // The definitions and behavior for this circuit and its dependencies.
   const library = libraryOf(comp);
@@ -108,7 +116,7 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
 
   // If the component is a primitive (leaf), wrap it in a composite shell
   // so the elaboration pipeline can handle it properly
-  const circuit = wrapIfPrimitive(rawCircuit, comp._args ?? {});
+  const circuit = wrapIfPrimitive(rawCircuit, args);
 
   // Detect sequential
   const isSequential = isSequentialCircuit(circuit, definitions.resolveCircuit);
@@ -201,12 +209,13 @@ export function simulate<Ins extends PortMap, Outs extends PortMap>(
       return session.getState().isRunning;
     },
 
+    // The engine's snapshot, typed opaque so its shape stays internal.
     snapshot() {
-      return engine.snapshot();
+      return engine.snapshot() as unknown as Snapshot;
     },
 
     restore(snap) {
-      engine.restore(snap);
+      engine.restore(snap as unknown as SimulatorSnapshot);
       session.runCombinational();
     },
 

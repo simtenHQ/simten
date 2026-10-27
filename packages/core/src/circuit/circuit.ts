@@ -33,14 +33,7 @@ import type {
   StateBlock,
 } from '../ir/circuit-ir.js';
 import { checkMemoryContents } from '../ir/memory-contents.js';
-import {
-  attachBehavior,
-  type Behavior,
-  type BehaviorFn,
-  behaviorOf,
-  definitionKey,
-  NO_EVAL,
-} from './behavior.js';
+import { type Behavior, type BehaviorFn, definitionKey, NO_EVAL } from './behavior.js';
 import { isMemDecl, isRegDecl, type MemDecl, normalizePortType } from './bit-bus.js';
 import type {
   Circuit,
@@ -53,6 +46,7 @@ import type {
   SourcePortRef,
   StateShape,
 } from './builder-types.js';
+import { internalsOf, makeCircuit } from './internals.js';
 
 // ============================================================================
 // Port reference creation (for connect callbacks)
@@ -146,6 +140,11 @@ function createNodeProxy(
  * Singletons are used bare: `nodes: { g: And }`. Parameterized components
  * are always called: `nodes: { r: Register() }` for defaults,
  * `nodes: { r: Register({ width: 16 }) }` to specialize.
+ *
+ * A circuit is `{ name, inputs, outputs }`, frozen. A factory is a plain
+ * function, so its `.name` is the JS function name, not the circuit's. The
+ * circuit's name is on what calling it returns: `Register().name` is
+ * `'Register'`.
  *
  * TypeScript infers port and node names from the object literal, so
  * destructuring inside `connect` and `eval` callbacks autocompletes.
@@ -253,21 +252,16 @@ function assertCircuitName(name: unknown): asserts name is string {
 
 /**
  * Factory form: return a callable that builds a per-instance Circuit
- * with `_args` attached. The factory closes over the original `name`, so
- * every specialized instance shares the same component name. Shape can
- * differ per call (e.g. port widths); each instance carries its own
- * behavior closures.
+ * that records the options it was called with. The factory closes over the
+ * original `name`, so every specialized instance shares the same component
+ * name. Shape can differ per call (e.g. port widths); each instance carries
+ * its own behavior closures.
  */
 function specializeFactory(name: string, factory: CircuitFactory) {
   return (opts?: FactoryOptions): Circuit => {
     const config = factory(opts);
     assertMemoryOptions(name, config, opts ?? {});
-    const built = buildCircuit(name, config) as {
-      -readonly [K in keyof Circuit]: Circuit[K];
-    };
-    built._args = withResolvedStateInitials(built.circuit.state, opts ?? {});
-    resetStateInitials(built.circuit.state);
-    return built;
+    return buildCircuit(name, config, opts ?? {});
   };
 }
 
@@ -354,8 +348,16 @@ function resetStateInitials(state: StateBlock[]): void {
   }
 }
 
-/** Object form: validate the config, then build its IR and attach its behavior. */
-function buildCircuit(name: string, config: AnyCircuitConfig): Circuit {
+/**
+ * Validate the config, then build its IR and behavior. `factoryOpts` is what a
+ * factory was called with; a factory's instances keep their state initials in
+ * their options rather than in the IR they share.
+ */
+function buildCircuit(
+  name: string,
+  config: AnyCircuitConfig,
+  factoryOpts?: FactoryOptions,
+): Circuit {
   const ports = normalizePorts(config);
   const declaredNodes = (config.nodes ?? {}) as Record<string, NodeEntry>;
   const errors: string[] = [];
@@ -370,11 +372,11 @@ function buildCircuit(name: string, config: AnyCircuitConfig): Circuit {
     throw new Error(`Circuit '${name}' validation failed:\n  - ${errors.join('\n  - ')}`);
   }
 
-  const built = buildIR(name, config, ports, nodes, connectionDefs, dependencies);
-  if (built.circuit.implementation.kind === 'primitive') {
-    attachBehavior(built, behaviorFor(config, built.circuit));
-  }
-  return built;
+  const ir = buildIR(name, config, ports, nodes, connectionDefs);
+  const args = factoryOpts ? withResolvedStateInitials(ir.state, factoryOpts) : {};
+  if (factoryOpts) resetStateInitials(ir.state);
+  const behavior = ir.implementation.kind === 'primitive' ? behaviorFor(config, ir) : undefined;
+  return makeCircuit({ ir, dependencies, args, behavior });
 }
 
 function normalizePorts(config: AnyCircuitConfig): Ports {
@@ -482,9 +484,10 @@ function evaluateConnect(
 
   const refsFor = (nodeId: string, comp: Circuit) => {
     const allPorts = new Map<string, PortType>();
-    for (const pd of comp.circuit.inputs) allPorts.set(pd.name, pd.portType);
-    for (const pd of comp.circuit.outputs) allPorts.set(pd.name, pd.portType);
-    return createNodeProxy(nodeId, allPorts, comp.circuit.name);
+    const { ir } = internalsOf(comp);
+    for (const pd of ir.inputs) allPorts.set(pd.name, pd.portType);
+    for (const pd of ir.outputs) allPorts.set(pd.name, pd.portType);
+    return createNodeProxy(nodeId, allPorts, ir.name);
   };
 
   // An array entry hands `connect` an array of refs, each bound to the id it
@@ -712,15 +715,14 @@ function checkBusWidths(
   }
 }
 
-/** Assemble the Circuit IR and the Circuit wrapper around it. */
+/** Assemble the Circuit IR. */
 function buildIR(
   name: string,
   config: AnyCircuitConfig,
   { inputs, outputs }: Ports,
   nodes: Record<string, Circuit>,
   connectionDefs: ConnectionDef[],
-  dependencies: Map<string, Circuit>,
-): Circuit {
+): CircuitIR {
   const inputDescs: PortDescriptor[] = Array.from(inputs, ([n, t]) => ({ name: n, portType: t }));
   const outputDescs: PortDescriptor[] = Array.from(outputs, ([n, t]) => ({ name: n, portType: t }));
   const { implementation, timing } = classifyImplementation(config, nodes);
@@ -744,33 +746,7 @@ function buildIR(
     metadata: buildMetadata(timing, config.meta),
   };
 
-  const inputsByName: Record<string, PortDescriptor> = {};
-  for (const p of inputDescs) inputsByName[p.name] = p;
-  const outputsByName: Record<string, PortDescriptor> = {};
-  for (const p of outputDescs) outputsByName[p.name] = p;
-  const nodesById: Record<string, Node> = {};
-  for (const n of irNodes) nodesById[n.id] = n;
-
-  const built = {
-    circuit: circuitIR,
-    inputs: inputsByName,
-    outputs: outputsByName,
-    nodes: nodesById,
-    _dependencies: dependencies,
-  } as unknown as Circuit;
-
-  // Map serializes as `{}` by default — define a non-enumerable toJSON so
-  // JSON.stringify emits dependencies as a plain object without polluting
-  // `console.log` / `Object.keys` output.
-  Object.defineProperty(built, 'toJSON', {
-    value: function () {
-      const dependencies: Record<string, unknown> = {};
-      for (const [n, d] of this._dependencies) dependencies[n] = d;
-      return { circuit: this.circuit, _dependencies: dependencies };
-    },
-    enumerable: false,
-  });
-  return built;
+  return circuitIR;
 }
 
 function classifyImplementation(
@@ -860,21 +836,22 @@ function buildStateBlocks(name: string, state: StateShape | undefined): StateBlo
 function buildIrNodes(nodes: Record<string, Circuit>): Node[] {
   const irNodes: Node[] = [];
   for (const [nodeId, comp] of Object.entries(nodes)) {
+    const { ir, args } = internalsOf(comp);
     irNodes.push({
       id: nodeId,
-      componentRef: comp.circuit.name,
-      arguments: comp._args ?? {},
-      inputs: comp.circuit.inputs.map((p: PortDescriptor) => ({
+      componentRef: ir.name,
+      arguments: args,
+      inputs: ir.inputs.map((p: PortDescriptor) => ({
         id: `${nodeId}.${p.name}`,
         name: p.name,
         portType: p.portType,
       })),
-      outputs: comp.circuit.outputs.map((p: PortDescriptor) => ({
+      outputs: ir.outputs.map((p: PortDescriptor) => ({
         id: `${nodeId}.${p.name}`,
         name: p.name,
         portType: p.portType,
       })),
-      clocks: comp.circuit.clocks.map((c: ClockDescriptor) => ({
+      clocks: ir.clocks.map((c: ClockDescriptor) => ({
         id: `${nodeId}.${c.name}`,
         name: c.name,
       })),
@@ -953,11 +930,9 @@ function collectDependencies(
     }
   };
   for (const comp of Object.values(nodes)) {
-    add(comp.circuit.name, comp);
+    add(comp.name, comp);
     // Merge transitive dependencies
-    if (comp._dependencies) {
-      for (const [depName, depComp] of comp._dependencies) add(depName, depComp);
-    }
+    for (const [depName, depComp] of internalsOf(comp).dependencies) add(depName, depComp);
   }
   return deps;
 }
@@ -1005,8 +980,8 @@ function resolvePortRef(
   const comp = nodes[ref.nodeId];
   if (!comp) return undefined;
   return (
-    comp.circuit.inputs.find((p) => p.name === ref.portName) ??
-    comp.circuit.outputs.find((p) => p.name === ref.portName)
+    internalsOf(comp).ir.inputs.find((p) => p.name === ref.portName) ??
+    internalsOf(comp).ir.outputs.find((p) => p.name === ref.portName)
   )?.portType;
 }
 
@@ -1031,9 +1006,7 @@ function validatePortRef(
     return false;
   }
   if (resolvePortRef(ref, inputs, outputs, nodes) === undefined) {
-    errors.push(
-      `Port '${ref.portName}' does not exist on node '${ref.nodeId}' (${comp.circuit.name})`,
-    );
+    errors.push(`Port '${ref.portName}' does not exist on node '${ref.nodeId}' (${comp.name})`);
     return false;
   }
   return true;
@@ -1053,10 +1026,10 @@ function portSides(
     const isInput = inputs.has(ref.portName);
     return { drives: isInput, driven: !isInput };
   }
-  const { circuit } = nodes[ref.nodeId];
+  const { ir } = internalsOf(nodes[ref.nodeId]);
   return {
-    drives: circuit.outputs.some((p) => p.name === ref.portName),
-    driven: circuit.inputs.some((p) => p.name === ref.portName),
+    drives: ir.outputs.some((p) => p.name === ref.portName),
+    driven: ir.inputs.some((p) => p.name === ref.portName),
   };
 }
 
@@ -1064,7 +1037,7 @@ function portSides(
 function portLabel(ref: PortPath, isInput: boolean, nodes: Record<string, Circuit>): string {
   const side = isInput ? 'input' : 'output';
   if (ref.nodeId === '') return `circuit ${side} \`${ref.portName}\``;
-  return `${side} \`${ref.portName}\` of node '${ref.nodeId}' (${nodes[ref.nodeId].circuit.name})`;
+  return `${side} \`${ref.portName}\` of node '${ref.nodeId}' (${nodes[ref.nodeId].name})`;
 }
 
 /**
@@ -1102,14 +1075,14 @@ function checkDirection(
 
 /** Whether two circuits under one name are one definition, so can share a library entry. */
 export function sameDefinition(a: Circuit, b: Circuit): boolean {
-  if (a.circuit === b.circuit) return true;
-  const kind = a.circuit.implementation.kind;
-  if (kind !== b.circuit.implementation.kind) return false;
-  if (kind === 'composite') return structureKey(a.circuit) === structureKey(b.circuit);
-  const behaviorA = behaviorOf(a);
-  const behaviorB = behaviorOf(b);
+  const { ir: irA, behavior: behaviorA } = internalsOf(a);
+  const { ir: irB, behavior: behaviorB } = internalsOf(b);
+  if (irA === irB) return true;
+  const kind = irA.implementation.kind;
+  if (kind !== irB.implementation.kind) return false;
+  if (kind === 'composite') return structureKey(irA) === structureKey(irB);
   if (behaviorA === behaviorB) return true;
-  if (!behaviorA || !behaviorB) return structureKey(a.circuit) === structureKey(b.circuit);
+  if (!behaviorA || !behaviorB) return structureKey(irA) === structureKey(irB);
   return definitionKey(behaviorA) === definitionKey(behaviorB);
 }
 
@@ -1135,7 +1108,8 @@ function structureKey(ir: CircuitIR): string {
 function detectSequential(nodes: Record<string, Circuit>, state?: StateShape | null): boolean {
   if (state != null) return true;
   for (const comp of Object.values(nodes)) {
-    if (comp.circuit.clocks.length > 0 || comp.circuit.state.length > 0) return true;
+    const { ir } = internalsOf(comp);
+    if (ir.clocks.length > 0 || ir.state.length > 0) return true;
   }
   return false;
 }

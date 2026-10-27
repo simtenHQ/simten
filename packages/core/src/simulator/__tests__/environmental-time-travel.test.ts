@@ -19,6 +19,7 @@
 import { describe, expect, it } from 'vitest';
 import { libraryOf } from '../../circuit/behavior.js';
 import { bit, circuit } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import { DFlipFlop, Switch } from '../../std/index.js';
 import { captureEnvironmentalState, createEngine, elaborate } from '../index.js';
@@ -59,14 +60,14 @@ function buildSim() {
       circuitMap.set(c.name, c);
     },
   };
-  definitions.addCircuit(SwitchedFF.circuit);
-  definitions.addCircuit(Switch.circuit);
-  definitions.addCircuit(DFlipFlop().circuit);
-  for (const [, dep] of SwitchedFF._dependencies) {
-    definitions.addCircuit(dep.circuit);
+  definitions.addCircuit(internalsOf(SwitchedFF).ir);
+  definitions.addCircuit(internalsOf(Switch).ir);
+  definitions.addCircuit(internalsOf(DFlipFlop()).ir);
+  for (const [, dep] of internalsOf(SwitchedFF).dependencies) {
+    definitions.addCircuit(internalsOf(dep).ir);
   }
 
-  const flat = elaborate(SwitchedFF.circuit, definitions);
+  const flat = elaborate(internalsOf(SwitchedFF).ir, definitions);
   const sim = createEngine(flat, {
     library: { definitions, behaviors: libraryOf(SwitchedFF).behaviors },
   });

@@ -17,25 +17,8 @@
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { buildSnake } from '../../examples/snake.js';
-import type { CircuitDefinitions, CircuitIR } from '../../internal.js';
 import { BitSlice, Register, SignExtend, ZeroExtend } from '../../std/index.js';
 import { exportVerilog } from '../index.js';
-
-/** Top circuit plus every transitive dependency, so elaboration can resolve. */
-function libraryFor(top: { circuit: CircuitIR; _dependencies?: ReadonlyMap<string, unknown> }) {
-  const byName = new Map<string, CircuitIR>();
-  const add = (c: unknown) => {
-    const b = c as { circuit?: CircuitIR; _dependencies?: ReadonlyMap<string, unknown> };
-    if (!b?.circuit || byName.has(b.circuit.name)) return;
-    byName.set(b.circuit.name, b.circuit);
-    for (const dep of b._dependencies?.values() ?? []) add(dep);
-  };
-  add(top);
-  return {
-    resolveCircuit: (name: string) => byName.get(name),
-    getAllPrimitiveNames: () => [...byName.keys()],
-  } as unknown as CircuitDefinitions;
-}
 
 describe('width adaptation exports to Verilog', () => {
   const Extend = circuit('ExtendTop', {
@@ -53,17 +36,17 @@ describe('width adaptation exports to Verilog', () => {
   });
 
   it('zero-extension pads with constant zeros', () => {
-    const res = exportVerilog(Extend.circuit, libraryFor(Extend));
+    const res = exportVerilog(Extend);
     expect(res.verilog).toContain("= {5'b0, a};");
   });
 
   it('sign-extension replicates the top input bit', () => {
-    const res = exportVerilog(Extend.circuit, libraryFor(Extend));
+    const res = exportVerilog(Extend);
     expect(res.verilog).toContain('= {{5{a[2]}}, a};');
   });
 
   it('neither is reported unsupported', () => {
-    const res = exportVerilog(Extend.circuit, libraryFor(Extend)) as { unsupported?: unknown };
+    const res = exportVerilog(Extend) as { unsupported?: unknown };
     expect(res.unsupported ?? null).toBeNull();
   });
 
@@ -84,7 +67,7 @@ describe('width adaptation exports to Verilog', () => {
         r.q.to(outputs.q),
       ],
     });
-    const res = exportVerilog(Widen.circuit, libraryFor(Widen)) as {
+    const res = exportVerilog(Widen) as {
       verilog: string;
       unsupported?: unknown;
     };
@@ -94,12 +77,7 @@ describe('width adaptation exports to Verilog', () => {
   });
 
   it('Snake exports with no unsupported primitives', () => {
-    const built = buildSnake() as Record<string, unknown>;
-    const top = Object.values(built).find(
-      (v) => (v as { circuit?: CircuitIR })?.circuit?.name === 'Snake',
-    ) as { circuit: CircuitIR };
-    expect(top, 'Snake top not found in buildSnake()').toBeDefined();
-    const res = exportVerilog(top.circuit, libraryFor(top)) as { unsupported?: unknown };
+    const res = exportVerilog(buildSnake().built);
     expect(res.unsupported ?? null).toBeNull();
   });
 });

@@ -5,27 +5,14 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { libraryOf } from '../../circuit/behavior.js';
+import type { Circuit } from '../../circuit/builder-types.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
-import { And, DFlipFlop, Or, RAM, Register, ROM, Xor } from '../../std/index.js';
-import { exportVerilog } from '../exporter.js';
-
-function libraryFor(c: { circuit: any; _dependencies: ReadonlyMap<string, any> }) {
-  const circuitMap = new Map<string, CircuitIR>();
-  const definitions: CircuitDefinitions & { addCircuit(c: CircuitIR): void } = {
-    resolveCircuit: (name) => circuitMap.get(name),
-    getAllPrimitiveNames: () =>
-      [...circuitMap.entries()]
-        .filter(([, c]) => c.implementation.kind === 'primitive')
-        .map(([n]) => n),
-    addCircuit: (c) => {
-      circuitMap.set(c.name, c);
-    },
-  };
-  definitions.addCircuit(c.circuit);
-  for (const [, dep] of c._dependencies) definitions.addCircuit(dep.circuit ?? dep);
-  return definitions;
-}
+import { internalsOf } from '../../circuit/internals.js';
+import type { BitType, BusType, CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
+import { And, DFlipFlop, LogicNot, Or, RAM, Register, ROM, Xor } from '../../std/index.js';
+import { getStdLibrary, stdBehaviorsFor } from '../../std/library.js';
+import { checkSynthesizable, exportVerilog, exportVerilogFromIR } from '../exporter.js';
 
 describe('exportVerilog', () => {
   it('exports a half adder', () => {
@@ -41,7 +28,7 @@ describe('exportVerilog', () => {
       ],
     });
 
-    const { verilog } = exportVerilog(HalfAdder.circuit, libraryFor(HalfAdder));
+    const { verilog } = exportVerilog(HalfAdder);
 
     expect(verilog).toContain('module HalfAdder');
     expect(verilog).toContain('input');
@@ -78,7 +65,7 @@ describe('exportVerilog', () => {
       ],
     });
 
-    const { verilog } = exportVerilog(FullAdder.circuit, libraryFor(FullAdder));
+    const { verilog } = exportVerilog(FullAdder);
 
     expect(verilog).toContain('module FullAdder');
     expect(verilog).toContain('endmodule');
@@ -92,7 +79,7 @@ describe('exportVerilog', () => {
       connect: ({ inputs, outputs }) => [inputs.data.to(outputs.data_out)],
     });
 
-    const { verilog } = exportVerilog(BusPassthrough.circuit, libraryFor(BusPassthrough));
+    const { verilog } = exportVerilog(BusPassthrough);
 
     expect(verilog).toContain('module BusPassthrough');
     expect(verilog).toContain('[7:0]');
@@ -113,7 +100,7 @@ describe('exportVerilog', () => {
         ],
       });
 
-      const { verilog } = exportVerilog(Plain.circuit, libraryFor(Plain));
+      const { verilog } = exportVerilog(Plain);
       expect(verilog).not.toMatch(/initial begin\s+mem_/);
     });
 
@@ -137,10 +124,10 @@ describe('exportVerilog', () => {
       // Build a custom library with preloaded RAM state (deliberately
       // out-of-order to verify we sort on emission).
       const ramDefWithData: CircuitIR = {
-        ...RAM().circuit,
+        ...internalsOf(RAM()).ir,
         state: [
           {
-            ...RAM().circuit.state[0],
+            ...internalsOf(RAM()).ir.state[0],
             initialValue: {
               data: { 2: 0xab, 0: 0xcd, 1: 0xef },
               addressWidth: 8,
@@ -150,7 +137,7 @@ describe('exportVerilog', () => {
         ],
       };
       const circuitMap = new Map<string, CircuitIR>([
-        [RamUser.circuit.name, RamUser.circuit],
+        [RamUser.name, internalsOf(RamUser).ir],
         ['RAM', ramDefWithData],
       ]);
       const definitions: CircuitDefinitions = {
@@ -158,7 +145,10 @@ describe('exportVerilog', () => {
         getAllPrimitiveNames: () => ['RAM'],
       };
 
-      const { verilog } = exportVerilog(RamUser.circuit, definitions);
+      const { verilog } = exportVerilogFromIR(internalsOf(RamUser).ir, {
+        definitions: definitions,
+        behaviors: getStdLibrary().behaviors,
+      });
       const initSection = verilog.match(/initial begin[\s\S]*?end/)?.[0] ?? '';
       // Sorted ascending by address
       expect(initSection.indexOf('[0]')).toBeLessThan(initSection.indexOf('[1]'));
@@ -192,16 +182,16 @@ describe('exportVerilog', () => {
       for (let i = 0; i < 10; i++) bigData[i] = i * 3 + 1;
 
       const ramDefWithData: CircuitIR = {
-        ...RAM().circuit,
+        ...internalsOf(RAM()).ir,
         state: [
           {
-            ...RAM().circuit.state[0],
+            ...internalsOf(RAM()).ir.state[0],
             initialValue: { data: bigData, addressWidth: 8, dataWidth: 8 },
           },
         ],
       };
       const circuitMap = new Map<string, CircuitIR>([
-        [RamUser.circuit.name, RamUser.circuit],
+        [RamUser.name, internalsOf(RamUser).ir],
         ['RAM', ramDefWithData],
       ]);
       const definitions: CircuitDefinitions = {
@@ -209,9 +199,13 @@ describe('exportVerilog', () => {
         getAllPrimitiveNames: () => ['RAM'],
       };
 
-      const result = exportVerilog(RamUser.circuit, definitions, {
-        inlineMemoryThreshold: 5, // force the big path
-      });
+      const result = exportVerilogFromIR(
+        internalsOf(RamUser).ir,
+        { definitions: definitions, behaviors: getStdLibrary().behaviors },
+        {
+          inlineMemoryThreshold: 5, // force the big path
+        },
+      );
 
       expect(result.verilog).toMatch(/\$readmemh\("[^"]+\.hex",\s*mem_/);
       expect(Object.keys(result.files).length).toBe(1);
@@ -248,7 +242,7 @@ describe('exportVerilog', () => {
         ],
       });
 
-      const { verilog } = exportVerilog(Mixed.circuit, libraryFor(Mixed));
+      const { verilog } = exportVerilog(Mixed);
 
       // Module declares rst_n as a port.
       expect(verilog).toMatch(/input rst_n/);
@@ -277,7 +271,7 @@ describe('exportVerilog', () => {
           a1.out.to(outputs.c),
         ],
       });
-      const { verilog } = exportVerilog(Combo.circuit, libraryFor(Combo));
+      const { verilog } = exportVerilog(Combo);
       expect(verilog).not.toMatch(/input rst_n/);
       expect(verilog).not.toMatch(/input clk/);
     });
@@ -293,10 +287,105 @@ describe('exportVerilog', () => {
         ],
       });
 
-      const { verilog } = exportVerilog(PreloadedROM.circuit, libraryFor(PreloadedROM));
+      const { verilog } = exportVerilog(PreloadedROM);
       expect(verilog).toMatch(/initial begin/);
       expect(verilog).toMatch(/mem_.*\[0\] = 8'd170/);
       expect(verilog).toMatch(/mem_.*\[1\] = 8'd187/);
     });
+  });
+});
+
+describe("a user primitive's own behavior", () => {
+  // Not in std and with no hand-written mapping, so only its own eval can
+  // become Verilog. The exporter reads it from the circuit's library.
+  const Majority = circuit('Majority3', {
+    inputs: { a: bit, b: bit, c: bit },
+    outputs: { out: bit },
+    eval: ({ a, b, c }) => ({ out: (a & b) | (a & c) | (b & c) }),
+  });
+  const Voter = circuit('Voter', {
+    inputs: { a: bit, b: bit, c: bit },
+    outputs: { out: bit },
+    nodes: { m: Majority },
+    connect: ({ inputs, outputs, nodes: { m } }) => [
+      inputs.a.to(m.a),
+      inputs.b.to(m.b),
+      inputs.c.to(m.c),
+      m.out.to(outputs.out),
+    ],
+  });
+
+  it('is translated by exportVerilog', () => {
+    const { verilog, unsupported } = exportVerilog(Voter);
+    expect(unsupported).toBeUndefined();
+    expect(verilog).not.toContain('WARNING: Unsupported primitive');
+    expect(verilog).toMatch(/assign .*&.*\|/);
+  });
+
+  it('passes checkSynthesizable', () => {
+    expect(checkSynthesizable(Voter)).toEqual({ valid: true, errors: [] });
+  });
+
+  it('is named by checkSynthesizable when it cannot be translated', () => {
+    const Parse = circuit('ParseDigit', {
+      inputs: { a: bus(8) },
+      outputs: { out: bus(8) },
+      eval: ({ a }) => ({ out: Number.parseInt(String(a), 10) }),
+    });
+    const Top = circuit('ParseTop', {
+      inputs: { a: bus(8) },
+      outputs: { out: bus(8) },
+      nodes: { p: Parse },
+      connect: ({ inputs, outputs, nodes: { p } }) => [inputs.a.to(p.a), p.out.to(outputs.out)],
+    });
+    const { valid, errors } = checkSynthesizable(Top);
+    expect(valid).toBe(false);
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors.every((e) => e.startsWith('ParseDigit: '))).toBe(true);
+  });
+});
+
+describe('an export from IR alone', () => {
+  // LogicNot has no hand-written mapping, so its Verilog comes only from the
+  // behavior passed in. The page has IR only and gets std's behavior from
+  // `stdBehaviorsFor`.
+  const top = (not: Circuit<{ a: BusType }, { out: BitType }>) =>
+    circuit('NotTop', {
+      inputs: { a: bus(8) },
+      outputs: { out: bit },
+      nodes: { n: not },
+      connect: ({ inputs, outputs, nodes: { n } }) => [inputs.a.to(n.a), n.out.to(outputs.out)],
+    });
+  const exportIR = (built: Circuit, userNames: string[] = []) => {
+    const { definitions } = libraryOf(built);
+    const behaviors = stdBehaviorsFor(definitions, new Set(userNames));
+    return exportVerilogFromIR(internalsOf(built).ir, { definitions, behaviors });
+  };
+
+  it("translates std's own primitive with std's behavior", () => {
+    expect(exportIR(top(LogicNot())).unsupported).toBeUndefined();
+  });
+
+  it('reports a user primitive named like a std one instead of using std logic', () => {
+    const MyNot = circuit('LogicNot', {
+      inputs: { a: bus(8) },
+      outputs: { out: bit },
+      eval: ({ a }) => ({ out: a & 1 }),
+    });
+    expect(exportIR(top(MyNot)).unsupported).toEqual({ LogicNot: ['n'] });
+  });
+
+  it("gives no std behavior to a name the user's source defines", () => {
+    expect(exportIR(top(LogicNot()), ['LogicNot']).unsupported).toEqual({ LogicNot: ['n'] });
+  });
+
+  it('reports a primitive with no behavior rather than borrowing std', () => {
+    const built = top(LogicNot());
+    const { definitions } = libraryOf(built);
+    const result = exportVerilogFromIR(internalsOf(built).ir, {
+      definitions,
+      behaviors: new Map(),
+    });
+    expect(result.unsupported).toEqual({ LogicNot: ['n'] });
   });
 });

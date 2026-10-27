@@ -23,8 +23,8 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import type { Circuit } from '../../circuit/builder-types.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { CircuitDefinitions } from '../../ir/circuit-ir.js';
 import {
   RV32I_ALU,
   RV32I_BranchComp,
@@ -44,20 +44,8 @@ import { hasSynth, synthesizeVerilog } from './synth.js';
 
 // ---- helpers ----------------------------------------------------------------
 
-type CircuitLike = {
-  circuit: import('../../ir/circuit-ir.js').CircuitIR;
-  _dependencies: Map<string, { circuit: import('../../ir/circuit-ir.js').CircuitIR }>;
-};
-
-function makeDefinitions(top: CircuitLike, name: string): CircuitDefinitions {
-  return {
-    resolveCircuit: (n) => (n === name ? top.circuit : top._dependencies.get(n)?.circuit),
-    getAllPrimitiveNames: () => [...top._dependencies.keys()],
-  };
-}
-
-async function synthComponent(top: CircuitLike, name: string) {
-  const result = exportVerilog(top.circuit, makeDefinitions(top, name), { target: 'synthesis' });
+async function synthComponent(top: Circuit, name: string) {
+  const result = exportVerilog(top, { target: 'synthesis' });
   const resp = await synthesizeVerilog(result, name);
   if (!resp.success)
     console.error(
@@ -303,7 +291,7 @@ const d = describe.skipIf(!hasSynth());
 
 d('RV32I combinational components — Yosys synthesis', () => {
   it('RV32I_Decode: instruction field extraction', { timeout: 30000 }, async () => {
-    const resp = await synthComponent(Decode as any, 'RV32I_Decode_Top');
+    const resp = await synthComponent(Decode, 'RV32I_Decode_Top');
     expect(resp.success).toBe(true);
     // Pure bit-slicing (assign opcode = instruction[6:0] etc.) — no gates
     // needed, just wire routing. 0 cells is correct Yosys behaviour here.
@@ -313,7 +301,7 @@ d('RV32I combinational components — Yosys synthesis', () => {
   it('RV32I_ALU: 32-bit ALU with 10 operations (largest combinational component)', {
     timeout: 30000,
   }, async () => {
-    const resp = await synthComponent(ALU as any, 'RV32I_ALU_Top');
+    const resp = await synthComponent(ALU, 'RV32I_ALU_Top');
     expect(resp.success).toBe(true);
     // 32-bit ALU with ADD/SUB/AND/OR/XOR/SLL/SRL/SRA/SLT/SLTU — should be substantial
     expect(resp.stats!.cells).toBeGreaterThan(50);
@@ -322,13 +310,13 @@ d('RV32I combinational components — Yosys synthesis', () => {
   it('RV32I_ImmGen: immediate generator (complex bit manipulation)', {
     timeout: 30000,
   }, async () => {
-    const resp = await synthComponent(ImmGen as any, 'RV32I_ImmGen_Top');
+    const resp = await synthComponent(ImmGen, 'RV32I_ImmGen_Top');
     expect(resp.success).toBe(true);
     expect(resp.stats!.cells).toBeGreaterThan(0);
   });
 
   it('RV32I_Control: control unit (R/I/S/B/J/U-type decode)', { timeout: 30000 }, async () => {
-    const resp = await synthComponent(Control as any, 'RV32I_Control_Top');
+    const resp = await synthComponent(Control, 'RV32I_Control_Top');
     expect(resp.success).toBe(true);
     expect(resp.stats!.cells).toBeGreaterThan(0);
   });
@@ -336,43 +324,43 @@ d('RV32I combinational components — Yosys synthesis', () => {
   it('RV32I_BranchComp: branch comparator (BEQ/BNE/BLT/BGE/BLTU/BGEU)', {
     timeout: 30000,
   }, async () => {
-    const resp = await synthComponent(BranchComp as any, 'RV32I_BranchComp_Top');
+    const resp = await synthComponent(BranchComp, 'RV32I_BranchComp_Top');
     expect(resp.success).toBe(true);
     expect(resp.stats!.cells).toBeGreaterThan(0);
   });
 
   it('RV32I_WritebackMux: writeback mux (5 sources)', { timeout: 30000 }, async () => {
-    const resp = await synthComponent(WritebackMux as any, 'RV32I_WritebackMux_Top');
+    const resp = await synthComponent(WritebackMux, 'RV32I_WritebackMux_Top');
     expect(resp.success).toBe(true);
     expect(resp.stats!.cells).toBeGreaterThan(0);
   });
 
   it('RV32I_NextPCMux: next PC mux (seq/branch/jal/jalr)', { timeout: 30000 }, async () => {
-    const resp = await synthComponent(NextPCMux as any, 'RV32I_NextPCMux_Top');
+    const resp = await synthComponent(NextPCMux, 'RV32I_NextPCMux_Top');
     expect(resp.success).toBe(true);
     expect(resp.stats!.cells).toBeGreaterThan(0);
   });
 
   it('RV32I_ForwardingUnit: data forwarding unit', { timeout: 30000 }, async () => {
-    const resp = await synthComponent(ForwardingUnit as any, 'RV32I_ForwardingUnit_Top');
+    const resp = await synthComponent(ForwardingUnit, 'RV32I_ForwardingUnit_Top');
     expect(resp.success).toBe(true);
     expect(resp.stats!.cells).toBeGreaterThan(0);
   });
 
   it('RV32I_WBBypass: writeback bypass', { timeout: 30000 }, async () => {
-    const resp = await synthComponent(WBBypass as any, 'RV32I_WBBypass_Top');
+    const resp = await synthComponent(WBBypass, 'RV32I_WBBypass_Top');
     expect(resp.success).toBe(true);
     expect(resp.stats!.cells).toBeGreaterThan(0);
   });
 
   it('RV32I_LoadAlign: load alignment (LB/LH/LW/LBU/LHU)', { timeout: 30000 }, async () => {
-    const resp = await synthComponent(LoadAlign as any, 'RV32I_LoadAlign_Top');
+    const resp = await synthComponent(LoadAlign, 'RV32I_LoadAlign_Top');
     expect(resp.success).toBe(true);
     expect(resp.stats!.cells).toBeGreaterThan(0);
   });
 
   it('RV32I_HazardUnit: hazard detection (stall + flush)', { timeout: 30000 }, async () => {
-    const resp = await synthComponent(HazardUnit as any, 'RV32I_HazardUnit_Top');
+    const resp = await synthComponent(HazardUnit, 'RV32I_HazardUnit_Top');
     expect(resp.success).toBe(true);
     expect(resp.stats!.cells).toBeGreaterThan(0);
   });
@@ -380,7 +368,7 @@ d('RV32I combinational components — Yosys synthesis', () => {
 
 d('RV32I_RegisterFile — Yosys synthesis', () => {
   it('synthesizes 32×32-bit register file with DFF cells', { timeout: 30000 }, async () => {
-    const resp = await synthComponent(RegisterFile as any, 'RV32I_RegisterFile_Top');
+    const resp = await synthComponent(RegisterFile, 'RV32I_RegisterFile_Top');
     expect(resp.success).toBe(true);
     expect(resp.stats!.cells).toBeGreaterThan(0);
 

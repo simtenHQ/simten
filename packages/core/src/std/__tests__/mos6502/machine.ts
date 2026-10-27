@@ -4,6 +4,7 @@
  */
 
 import { libraryOf } from '../../../circuit/behavior.js';
+import { internalsOf } from '../../../circuit/internals.js';
 import { elaborate } from '../../../simulator/elaboration.js';
 import { createEngine } from '../../../simulator/engine.js';
 import { SimulationSession } from '../../../simulator/simulation-session.js';
@@ -25,7 +26,7 @@ export function createMachine() {
   // the logic after poking registers without a clock edge.
   const core = MOS6502_Core({ debug: true });
   const library = libraryOf(core);
-  const engine = createEngine(elaborate(core.circuit, library.definitions), { library });
+  const engine = createEngine(elaborate(internalsOf(core).ir, library.definitions), { library });
   engine.runCombinational();
   const session = new SimulationSession(engine, { isSequential: true });
   const sim = {

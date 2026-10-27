@@ -14,7 +14,7 @@ Public entry points: `@simten/core` (`circuit`, `bit`, `bus`, `reg`, `mem`, `sim
 | `createSimulatorFromCircuit(ir, library)` | `simulate(circuit)`. For the raw engine: `createEngine(elaborate(ir, library.definitions), { library })` from `/internal` |
 | `createSimulator(flat, options)` | `createEngine`, from `/internal` |
 | `simulateCircuit(params)` (`/api`) | `traceSource`, from `/internal` |
-| `EvalEntry`, `registerCircuitEval`, `getCircuitEval`, `getAllCircuitEvals` | removed; a built circuit carries its behavior (`behaviorOf`, from `/internal`) |
+| `EvalEntry`, `registerCircuitEval`, `getCircuitEval`, `getAllCircuitEvals` | removed; a built circuit carries its behavior (`internalsOf(c).behavior`, from `/internal`) |
 | std components from `@simten/core` | `@simten/core/std` |
 | `@simten/core/simulator`, `/api`, `/import` | `@simten/core/internal` |
 | `@simten/core/examples/catalog` | `@simten/core/examples` |

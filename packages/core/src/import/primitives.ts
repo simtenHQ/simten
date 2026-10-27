@@ -19,8 +19,9 @@
  */
 
 import { bit, bus, mem } from '../circuit/bit-bus.js';
-import type { ArgumentValue, Circuit } from '../circuit/builder-types.js';
+import type { Circuit, CircuitConfig } from '../circuit/builder-types.js';
 import { circuit } from '../circuit/circuit.js';
+import { withArgs } from '../circuit/internals.js';
 
 /** width===1 → bit port, else bus(width). Mirrors the std convention
  *  (Mux/Constant) so 1-bit nets stay `bit` end to end. */
@@ -28,18 +29,12 @@ const portOf = (width: number) => (width === 1 ? bit : bus(width));
 
 const maskOf = (w: number) => (w >= 32 ? 0xffffffff : (1 << w) - 1) >>> 0;
 
-/**
- * Attach shape args so a source-compiled node carries them in `node.arguments`
- * (the eval reads its shape from `io`, which merges node.arguments). The
- * object-config circuits below (Pmux/Dlatch/Mem) don't auto-bake `_args` the way
- * the factory form does, so without this a recompiled `Pmux({ width, sWidth })`
- * would have empty arguments and its sandbox-rebuilt eval couldn't recover the
- * shape (surfaces in the editor as "sWidth is not defined").
- */
-function withArgs<T>(c: T, args: Record<string, ArgumentValue>): T {
-  (c as { _args?: Record<string, ArgumentValue> })._args = args;
-  return c;
-}
+// `withArgs` gives a source-compiled node its shape args in `node.arguments`
+// (the eval reads its shape from `io`, which merges node.arguments). The
+// object-config circuits below (Pmux/Dlatch/Mem) record no options the way the
+// factory form does, so without this a recompiled `Pmux({ width, sWidth })`
+// would have empty arguments and its sandbox-rebuilt eval couldn't recover the
+// shape (surfaces in the editor as "sWidth is not defined").
 
 /** Interpret an unsigned w-bit value as two's-complement signed. */
 const sext = (v: number, w: number): number => {
@@ -291,10 +286,9 @@ export function Pmux(opts: { width: number; sWidth: number }): Circuit {
         return { out: ((io.a as number) >>> 0) & mask };
       },
       meta: { category: 'rtl-import', icon: '⇉', description: 'Parallel one-hot mux' },
-      // biome-ignore lint/suspicious/noExplicitAny: dynamic inputs shape
-    } as any),
+    } as CircuitConfig),
     { width, sWidth },
-  ) as unknown as Circuit;
+  );
 }
 
 /**
@@ -348,10 +342,9 @@ export function Dlatch(opts: { width: number; enPolarity: number }): Circuit {
         return { hold: transparent ? io.d : io.hold };
       },
       meta: { category: 'rtl-import', icon: 'DL', description: 'D-latch (level-sensitive)' },
-      // biome-ignore lint/suspicious/noExplicitAny: fixed-shape config
-    } as any),
+    } as CircuitConfig),
     { width, enPolarity },
-  ) as unknown as Circuit;
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -452,10 +445,9 @@ export function Mem(opts: {
         return { store };
       },
       meta: { category: 'rtl-import', icon: 'MEM', description: 'Multi-port memory' },
-      // biome-ignore lint/suspicious/noExplicitAny: dynamic inputs/outputs shape
-    } as any),
+    } as CircuitConfig),
     store
       ? { rdPorts, wrPorts, abits, width, size, store }
       : { rdPorts, wrPorts, abits, width, size },
-  ) as unknown as Circuit;
+  );
 }

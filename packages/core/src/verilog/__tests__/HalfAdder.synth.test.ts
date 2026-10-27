@@ -7,10 +7,12 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { libraryOf } from '../../circuit/behavior.js';
 import { bit, circuit } from '../../circuit/index.js';
-import type { CircuitDefinitions } from '../../ir/circuit-ir.js';
+import { internalsOf } from '../../circuit/internals.js';
 import { And, Xor } from '../../std/index.js';
-import { exportVerilog } from '../exporter.js';
+import { getStdLibrary } from '../../std/library.js';
+import { exportVerilogFromIR } from '../exporter.js';
 import { hasSynth, synthesizeVerilog } from './synth.js';
 
 function buildHalfAdder() {
@@ -26,15 +28,9 @@ function buildHalfAdder() {
     ],
   });
 
-  const definitions: CircuitDefinitions = {
-    resolveCircuit: (name) => {
-      if (name === 'HalfAdder') return HalfAdder.circuit;
-      return HalfAdder._dependencies.get(name)?.circuit;
-    },
-    getAllPrimitiveNames: () => [...HalfAdder._dependencies.keys()],
-  };
+  const definitions = libraryOf(HalfAdder).definitions;
 
-  return { circuit: HalfAdder.circuit, definitions };
+  return { circuit: internalsOf(HalfAdder).ir, definitions };
 }
 
 const d = describe.skipIf(!hasSynth());
@@ -42,7 +38,11 @@ const d = describe.skipIf(!hasSynth());
 d('HalfAdder — Yosys synthesis', () => {
   it('synthesizes cleanly and maps to 2 cells (AND + XOR)', { timeout: 30000 }, async () => {
     const { circuit, definitions } = buildHalfAdder();
-    const result = exportVerilog(circuit, definitions, { target: 'synthesis' });
+    const result = exportVerilogFromIR(
+      circuit,
+      { definitions: definitions, behaviors: getStdLibrary().behaviors },
+      { target: 'synthesis' },
+    );
 
     const resp = await synthesizeVerilog(result, 'HalfAdder');
 

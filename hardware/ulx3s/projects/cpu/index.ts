@@ -12,7 +12,6 @@ import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { bit, bus, circuit } from '@simten/core/circuit';
-import type { CircuitDefinitions } from '@simten/core/internal';
 import { Constant, RV32I_Core as RV32I_CoreDef } from '@simten/core/std';
 import { exportVerilog } from '@simten/core/verilog';
 
@@ -156,21 +155,7 @@ export function buildCPUCore() {
     ],
   });
 
-  const lib: CircuitDefinitions = {
-    resolveCircuit: (name) => {
-      if (name === 'RV32I_CPU_Core') return RV32I_CPU_Core.circuit;
-      if (name === 'RV32I_Core') return RV32I_Core.circuit;
-      return (
-        RV32I_CPU_Core._dependencies.get(name)?.circuit ??
-        RV32I_Core._dependencies.get(name)?.circuit
-      );
-    },
-    getAllPrimitiveNames: () => [
-      ...new Set([...RV32I_CPU_Core._dependencies.keys(), ...RV32I_Core._dependencies.keys()]),
-    ],
-  };
-
-  return { circuit: RV32I_CPU_Core.circuit, built: RV32I_CPU_Core, lib };
+  return { built: RV32I_CPU_Core };
 }
 
 // ── Project descriptor ─────────────────────────────────────────────────────
@@ -192,8 +177,8 @@ export const project: Project = {
     const hex = binaryToReadmemh(ctx.firmware.binary);
     const inlineInit = binaryToInlineInit(ctx.firmware.binary);
 
-    const { circuit: cpuCircuit, lib } = buildCPUCore();
-    const { verilog: cpuVerilog } = exportVerilog(cpuCircuit, lib, {
+    const { built } = buildCPUCore();
+    const { verilog: cpuVerilog } = exportVerilog(built, {
       target: 'synthesis',
       topModuleName: 'RV32I_CPU_Core',
     });

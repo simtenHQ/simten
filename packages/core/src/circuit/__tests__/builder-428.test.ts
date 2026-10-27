@@ -9,6 +9,7 @@ import { simulate } from '../../simulator/simulate.js';
 import { Register } from '../../std/index.js';
 import { executeJsCode } from '../execute.js';
 import { bit, bus, circuit, reg } from '../index.js';
+import { internalsOf } from '../internals.js';
 
 const Inv = circuit('B428_Inv', {
   inputs: { a: bit },
@@ -60,8 +61,8 @@ describe('factory default state (#428)', () => {
   });
 
   it('adds nothing to the arguments when the default is the type default', () => {
-    expect(Register()._args).toEqual({});
-    expect(Counter()._args).toEqual({ value: 7 });
+    expect(internalsOf(Register()).args).toEqual({});
+    expect(internalsOf(Counter()).args).toEqual({ value: 7 });
   });
 });
 
@@ -167,7 +168,7 @@ describe('fixed widths of untyped state (#428)', () => {
       eval: ({ n }) => ({ q: n }),
       onTick: ({ n, m }) => ({ n, m }),
     });
-    const [n, m] = S.circuit.state;
+    const [n, m] = internalsOf(S).ir.state;
     expect(n.stateType).toEqual({ kind: 'bus', width: 32 });
     expect(m.stateType).toEqual({ kind: 'memory', addressWidth: 16, dataWidth: 8 });
   });

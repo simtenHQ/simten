@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { internalsOf } from '../../circuit/internals.js';
 import { simulate } from '../../simulator/simulate.js';
 import { RV32I_Core } from '../rv32i-cpu.js';
 
@@ -76,8 +77,8 @@ describe('RV32I_Core debug pipeline-PC outputs', () => {
 
   it('debug:false exposes none of the debug ports', () => {
     const core = RV32I_Core();
-    const outs = new Set(core.circuit.outputs.map((p) => p.name));
-    const ins = new Set(core.circuit.inputs.map((p) => p.name));
+    const outs = new Set(internalsOf(core).ir.outputs.map((p) => p.name));
+    const ins = new Set(internalsOf(core).ir.inputs.map((p) => p.name));
     for (const p of ['debug_value', 'if_pc', 'id_pc', 'ex_pc', 'mem_pc4', 'wb_pc4']) {
       expect(outs.has(p)).toBe(false);
     }

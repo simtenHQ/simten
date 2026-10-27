@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bit } from '../bit-bus.js';
 import { circuit } from '../circuit.js';
+import { internalsOf } from '../internals.js';
 
 const And = circuit('And', {
   inputs: { a: bit, b: bit },
@@ -105,8 +106,8 @@ describe('multi-driver detection', () => {
       ],
     });
     // After dedup: one a→n.in edge and one n.out→outputs.out edge.
-    expect(c.circuit.connections).toHaveLength(2);
-    const edge = c.circuit.connections.find(
+    expect(internalsOf(c).ir.connections).toHaveLength(2);
+    const edge = internalsOf(c).ir.connections.find(
       (e) => e.target.nodeId === 'n' && e.target.portName === 'in',
     );
     expect(edge).toBeDefined();

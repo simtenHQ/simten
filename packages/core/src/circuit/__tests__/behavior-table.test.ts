@@ -21,6 +21,7 @@ import { createDefinitions, libraryOf } from '../behavior.js';
 import { bit, bus } from '../bit-bus.js';
 import { circuit } from '../circuit.js';
 import { type ExecuteResult, executeCircuitCode } from '../execute.js';
+import { internalsOf } from '../internals.js';
 
 /** Run a compiled source's last circuit with the compile's own library and behavior. */
 function run(result: ExecuteResult, inputs: Record<string, number>): Record<string, number> {
@@ -220,7 +221,7 @@ describe('defining a circuit registers nothing', () => {
 
   it('a fresh compile has no behavior for it', () => {
     const definitions = createDefinitions();
-    definitions.addCircuit(Probe.circuit);
+    definitions.addCircuit(internalsOf(Probe).ir);
     definitions.addCircuit(wrapper);
     const engine = () =>
       createEngine(elaborate(wrapper, definitions), {

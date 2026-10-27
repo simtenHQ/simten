@@ -9,13 +9,14 @@ import { describe, expect, it } from 'vitest';
 import { libraryOf } from '../../circuit/behavior.js';
 import type { Circuit } from '../../circuit/builder-types.js';
 import { bit, bus, circuit, mem, reg } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import { Buffer, DFlipFlop, Nand, Not, Switch } from '../../std/index.js';
 import { createEngine, elaborate } from '../index.js';
 import { simulate } from '../simulate.js';
 
 function engineFor(top: Circuit) {
   const library = libraryOf(top);
-  return createEngine(elaborate(top.circuit, library.definitions), { library });
+  return createEngine(elaborate(internalsOf(top).ir, library.definitions), { library });
 }
 
 describe('outputs are masked to their port width', () => {
@@ -95,7 +96,7 @@ describe('one global rising-edge clock', () => {
 
   it('a falling-edge state block is rejected, naming the node', () => {
     const Flop = flop('FallingFlop');
-    Flop.circuit.state[0].edge = 'falling';
+    internalsOf(Flop).ir.state[0].edge = 'falling';
     const Top = circuit('FallingTop', {
       inputs: { d: bit },
       outputs: { q: bit },
@@ -107,7 +108,7 @@ describe('one global rising-edge clock', () => {
 
   it('a state block on a clock other than its own is rejected', () => {
     const Flop = flop('GatedFlop');
-    Flop.circuit.state[0].clockRef = 'gclk';
+    internalsOf(Flop).ir.state[0].clockRef = 'gclk';
     const Top = circuit('GatedTop', {
       inputs: { d: bit },
       outputs: { q: bit },
@@ -119,7 +120,7 @@ describe('one global rising-edge clock', () => {
 
   it('a component with two clocks is rejected', () => {
     const Flop = flop('TwoClockFlop');
-    Flop.circuit.clocks.push({ name: 'clk2' });
+    internalsOf(Flop).ir.clocks.push({ name: 'clk2' });
     const Top = circuit('TwoClockTop', {
       inputs: { d: bit },
       outputs: { q: bit },
