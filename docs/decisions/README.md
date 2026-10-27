@@ -11,3 +11,4 @@ Short records of choices that shape the codebase: what was decided, what was rej
 | [0005](0005-typescript-dsl.md) | A TypeScript DSL, not Verilog, Chisel or Amaranth | Accepted |
 | [0006](0006-own-simulator.md) | Our own simulator, not Verilator or iverilog | Accepted |
 | [0007](0007-server-side-toolchains.md) | Yosys, iverilog, nextpnr and gcc in containers | Accepted |
+| [0008](0008-sandbox-domain.md) | A separate domain for the sandbox before accounts | Accepted |

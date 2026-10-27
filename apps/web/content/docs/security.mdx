@@ -21,7 +21,9 @@ This applies to every code-execution surface: the editor, the live playground, a
 
 **Origin isolation (iframe)**
 
-The iframe is served from a different origin. The browser enforces a hard boundary: code inside `sandbox.simten.dev` cannot read `simten.dev` cookies, `localStorage`, auth tokens, or DOM. This is enforced by the browser's same-origin policy at the OS level, not a JavaScript check.
+The iframe is served from a different origin. The browser enforces a hard boundary: code inside `sandbox.simten.dev` cannot read the `simten.dev` page, its `localStorage` or its DOM. This is enforced by the browser's same-origin policy at the OS level, not a JavaScript check.
+
+A subdomain is a different origin but the same *site* as `simten.dev`, so cookies set for `.simten.dev` would reach it. Simten has no accounts or login cookies, so there is nothing for it to see. Before any are added, the sandbox moves to its own domain, `simtenusercontent.dev`; see [decision 0008](https://github.com/simtenHQ/simten/blob/main/docs/decisions/0008-sandbox-domain.md).
 
 ```html
 <iframe
@@ -123,7 +125,8 @@ This all happens inside the sandbox worker. The main frame never touches the npm
 
 | Attack | Status |
 |--------|--------|
-| Access `simten.dev` cookies / localStorage | Blocked: origin isolation |
+| Access `simten.dev` localStorage | Blocked: origin isolation |
+| Access `simten.dev` cookies | None exist today; the sandbox moves to `simtenusercontent.dev` before any are added (decision 0008) |
 | Access `simten.dev` DOM | Blocked: origin isolation |
 | `window` object from user code | Blocked: runs in Worker (no `window`) |
 | `localStorage` from user code | Blocked: user code runs only in the Worker, where `localStorage` isn't defined |
