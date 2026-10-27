@@ -14,13 +14,13 @@ import { type PortValuesMap, readPortBit } from '@/lib/port-values';
 
 // Reusing the embed CSS variables (light/dark theming via --embed-*).
 
-export interface TruthTableColumn {
+interface TruthTableColumn {
   name: string;
   /** Visually groups columns into "causes" vs "effects" via header tint. */
   group?: 'input' | 'output';
 }
 
-export interface TruthTableProps {
+interface TruthTableProps {
   columns: TruthTableColumn[];
   /**
    * Positional rows: each row's length must equal `columns.length`. The

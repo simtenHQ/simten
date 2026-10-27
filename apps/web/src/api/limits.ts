@@ -53,9 +53,9 @@ export const SERVICES = {
   share: { rateLimit: 'SHARE_RL', dailyBudget: 5000 },
 } as const satisfies Record<string, { rateLimit: RateLimitBinding; dailyBudget: number }>;
 
-export type Service = keyof typeof SERVICES;
+type Service = keyof typeof SERVICES;
 
-export interface LimitRejection {
+interface LimitRejection {
   status: number;
   error: string;
 }

@@ -15,19 +15,14 @@ import { randomUUID } from '@/lib/uuid';
 
 // --- Types ---
 
-export type ConnectionStatus =
-  | 'idle'
-  | 'connecting'
-  | 'connected'
-  | 'reconnecting'
-  | 'disconnected';
+type ConnectionStatus = 'idle' | 'connecting' | 'connected' | 'reconnecting' | 'disconnected';
 
 interface MCPMessage {
   type: string;
   [key: string]: unknown;
 }
 
-export interface MCPCallbacks {
+interface MCPCallbacks {
   /** Called when new circuit source is pushed from Claude Code. `requestId` is
    *  present when the server is awaiting a render acknowledgment; call
    *  `sendRenderResult(requestId, …)` once compile finishes. */

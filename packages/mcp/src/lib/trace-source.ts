@@ -20,9 +20,9 @@ import {
 import { compileSource } from './compile-source.js';
 import { exportVCD } from './vcd-export.js';
 
-export type RLEValue = { value: BitValue | BusValue; count: number };
+type RLEValue = { value: BitValue | BusValue; count: number };
 
-export interface SimulateResult {
+interface SimulateResult {
   circuit: string;
   ticks: number;
   inputs: string[];
@@ -32,7 +32,7 @@ export interface SimulateResult {
   vcd: string;
 }
 
-export interface SimulateError {
+interface SimulateError {
   error: string;
 }
 

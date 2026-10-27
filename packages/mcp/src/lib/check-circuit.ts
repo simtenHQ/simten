@@ -7,7 +7,7 @@
 import type { CircuitDefinitions } from '@simten/core/internal';
 import { compileSource } from './compile-source.js';
 
-export interface CheckResult {
+interface CheckResult {
   valid: boolean;
   canSimulate: boolean;
   diagnostics: Array<{

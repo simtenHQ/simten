@@ -27,7 +27,7 @@ const containerVariants = cva('mx-auto w-full', {
   defaultVariants: { size: 'default' },
 });
 
-export interface ContainerProps
+interface ContainerProps
   extends React.HTMLAttributes<HTMLDivElement>,
     VariantProps<typeof containerVariants> {}
 

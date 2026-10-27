@@ -10,7 +10,7 @@
 
 import type { BitValue, BusValue, FlatNode } from '@simten/core/internal';
 
-export interface VCDExportParams {
+interface VCDExportParams {
   /** Top-level circuit name */
   circuit: string;
   /** Flat nodes from elaborated circuit — used to build hierarchy */

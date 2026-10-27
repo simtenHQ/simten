@@ -17,13 +17,11 @@ import type { PortPath } from '@simten/core/internal';
 
 export type { BitType, BitValue, BusType, BusValue, PortType } from '@simten/core';
 export type {
-  ArgumentValue,
   CircuitIR,
   CircuitMetadata,
   ClockDescriptor,
   ClockInstance,
   ClockState,
-  Connection,
   Implementation,
   Node,
   PortDescriptor,

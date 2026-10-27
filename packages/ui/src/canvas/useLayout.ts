@@ -11,8 +11,6 @@ import { useMemo } from 'react';
 import { computeDagreLayout, type DagreLayoutOptions } from './dagre-layout';
 import type { MetadataState } from './types';
 
-export type { DagreLayoutOptions };
-
 /**
  * Returns layout metadata for a circuit. Synchronous: result is
  * available on first render. Pass `null` to skip layout (e.g. when

@@ -50,5 +50,3 @@ packages/ui/src/canvas/projection.ts projectCircuitToNodes
 packages/ui/src/waveform/WaveformViewer.tsx WaveformViewer
 packages/ui/src/waveform/WaveformViewer.tsx parseVCD
 scripts/check-exports.ts checkPackage
-tools/codemod/circuit-keys.ts rewriteConnectArrow
-tools/codemod/circuit-keys.ts transformCircuitCall

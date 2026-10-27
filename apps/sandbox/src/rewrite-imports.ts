@@ -10,7 +10,7 @@
  * via getScope() and don't need to be loaded from the network.
  */
 
-export interface ExtractedImports {
+interface ExtractedImports {
   /** ES module string that imports from esm.sh and re-exports by local name */
   loaderModule: string;
   /** Local binding names re-exported by the loader module */

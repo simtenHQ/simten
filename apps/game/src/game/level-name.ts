@@ -14,7 +14,7 @@
 
 import { circuitNameSites } from '@simten/core/internal';
 
-export interface NameDiagnostic {
+interface NameDiagnostic {
   message: string;
   line: number;
   column: number;

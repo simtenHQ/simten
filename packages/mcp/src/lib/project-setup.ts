@@ -51,7 +51,7 @@ export function installCommand(pm: PackageManager): string {
   return `${pm} ${add} ${RUNTIME_DEPS.join(' ')} && ${pm} ${add} ${dev} ${DEV_DEPS.join(' ')}`;
 }
 
-export interface PackageJsonPlan {
+interface PackageJsonPlan {
   /** 'created' (none existed), 'patched' (added type:module), 'unchanged'. */
   action: 'created' | 'patched' | 'unchanged';
   /** Extension circuit/verify files must use so they load as ESM. */
@@ -135,7 +135,7 @@ export function ensureTsconfig(root: string): boolean {
   return true;
 }
 
-export interface InstallResult {
+interface InstallResult {
   ok: boolean;
   stdout: string;
   stderr: string;

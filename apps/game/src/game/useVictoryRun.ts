@@ -20,7 +20,7 @@ import type { Vector } from './types';
 /** Dwell per row. Fast enough to feel like a sweep, slow enough to read. */
 const STEP_MS = 320;
 
-export interface VictoryRun {
+interface VictoryRun {
   /** Row currently being driven, or null when not mid-run. */
   active: number | null;
   /** Rows proven so far; drives the ticks. */

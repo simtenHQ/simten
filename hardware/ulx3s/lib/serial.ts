@@ -8,7 +8,7 @@
 import { readdirSync } from 'node:fs';
 import { SerialPort } from 'serialport';
 
-export interface OpenAndCaptureOpts {
+interface OpenAndCaptureOpts {
   baud: number;
   timeoutMs: number;
   matchRegex?: RegExp;
@@ -20,7 +20,7 @@ export interface OpenAndCaptureOpts {
   openBackoffMs?: number;
 }
 
-export interface CaptureResult {
+interface CaptureResult {
   device: string;
   bytes: number[];
   str: string;
@@ -29,7 +29,7 @@ export interface CaptureResult {
   matchIndex?: number;
 }
 
-export function discoverUsbSerial(): string | null {
+function discoverUsbSerial(): string | null {
   let devEntries: string[] = [];
   try {
     devEntries = readdirSync('/dev');

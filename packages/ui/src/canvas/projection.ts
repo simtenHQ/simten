@@ -18,8 +18,6 @@ import type { Edge, Node as ReactFlowNode } from '@xyflow/react';
 import type { NodeData } from '../nodes';
 import type { MetadataState } from './types';
 
-export type { NodeData };
-
 const WIRE_COLORS = {
   TRUE: '#22c55e',
   FALSE: '#94a3b8',

@@ -23,12 +23,8 @@
     "@simten/embed": "workspace:*",
     "@simten/ui": "workspace:*",
     "@tailwindcss/vite": "^4.1.18",
-    "@tanstack/react-devtools": "^0.7.0",
     "@tanstack/react-router": "^1.170.41",
-    "@tanstack/react-router-devtools": "^1.167.2",
-    "@tanstack/react-router-ssr-query": "^1.167.3",
     "@tanstack/react-start": "^1.168.60",
-    "@tanstack/router-plugin": "^1.168.42",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "figlet": "^1.11.3",
@@ -45,10 +41,6 @@
     "tailwindcss": "^4.1.18"
   },
   "devDependencies": {
-    "@tanstack/devtools-vite": "^0.3.11",
-    "@tanstack/router-cli": "^1.167.40",
-    "@testing-library/dom": "^10.4.0",
-    "@testing-library/react": "^16.2.0",
     "@types/mdx": "^2.0.13",
     "@types/node": "^20",
     "@types/react": "^19.2.0",

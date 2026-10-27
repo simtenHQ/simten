@@ -15,7 +15,7 @@ import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-export interface CacheEntry {
+interface CacheEntry {
   /** Base64-encoded .config (pre-ecppack). */
   config: string;
   /** The firmware hex ($readmemh format) that produced the cached config. */
@@ -28,7 +28,7 @@ export interface CacheEntry {
   package: string;
 }
 
-export interface CacheKey {
+interface CacheKey {
   /** Hash of the Verilog with firmware-init range zeroed. */
   verilogHash: string;
   /** Project name (scopes the cache per-project). */

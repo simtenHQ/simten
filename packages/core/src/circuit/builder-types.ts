@@ -10,9 +10,7 @@
  * so TypeScript resolves everything in one pass — fast at any circuit size.
  */
 
-import type { ArgumentValue, BitType, BusType, PortType } from '../ir/circuit-ir.js';
-
-export type { ArgumentValue };
+import type { BitType, BusType, PortType } from '../ir/circuit-ir.js';
 
 // ============================================================================
 // Port types
@@ -58,11 +56,6 @@ export interface SinkPortRef<T extends PortType = PortType> {
   readonly _type: T;
 }
 
-/** Unnarrowable at runtime by design — every port object carries `.to`,
- *  so duck-typing would silently invert direction. Refine via the
- *  `ConnectContext`-typed slots in your `connect` callback instead. */
-export type PortRef<T extends PortType = PortType> = SourcePortRef<T> | SinkPortRef<T>;
-
 /** A connection definition produced by SourcePortRef.to() */
 export interface ConnectionDef {
   readonly source: { nodeId: string; portName: string };
@@ -76,12 +69,6 @@ export interface ConnectionDef {
 
 /** Map of port names to their types */
 export type PortMap = Record<string, PortType>;
-
-/** Describes a circuit's port interface */
-export interface CircuitShape {
-  inputs: PortMap;
-  outputs: PortMap;
-}
 
 // ============================================================================
 // Connect callback types (generic)
@@ -187,7 +174,7 @@ type PortOutputValues<M> = {
  * concept *after* elaboration into the serialized IR: there, memory is a
  * `MemoryValue` carrying its address/data widths rather than a bare Map, and
  * the declarative forms have already been resolved. circuit() converts this
- * into that. Pairs with `StateFieldType` in ./bit-bus.ts.
+ * into that. Pairs with the `RegDecl` and `MemDecl` declarations in ./bit-bus.ts.
  */
 type StateFieldValue =
   | number

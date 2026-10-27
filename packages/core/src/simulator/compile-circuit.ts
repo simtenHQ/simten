@@ -277,7 +277,7 @@ export function compileForSimulation(flatCircuit: FlatCircuit, library: Library)
 }
 
 /** Widest bus the simulator stores. Values live in a Uint32Array. */
-export const MAX_BUS_WIDTH = 32;
+const MAX_BUS_WIDTH = 32;
 
 /**
  * The mask every value written to a port of this type is ANDed with. Throws for

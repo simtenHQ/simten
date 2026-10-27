@@ -21,7 +21,7 @@ import type {
 } from './types.js';
 import { flashOverWifi } from './wifi-flash.js';
 
-export const HARDWARE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
+const HARDWARE_DIR = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 
 function suggestForSynthError(msg: string): string | undefined {
   const m = msg.toLowerCase();

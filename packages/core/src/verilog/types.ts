@@ -85,33 +85,3 @@ export interface TestVector {
   /** Human-readable description */
   description?: string;
 }
-
-export interface VerilogLintResult {
-  valid: boolean;
-  errors: string[];
-  warnings: string[];
-}
-
-export interface VerificationResult {
-  verified: boolean;
-  coverage: 'test-vectors' | 'exhaustive' | 'random';
-  testCount: number;
-  allPassed: boolean;
-  results: VerificationTestResult[];
-  /** Cycle-by-cycle trace for sequential circuits */
-  trace?: VerificationCycle[];
-}
-
-export interface VerificationTestResult {
-  testCase: number;
-  passed: boolean;
-  inputs: Record<string, number | boolean>;
-  expected: Record<string, number | boolean>;
-  actual: Record<string, number | boolean>;
-  description?: string;
-}
-
-export interface VerificationCycle {
-  cycle: number;
-  outputs: Record<string, number>;
-}

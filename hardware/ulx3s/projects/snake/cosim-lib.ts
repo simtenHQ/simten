@@ -21,7 +21,7 @@ import { buildSnake } from './index.js';
 import { FB_SIZE, GRID, SnakeRefModel } from './ref-model.js';
 
 export type SnakeBuilt = ReturnType<typeof buildSnake>['built'];
-export type SnakeSim = ReturnType<typeof buildSim>;
+type SnakeSim = ReturnType<typeof buildSim>;
 
 /**
  * Driven through the engine rather than simulate(): reading the framebuffer
@@ -80,7 +80,7 @@ export function setNodeArg(
 }
 
 /** Read the full framebuffer through the circuit's scan port, no clocking. */
-export function scanFb(sim: SnakeSim): Uint8Array {
+function scanFb(sim: SnakeSim): Uint8Array {
   const fb = new Uint8Array(FB_SIZE);
   for (let a = 0; a < FB_SIZE; a++) {
     sim.set({ scan_addr: a });

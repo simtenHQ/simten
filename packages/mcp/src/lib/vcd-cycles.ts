@@ -23,12 +23,12 @@ export interface CycleMap {
   windowToTimeRange: (range: [number, number]) => [number, number];
 }
 
-export type ClockDetectionError = {
+type ClockDetectionError = {
   type: 'no_clock';
   candidates: string[]; // full paths of all 1-bit signals
 };
 
-export interface DetectClockOptions {
+interface DetectClockOptions {
   clockSignal?: string;
 }
 

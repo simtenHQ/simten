@@ -50,7 +50,7 @@ export interface ParsedVcd {
   warnings: string[];
 }
 
-export interface ParseOptions {
+interface ParseOptions {
   requestedSignals?: string[];
   /**
    * When `requestedSignals` is set, also retain the auto-detected clock so

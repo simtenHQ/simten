@@ -17,7 +17,7 @@ import { connect, type Socket } from 'node:net';
 const FTP_PORT = 21;
 const DEFAULT_TIMEOUT_MS = 30_000;
 
-export interface WifiFlashOptions {
+interface WifiFlashOptions {
   /** ESP32 hostname or IP, optionally with :port. */
   host: string;
   timeoutMs?: number;

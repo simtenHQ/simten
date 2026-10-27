@@ -7,7 +7,7 @@ export type PostCategory =
   | 'interactive'
   | 'engineering';
 
-export interface BlogPost {
+interface BlogPost {
   slug: string;
   title: string;
   description: string;

@@ -15,7 +15,7 @@ import type { CircuitDefinitions, CircuitIR, PortPath } from '../ir/circuit-ir.j
 import type { FlatCircuit, FlatConnection, FlatNode, HierarchyNode } from './types.js';
 import { SEQUENTIAL_INPUT_PORTS, TOP_LEVEL_NODE } from './types.js';
 
-export interface ElaborateOptions {
+interface ElaborateOptions {
   /** Expand primitives that have referenceCircuit definitions into base primitives.
    *  Used by the Verilog exporter to produce fully synthesisable output.
    *  Default: false (normal simulation uses fast JavaScript evaluators). */

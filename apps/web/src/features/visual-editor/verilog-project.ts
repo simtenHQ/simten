@@ -193,7 +193,7 @@ export function looksLikeFirmware(p: ParamDecl): boolean {
   return p.kind === 'string' && /\.(hex|mem|bin|txt)$/i.test(p.defaultValue);
 }
 
-export interface RepoRef {
+interface RepoRef {
   owner: string;
   repo: string;
   /** Branch, tag or SHA. Undefined means "whatever the repo's default is". */

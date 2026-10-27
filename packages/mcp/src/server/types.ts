@@ -1,12 +1,3 @@
-export interface CircuitState {
-  cycleCount: number;
-  inputs: Record<string, boolean | number>;
-  outputs: Record<string, boolean | number>;
-  isSequential: boolean;
-  circuitName: string | null;
-  timestamp: number;
-}
-
 export interface TracesPayload {
   circuit: string;
   ticks: number;

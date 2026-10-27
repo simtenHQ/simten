@@ -28,7 +28,7 @@ interface UtilStats {
   io: number; // TRELLIS_IO
 }
 
-export interface BuildResponse {
+interface BuildResponse {
   success: boolean;
   bitstream?: string; // base64-encoded .bit file
   timing?: TimingStats;
@@ -37,7 +37,7 @@ export interface BuildResponse {
   error?: string;
 }
 
-export interface BuildOptions {
+interface BuildOptions {
   lpf?: string; // LPF pin constraint file content
   device?: string; // default: "LFE5U-85F"
   package?: string; // default: "CABGA381"

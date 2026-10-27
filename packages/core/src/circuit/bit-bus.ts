@@ -32,9 +32,6 @@ export interface MemDecl {
   [addr: number]: number;
 }
 
-/** Any state field type */
-export type StateFieldType = RegDecl | MemDecl;
-
 /**
  * Declare a scalar register state field.
  *

@@ -25,7 +25,7 @@
 
 import type { ExportResult } from '../types.js';
 
-export type SynthTarget = 'generic' | 'ice40' | 'ecp5';
+type SynthTarget = 'generic' | 'ice40' | 'ecp5';
 
 interface SynthStats {
   cells: number;
@@ -33,7 +33,7 @@ interface SynthStats {
   cellBreakdown: Record<string, number>;
 }
 
-export interface SynthResponse {
+interface SynthResponse {
   success: boolean;
   stats?: SynthStats;
   netlist?: string;

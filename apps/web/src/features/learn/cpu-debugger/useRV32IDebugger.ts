@@ -104,7 +104,7 @@ function readPort(
   return typeof val === 'number' ? val >>> 0 : null;
 }
 
-export interface CompileResult {
+interface CompileResult {
   binary: string; // base64
   disassembly: string;
 }

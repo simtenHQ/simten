@@ -23,7 +23,7 @@ import type { ParsedVcd, ResolvedSignal, VcdChange } from './vcd-parser.js';
 export type FormatKind = 'changes' | 'raw' | 'edges';
 export type EdgeKind = 'rising' | 'falling' | 'any';
 
-export interface FormatOptions {
+interface FormatOptions {
   format: FormatKind;
   cycleRange: [number, number];
   edge?: EdgeKind;
@@ -256,7 +256,7 @@ function buildRawValues(
   return values;
 }
 
-export interface FormatResult {
+interface FormatResult {
   signals: FormattedSignal[];
   /** Cycle range actually returned (may be narrowed from the request when raw caps truncate). */
   effectiveRange: [number, number];

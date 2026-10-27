@@ -9,7 +9,7 @@
  * (`useSandbox.ts`) checks the sandbox's origin and source the same way.
  */
 
-export interface ParentChannel {
+interface ParentChannel {
   /** True if `event` comes from the parent window and origin. */
   accepts(event: Pick<MessageEvent, 'source' | 'origin'>): boolean;
   /** The parent's origin, once known; responses go only to it. */

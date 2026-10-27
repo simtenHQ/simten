@@ -1,0 +1,98 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "ignoreBinaries": ["picocom", "wrangler"],
+  "workspaces": {
+    ".": {
+      "entry": ["scripts/*.ts", "bench/*.mts"]
+    },
+    "apps/game": {
+      "entry": ["src/router.tsx", "src/routes/**/*.tsx", "src/game/solutions/*.ts"]
+    },
+    "apps/web": {
+      "entry": [
+        "src/router.tsx",
+        "src/routes/**/*.{ts,tsx}",
+        "scripts/build.mjs",
+        "source.config.ts",
+        "viewer/stubs/share-server.ts",
+        "src/features/docs/*.tsx",
+        "src/features/splash/circuits.ts",
+        "src/**/*.verify.ts"
+      ],
+      "ignore": [".source/**", "public/blog-assets/wasm/**"],
+      "ignoreDependencies": ["cloudflare"]
+    },
+    "apps/sandbox": {
+      "entry": ["e2e/*.mts"]
+    },
+    "demos": {
+      "entry": ["cli/*.ts"]
+    },
+    "hardware/ulx3s": {
+      "entry": [
+        "run_on_fpga.ts",
+        "cpu_build.ts",
+        "projects/*/index.ts",
+        "projects/cpu/{tests,verify,run_c,regen_verilog,dump-netlist,sim,cycle-diff}.ts",
+        "projects/cpu/archtest/{run-suite,run-dut,fault-check}.ts",
+        "projects/**/*.verify.ts",
+        "projects/snake/{parity-check,playable-check,fault-check}.ts"
+      ]
+    },
+    "packages/core": {
+      "entry": [
+        "src/index.ts",
+        "src/circuit/index.ts",
+        "src/std/index.ts",
+        "src/verify/index.ts",
+        "src/verilog/index.ts",
+        "src/examples/index.ts",
+        "src/internal.ts",
+        "src/editor-types.ts",
+        "rollup.dts.config.mjs",
+        "scripts/*.{ts,mjs}",
+        "bench/run.ts",
+        "src/**/*.verify.ts",
+        "src/verify/__fixtures__/*.ts",
+        "src/std/__tests__/mos6502/*.ts"
+      ]
+    },
+    "packages/embed": {
+      "entry": [
+        "src/index.ts",
+        "src/components/nodes/index.ts",
+        "src/canvas/index.ts",
+        "src/webcomponent/index.ts"
+      ],
+      "ignoreDependencies": ["serve"]
+    },
+    "packages/mcp": {
+      "entry": ["src/index.ts", "src/schemas/index.ts", "bin/simten-mcp.js", "scripts/*.mjs"]
+    },
+    "packages/ui": {
+      "entry": [
+        "src/index.ts",
+        "src/editor/index.ts",
+        "src/editor/stores/index.ts",
+        "src/editor/types/index.ts",
+        "src/editor/components/index.ts",
+        "src/editor/hooks/index.ts",
+        "src/monaco/index.ts",
+        "src/nodes/index.ts",
+        "src/canvas/index.ts",
+        "src/waveform/WaveformViewer.tsx",
+        "src/sandbox/index.ts",
+        "src/sandbox/protocol.ts",
+        "src/share/index.ts",
+        "src/primitives/{tooltip,resizable,sheet,dialog,button}.tsx",
+        "scripts/*.mjs"
+      ],
+      "ignoreDependencies": ["tailwindcss"]
+    }
+  },
+  "ignoreIssues": {
+    "apps/web/src/components/Logo.tsx": ["exports"],
+    "packages/embed/src/types.ts": ["types"],
+    "packages/core/src/import/primitives.ts": ["exports"]
+  }
+}

@@ -91,7 +91,7 @@ export function buildMapCircuit() {
   });
 }
 
-export interface MapState {
+interface MapState {
   /** Levels whose unlock lamp is lit. */
   unlocked: Set<string>;
   /** Levels whose switch is on; the signal leaving them is live. */

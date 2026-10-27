@@ -26,7 +26,7 @@
 type ComponentKind = 'reconstruction' | 'semantic';
 type ComponentHome = 'stdlib' | 'import';
 
-export interface Classification {
+interface Classification {
   kind: ComponentKind;
   home: ComponentHome;
 }

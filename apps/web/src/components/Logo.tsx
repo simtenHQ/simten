@@ -168,7 +168,7 @@ export function LogoSimWordmark({ size = 32, className }: LogoProps) {
 //    Aspect ratio ~1.37:1 (wider than tall). `size` controls height;
 //    width is computed automatically.
 // ──────────────────────────────────────────────────────────
-export function LogoSim10({ size = 32, className }: LogoProps) {
+function LogoSim10({ size = 32, className }: LogoProps) {
   // Cropped viewBox: tightens around the actual wave content (which lives at
   // x=10..33.75, y=10..25.69 in the original Excalidraw export). Strips the
   // surrounding padding so the logo doesn't have giant whitespace when placed

@@ -6,7 +6,7 @@
  * Modes:
  *   CAPTURE=1 pnpm --filter @simten/core test golden-hashes
  *     Writes SHA-256 of every selected circuit's Verilog output to
- *     <repo>/tools/codemod/golden-verilog-hashes.json. Run BEFORE the
+ *     golden-verilog-hashes.json next to this file. Run BEFORE the
  *     migration to capture the pre-state.
  *
  *   pnpm --filter @simten/core test golden-hashes
@@ -61,7 +61,7 @@ import {
 } from '../../std/index.js';
 import { exportVerilog } from '../exporter.js';
 
-const GOLDEN_FILE_REL = '../../../../../tools/codemod/golden-verilog-hashes.json';
+const GOLDEN_FILE_REL = './golden-verilog-hashes.json';
 
 function hash(s: string): string {
   return createHash('sha256').update(s).digest('hex');
