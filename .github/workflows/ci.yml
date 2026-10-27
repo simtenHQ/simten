@@ -245,7 +245,7 @@ jobs:
       - name: Sandbox watchdog
         # An infinite loop in user code times out, the page stays responsive,
         # and the next compile works.
-        run: pnpm --filter @simten/sandbox test:e2e
+        run: pnpm --filter @simten/sandbox-app test:e2e
 
   go:
     name: container tests (${{ matrix.app }})

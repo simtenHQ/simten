@@ -3,7 +3,7 @@
  * sandbox. Builds the sandbox, serves it on :4310 and a bare parent page on
  * :4311, then drives it in headless Chromium.
  *
- *   pnpm --filter @simten/sandbox test:e2e
+ *   pnpm --filter @simten/sandbox-app test:e2e
  */
 
 import { type ChildProcess, spawn } from 'node:child_process';

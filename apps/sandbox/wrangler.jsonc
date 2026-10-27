@@ -12,8 +12,8 @@
 // In prod: served at sandbox.simtenusercontent.dev.
 //
 // Production deploy:
-//   pnpm --filter @simten/sandbox build
-//   pnpm --filter @simten/sandbox deploy
+//   pnpm --filter @simten/sandbox-app build
+//   pnpm --filter @simten/sandbox-app deploy
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "simten-sandbox",

@@ -11,7 +11,7 @@
     "@simten/web",
     "@simten/game",
     "@simten/embed-page",
-    "@simten/sandbox",
+    "@simten/sandbox-app",
     "@simten/compiler",
     "@simten/verifier",
     "@simten/synth",

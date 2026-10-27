@@ -25,7 +25,7 @@ export default defineConfig({
     {
       // The sandbox from this checkout, not the deployed one: `test:e2e` builds
       // both, and builds the embed with VITE_SANDBOX_ORIGIN pointing here.
-      command: 'pnpm --filter @simten/sandbox exec vite preview --port 4174 --strictPort',
+      command: 'pnpm --filter @simten/sandbox-app exec vite preview --port 4174 --strictPort',
       port: 4174,
       reuseExistingServer: true,
       timeout: 20_000,

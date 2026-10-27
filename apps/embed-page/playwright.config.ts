@@ -17,7 +17,7 @@ export default defineConfig({
       timeout: 60_000,
     },
     {
-      command: `pnpm --filter @simten/sandbox exec vite preview --port ${SANDBOX_PORT} --strictPort`,
+      command: `pnpm --filter @simten/sandbox-app exec vite preview --port ${SANDBOX_PORT} --strictPort`,
       port: SANDBOX_PORT,
       reuseExistingServer: false,
       timeout: 30_000,

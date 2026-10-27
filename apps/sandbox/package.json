@@ -1,5 +1,5 @@
 {
-  "name": "@simten/sandbox",
+  "name": "@simten/sandbox-app",
   "private": true,
   "type": "module",
   "scripts": {

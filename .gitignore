@@ -92,3 +92,6 @@ packages/core/*.imported.circuit.ts
 # Rendered demo output
 demos/out/
 packages/core/src/std/__tests__/mos6502/vectors/
+
+# Playwright run state
+**/test-results/

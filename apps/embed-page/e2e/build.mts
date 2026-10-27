@@ -13,7 +13,7 @@ const appDir = fileURLToPath(new URL('..', import.meta.url));
 const run = (cmd: string, args: string[], env: Record<string, string> = {}) =>
   execFileSync(cmd, args, { cwd: appDir, stdio: 'inherit', env: { ...process.env, ...env } });
 
-run('pnpm', ['--filter', '@simten/sandbox', 'build']);
+run('pnpm', ['--filter', '@simten/sandbox-app', 'build']);
 run('pnpm', ['exec', 'vite', 'build'], { VITE_SANDBOX_ORIGIN: SANDBOX });
 
 rmSync(STATE_DIR, { recursive: true, force: true });

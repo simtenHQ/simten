@@ -62,8 +62,8 @@
     "lint": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:e2e": "pnpm --filter @simten/sandbox build && VITE_SANDBOX_ORIGIN=http://localhost:4174 pnpm build && cp e2e/fixtures/*.html dist/ && playwright test",
-    "test:e2e:ui": "pnpm --filter @simten/sandbox build && VITE_SANDBOX_ORIGIN=http://localhost:4174 pnpm build && cp e2e/fixtures/*.html dist/ && playwright test --ui",
+    "test:e2e": "pnpm --filter @simten/sandbox-app build && VITE_SANDBOX_ORIGIN=http://localhost:4174 pnpm build && cp e2e/fixtures/*.html dist/ && playwright test",
+    "test:e2e:ui": "pnpm --filter @simten/sandbox-app build && VITE_SANDBOX_ORIGIN=http://localhost:4174 pnpm build && cp e2e/fixtures/*.html dist/ && playwright test --ui",
     "typecheck:tests": "tsc --noEmit -p tsconfig.check.json"
   },
   "dependencies": {
