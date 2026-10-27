@@ -15,6 +15,7 @@
       "!hardware/**/vendor",
       "!packages/core/src/std/__tests__/mos6502/**/*.json",
       "!apps/web/public",
+      "!apps/embed-page/public",
       "!**/*.min.js",
       "!**/*.css"
     ]

@@ -1,21 +1,20 @@
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
 
-export const INLINE_URL_THRESHOLD = 4000;
-
+/** For `<circuit-embed>`'s Fork on other sites, which opens `/circuit/<encoded>` rather than create a share. */
 export function encodeSourceForUrl(source: string): string {
   return compressToEncodedURIComponent(source);
 }
 
+/**
+ * Decodes the source from a `/circuit/<encoded>` link: links shared before
+ * short links (#368), and Fork from `<circuit-embed>` on other sites.
+ */
 export function decodeSourceFromUrl(encoded: string): string | null {
   try {
     return decompressFromEncodedURIComponent(encoded) || null;
   } catch {
     return null;
   }
-}
-
-export function shouldUseShortLink(encoded: string): boolean {
-  return encoded.length > INLINE_URL_THRESHOLD;
 }
 
 /**

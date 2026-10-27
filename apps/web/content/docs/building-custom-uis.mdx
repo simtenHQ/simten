@@ -20,6 +20,34 @@ users to *edit source* and watch it simulate live, an editor beside a
 canvas, see [Code Editor](/docs/code-editor), which pairs
 `SimtenCodeEditor` with `useCompiledCircuit`.
 
+## Embed a circuit
+
+To put a live circuit on a page you don't build with React (a course
+platform, Notion, a blog, Google Sites), you don't need any of the
+tiers below. Open the circuit in the [editor](/circuit), click
+**Share**, and pick **Embed**. Choose a size and theme, check the
+preview, and copy the snippet:
+
+```html
+<iframe src="https://embed.simten.dev/s/abc123?theme=auto"
+        style="width:100%; aspect-ratio:4/3; border:0"
+        title="HalfAdder (Simten)" loading="lazy"></iframe>
+```
+
+Sites that embed by URL take the bare link,
+`https://embed.simten.dev/s/abc123`. Two options go on the end of it:
+
+| Option | Values | Default |
+|--------|--------|---------|
+| `theme` | `light`, `dark`, `auto` (follows the reader's system) | `auto` |
+| `controls` | `1` shows the clock controls, `0` hides them | `1` |
+
+Readers can flip switches and step the clock. Anything that would
+change the circuit happens on simten.dev: the **Open in Simten** link
+opens it in the editor in a new tab. Share links don't expire, so an
+embed keeps working. How the embed page is isolated is in
+[Security](/docs/security#embed-pages).
+
 ## Tier 1: Drop-in `<CircuitEmbed />`
 
 The default. One component, sensible defaults, identical look across

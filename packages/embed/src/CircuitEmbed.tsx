@@ -19,9 +19,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@simten/ui/primitives/tooltip';
-import { encodeSourceForUrl } from '@simten/ui/share';
 import { type CSSProperties, type ReactElement, type Ref, useState } from 'react';
 import { CircuitViewer, type CircuitViewerHandle, type HarnessedLayout } from './CircuitViewer';
+import { forkUrl } from './fork-url';
 import { useShareCircuit } from './share-context';
 
 /**
@@ -67,8 +67,9 @@ export interface CircuitEmbedProps<C extends Circuit = Circuit> {
   description?: string;
   /**
    * Custom URL for the card's right-side link. When omitted (the common case),
-   * a Fork button is rendered that opens the circuit in the simten.dev editor
-   * via `/circuit/<lz-encoded-source>`. Pass `href` only to override.
+   * a Fork button is rendered that opens the circuit in the simten.dev editor:
+   * as a new share link on simten.dev, otherwise via
+   * `/circuit/<lz-encoded-source>`. Pass `href` only to override.
    */
   href?: string;
   /**
@@ -188,16 +189,9 @@ export function CircuitEmbed<C extends Circuit = Circuit>({
     if (forkPending) return;
     try {
       const source = forkSource ?? circuitToSource(circuit);
-      // Use the KV shortener when available (simten.dev). Outside simten.dev
-      // — embeds on third-party pages — fall back to the inline-encoded URL.
-      if (shareCircuit) {
-        setForkPending(true);
-        const { hash } = await shareCircuit(source);
-        window.open(`${simtenHost()}/circuit/s/${hash}`, '_blank', 'noopener');
-      } else {
-        const encoded = encodeSourceForUrl(source);
-        window.open(`${simtenHost()}/circuit/${encoded}`, '_blank', 'noopener');
-      }
+      setForkPending(true);
+      const url = await forkUrl({ source, shareCircuit, host: simtenHost() });
+      window.open(url, '_blank', 'noopener');
     } catch (err) {
       setForkError(err instanceof Error ? err.message : "Couldn't fork this circuit");
       setTimeout(() => setForkError(null), 3000);

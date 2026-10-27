@@ -1,6 +1,6 @@
 # Privacy Policy
 
-**Effective:** 2026-05-28
+**Effective:** 2026-10-27
 
 ## TL;DR
 
@@ -14,7 +14,7 @@ This document explains the details so you don't have to take that on faith.
 
 **Cloudflare Analytics Engine, share events only.** When you create or load a shared circuit, we increment two counters in Cloudflare's first-party analytics product: `share_create` (with the hash and source byte length) and `share_read` (with the hash). No IP, no user agent, no personal data is logged here — we use it to size capacity and spot abuse patterns. There is no tracker on any page, no Google Analytics, no PostHog, no Sentry, no Plausible. We considered them and chose not to ship them.
 
-**Shared circuit source (Cloudflare KV).** If you press the "Share" button in the editor, the circuit source code is stored verbatim in Cloudflare KV under a content hash, so anyone with the link can load it. Source ≤ 100 KB. TTL is 2 years and refreshes on every read (active links don't expire). Sharing is rate-limited (30 shares per IP per 60 seconds).
+**Shared circuit source (Cloudflare KV).** If you press the "Share" button in the editor, the circuit source code is stored verbatim in Cloudflare KV under a content hash, so anyone with the link can load it, on simten.dev or embedded in another site through embed.simten.dev. Source ≤ 100 KB. Links don't expire, so an embedded circuit keeps working. Sharing is rate-limited (30 shares per IP per 60 seconds, and a site-wide daily cap).
 
 ## What we don't collect
 
@@ -51,7 +51,7 @@ The chat panel in the editor is a passive view over a connection to your **local
 
 - Cloudflare access logs: per Cloudflare's defaults (typically days, not months).
 - Cloudflare Analytics Engine share counters: indefinite, but contain no personal data.
-- Shared circuits in KV: 2 years, refreshed on every read. Email [privacy@simten.dev](mailto:privacy@simten.dev) to request deletion of a specific hash.
+- Shared circuits in KV: kept until deleted. Email [privacy@simten.dev](mailto:privacy@simten.dev) to request deletion of a specific hash.
 
 ## Your rights (GDPR / CCPA)
 

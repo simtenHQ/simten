@@ -1,0 +1,67 @@
+/* The page around the circuit: full-bleed, the embed's own background, and a
+   status line while the share loads. The circuit's styles come with
+   @simten/embed. */
+
+:root {
+  color-scheme: light dark;
+  --page-bg: #f8f9fb;
+  --page-text: #4b5563;
+  --page-link-bg: rgba(248, 249, 251, 0.9);
+  --page-border: rgba(0, 0, 0, 0.12);
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --page-bg: #141418;
+  --page-text: #a1a1aa;
+  --page-link-bg: rgba(17, 17, 20, 0.85);
+  --page-border: rgba(85, 85, 95, 0.6);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--page-bg);
+  color: var(--page-text);
+  font: 14px/1.5 ui-sans-serif, system-ui, sans-serif;
+}
+
+#embed {
+  position: relative;
+  height: 100%;
+}
+
+.status {
+  display: flex;
+  height: 100%;
+  margin: 0;
+  padding: 16px;
+  box-sizing: border-box;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+.open-in-simten {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  padding: 3px 10px;
+  border: 1px solid var(--page-border);
+  border-radius: 4px;
+  background: var(--page-link-bg);
+  color: inherit;
+  font-size: 12px;
+  text-decoration: none;
+}
+
+.open-in-simten:hover {
+  opacity: 0.8;
+}

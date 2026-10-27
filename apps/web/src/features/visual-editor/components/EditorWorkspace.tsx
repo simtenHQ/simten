@@ -37,6 +37,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SiteHeader } from '@/components/SiteHeader';
 import { useTheme } from '@/components/ThemeProvider';
 import { ErrorDisplay } from '@/features/code-editor';
+import { ShareDialog } from '@/features/share/ShareDialog';
 
 /** Check if a circuit name is an auto-generated harness (autoHarness appends 'Demo') */
 function isHarnessName(name: string): boolean {
@@ -198,16 +199,11 @@ export function EditorWorkspace({
     return builtFromIR(circuit, [...compiler.result.libraryCircuits, ...compiler.result.circuits]);
   }, [compiler.result, circuit]);
 
-  // Verilog export button state; mirrors shareStatus. Export used to fail into
+  // Verilog export button state. Export used to fail into
   // a bare console.error, which was survivable when the only failure was a throw
   // but not now that it can also succeed with holes in it (see below).
   const [exportStatus, setExportStatus] = useState<
     { kind: 'idle' } | { kind: 'error'; message: string }
-  >({ kind: 'idle' });
-
-  // Share button state
-  const [shareStatus, setShareStatus] = useState<
-    { kind: 'idle' } | { kind: 'sharing' } | { kind: 'copied' } | { kind: 'error'; message: string }
   >({ kind: 'idle' });
 
   // Drawer state
@@ -297,46 +293,11 @@ export function EditorWorkspace({
   }, []);
 
   // ── Share button ──
-  const handleShare = useCallback(async () => {
-    const source = editorRef.current?.getValue() ?? '';
-    if (!source.trim()) {
-      setShareStatus({ kind: 'error', message: 'Nothing to share' });
-      setTimeout(() => setShareStatus({ kind: 'idle' }), 2000);
-      return;
-    }
-    // Always a short link, the way Fork does it. This used to inline the whole
-    // compressed source in the URL for anything under 4000 characters, which
-    // is most circuits, so the common case produced a link too long to paste
-    // anywhere civilised. The editor only runs on simten.dev, where the server
-    // function always exists, so the inline form bought nothing here. It stays
-    // in `CircuitEmbed` for embeds on third-party pages, which have no server
-    // to call, and `/circuit/<encoded>` keeps resolving so old links live.
-    //
-    // It also means every share is now counted: `share_create` only fires on
-    // this path, so inline shares were invisible to analytics.
-    let url: string;
-    setShareStatus({ kind: 'sharing' });
-    try {
-      // Dynamic import keeps the `cloudflare:workers`-backed server fn out of
-      // the standalone client-only viewer build's module graph.
-      const { shareCircuit } = await import('@/features/share/server');
-      const { hash } = await shareCircuit({ data: { source } });
-      url = `${window.location.origin}/circuit/s/${hash}`;
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Sharing failed';
-      setShareStatus({ kind: 'error', message });
-      setTimeout(() => setShareStatus({ kind: 'idle' }), 2500);
-      return;
-    }
-    try {
-      await navigator.clipboard.writeText(url);
-      setShareStatus({ kind: 'copied' });
-      setTimeout(() => setShareStatus({ kind: 'idle' }), 2000);
-    } catch {
-      setShareStatus({ kind: 'error', message: 'Clipboard blocked' });
-      setTimeout(() => setShareStatus({ kind: 'idle' }), 2500);
-    }
-  }, []);
+  // The dialog creates the share link when it opens: always a short link
+  // (#368), since the editor only runs on simten.dev where the server function
+  // exists. `/circuit/<encoded>` keeps resolving so links from before then live.
+  const [shareOpen, setShareOpen] = useState(false);
+  const getShareSource = useCallback(() => editorRef.current?.getValue() ?? '', []);
 
   // ── Simulation, uses same sandbox-backed hook as embeds ──
   // The editor already compiled source via sandbox.compile(), so evals exist in the sandbox.
@@ -549,24 +510,20 @@ export function EditorWorkspace({
                     <div className="h-5 w-px bg-border" />
 
                     <Button
-                      onClick={handleShare}
+                      onClick={() => setShareOpen(true)}
                       variant="outline"
                       size="sm"
                       className="gap-2"
-                      title="Copy a shareable link to this circuit"
-                      disabled={shareStatus.kind === 'sharing'}
+                      title="Share a link to this circuit, or embed it in another site"
                     >
                       <Share2 className="h-4 w-4" />
-                      <span className="hidden sm:inline text-xs">
-                        {shareStatus.kind === 'sharing'
-                          ? 'Sharing…'
-                          : shareStatus.kind === 'copied'
-                            ? 'Copied!'
-                            : shareStatus.kind === 'error'
-                              ? shareStatus.message
-                              : 'Share'}
-                      </span>
+                      <span className="hidden sm:inline text-xs">Share</span>
                     </Button>
+                    <ShareDialog
+                      open={shareOpen}
+                      onOpenChange={setShareOpen}
+                      getSource={getShareSource}
+                    />
                   </>
                 )}
 
