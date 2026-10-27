@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { internalsOf } from '../../circuit/internals.js';
 import { executeCircuitCode, stripTypes } from '../execute.js';
 
 // ============================================================================
@@ -41,9 +42,8 @@ describe('executeCircuitCode', () => {
     `);
 
     expect(result.error).toBeNull();
-    expect(result.circuit).not.toBeNull();
-    expect(result.circuit!.name).toBe('MyAnd');
     expect(result.circuits).toHaveLength(1);
+    expect(result.circuits[0].name).toBe('MyAnd');
   });
 
   it('executes a composite circuit using stdlib', () => {
@@ -62,9 +62,10 @@ describe('executeCircuitCode', () => {
     `);
 
     expect(result.error).toBeNull();
-    expect(result.circuit!.name).toBe('HalfAdder');
-    expect(result.circuit!.nodes).toHaveLength(2);
-    expect(result.circuit!.connections).toHaveLength(6);
+    expect(result.circuits.map((c) => c.name)).toEqual(['HalfAdder']);
+    const ir = internalsOf(result.circuits[0]).ir;
+    expect(ir.nodes).toHaveLength(2);
+    expect(ir.connections).toHaveLength(6);
   });
 
   it('collects multiple circuits', () => {
@@ -86,7 +87,6 @@ describe('executeCircuitCode', () => {
     expect(result.circuits).toHaveLength(2);
     expect(result.circuits[0].name).toBe('CompA');
     expect(result.circuits[1].name).toBe('CompB');
-    expect(result.circuit!.name).toBe('CompB');
   });
 
   it('handles TypeScript syntax', () => {
@@ -100,8 +100,11 @@ describe('executeCircuitCode', () => {
     `);
 
     expect(result.error).toBeNull();
-    expect(result.circuit!.name).toBe('MyAdder');
-    expect(result.circuit!.inputs[0].portType).toEqual({ kind: 'bus', width: 8 });
+    expect(result.circuits.map((c) => c.name)).toEqual(['MyAdder']);
+    expect(internalsOf(result.circuits[0]).ir.inputs[0].portType).toEqual({
+      kind: 'bus',
+      width: 8,
+    });
   });
 
   it('handles parameterized component factories', () => {
@@ -138,7 +141,7 @@ describe('executeCircuitCode', () => {
     `);
 
     expect(result.error).toBeNull();
-    expect(result.circuit!.nodes[0].componentRef).toBe('Not');
+    expect(internalsOf(result.circuits[0]).ir.nodes[0].componentRef).toBe('Not');
   });
 
   it('registers user circuits in the library', () => {
@@ -162,7 +165,8 @@ describe('error handling', () => {
   it('returns error for syntax errors', () => {
     const result = executeCircuitCode(`const x = {{{`);
     expect(result.error).not.toBeNull();
-    expect(result.circuit).toBeNull();
+    expect(result.circuits).toHaveLength(0);
+    expect(result.exported).toHaveLength(0);
   });
 
   it('returns error for runtime errors', () => {
@@ -179,8 +183,8 @@ describe('error handling', () => {
   it('returns empty result for code with no circuits', () => {
     const result = executeCircuitCode(`const x = 42`);
     expect(result.error).toBeNull();
-    expect(result.circuit).toBeNull();
     expect(result.circuits).toHaveLength(0);
+    expect(result.exported).toHaveLength(0);
   });
 });
 
@@ -191,7 +195,7 @@ describe('error handling', () => {
  * `circuit()` calls stayed empty and the editor reported an empty file at
  * someone who could plainly see a component on screen. `circuits` still means
  * "constructed here" — the MCP tools report it as that — so the re-export
- * lands in `exportedCircuits` instead, and a renderer falls back to it.
+ * lands only in `exported`, and a renderer falls back to it.
  */
 describe('exported components', () => {
   it('reports a re-exported stdlib component without claiming it was defined', () => {
@@ -202,8 +206,8 @@ describe('exported components', () => {
 
     expect(result.error).toBeNull();
     expect(result.circuits, 'nothing was defined here').toHaveLength(0);
-    expect(result.exportedCircuits.map((c) => c.name)).toEqual(['FullAdder']);
-    expect(result.circuit?.name, 'renderable falls back to the export').toBe('FullAdder');
+    expect(result.exported.map((c) => c.name)).toEqual(['FullAdder']);
+    expect(result.library.definitions.resolveCircuit('FullAdder')).toBeDefined();
   });
 
   it('calls a parameterised component factory for its default instance', () => {
@@ -213,11 +217,10 @@ describe('exported components', () => {
     `);
 
     expect(result.error).toBeNull();
-    expect(result.exportedCircuits).toHaveLength(1);
-    expect(result.circuit?.name).toBe('Register');
+    expect(result.exported.map((c) => c.name)).toEqual(['Register']);
   });
 
-  it('prefers what the source defined over what it re-exported', () => {
+  it('exports what the source defined and what it re-exported, defined ones as built', () => {
     const result = executeCircuitCode(`
       import { FullAdder } from '@simten/core/std';
       export const Mine = circuit('Mine', {
@@ -233,8 +236,8 @@ describe('exported components', () => {
     `);
 
     expect(result.circuits.map((c) => c.name)).toEqual(['Mine']);
-    expect(result.circuit?.name).toBe('Mine');
-    expect(result.exportedCircuits.map((c) => c.name)).toEqual(['FullAdder']);
+    expect(result.exported.map((c) => c.name)).toEqual(['Mine', 'FullAdder']);
+    expect(result.exported[0], 'a built export is the circuit it built').toBe(result.circuits[0]);
   });
 
   it('stays empty when the export is not a component', () => {
@@ -242,7 +245,6 @@ describe('exported components', () => {
 
     expect(result.error).toBeNull();
     expect(result.circuits).toHaveLength(0);
-    expect(result.exportedCircuits).toHaveLength(0);
-    expect(result.circuit).toBeNull();
+    expect(result.exported).toHaveLength(0);
   });
 });

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit, reg } from '../../circuit/index.js';
 import { internalsOf } from '../../circuit/internals.js';
+import type { CircuitIR } from '../../ir/circuit-ir.js';
 import { And, Not, Or, Register, Xor } from '../../std/index.js';
 import { CircuitToSourceError, circuitToSource } from '../circuit-to-source.js';
 import { executeCircuitCode } from '../execute.js';
@@ -15,6 +16,12 @@ function compileSource(source: string): ReturnType<typeof executeCircuitCode> {
 
 function roundTrip(built: ReturnType<typeof circuit>): ReturnType<typeof executeCircuitCode> {
   return compileSource(circuitToSource(built));
+}
+
+/** The IR of the last circuit a compile built: the top of a serialized source. */
+function lastIR(result: ReturnType<typeof executeCircuitCode>): CircuitIR | undefined {
+  const last = result.circuits[result.circuits.length - 1];
+  return last && internalsOf(last).ir;
 }
 
 describe('circuitToSource', () => {
@@ -33,12 +40,13 @@ describe('circuitToSource', () => {
 
     const result = roundTrip(HalfAdder);
     expect(result.error).toBeNull();
-    expect(result.circuit?.name).toBe('HalfAdder');
-    expect(result.circuit?.inputs.map((p) => p.name).sort()).toEqual(['a', 'b']);
-    expect(result.circuit?.outputs.map((p) => p.name).sort()).toEqual(['carry', 'sum']);
-    expect(result.circuit?.nodes.length).toBe(2);
+    const top = lastIR(result);
+    expect(top?.name).toBe('HalfAdder');
+    expect(top?.inputs.map((p) => p.name).sort()).toEqual(['a', 'b']);
+    expect(top?.outputs.map((p) => p.name).sort()).toEqual(['carry', 'sum']);
+    expect(top?.nodes.length).toBe(2);
     // Connection count matches: 4 sources × variable targets, total 6 wires
-    expect(result.circuit?.connections.length).toBe(internalsOf(HalfAdder).ir.connections.length);
+    expect(top?.connections.length).toBe(internalsOf(HalfAdder).ir.connections.length);
   });
 
   // Skipped: this circuit has no `connect:` so it lands as a primitive shell,
@@ -55,7 +63,7 @@ describe('circuitToSource', () => {
     expect(source).toContain('y: bus(8)');
     const result = compileSource(source);
     expect(result.error).toBeNull();
-    expect(result.circuit?.inputs[0].portType).toEqual({ kind: 'bus', width: 8 });
+    expect(lastIR(result)?.inputs[0].portType).toEqual({ kind: 'bus', width: 8 });
   });
 
   it('preserves node arguments via factory-call form', () => {

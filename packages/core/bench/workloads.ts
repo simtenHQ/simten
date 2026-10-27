@@ -1,3 +1,4 @@
+import { internalsOf } from '../src/circuit/internals.js';
 import { EXAMPLES } from '../src/examples/catalog.js';
 import { createEngine, elaborate } from '../src/simulator/index.js';
 import type { SimulatorEngine } from '../src/simulator/types.js';
@@ -32,7 +33,8 @@ export function load(workload: Workload): Loaded {
   if (!example) throw new Error(`no example '${workload.id}'`);
   const compiled = executeCircuitCode(example.code);
   if (compiled.error) throw new Error(`${workload.id}: ${compiled.error}`);
-  const top = compiled.circuits[compiled.circuits.length - 1];
+  // An example's top is the last circuit it builds, the one the editor runs.
+  const top = internalsOf(compiled.circuits[compiled.circuits.length - 1]).ir;
   const engine = createEngine(elaborate(top, compiled.library.definitions), {
     library: compiled.library,
   });
