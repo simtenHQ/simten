@@ -34,6 +34,12 @@ describe('siteWideHeaders', () => {
     const csp = new Map(siteWideHeaders(HEADERS_FILE)).get('Content-Security-Policy');
     expect(csp).toMatch(/frame-src [^;]*https:\/\/sandbox\.simtenusercontent\.dev/);
   });
+
+  it('frames the embed page for the Share preview, and is itself framed only by itself', () => {
+    const csp = new Map(siteWideHeaders(HEADERS_FILE)).get('Content-Security-Policy');
+    expect(csp).toMatch(/frame-src [^;]*https:\/\/embed\.simten\.dev/);
+    expect(csp).toMatch(/frame-ancestors 'self'(;|$)/);
+  });
 });
 
 describe('withHeaders', () => {
