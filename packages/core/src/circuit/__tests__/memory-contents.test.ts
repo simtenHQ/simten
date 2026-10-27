@@ -5,6 +5,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { simulate } from '../../simulator/simulate.js';
+import { nodesOf } from '../../simulator/simulation.js';
 import { DualPortRAM, ROM, romFromBytes } from '../../std/index.js';
 import { bus, circuit, type MemoryContents, mem } from '../index.js';
 
@@ -37,20 +38,15 @@ interface Reader {
   set(values: { addr: number }): void;
   tick(): void;
   get(name: 'out'): number;
-  dispose(): void;
 }
 
 /** Read each address: set it, tick, read `out`. */
 function readAll(sim: Reader, addrs: number[]): number[] {
-  try {
-    return addrs.map((addr) => {
-      sim.set({ addr });
-      sim.tick();
-      return sim.get('out');
-    });
-  } finally {
-    sim.dispose();
-  }
+  return addrs.map((addr) => {
+    sim.set({ addr });
+    sim.tick();
+    return sim.get('out');
+  });
 }
 
 describe('memory contents', () => {
@@ -103,26 +99,22 @@ describe('memory contents', () => {
     expect(() => DualPortRAM({ memory: map })).toThrow(/got a Map/);
   });
 
-  it('setNode loads { address: value } contents into a memory', () => {
+  it('nodesOf(sim).set loads { address: value } contents into a memory', () => {
     const sim = simulate(romReader(ROM()));
-    try {
-      sim.setNode('rom', { 0: 0x11, 2: 0x22 });
-      const reads = [0, 1, 2].map((addr) => {
-        sim.set({ addr });
-        sim.tick();
-        return sim.get('out');
-      });
-      expect(reads).toEqual([0x11, 0, 0x22]);
+    nodesOf(sim).set('rom', { 0: 0x11, 2: 0x22 });
+    const reads = [0, 1, 2].map((addr) => {
+      sim.set({ addr });
+      sim.tick();
+      return sim.get('out');
+    });
+    expect(reads).toEqual([0x11, 0, 0x22]);
 
-      // Type-level: setNode takes a number or memory contents, nothing else.
-      // @ts-expect-error a Map is not memory contents
-      expect(() => sim.setNode('rom', new Map([[0, 1]]))).toThrow(/got a Map/);
-      // @ts-expect-error an array is not memory contents
-      expect(() => sim.setNode('rom', [1, 2])).toThrow(/got an array/);
-      // @ts-expect-error a string is not a node value
-      expect(() => sim.setNode('rom', 'hello')).toThrow(/got string/);
-    } finally {
-      sim.dispose();
-    }
+    // Type-level: set takes a number or memory contents, nothing else.
+    // @ts-expect-error a Map is not memory contents
+    expect(() => nodesOf(sim).set('rom', new Map([[0, 1]]))).toThrow(/got a Map/);
+    // @ts-expect-error an array is not memory contents
+    expect(() => nodesOf(sim).set('rom', [1, 2])).toThrow(/got an array/);
+    // @ts-expect-error a string is not a node value
+    expect(() => nodesOf(sim).set('rom', 'hello')).toThrow(/got string/);
   });
 });

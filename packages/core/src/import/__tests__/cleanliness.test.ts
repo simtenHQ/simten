@@ -98,7 +98,6 @@ describe('cleanliness — RV32I_CPU_Core scale guard (measured-then-ratcheted)',
     const deps = [...m.definitions.values()].filter((c) => c.name !== m.t.name);
     const sim = simulate(buildFromIR(m.t, deps, m.behaviors));
     sim.tick();
-    sim.dispose();
   });
 });
 
@@ -130,6 +129,5 @@ describe('cleanliness — SERV serv_rf_top, unmodified third-party RTL', () => {
     const deps = [...m.definitions.values()].filter((c) => c.name !== m.t.name);
     const sim = simulate(buildFromIR(m.t, deps, m.behaviors));
     sim.tick();
-    sim.dispose();
   });
 });

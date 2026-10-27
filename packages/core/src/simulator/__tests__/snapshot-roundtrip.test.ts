@@ -31,16 +31,17 @@
  *      property is vacuous.
  *
  *   2. `engine.snapshot()` captures top-level inputs and Switch/Input
- *      values along with engine state (see simulation-model.test.ts), but
- *      it does NOT revert the `SimulationSession`-level cycle counter on
- *      restore. Tests below re-drive inputs after every restore anyway and
- *      assert on output traces, not on `sim.cycle`.
+ *      values along with engine state (see simulation-model.test.ts), and
+ *      `restore` puts `sim.cycle` back too. Tests below re-drive inputs
+ *      after every restore anyway and assert on output traces, not on
+ *      `sim.cycle`.
  */
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { Adder, DFlipFlop, Not, RAM, Register, Xor } from '../../std/index.js';
-import { type Snapshot, simulate } from '../simulate.js';
+import { simulate } from '../simulate.js';
+import type { Snapshot } from '../simulation.js';
 import type { SimulatorSnapshot } from '../types.js';
 
 // ============================================================================
@@ -98,70 +99,62 @@ function recordTrace<T>(sim: { tick(): void }, ticks: number, read: OutputReader
 describe('snapshot/restore — sequential bit', () => {
   it('Counter2Bit: identical trajectory after restore', () => {
     const sim = simulate(Counter2Bit);
-    try {
-      // Run forward to mid-cycle so the state we capture is non-trivial.
-      sim.tickN(5);
-      const snap = sim.snapshot();
-      // Sanity: counter is in some non-initial state we can disturb.
-      const stateAtSnap = { b0: sim.get('bit0'), b1: sim.get('bit1') };
+    // Run forward to mid-cycle so the state we capture is non-trivial.
+    sim.tick(5);
+    const snap = sim.snapshot();
+    // Sanity: counter is in some non-initial state we can disturb.
+    const stateAtSnap = { b0: sim.get('bit0'), b1: sim.get('bit1') };
 
-      const read = () => ({
-        b0: sim.get('bit0'),
-        b1: sim.get('bit1'),
-      });
+    const read = () => ({
+      b0: sim.get('bit0'),
+      b1: sim.get('bit1'),
+    });
 
-      const traceA = recordTrace(sim, 12, read);
+    const traceA = recordTrace(sim, 12, read);
 
-      // Restore and re-run the same number of ticks. Trace must match.
-      sim.restore(snap);
-      // The flip-flop outputs after restore must equal what they were
-      // when the snapshot was taken.
-      expect(read()).toEqual(stateAtSnap);
+    // Restore and re-run the same number of ticks. Trace must match.
+    sim.restore(snap);
+    // The flip-flop outputs after restore must equal what they were
+    // when the snapshot was taken.
+    expect(read()).toEqual(stateAtSnap);
 
-      const traceB = recordTrace(sim, 12, read);
-      expect(traceB).toEqual(traceA);
-    } finally {
-      sim.dispose();
-    }
+    const traceB = recordTrace(sim, 12, read);
+    expect(traceB).toEqual(traceA);
   });
 
   it('multiple snapshots can be restored out of order', () => {
     const sim = simulate(Counter2Bit);
-    try {
-      // Capture snapshots at three distinct points and remember
-      // the next-output-after-snapshot at each.
-      sim.tickN(2);
-      const snapEarly = sim.snapshot();
-      sim.tick();
-      const earlyNext = { b0: sim.get('bit0'), b1: sim.get('bit1') };
+    // Capture snapshots at three distinct points and remember
+    // the next-output-after-snapshot at each.
+    sim.tick(2);
+    const snapEarly = sim.snapshot();
+    sim.tick();
+    const earlyNext = { b0: sim.get('bit0'), b1: sim.get('bit1') };
 
-      sim.tickN(3);
-      const snapMid = sim.snapshot();
-      sim.tick();
-      const midNext = { b0: sim.get('bit0'), b1: sim.get('bit1') };
+    sim.tick(3);
+    const snapMid = sim.snapshot();
+    sim.tick();
+    const midNext = { b0: sim.get('bit0'), b1: sim.get('bit1') };
 
-      sim.tickN(5);
-      const snapLate = sim.snapshot();
-      sim.tick();
-      const lateNext = { b0: sim.get('bit0'), b1: sim.get('bit1') };
+    sim.tick(5);
+    const snapLate = sim.snapshot();
+    sim.tick();
+    const lateNext = { b0: sim.get('bit0'), b1: sim.get('bit1') };
 
-      // Restore in reverse order. Each restore must reproduce its
-      // own next-output exactly — proving snapshots are independent
-      // and restoration does not depend on history order.
-      sim.restore(snapMid);
-      sim.tick();
-      expect({ b0: sim.get('bit0'), b1: sim.get('bit1') }).toEqual(midNext);
+    // Restore in reverse order. Each restore must reproduce its
+    // own next-output exactly — proving snapshots are independent
+    // and restoration does not depend on history order.
+    sim.restore(snapMid);
+    sim.tick();
+    expect({ b0: sim.get('bit0'), b1: sim.get('bit1') }).toEqual(midNext);
 
-      sim.restore(snapLate);
-      sim.tick();
-      expect({ b0: sim.get('bit0'), b1: sim.get('bit1') }).toEqual(lateNext);
+    sim.restore(snapLate);
+    sim.tick();
+    expect({ b0: sim.get('bit0'), b1: sim.get('bit1') }).toEqual(lateNext);
 
-      sim.restore(snapEarly);
-      sim.tick();
-      expect({ b0: sim.get('bit0'), b1: sim.get('bit1') }).toEqual(earlyNext);
-    } finally {
-      sim.dispose();
-    }
+    sim.restore(snapEarly);
+    sim.tick();
+    expect({ b0: sim.get('bit0'), b1: sim.get('bit1') }).toEqual(earlyNext);
   });
 });
 
@@ -172,49 +165,41 @@ describe('snapshot/restore — sequential bit', () => {
 describe('snapshot/restore — sequential bus', () => {
   it('Accumulator: bus state survives the round-trip', () => {
     const sim = simulate(Accumulator);
-    try {
-      // Accumulate some value, then snapshot.
-      sim.set({ addend: 7, we: 1 });
-      sim.tickN(6); // q should be 42 (7 * 6)
-      const snap = sim.snapshot();
-      const qAtSnap = sim.get('q');
-      expect(qAtSnap).toBe(42);
+    // Accumulate some value, then snapshot.
+    sim.set({ addend: 7, we: 1 });
+    sim.tick(6); // q should be 42 (7 * 6)
+    const snap = sim.snapshot();
+    const qAtSnap = sim.get('q');
+    expect(qAtSnap).toBe(42);
 
-      // Run further with a different addend.
-      sim.set({ addend: 3, we: 1 });
-      const traceA = recordTrace(sim, 8, () => sim.get('q'));
+    // Run further with a different addend.
+    sim.set({ addend: 3, we: 1 });
+    const traceA = recordTrace(sim, 8, () => sim.get('q'));
 
-      // Restore — q must be back to 42 — and the same input sequence
-      // must reproduce the same trace.
-      sim.restore(snap);
-      expect(sim.get('q')).toBe(qAtSnap);
+    // Restore — q must be back to 42 — and the same input sequence
+    // must reproduce the same trace.
+    sim.restore(snap);
+    expect(sim.get('q')).toBe(qAtSnap);
 
-      sim.set({ addend: 3, we: 1 });
-      const traceB = recordTrace(sim, 8, () => sim.get('q'));
+    sim.set({ addend: 3, we: 1 });
+    const traceB = recordTrace(sim, 8, () => sim.get('q'));
 
-      expect(traceB).toEqual(traceA);
-    } finally {
-      sim.dispose();
-    }
+    expect(traceB).toEqual(traceA);
   });
 
   it('snapshots are not aliased — mutating the simulator does not mutate the snapshot', () => {
     const sim = simulate(Accumulator);
-    try {
-      sim.set({ addend: 5, we: 1 });
-      sim.tickN(4); // q = 20
-      const snap = sim.snapshot();
+    sim.set({ addend: 5, we: 1 });
+    sim.tick(4); // q = 20
+    const snap = sim.snapshot();
 
-      // Run a long destructive sequence after snapshotting.
-      sim.set({ addend: 100, we: 1 });
-      sim.tickN(50);
+    // Run a long destructive sequence after snapshotting.
+    sim.set({ addend: 100, we: 1 });
+    sim.tick(50);
 
-      // Restoring must still land us at q = 20, not at the mutated value.
-      sim.restore(snap);
-      expect(sim.get('q')).toBe(20);
-    } finally {
-      sim.dispose();
-    }
+    // Restoring must still land us at q = 20, not at the mutated value.
+    sim.restore(snap);
+    expect(sim.get('q')).toBe(20);
   });
 });
 
@@ -248,72 +233,60 @@ function memoryOf(snap: Snapshot) {
 describe('snapshot/restore — memory', () => {
   it('RAM contents survive the round-trip', () => {
     const sim = simulate(Scratchpad);
-    try {
-      sim.set({ address: 0, writeData: 11, writeEnable: 1 });
-      sim.tick();
-      sim.set({ address: 1, writeData: 22, writeEnable: 1 });
-      sim.tick();
+    sim.set({ address: 0, writeData: 11, writeEnable: 1 });
+    sim.tick();
+    sim.set({ address: 1, writeData: 22, writeEnable: 1 });
+    sim.tick();
 
-      const snap = sim.snapshot();
+    const snap = sim.snapshot();
 
-      // Overwrite address 0 after snapshotting.
-      sim.set({ address: 0, writeData: 99, writeEnable: 1 });
-      sim.tick();
-      sim.set({ address: 0, writeEnable: 0 });
-      sim.tick();
-      expect(sim.get('readData')).toBe(99);
+    // Overwrite address 0 after snapshotting.
+    sim.set({ address: 0, writeData: 99, writeEnable: 1 });
+    sim.tick();
+    sim.set({ address: 0, writeEnable: 0 });
+    sim.tick();
+    expect(sim.get('readData')).toBe(99);
 
-      sim.restore(snap);
-      sim.set({ address: 0, writeEnable: 0 });
-      sim.tick();
-      expect(sim.get('readData')).toBe(11);
-    } finally {
-      sim.dispose();
-    }
+    sim.restore(snap);
+    sim.set({ address: 0, writeEnable: 0 });
+    sim.tick();
+    expect(sim.get('readData')).toBe(11);
   });
 
   it('a held snapshot is not mutated by later writes', () => {
     const sim = simulate(Scratchpad);
-    try {
-      sim.set({ address: 0, writeData: 11, writeEnable: 1 });
-      sim.tick();
+    sim.set({ address: 0, writeData: 11, writeEnable: 1 });
+    sim.tick();
 
-      const snap = sim.snapshot();
-      const captured = memoryOf(snap);
-      expect(captured.get(0)).toBe(11);
+    const snap = sim.snapshot();
+    const captured = memoryOf(snap);
+    expect(captured.get(0)).toBe(11);
 
-      // Every subsequent write must land on a different Map than the one
-      // the snapshot is holding. Writing in place here would silently
-      // rewrite history.
-      sim.set({ address: 0, writeData: 99, writeEnable: 1 });
-      sim.tick();
-      sim.set({ address: 7, writeData: 42, writeEnable: 1 });
-      sim.tick();
+    // Every subsequent write must land on a different Map than the one
+    // the snapshot is holding. Writing in place here would silently
+    // rewrite history.
+    sim.set({ address: 0, writeData: 99, writeEnable: 1 });
+    sim.tick();
+    sim.set({ address: 7, writeData: 42, writeEnable: 1 });
+    sim.tick();
 
-      expect(captured.get(0)).toBe(11);
-      expect(captured.has(7)).toBe(false);
-    } finally {
-      sim.dispose();
-    }
+    expect(captured.get(0)).toBe(11);
+    expect(captured.has(7)).toBe(false);
   });
 
   it('a read-only memory is never rewritten across ticks', () => {
     const sim = simulate(Scratchpad);
-    try {
-      sim.set({ address: 3, writeData: 77, writeEnable: 1 });
-      sim.tick();
+    sim.set({ address: 3, writeData: 77, writeEnable: 1 });
+    sim.tick();
 
-      const before = memoryOf(sim.snapshot());
-      sim.set({ writeEnable: 0 });
-      sim.tickN(25);
-      const after = memoryOf(sim.snapshot());
+    const before = memoryOf(sim.snapshot());
+    sim.set({ writeEnable: 0 });
+    sim.tick(25);
+    const after = memoryOf(sim.snapshot());
 
-      // No write happened, so copy-on-write should have handed the same
-      // Map straight through rather than cloning it 25 times.
-      expect(after).toBe(before);
-      expect(after.get(3)).toBe(77);
-    } finally {
-      sim.dispose();
-    }
+    // No write happened, so copy-on-write should have handed the same
+    // Map straight through rather than cloning it 25 times.
+    expect(after).toBe(before);
+    expect(after.get(3)).toBe(77);
   });
 });

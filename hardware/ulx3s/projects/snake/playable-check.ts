@@ -21,7 +21,6 @@ import {
   executeCircuitCode,
   internalsOf,
   libraryOf,
-  SimulationSession,
 } from '@simten/core/internal';
 import { EXAMPLES } from '../../../../apps/web/src/features/visual-editor/examples.js';
 import { renderFb } from './cosim-lib.js';
@@ -46,17 +45,17 @@ if (!playable) {
   process.exit(1);
 }
 
-// Driven through the engine rather than simulate(), whose snapshot is opaque:
-// the check reads the framebuffer RAM out of the sequential state.
+// Driven through the engine rather than simulate(): the check reads the
+// framebuffer RAM out of the sequential state, and the RAM isn't on a
+// peripheral bus.
 const library = libraryOf(playable);
 const engine = createEngine(elaborate(internalsOf(playable).ir, library.definitions), { library });
 engine.runCombinational();
-const session = new SimulationSession(engine, { isSequential: true });
 const model = new SnakeRefModel();
 
 function readFb(): Uint8Array {
   const fb = new Uint8Array(FB_SIZE);
-  const seq = session.getState().sequentialState;
+  const seq = engine.getState();
   const ram = seq?.currentState.get('ram');
   if (!(ram instanceof Map)) throw new Error('ram state not found in sequential state');
   for (let a = 0; a < FB_SIZE; a++) fb[a] = (ram as Map<number, number>).get(a) ?? 0;
@@ -104,7 +103,7 @@ for (let i = 0; i < KEYPRESSES.length; i++) {
     engine.setNode('keyboard', SCAN[press]);
     lastDir = DIR[press];
   }
-  for (let t = 0; t < 4; t++) session.tick();
+  for (let t = 0; t < 4; t++) engine.tick();
   model.step(lastDir);
   expectFbEqual(`tick ${i + 1} (press=${press ?? 'none'}, dir=${lastDir})`);
 }
@@ -112,7 +111,6 @@ if (model.eaten < 1) {
   console.error(`❌ script expected at least one eat, got ${model.eaten}`);
   process.exit(1);
 }
-session.dispose();
 console.log(
   `✅ playable harness works: ${KEYPRESSES.length} ticks driven by scan codes, fb matches model throughout (${model.eaten} food eaten, non-arrow key held direction)`,
 );

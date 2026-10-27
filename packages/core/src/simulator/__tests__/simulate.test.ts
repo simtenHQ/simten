@@ -1,29 +1,67 @@
 /**
- * Tests for the typed simulate() API.
+ * Tests for `simulate()` and the `Simulation` it returns.
  *
- * Verifies end-to-end: circuit() → simulate() → set/get/tick/run/snapshot/reset
- * running through the real simulation pipeline.
+ * Verifies end-to-end: circuit() → simulate() → set/get/tick/snapshot/reset and
+ * history, running through the real simulation pipeline, plus the node-level
+ * view `nodesOf` gives the sandbox and tests.
  */
 
-import { afterEach, describe, expect, it } from 'vitest';
-import type { PortMap } from '../../circuit/builder-types.js';
+import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import { And, DFlipFlop, Register, Xor } from '../../std/index.js';
-import type { SimulationHandle } from '../simulate.js';
+import { And, Console, Constant, DFlipFlop, Not, Register, Xor } from '../../std/index.js';
 import { simulate } from '../simulate.js';
+import { nodesOf, type Simulation } from '../simulation.js';
 
-// Track handles for cleanup
-const handles: SimulationHandle[] = [];
-function tracked<I extends PortMap, O extends PortMap>(
-  h: SimulationHandle<I, O>,
-): SimulationHandle<I, O> {
-  handles.push(h as any);
-  return h;
-}
-afterEach(() => {
-  handles.forEach((h) => h.dispose());
-  handles.length = 0;
+// ============================================================================
+// Fixtures
+// ============================================================================
+
+const Inc8 = circuit('Inc8', {
+  inputs: { a: bus(8) },
+  outputs: { y: bus(8) },
+  eval: ({ a }) => ({ y: (a + 1) & 0xff }),
 });
+
+/** Free-running counter: q ← q + 1 every edge. */
+const Counter = circuit('SimCounter', {
+  outputs: { q: bus(8) },
+  nodes: {
+    reg: Register(),
+    inc: Inc8,
+    on: Constant({ value: 1 }),
+  },
+  connect: ({ outputs, nodes: { reg, inc, on } }) => [
+    reg.q.to(inc.a, outputs.q),
+    inc.y.to(reg.data),
+    on.out.to(reg.we),
+  ],
+});
+
+/** A register whose input also feeds an output combinationally. */
+const Passthrough = circuit('SimPassthrough', {
+  inputs: { d: bus(8), we: bit },
+  outputs: { q: bus(8), inverted: bit },
+  nodes: { reg: Register(), not: Not },
+  connect: ({ inputs, outputs, nodes: { reg, not } }) => [
+    inputs.d.to(reg.data),
+    inputs.we.to(reg.we, not.in),
+    reg.q.to(outputs.q),
+    not.out.to(outputs.inverted),
+  ],
+});
+
+const Terminal = circuit('SimTerminal', {
+  inputs: { ch: bus(8), we: bit },
+  outputs: {},
+  nodes: { con: Console },
+  connect: ({ inputs, nodes: { con } }) => [inputs.ch.to(con.data), inputs.we.to(con.we)],
+});
+
+function counterWithHistory(history: number): Simulation {
+  const sim = simulate(Counter, { history });
+  nodesOf(sim).set('reg', 0);
+  return sim;
+}
 
 // ============================================================================
 // Combinational circuits
@@ -31,7 +69,7 @@ afterEach(() => {
 
 describe('combinational circuits', () => {
   it('simulates a single AND gate', () => {
-    const sim = tracked(simulate(And));
+    const sim = simulate(And);
 
     sim.set({ a: 0, b: 0 });
     expect(sim.get('out')).toBe(0);
@@ -46,7 +84,7 @@ describe('combinational circuits', () => {
   });
 
   it('simulates a single XOR gate', () => {
-    const sim = tracked(simulate(Xor));
+    const sim = simulate(Xor);
 
     sim.set({ a: 0, b: 0 });
     expect(sim.get('out')).toBe(0);
@@ -74,7 +112,7 @@ describe('combinational circuits', () => {
       ],
     });
 
-    const sim = tracked(simulate(HalfAdder));
+    const sim = simulate(HalfAdder);
 
     sim.set({ a: 0, b: 0 });
     expect(sim.read()).toEqual({ sum: 0, carry: 0 });
@@ -96,7 +134,7 @@ describe('combinational circuits', () => {
       eval: ({ x }) => ({ y: x > 0 ? x : 0 }),
     });
 
-    const sim = tracked(simulate(ReLU));
+    const sim = simulate(ReLU);
 
     sim.set({ x: 5 });
     expect(sim.get('y')).toBe(5);
@@ -106,9 +144,17 @@ describe('combinational circuits', () => {
   });
 
   it('read() returns all outputs', () => {
-    const sim = tracked(simulate(And));
+    const sim = simulate(And);
     sim.set({ a: 1, b: 1 });
     expect(sim.read()).toEqual({ out: 1 });
+  });
+
+  it('tick settles and leaves the cycle at 0', () => {
+    const sim = simulate(And);
+    sim.set({ a: 1, b: 1 });
+    sim.tick(5);
+    expect(sim.get('out')).toBe(1);
+    expect(sim.cycle).toBe(0);
   });
 });
 
@@ -118,7 +164,7 @@ describe('combinational circuits', () => {
 
 describe('sequential circuits', () => {
   it('simulates a DFlipFlop', () => {
-    const sim = tracked(simulate(DFlipFlop()));
+    const sim = simulate(DFlipFlop());
 
     expect(sim.isSequential).toBe(true);
     expect(sim.cycle).toBe(0);
@@ -137,7 +183,7 @@ describe('sequential circuits', () => {
   });
 
   it('simulates a Register', () => {
-    const sim = tracked(simulate(Register()));
+    const sim = simulate(Register());
 
     // Write enable off — data doesn't capture
     sim.set({ data: 42, we: 0 });
@@ -155,15 +201,30 @@ describe('sequential circuits', () => {
     expect(sim.get('q')).toBe(42);
   });
 
-  it('tickN advances multiple cycles', () => {
-    const sim = tracked(simulate(DFlipFlop()));
+  it('tick(n) advances n cycles', () => {
+    const sim = simulate(DFlipFlop());
     sim.set({ d: 1 });
-    sim.tickN(5);
+    sim.tick(5);
     expect(sim.cycle).toBe(5);
+    expect(sim.get('q')).toBe(1);
+  });
+
+  it('get after set returns the settled value, before any tick', () => {
+    const sim = simulate(Passthrough);
+    expect(sim.get('inverted')).toBe(1);
+
+    sim.set({ d: 7, we: 1 });
+    // The combinational path follows the write; the register waits for the edge.
+    expect(sim.get('inverted')).toBe(0);
+    expect(sim.get('q')).toBe(0);
+    expect(sim.cycle).toBe(0);
+
+    sim.tick();
+    expect(sim.read()).toEqual({ q: 7, inverted: 0 });
   });
 
   it('reset returns to initial state', () => {
-    const sim = tracked(simulate(DFlipFlop()));
+    const sim = simulate(DFlipFlop());
 
     sim.set({ d: 1 });
     sim.tick();
@@ -172,6 +233,7 @@ describe('sequential circuits', () => {
 
     sim.reset();
     expect(sim.cycle).toBe(0);
+    expect(sim.get('q')).toBe(0);
   });
 });
 
@@ -181,7 +243,7 @@ describe('sequential circuits', () => {
 
 describe('snapshot and restore', () => {
   it('saves and restores state', () => {
-    const sim = tracked(simulate(DFlipFlop()));
+    const sim = simulate(DFlipFlop());
 
     sim.set({ d: 1 });
     sim.tick();
@@ -192,67 +254,159 @@ describe('snapshot and restore', () => {
     sim.set({ d: 0 });
     sim.tick();
     expect(sim.get('q')).toBe(0);
+    expect(sim.cycle).toBe(2);
 
     // Restore
     sim.restore(snap);
     expect(sim.get('q')).toBe(1);
+    expect(sim.cycle).toBe(1);
   });
 });
 
 // ============================================================================
-// Watch
+// History
 // ============================================================================
 
-describe('watch', () => {
-  it('notifies on state changes', () => {
-    const sim = tracked(simulate(DFlipFlop()));
-    let callCount = 0;
-    const unsub = sim.watch(() => {
-      callCount++;
-    });
-
+describe('history', () => {
+  it('is off by default: nothing to step to', () => {
+    const sim = simulate(DFlipFlop());
     sim.set({ d: 1 });
+    sim.tick(3);
+    expect(sim.history).toEqual({ length: 0, index: -1 });
+    expect(sim.stepBack()).toBe(false);
+    expect(sim.stepForward()).toBe(false);
+    expect(sim.seek(0)).toBe(false);
+    expect(sim.get('q')).toBe(1);
+    expect(sim.cycle).toBe(3);
+  });
+
+  it('records the start and one entry per tick call', () => {
+    const sim = counterWithHistory(10);
+    expect(sim.history).toEqual({ length: 1, index: 0 });
     sim.tick();
-    expect(callCount).toBeGreaterThan(0);
+    sim.tick(100);
+    expect(sim.history).toEqual({ length: 3, index: 2 });
+    expect(sim.cycle).toBe(101);
 
-    unsub();
+    expect(sim.stepBack()).toBe(true);
+    expect(sim.cycle).toBe(1);
+    expect(sim.get('q')).toBe(1);
+    expect(sim.stepBack()).toBe(true);
+    expect(sim.cycle).toBe(0);
+    expect(sim.get('q')).toBe(0);
+    expect(sim.stepBack()).toBe(false);
+
+    expect(sim.stepForward()).toBe(true);
+    expect(sim.stepForward()).toBe(true);
+    expect(sim.get('q')).toBe(101);
+    expect(sim.stepForward()).toBe(false);
   });
 
-  it('watchPort notifies when specific port changes', () => {
-    const sim = tracked(simulate(DFlipFlop()));
-    const values: number[] = [];
-    const unsub = sim.watchPort('q', (v) => {
-      values.push(v);
-    });
+  it('seek jumps to an index and rejects ones out of range', () => {
+    const sim = counterWithHistory(10);
+    for (let i = 0; i < 4; i++) sim.tick();
+    expect(sim.seek(-1)).toBe(false);
+    expect(sim.seek(5)).toBe(false);
+    expect(sim.seek(1.5)).toBe(false);
+    expect(sim.history.index).toBe(4);
+    expect(sim.seek(2)).toBe(true);
+    expect(sim.get('q')).toBe(2);
+    expect(sim.history).toEqual({ length: 5, index: 2 });
+  });
 
-    sim.set({ d: 1 });
-    sim.tick(); // q changes 0→1
+  it('ticking after a step back drops the steps ahead', () => {
+    const sim = counterWithHistory(10);
+    for (let i = 0; i < 5; i++) sim.tick();
+    sim.seek(2);
+    sim.tick(10);
+    expect(sim.history).toEqual({ length: 4, index: 3 });
+    expect(sim.get('q')).toBe(12);
+    expect(sim.stepForward()).toBe(false);
+  });
 
-    sim.set({ d: 1 });
-    sim.tick(); // q stays 1 — should not notify
+  it('keeps at most `history` entries, dropping the oldest', () => {
+    const sim = counterWithHistory(3);
+    for (let i = 0; i < 5; i++) sim.tick();
+    expect(sim.history).toEqual({ length: 3, index: 2 });
+    sim.seek(0);
+    expect(sim.get('q')).toBe(3);
+  });
 
-    sim.set({ d: 0 });
-    sim.tick(); // q changes 1→0
+  it('reset starts history over from cycle 0', () => {
+    const sim = counterWithHistory(10);
+    sim.tick(3);
+    sim.reset();
+    expect(sim.history).toEqual({ length: 1, index: 0 });
+    expect(sim.stepBack()).toBe(false);
+  });
 
-    expect(values).toEqual([1, 0]);
+  it('rewinds inputs along with state', () => {
+    const sim = simulate(Register(), { history: 10 });
+    sim.set({ data: 5, we: 1 });
+    sim.tick();
+    sim.set({ data: 9, we: 1 });
+    sim.tick();
+    sim.stepBack();
+    // The inputs from entry 1 come back, so the next edge captures 5 again.
+    sim.tick();
+    expect(sim.get('q')).toBe(5);
+  });
 
-    unsub();
+  it('a combinational circuit records nothing', () => {
+    const sim = simulate(And, { history: 10 });
+    sim.set({ a: 1, b: 1 });
+    sim.tick();
+    expect(sim.history).toEqual({ length: 0, index: -1 });
   });
 });
 
 // ============================================================================
-// Auto-run
+// nodesOf
 // ============================================================================
 
-describe('auto-run', () => {
-  it('starts and stops', () => {
-    const sim = tracked(simulate(DFlipFlop()));
-    expect(sim.isRunning).toBe(false);
+describe('nodesOf', () => {
+  it('writes a register by path and settles before the next read', () => {
+    const sim = simulate(Counter);
+    nodesOf(sim).set('reg', 41);
+    expect(sim.get('q')).toBe(41);
+    sim.tick();
+    expect(sim.get('q')).toBe(42);
+  });
 
-    sim.run({ speed: 100 });
-    expect(sim.isRunning).toBe(true);
+  it('reads internal ports by path', () => {
+    const sim = simulate(Counter);
+    nodesOf(sim).set('reg', 9);
+    const ports = nodesOf(sim).ports();
+    expect(ports.get('reg.q')).toBe(9);
+    expect(ports.get('inc.y')).toBe(10);
+    expect(ports.get('__top__.q')).toBe(9);
+  });
 
-    sim.stop();
-    expect(sim.isRunning).toBe(false);
+  it('advance then record is tick(n): one history entry', () => {
+    const a = counterWithHistory(10);
+    const b = counterWithHistory(10);
+    a.tick(7);
+    nodesOf(b).advance(3);
+    nodesOf(b).advance(4);
+    expect(b.history).toEqual({ length: 1, index: 0 });
+    nodesOf(b).record();
+    expect(b.history).toEqual(a.history);
+    expect(b.cycle).toBe(a.cycle);
+    expect(b.read()).toEqual(a.read());
+  });
+
+  it('reports peripheral-bus state', () => {
+    const sim = simulate(Terminal);
+    expect(nodesOf(sim).peripherals().get('con')).toBe('');
+    sim.set({ ch: 72, we: 1 });
+    sim.tick();
+    sim.set({ ch: 105 });
+    sim.tick();
+    expect(nodesOf(sim).peripherals().get('con')).toBe('Hi');
+  });
+
+  it('throws for an object simulate() did not make', () => {
+    const fake = { ...simulate(And) };
+    expect(() => nodesOf(fake)).toThrow(/isn't a Simulation/);
   });
 });

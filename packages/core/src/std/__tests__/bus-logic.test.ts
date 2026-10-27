@@ -40,7 +40,6 @@ function unary(prim: Circuit, v: number): number {
   const sim = simulate(w);
   sim.set({ a: v });
   const out = sim.get('out');
-  sim.dispose();
   return out;
 }
 
@@ -58,7 +57,6 @@ function binary(prim: Circuit, a: number, b: number): number {
   const sim = simulate(w);
   sim.set({ a, b });
   const out = sim.get('out');
-  sim.dispose();
   return out;
 }
 

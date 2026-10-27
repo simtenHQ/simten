@@ -16,6 +16,7 @@ import {
   Eth_ProtocolDecoder,
 } from '../../std/index.js';
 import { simulate } from '../simulate.js';
+import { nodesOf } from '../simulation.js';
 
 // ============================================================================
 // CRC-32 computation (for building test frames)
@@ -164,24 +165,20 @@ function runPipeline(
   ticks: number,
 ): Record<string, (number | boolean)[]> {
   const s = simulate(Pipeline);
-  try {
-    s.setNode('fi', frameMemory);
-    s.set({ enable: 1, reset: 0 });
+  nodesOf(s).set('fi', frameMemory);
+  s.set({ enable: 1, reset: 0 });
 
-    const out: Record<string, (number | boolean)[]> = {};
-    for (const port of internalsOf(Pipeline).ir.outputs) out[port.name] = [];
+  const out: Record<string, (number | boolean)[]> = {};
+  for (const port of internalsOf(Pipeline).ir.outputs) out[port.name] = [];
 
-    for (let i = 0; i < ticks; i++) {
-      for (const port of internalsOf(Pipeline).ir.outputs) {
-        const v = s.get(port.name as any);
-        out[port.name].push(port.portType.kind === 'bit' ? Boolean(v) : (v as number));
-      }
-      s.tick();
+  for (let i = 0; i < ticks; i++) {
+    for (const port of internalsOf(Pipeline).ir.outputs) {
+      const v = s.get(port.name as any);
+      out[port.name].push(port.portType.kind === 'bit' ? Boolean(v) : (v as number));
     }
-    return out;
-  } finally {
-    s.dispose();
+    s.tick();
   }
+  return out;
 }
 
 // ============================================================================

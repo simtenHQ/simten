@@ -38,7 +38,6 @@ function tickCapturingLogs(): string[] {
     h.tick();
     return spy.mock.calls.map((args) => String(args[0]));
   } finally {
-    h.dispose();
     spy.mockRestore();
   }
 }

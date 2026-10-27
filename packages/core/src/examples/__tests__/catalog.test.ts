@@ -50,7 +50,7 @@ describe('example catalog', () => {
     const ex = EXAMPLES.find((e) => e.id === '6502-computer')!;
     const top = executeCircuitCode(ex.code).circuits.find((c) => c.name === 'Computer6502')!;
     const sim = simulate(top);
-    sim.tickN(400);
+    sim.tick(400);
     const snapshot = sim.snapshot() as unknown as SimulatorSnapshot;
     const state = snapshot.sequentialState?.currentState;
     const text = [...(state?.entries() ?? [])].find(([id]) => id === 'console')?.[1];

@@ -29,13 +29,9 @@ function evaluate(
   ticks = 0,
 ) {
   const sim = simulate(built);
-  try {
-    sim.set(inputs);
-    for (let i = 0; i < ticks; i++) sim.tick();
-    return sim.get(output);
-  } finally {
-    sim.dispose();
-  }
+  sim.set(inputs);
+  for (let i = 0; i < ticks; i++) sim.tick();
+  return sim.get(output);
 }
 
 describe('redefining a primitive under the same name', () => {

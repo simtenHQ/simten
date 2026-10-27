@@ -61,23 +61,19 @@ verify.exhaustive('greedy chase eats through the full 8-position food respawn cy
   // Food respawns at (+3,+5) mod 8 — an 8-position cycle. Chase and eat all 8.
   const sim = buildSim();
   const model = new SnakeRefModel();
-  try {
-    assertFbEqual(sim, model, 'initial state');
-    let tick = 0;
-    while (model.eaten < 8 && tick < 400) {
-      const dir = chaseDir(model);
-      sim.set({ dir });
-      sim.tickN(4);
-      model.step(dir);
-      tick++;
-      assertFbEqual(sim, model, `tick ${tick} (dir=${dir}, eaten=${model.eaten})`);
-    }
-    if (model.eaten < 8) throw new Error(`chase only ate ${model.eaten}/8 foods in ${tick} ticks`);
-    if (model.len !== 4 + 8) throw new Error(`snake should have grown to 12, got ${model.len}`);
-    return true;
-  } finally {
-    sim.dispose();
+  assertFbEqual(sim, model, 'initial state');
+  let tick = 0;
+  while (model.eaten < 8 && tick < 400) {
+    const dir = chaseDir(model);
+    sim.set({ dir });
+    sim.tick(4);
+    model.step(dir);
+    tick++;
+    assertFbEqual(sim, model, `tick ${tick} (dir=${dir}, eaten=${model.eaten})`);
   }
+  if (model.eaten < 8) throw new Error(`chase only ate ${model.eaten}/8 foods in ${tick} ticks`);
+  if (model.len !== 4 + 8) throw new Error(`snake should have grown to 12, got ${model.len}`);
+  return true;
 });
 
 verify.check(

@@ -9,43 +9,19 @@
  * before simulation and asserts the comparison throws.
  */
 
-import {
-  type CircuitIR,
-  createEngine,
-  elaborate,
-  internalsOf,
-  libraryOf,
-  SimulationSession,
-} from '@simten/core/internal';
+import { simulate } from '@simten/core';
+import { type CircuitIR, internalsOf } from '@simten/core/internal';
 import { buildSnake } from './index.js';
 import { FB_SIZE, GRID, SnakeRefModel } from './ref-model.js';
 
 export type SnakeBuilt = ReturnType<typeof buildSnake>['built'];
 type SnakeSim = ReturnType<typeof buildSim>;
 
-/**
- * Driven through the engine rather than simulate(): reading the framebuffer
- * through the scan port settles the logic without a clock edge, which the
- * public handle doesn't offer.
- */
+/** A simulation of the Snake circuit, after `mutate` (fault injection) if given. */
 export function buildSim(mutate?: (built: SnakeBuilt) => void) {
   const { built } = buildSnake();
   mutate?.(built);
-  const library = libraryOf(built);
-  const engine = createEngine(elaborate(internalsOf(built).ir, library.definitions), { library });
-  engine.runCombinational();
-  const session = new SimulationSession(engine, { isSequential: true });
-  return {
-    set: (values: Record<string, number>) => {
-      for (const [port, value] of Object.entries(values)) session.setNode(port, value);
-    },
-    get: (port: string) => Number(session.getState().portValues.get(`__top__.${port}`)),
-    tickN: (count: number) => {
-      for (let i = 0; i < count; i++) session.tick();
-    },
-    runCombinational: () => session.runCombinational(),
-    dispose: () => session.dispose(),
-  };
+  return simulate(built);
 }
 
 /**
@@ -83,8 +59,8 @@ export function setNodeArg(
 function scanFb(sim: SnakeSim): Uint8Array {
   const fb = new Uint8Array(FB_SIZE);
   for (let a = 0; a < FB_SIZE; a++) {
+    // The read settles the logic without a clock edge.
     sim.set({ scan_addr: a });
-    sim.runCombinational();
     fb[a] = sim.get('pixel_out');
   }
   return fb;
@@ -118,18 +94,14 @@ export function assertFbEqual(sim: SnakeSim, model: SnakeRefModel, context: stri
 export function coSim(dirs: number[], mutate?: (built: SnakeBuilt) => void): SnakeRefModel {
   const sim = buildSim(mutate);
   const model = new SnakeRefModel();
-  try {
-    assertFbEqual(sim, model, 'initial state');
-    for (let i = 0; i < dirs.length; i++) {
-      sim.set({ dir: dirs[i] });
-      sim.tickN(4);
-      model.step(dirs[i]);
-      assertFbEqual(sim, model, `tick ${i + 1} (dir=${dirs[i]})`);
-    }
-    return model;
-  } finally {
-    sim.dispose();
+  assertFbEqual(sim, model, 'initial state');
+  for (let i = 0; i < dirs.length; i++) {
+    sim.set({ dir: dirs[i] });
+    sim.tick(4);
+    model.step(dirs[i]);
+    assertFbEqual(sim, model, `tick ${i + 1} (dir=${dirs[i]})`);
   }
+  return model;
 }
 
 /** Greedy chase: one wrap-aware step toward the model's current food. */

@@ -18,17 +18,13 @@ function sim<C extends Circuit>(
   inputs: Record<string, number | boolean> = {},
 ): Record<string, number | boolean> {
   const s = simulate(built);
-  try {
-    s.set(inputs as any);
-    const out: Record<string, number | boolean> = {};
-    for (const port of internalsOf(built).ir.outputs) {
-      const v = s.get(port.name as any);
-      out[port.name] = port.portType.kind === 'bit' ? Boolean(v) : (v as number);
-    }
-    return out;
-  } finally {
-    s.dispose();
+  s.set(inputs as any);
+  const out: Record<string, number | boolean> = {};
+  for (const port of internalsOf(built).ir.outputs) {
+    const v = s.get(port.name as any);
+    out[port.name] = port.portType.kind === 'bit' ? Boolean(v) : (v as number);
   }
+  return out;
 }
 
 /** Helper: simulate multi-tick with constant inputs, return last-tick output values */
@@ -38,18 +34,14 @@ function simAfterTicks<C extends Circuit>(
   inputs: Record<string, number | boolean> = {},
 ): Record<string, number | boolean> {
   const s = simulate(built);
-  try {
-    s.set(inputs as any);
-    for (let i = 0; i < ticks; i++) s.tick();
-    const out: Record<string, number | boolean> = {};
-    for (const port of internalsOf(built).ir.outputs) {
-      const v = s.get(port.name as any);
-      out[port.name] = port.portType.kind === 'bit' ? Boolean(v) : (v as number);
-    }
-    return out;
-  } finally {
-    s.dispose();
+  s.set(inputs as any);
+  for (let i = 0; i < ticks; i++) s.tick();
+  const out: Record<string, number | boolean> = {};
+  for (const port of internalsOf(built).ir.outputs) {
+    const v = s.get(port.name as any);
+    out[port.name] = port.portType.kind === 'bit' ? Boolean(v) : (v as number);
   }
+  return out;
 }
 
 // ============================================================================
@@ -286,17 +278,13 @@ describe('UART_RX', () => {
   /** Drive a waveform through the receiver and collect the bytes it reports. */
   function receive(levels: number[]): string {
     const s = simulate(rxCircuit);
-    try {
-      let out = '';
-      for (const level of levels) {
-        s.set({ rx: level } as any);
-        s.tick();
-        if (s.get('valid' as any)) out += String.fromCharCode(s.get('data' as any) as number);
-      }
-      return out;
-    } finally {
-      s.dispose();
+    let out = '';
+    for (const level of levels) {
+      s.set({ rx: level } as any);
+      s.tick();
+      if (s.get('valid' as any)) out += String.fromCharCode(s.get('data' as any) as number);
     }
+    return out;
   }
 
   it('receives a byte', () => {
@@ -350,17 +338,13 @@ describe('UART_RX', () => {
     for (let i = 0; i < 62; i++) levels.push(1);
 
     const s = simulate(slow);
-    try {
-      const bytes: number[] = [];
-      for (const level of levels) {
-        s.set({ rx: level } as any);
-        s.tick();
-        if (s.get('valid' as any)) bytes.push(s.get('data' as any) as number);
-      }
-      expect(bytes).toEqual([0x5a]);
-    } finally {
-      s.dispose();
+    const bytes: number[] = [];
+    for (const level of levels) {
+      s.set({ rx: level } as any);
+      s.tick();
+      if (s.get('valid' as any)) bytes.push(s.get('data' as any) as number);
     }
+    expect(bytes).toEqual([0x5a]);
   });
 });
 

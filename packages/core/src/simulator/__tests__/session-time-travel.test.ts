@@ -1,136 +1,100 @@
 /**
- * Session-level time-travel for stateful display components.
+ * Time-travel for stateful display components.
  *
- * The editor's stepBack/stepForward reads circuit state back through
- * SimulationSession (which drives the engine's snapshot/restore). Registers
- * and wires are observed via port values; memory (RAM) and text (Console/UART)
- * are observed via the engine's *sequential state*.
+ * The editor's stepBack/stepForward reads circuit state back through a
+ * `Simulation` with history (which drives the engine's snapshot/restore).
+ * Registers and wires are observed via port values; memory (RAM) and text
+ * (Console/UART) are observed via the engine's *sequential state*, which
+ * `nodesOf(sim).peripherals()` reports for nodes on a peripheral bus.
  *
  * Regression: `getState()` (sequential state) and `getPortValues()` share one
  * `cacheValid` flag. `restore()` invalidated the flag but didn't clear the
- * cached sequential state, and the session's seekTo() calls getPortValues()
- * before getState() — so getPortValues() re-validated the flag and getState()
- * handed back the pre-restore (latest) state. Result: registers rewound under
- * time-travel but RAM framebuffers and console text did not. These tests drive
- * the real session path and assert both kinds of state rewind.
+ * cached sequential state, and a read of port values before sequential state
+ * re-validated the flag, so `getState()` handed back the pre-restore (latest)
+ * state. Result: registers rewound under time-travel but RAM framebuffers and
+ * console text did not. These tests drive the real history path and assert
+ * both kinds of state rewind.
  */
 import { describe, expect, it } from 'vitest';
-import { libraryOf } from '../../circuit/behavior.js';
-import type { Circuit } from '../../circuit/index.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import { internalsOf } from '../../circuit/internals.js';
-import { isSequentialCircuit } from '../../circuit/is-sequential.js';
-import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import { Console, RAM } from '../../std/index.js';
-import { createEngine, elaborate, SimulationSession } from '../index.js';
+import { simulate } from '../simulate.js';
+import { nodesOf, type Simulation } from '../simulation.js';
 
-/** A RAM framebuffer plus a text Console — the two state shapes that broke. */
+/**
+ * A RAM framebuffer plus a text Console — the two state shapes that broke.
+ * The RAM drives a second Console, which puts it on a peripheral bus.
+ */
 const Probe = circuit('TimeTravelProbe', {
   inputs: { addr: bus(8), data_in: bus(8), we: bit, ch: bus(8), ch_we: bit },
   outputs: { data_out: bus(8) },
-  nodes: { ram: RAM(), con: Console },
-  connect: ({ inputs, outputs, nodes: { ram, con } }) => [
+  nodes: { ram: RAM(), con: Console, mon: Console },
+  connect: ({ inputs, outputs, nodes: { ram, con, mon } }) => [
     inputs.addr.to(ram.addr),
     inputs.data_in.to(ram.data_in),
     inputs.we.to(ram.we),
-    ram.data_out.to(outputs.data_out),
+    ram.data_out.to(outputs.data_out, mon.data),
     inputs.ch.to(con.data),
     inputs.ch_we.to(con.we),
   ],
 });
 
-function makeSession(built: Circuit<any, any>): SimulationSession {
-  const circuitMap = new Map<string, CircuitIR>();
-  const definitions: CircuitDefinitions & { addCircuit(c: CircuitIR): void } = {
-    resolveCircuit: (name) => circuitMap.get(name),
-    getAllPrimitiveNames: () =>
-      [...circuitMap.entries()]
-        .filter(([, c]) => c.implementation.kind === 'primitive')
-        .map(([n]) => n),
-    addCircuit: (c) => {
-      circuitMap.set(c.name, c);
-    },
-  };
-  definitions.addCircuit(internalsOf(built).ir);
-  if (internalsOf(built).dependencies)
-    for (const [, dep] of internalsOf(built).dependencies)
-      definitions.addCircuit(internalsOf(dep).ir);
-  const isSeq = isSequentialCircuit(internalsOf(built).ir, definitions.resolveCircuit);
-  const engine = createEngine(elaborate(internalsOf(built).ir, definitions), {
-    library: { definitions, behaviors: libraryOf(built).behaviors },
-  });
-  engine.runCombinational();
-  return new SimulationSession(engine, { isSequential: isSeq });
+function ramFrame(sim: Simulation): number[] {
+  // Port values first, then sequential state: the order that exposed the bug.
+  nodesOf(sim).ports();
+  const mem = nodesOf(sim).peripherals().get('ram');
+  if (!(mem instanceof Map)) throw new Error('ram is not on the peripheral bus');
+  return Array.from({ length: 8 }, (_, i) => mem.get(i) ?? 0);
 }
 
-function ramFrame(session: SimulationSession): number[] {
-  const seq = session.getState().sequentialState;
-  let mem: Map<number, number> | null = null;
-  for (const [, v] of seq?.currentState ?? []) {
-    if (v instanceof Map) {
-      mem = v as Map<number, number>;
-      break;
-    }
-  }
-  return Array.from({ length: 8 }, (_, i) => mem?.get(i) ?? 0);
+function consoleText(sim: Simulation): string {
+  nodesOf(sim).ports();
+  const text = nodesOf(sim).peripherals().get('con');
+  return typeof text === 'string' ? text : '';
 }
 
-function consoleText(session: SimulationSession): string {
-  const seq = session.getState().sequentialState;
-  for (const [, v] of seq?.currentState ?? []) {
-    if (typeof v === 'string') return v;
-  }
-  return '';
-}
-
-describe('session time-travel — stateful display components', () => {
+describe('time-travel — stateful display components', () => {
   it('stepBack/stepForward rewinds a RAM framebuffer and console text', () => {
-    const session = makeSession(Probe);
+    const sim = simulate(Probe, { history: 200 });
 
     // Tick 8 times: write pixel i = i+1 to address i, and append char 'A'+i.
-    const ramFrames: number[][] = [ramFrame(session)];
-    const texts: string[] = [consoleText(session)];
+    const ramFrames: number[][] = [ramFrame(sim)];
+    const texts: string[] = [consoleText(sim)];
     for (let i = 0; i < 8; i++) {
-      session.setNode('addr', i);
-      session.setNode('data_in', i + 1);
-      session.setNode('we', 1);
-      session.setNode('ch', 65 + i); // 'A'..'H'
-      session.setNode('ch_we', 1);
-      session.tick();
-      ramFrames.push(ramFrame(session));
-      texts.push(consoleText(session));
+      sim.set({ addr: i, data_in: i + 1, we: 1, ch: 65 + i, ch_we: 1 }); // 'A'..'H'
+      sim.tick();
+      ramFrames.push(ramFrame(sim));
+      texts.push(consoleText(sim));
     }
 
     // Sanity: state actually accumulated.
     expect(ramFrames[8]).not.toEqual(ramFrames[3]);
     expect(texts[8]).toBe('ABCDEFGH');
-    expect(session.getState().historyIndex).toBe(8);
+    expect(sim.history.index).toBe(8);
 
     // Step back to frame 3 — both RAM and console must rewind.
-    while (session.getState().historyIndex > 3) session.stepBack();
-    expect(session.getState().historyIndex).toBe(3);
-    expect(ramFrame(session)).toEqual(ramFrames[3]);
-    expect(consoleText(session)).toBe('ABC');
+    while (sim.history.index > 3) sim.stepBack();
+    expect(sim.history.index).toBe(3);
+    expect(ramFrame(sim)).toEqual(ramFrames[3]);
+    expect(consoleText(sim)).toBe('ABC');
 
     // Step forward — both advance again.
-    session.stepForward();
-    expect(ramFrame(session)).toEqual(ramFrames[4]);
-    expect(consoleText(session)).toBe('ABCD');
+    sim.stepForward();
+    expect(ramFrame(sim)).toEqual(ramFrames[4]);
+    expect(consoleText(sim)).toBe('ABCD');
   });
 
   it('seeking directly to an index rewinds sequential state', () => {
-    const session = makeSession(Probe);
-    const frames: number[][] = [ramFrame(session)];
+    const sim = simulate(Probe, { history: 200 });
+    const frames: number[][] = [ramFrame(sim)];
     for (let i = 0; i < 6; i++) {
-      session.setNode('addr', i);
-      session.setNode('data_in', i + 10);
-      session.setNode('we', 1);
-      session.tick();
-      frames.push(ramFrame(session));
+      sim.set({ addr: i, data_in: i + 10, we: 1 });
+      sim.tick();
+      frames.push(ramFrame(sim));
     }
-    session.seek(2);
-    expect(ramFrame(session)).toEqual(frames[2]);
-    session.seek(5);
-    expect(ramFrame(session)).toEqual(frames[5]);
+    sim.seek(2);
+    expect(ramFrame(sim)).toEqual(frames[2]);
+    sim.seek(5);
+    expect(ramFrame(sim)).toEqual(frames[5]);
   });
 });

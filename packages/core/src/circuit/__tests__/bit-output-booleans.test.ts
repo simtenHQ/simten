@@ -29,12 +29,8 @@ function evaluate(
   output: string,
 ) {
   const sim = simulate(built);
-  try {
-    sim.set(inputs);
-    return sim.get(output);
-  } finally {
-    sim.dispose();
-  }
+  sim.set(inputs);
+  return sim.get(output);
 }
 
 describe('boolean returns on 1-bit outputs', () => {

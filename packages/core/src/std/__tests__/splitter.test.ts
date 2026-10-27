@@ -62,7 +62,6 @@ describe('Splitter and Combiner', () => {
       expect(sim.get('smallOut')).toBe(reverse4(v));
       expect(sim.get('bigOut')).toBe((((big & 0xf) << 4) | ((big >> 4) & 0xf)) & 0xff);
     }
-    sim.dispose();
   });
 
   it('exports to Verilog as plain wiring', () => {

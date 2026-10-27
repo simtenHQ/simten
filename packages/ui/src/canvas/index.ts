@@ -14,8 +14,6 @@ export { CompositeInspectorDialog } from './CompositeInspectorDialog';
 export { computeDagreLayout } from './dagre-layout';
 export { createDrillDownViewCircuit, scopePortValues } from './drill-down-view';
 export { useDetectTheme } from './hooks/useDetectTheme';
-export type { UseSimulationSessionResult } from './hooks/useSimulationSession';
-export { useSimulationSession } from './hooks/useSimulationSession';
 export { EDGE_TYPES, NODE_TYPES } from './node-types';
 export { projectCircuitToReactFlow } from './projection';
 export type { CircuitLayout, InspectorFrame, MetadataState, OriginRect } from './types';

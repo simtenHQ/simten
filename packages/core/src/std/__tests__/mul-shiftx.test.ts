@@ -29,7 +29,6 @@ function mul(width: number, a: number, b: number): number {
   const sim = simulate(w);
   sim.set({ a, b });
   const out = sim.get('out') >>> 0;
-  sim.dispose();
   return out;
 }
 
@@ -53,7 +52,6 @@ function dslice(
   const sim = simulate(w);
   sim.set({ in: v, shift: s });
   const out = sim.get('out') >>> 0;
-  sim.dispose();
   return out;
 }
 

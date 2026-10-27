@@ -158,7 +158,6 @@ export function runFirmware(imem: number[], maxCycles = 200): number[] {
     cpu.tick();
   }
 
-  cpu.dispose();
   return uartBytes;
 }
 
@@ -246,8 +245,6 @@ function runSim(name: string, imem: number[], maxCycles = 200): void {
   } else {
     console.log('  (no UART writes — sw was skipped)');
   }
-
-  cpu.dispose();
 }
 
 // ── raw36 firmware ────────────────────────────────────────────────────────────

@@ -53,7 +53,6 @@ function assertMatchesGolden(design: ReturnType<typeof importDesign>, g: Golden)
       expect(gotNum, `${port} @ cycle ${cycle}, in=${JSON.stringify(v.in)}`).toBe(want);
     }
   });
-  sim.dispose();
 }
 
 describe('reset/enable flip-flop import ($adff → Register.rst)', () => {

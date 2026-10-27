@@ -11,11 +11,7 @@ declareOracle({
 });
 verify.exhaustive('truth table', [2, 2], (a, b) => {
   const s = simulate(HalfAdder);
-  try {
-    s.set({ a, b });
-    return s.get('sum') === (a ^ b) && s.get('carry') === (a & b);
-  } finally {
-    s.dispose();
-  }
+  s.set({ a, b });
+  return s.get('sum') === (a ^ b) && s.get('carry') === (a & b);
 });
 verify.run();

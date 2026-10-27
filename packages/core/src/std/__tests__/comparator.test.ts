@@ -44,7 +44,6 @@ function flags(prim: Circuit, w: number, a: number, b: number): Record<string, n
     gt: sim.get('gt'),
     ge: sim.get('ge'),
   };
-  sim.dispose();
   return out;
 }
 

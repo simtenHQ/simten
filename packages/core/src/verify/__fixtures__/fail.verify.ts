@@ -14,12 +14,8 @@ verify.check(
   'carry always 0 (wrong)',
   fc.property(fc.boolean(), fc.boolean(), (a, b) => {
     const s = simulate(HalfAdder);
-    try {
-      s.set({ a: a ? 1 : 0, b: b ? 1 : 0 });
-      return s.get('carry') === 0;
-    } finally {
-      s.dispose();
-    }
+    s.set({ a: a ? 1 : 0, b: b ? 1 : 0 });
+    return s.get('carry') === 0;
   }),
 );
 verify.run();

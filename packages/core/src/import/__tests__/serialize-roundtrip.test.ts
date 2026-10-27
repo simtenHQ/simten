@@ -120,7 +120,6 @@ describe('memory contents survive the round trip through generated source', () =
     sim.set({ addr: 7 });
     sim.tick();
     expect(sim.get('data')).toBe(0);
-    sim.dispose();
   });
 });
 
@@ -142,7 +141,6 @@ describe('serializer round-trip (import → source → recompile → simulate)',
         expect(sim.get(k), `${k} for in=${JSON.stringify(v.in)}`).toBe(want);
       }
     }
-    sim.dispose();
   });
 });
 
@@ -176,7 +174,6 @@ describe('real design (RV32I_CPU_Core) serializes fully clean and re-simulates',
     const sim = simulate(entry as Circuit);
     sim.tick();
     sim.tick();
-    sim.dispose();
   });
 });
 
@@ -204,7 +201,5 @@ describe('editability (scripted hand-edit → predicted behavioural change)', ()
         expected,
       );
     }
-    base.dispose();
-    mod.dispose();
   });
 });

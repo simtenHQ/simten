@@ -5,13 +5,7 @@
  */
 
 import { simulate } from '@simten/core';
-import {
-  createEngine,
-  elaborate,
-  internalsOf,
-  libraryOf,
-  SimulationSession,
-} from '@simten/core/internal';
+import { internalsOf, nodesOf } from '@simten/core/internal';
 import { describe, expect, it } from 'vitest';
 import { Systolic3x3, TestSystolic3x3 } from './circuits';
 
@@ -41,17 +35,6 @@ function systolicInputs(): Record<string, number> {
     inputs[`b${rc}`] = B[Number(rc[0])][Number(rc[1])];
   }
   return inputs;
-}
-
-/**
- * Driven through the engine rather than simulate(): these tests read internal
- * and display ports, which the public handle doesn't expose.
- */
-function engineSession(c: typeof Systolic3x3 | typeof TestSystolic3x3) {
-  const library = libraryOf(c);
-  const engine = createEngine(elaborate(internalsOf(c).ir, library.definitions), { library });
-  engine.runCombinational();
-  return new SimulationSession(engine, { isSequential: true });
 }
 
 /**
@@ -134,22 +117,21 @@ describe('TPU post systolic array', () => {
   // the array on tick 1 + i + j + N (the last on 3N - 1 = 8). Two capture
   // registers put it on the output two ticks later (the last on 3N + 1 = 10).
   it('leaves the array as a diagonal wavefront, c00 first and c22 last', () => {
-    const session = engineSession(Systolic3x3);
-    for (const [port, value] of Object.entries(systolicInputs())) session.setNode(port, value);
+    const sim = simulate(Systolic3x3);
+    sim.set(systolicInputs());
     // pe2j's partial-sum register holds c_ij for one tick only, so record the
     // first tick it shows the product rather than when it settles.
     const leaves: Record<string, number> = {};
     for (let t = 0; t <= 12; t++) {
-      const values = session.getState().portValues;
+      const values = nodesOf(sim).ports();
       for (const rc of ENTRIES) {
         const out = Number(values.get(`pe2${rc[1]}.psumReg.q`));
         if (!(`c${rc}` in leaves) && out === expected(Number(rc[0]), Number(rc[1]))) {
           leaves[`c${rc}`] = t;
         }
       }
-      session.tick();
+      sim.tick();
     }
-    session.dispose();
     const ticks = Object.fromEntries(
       Object.entries(OUTPUT_TICKS).map(([name, tick]) => [name, tick - 2]),
     );
@@ -168,14 +150,14 @@ describe('TPU post systolic array', () => {
   });
 
   it('shows each result on its display in the demo on the same tick', () => {
-    const session = engineSession(TestSystolic3x3);
-    session.setNode('start', 1);
+    // The demo's inputs are Input nodes inside it, so they're written by path.
+    const sim = simulate(TestSystolic3x3);
+    nodesOf(sim).set('start', 1);
     const settled = settleTicks(
-      () => session.tick(),
-      (rc) => Number(session.getState().portValues.get(`display_c${rc}.in`)),
+      () => sim.tick(),
+      (rc) => Number(nodesOf(sim).ports().get(`display_c${rc}.in`)),
       20,
     );
-    session.dispose();
     expect(settled).toEqual(OUTPUT_TICKS);
   });
 });
