@@ -229,13 +229,13 @@ export interface LevelNodeData extends Record<string, unknown> {
   state: LevelNodeState;
 }
 
-export interface MapNode {
+interface MapNode {
   id: string;
   position: { x: number; y: number };
   data: LevelNodeData;
 }
 
-export interface MapEdge {
+interface MapEdge {
   id: string;
   source: string;
   target: string;
@@ -254,7 +254,7 @@ export interface MapEdge {
  * identically: the gap between them is what separates one from the next, so
  * alternating shades only added noise.
  */
-export interface MapSectionNode {
+interface MapSectionNode {
   id: string;
   label: string;
   position: { x: number; y: number };

@@ -59,7 +59,7 @@ export function elaborateBuilt(built: Circuit): FlatCircuit {
   return elaborate(internalsOf(built).ir, libraryOf(built).definitions);
 }
 
-export interface InvariantResult {
+interface InvariantResult {
   /** Top-level input names that drive no downstream connection. Diagnostic only. */
   unusedTopInputs: string[];
 }

@@ -3,7 +3,7 @@ const SITE_NAME = 'Simten';
 
 type Meta = { title?: string } & Record<string, string>;
 
-export type PageSeo = {
+type PageSeo = {
   /** Page title (will be suffixed with " | Simten" unless `titleExact` is true). */
   title: string;
   /** Set true to use `title` verbatim, e.g. for the landing page. */

@@ -8,7 +8,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-export interface ReadResult {
+interface ReadResult {
   source: string;
   sourceName?: string;
   error?: string;

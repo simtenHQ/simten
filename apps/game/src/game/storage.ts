@@ -96,12 +96,12 @@ export const DRAFTS_KEY = 'simten:game:drafts';
 export const PROGRESS_KEY = 'simten:game:progress';
 
 /** What a solved level records. */
-export interface LevelProgress {
+interface LevelProgress {
   gates: number;
 }
 
 export type Drafts = Record<string, string>;
-export type Progress = Record<string, LevelProgress>;
+type Progress = Record<string, LevelProgress>;
 
 /**
  * Two records, not one, because they are different kinds of data.

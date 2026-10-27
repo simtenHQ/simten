@@ -47,7 +47,7 @@ export function PipelineStage({ number, title, subtitle, children, last }) {
 </PipelineStage>
 </div>
 
-The whole pipeline runs through a Docker container exposing `/synth` (Yosys) and `/build` (nextpnr + ecppack) endpoints, and a single `build.ts` script drives it end to end.
+The whole pipeline runs through a Docker container exposing `/synth` (Yosys) and `/build` (nextpnr + ecppack) endpoints, and a single command, `pnpm fpga:run --project=snake`, drives it end to end.
 
 ---
 

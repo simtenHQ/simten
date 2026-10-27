@@ -36,7 +36,7 @@ function resolveTsx(root: string): string | null {
   return 'tsx'; // rely on PATH; spawn 'error' surfaces if absent
 }
 
-export interface HostRunResult {
+interface HostRunResult {
   stdout: string;
   stderr: string;
   exitCode: number;

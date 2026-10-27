@@ -52,14 +52,14 @@ interface Signal {
   width: number;
 }
 
-export interface Mismatch {
+interface Mismatch {
   cycle: number;
   signal: string;
   sim: string;
   verilog: string;
 }
 
-export interface DiffResult {
+interface DiffResult {
   signals: number;
   cycles: number;
   mismatches: Mismatch[];
@@ -99,7 +99,7 @@ function pick(next: () => number, w: number): number {
   return (next() & mask) >>> 0;
 }
 
-export function makeVectors(top: CircuitIR, opts: DiffOptions): Record<string, number>[] {
+function makeVectors(top: CircuitIR, opts: DiffOptions): Record<string, number>[] {
   const { cycles, seed = 1, nonZero = [], inputMask = {} } = opts;
   const next = rng(seed);
   const vectors: Record<string, number>[] = [];

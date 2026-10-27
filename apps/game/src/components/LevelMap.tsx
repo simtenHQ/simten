@@ -201,7 +201,7 @@ type MapFlowNode = LevelNode | SectionFlowNode;
 
 const NODE_TYPES: NodeTypes = { level: LevelMapNode, section: SectionBand };
 
-export interface LevelMapProps {
+interface LevelMapProps {
   /** Completed level ids. Empty for the first frame, before storage is read. */
   solved?: ReadonlySet<string>;
   /** Called when a level is hovered, so the page can preview its drilldown. */

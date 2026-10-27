@@ -31,7 +31,7 @@ const SCOPE_SAMPLES = 1024;
 
 type Simulator = ReturnType<typeof useCircuitSimulator>;
 
-export interface VoiceControls {
+interface VoiceControls {
   /** Index into WAVES: the ROM bank the phase is read from. */
   wave: number;
   /** Subtracted from the envelope each tick; bigger decays faster. */

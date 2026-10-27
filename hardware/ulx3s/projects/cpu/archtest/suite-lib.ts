@@ -21,7 +21,7 @@ import { runDut } from './run-dut.js';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const ENVDIR = resolve(HERE, 'vendor/env');
 const SRC = resolve(HERE, 'vendor/rv32i_m/I/src');
-export const BUILD = resolve(HERE, 'build');
+const BUILD = resolve(HERE, 'build');
 
 // gcc 13.2.0 bundles binutils 2.41, which assembles the 2022-vintage tests
 // (incl. jalr-01's `la x0`). binutils 2.45 (gcc 15) rejects `la x0`. Override
@@ -124,7 +124,7 @@ const trapOps = (elf: string): number =>
       .match(/\t(csrr?[wsci]?|ecall|ebreak|mret|sret|wfi)\b/g) ?? []
   ).length;
 
-export interface Result {
+interface Result {
   test: string;
   pass: boolean;
   trapFree: boolean;

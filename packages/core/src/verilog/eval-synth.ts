@@ -16,7 +16,7 @@ import type { PrimitiveContext } from './primitive-map.js';
 // ============================================================================
 
 /** Result of parsing an eval function */
-export interface ParsedEval {
+interface ParsedEval {
   /** The function body AST */
   body: any;
   /** Destructured parameter names from the eval signature */
@@ -160,7 +160,7 @@ const ALLOWED_LOGICAL_OPS = new Set(['&&', '||', '??']);
 const ALLOWED_UNARY_OPS = new Set(['~', '!', '-', '+']);
 
 /** Options for validation */
-export interface ValidateOptions {
+interface ValidateOptions {
   /** Names of mem() state fields — allows memory[addr] indexing */
   memStateNames?: string[];
   /** If true, this is an onTick function — allows memory[addr] = value assignment */
