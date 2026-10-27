@@ -8,21 +8,10 @@ const SOURCE = "const Toggle = circuit('Toggle', {})";
 describe('forkUrl', () => {
   it('on simten.dev, creates a share through the site and opens its short link', async () => {
     const shareCircuit = vi.fn(async () => ({ hash: '0123456789abcdef0123' }));
-    expect(await forkUrl({ source: SOURCE, shareCircuit, shareId: 'ignored', host: HOST })).toBe(
+    expect(await forkUrl({ source: SOURCE, shareCircuit, host: HOST })).toBe(
       `${HOST}/circuit/s/0123456789abcdef0123`,
     );
     expect(shareCircuit).toHaveBeenCalledWith(SOURCE);
-  });
-
-  it('opened from a share, opens that share and creates nothing', async () => {
-    expect(
-      await forkUrl({
-        source: SOURCE,
-        shareId: 'ffffffffffffffffffff',
-        shareCircuit: null,
-        host: HOST,
-      }),
-    ).toBe(`${HOST}/circuit/s/ffffffffffffffffffff`);
   });
 
   it('anywhere else, puts the source in the URL and creates nothing', async () => {

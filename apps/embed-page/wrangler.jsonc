@@ -15,12 +15,13 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "simten-embed",
-  "compatibility_date": "2025-09-02",
-  "main": "src/worker.ts",
+  "compatibility_date": "2026-10-27",
+  "main": "worker/index.ts",
   "routes": [{ "pattern": "embed.simten.dev", "custom_domain": true }],
   "observability": {
     "enabled": true
   },
+  "upload_source_maps": true,
   // The same namespace as apps/web/wrangler.jsonc. This app only reads it.
   "kv_namespaces": [
     {

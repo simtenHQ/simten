@@ -8,7 +8,9 @@
     "preview": "vite preview --port 3004",
     "deploy": "pnpm run build && wrangler deploy",
     "test": "vitest run",
-    "test:e2e": "tsx e2e/build.mts && playwright test"
+    "test:e2e": "tsx e2e/build.mts && playwright test",
+    "cf-typegen": "wrangler types",
+    "typecheck:worker": "tsc --noEmit -p worker/tsconfig.json"
   },
   "dependencies": {
     "@simten/embed": "workspace:*",

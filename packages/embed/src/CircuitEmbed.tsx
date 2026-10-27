@@ -68,8 +68,8 @@ export interface CircuitEmbedProps<C extends Circuit = Circuit> {
   /**
    * Custom URL for the card's right-side link. When omitted (the common case),
    * a Fork button is rendered that opens the circuit in the simten.dev editor:
-   * as a new share link on simten.dev, as `shareId`'s link when set, and
-   * otherwise via `/circuit/<lz-encoded-source>`. Pass `href` only to override.
+   * as a new share link on simten.dev, otherwise via
+   * `/circuit/<lz-encoded-source>`. Pass `href` only to override.
    */
   href?: string;
   /**
@@ -79,11 +79,6 @@ export interface CircuitEmbedProps<C extends Circuit = Circuit> {
    * The web-component path passes the user's original `code` here.
    */
   forkSource?: string;
-  /**
-   * The share this circuit was loaded from, if any. Fork then opens
-   * `/circuit/s/<shareId>` instead of putting the source in the URL.
-   */
-  shareId?: string;
   /** Focus on specific node(s) */
   focus?: string | string[];
   /** Show port labels on nodes. @default true */
@@ -182,7 +177,6 @@ export function CircuitEmbed<C extends Circuit = Circuit>({
   autoRunSpeed = 500,
   initialInputs,
   forkSource,
-  shareId,
   onPortValuesChange,
   ref,
 }: CircuitEmbedProps<C> & { ref?: Ref<CircuitEmbedHandle> }): ReactElement {
@@ -196,7 +190,7 @@ export function CircuitEmbed<C extends Circuit = Circuit>({
     try {
       const source = forkSource ?? circuitToSource(circuit);
       setForkPending(true);
-      const url = await forkUrl({ source, shareId, shareCircuit, host: simtenHost() });
+      const url = await forkUrl({ source, shareCircuit, host: simtenHost() });
       window.open(url, '_blank', 'noopener');
     } catch (err) {
       setForkError(err instanceof Error ? err.message : "Couldn't fork this circuit");

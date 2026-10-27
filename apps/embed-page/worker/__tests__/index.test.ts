@@ -1,6 +1,6 @@
 import type { ShareKV } from '@simten/ui/share';
 import { describe, expect, it } from 'vitest';
-import { type Env, handleRequest } from '../worker';
+import { type Env, handleRequest } from '../index';
 
 const ID = '0123456789abcdef0123';
 
