@@ -10,6 +10,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { Circuit } from '../../circuit/builder-types.js';
+import { internalsOf } from '../../circuit/internals.js';
 import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import {
   Adder,
@@ -122,20 +123,20 @@ describe('stdlib circuits load', () => {
   ];
 
   it.each(allCircuits)('%s has correct name', (name, comp) => {
-    expect(comp.circuit.name).toBe(name);
+    expect(comp.name).toBe(name);
   });
 
   it.each(allCircuits)('%s has valid circuit IR', (_name, comp) => {
-    expect(comp.circuit).toBeDefined();
-    expect(comp.circuit.implementation.kind).toBe('primitive');
+    expect(internalsOf(comp).ir).toBeDefined();
+    expect(internalsOf(comp).ir.implementation.kind).toBe('primitive');
   });
 
   it.each(allCircuits)('%s has well-formed ports', (name, comp) => {
-    for (const port of comp.circuit.inputs) {
+    for (const port of internalsOf(comp).ir.inputs) {
       expect(port.name).toBeTruthy();
       expect(port.portType.kind).toMatch(/^(bit|bus)$/);
     }
-    for (const port of comp.circuit.outputs) {
+    for (const port of internalsOf(comp).ir.outputs) {
       expect(port.name).toBeTruthy();
       expect(port.portType.kind).toMatch(/^(bit|bus)$/);
     }
@@ -149,27 +150,27 @@ describe('stdlib circuits load', () => {
 describe('sequential components', () => {
   it('DFlipFlop has clock and state', () => {
     const d = DFlipFlop();
-    expect(d.circuit.clocks.length).toBeGreaterThan(0);
-    expect(d.circuit.state.length).toBeGreaterThan(0);
-    expect(d.circuit.metadata?.timing).toBe('sequential');
+    expect(internalsOf(d).ir.clocks.length).toBeGreaterThan(0);
+    expect(internalsOf(d).ir.state.length).toBeGreaterThan(0);
+    expect(internalsOf(d).ir.metadata?.timing).toBe('sequential');
   });
 
   it('Register has clock and state', () => {
     const r = Register();
-    expect(r.circuit.clocks.length).toBeGreaterThan(0);
-    expect(r.circuit.state.length).toBeGreaterThan(0);
-    expect(r.circuit.metadata?.timing).toBe('sequential');
+    expect(internalsOf(r).ir.clocks.length).toBeGreaterThan(0);
+    expect(internalsOf(r).ir.state.length).toBeGreaterThan(0);
+    expect(internalsOf(r).ir.metadata?.timing).toBe('sequential');
   });
 
   it('RAM has clock and state', () => {
     const r = RAM();
-    expect(r.circuit.clocks.length).toBeGreaterThan(0);
-    expect(r.circuit.state.length).toBeGreaterThan(0);
+    expect(internalsOf(r).ir.clocks.length).toBeGreaterThan(0);
+    expect(internalsOf(r).ir.state.length).toBeGreaterThan(0);
   });
 
   it('ROM has state (no clock — combinational read)', () => {
     const r = ROM();
-    expect(r.circuit.state.length).toBeGreaterThan(0);
+    expect(internalsOf(r).ir.state.length).toBeGreaterThan(0);
     // ROM has no clock — reads are combinational
   });
 });
@@ -181,20 +182,20 @@ describe('sequential components', () => {
 describe('I/O circuits', () => {
   it('Switch has no inputs and one output', () => {
     const s = Switch;
-    expect(s.circuit.inputs).toHaveLength(0);
-    expect(s.circuit.outputs).toHaveLength(1);
-    expect(s.circuit.outputs[0].name).toBe('out');
+    expect(internalsOf(s).ir.inputs).toHaveLength(0);
+    expect(internalsOf(s).ir.outputs).toHaveLength(1);
+    expect(internalsOf(s).ir.outputs[0].name).toBe('out');
   });
 
   it('Led has one input and no outputs', () => {
-    expect(Led.circuit.inputs).toHaveLength(1);
-    expect(Led.circuit.outputs).toHaveLength(0);
+    expect(internalsOf(Led).ir.inputs).toHaveLength(1);
+    expect(internalsOf(Led).ir.outputs).toHaveLength(0);
   });
 
   it('Switch is a source component (no inputs)', () => {
     const s = Switch;
-    expect(s.circuit.inputs).toHaveLength(0);
-    expect(s.circuit.outputs).toHaveLength(1);
+    expect(internalsOf(s).ir.inputs).toHaveLength(0);
+    expect(internalsOf(s).ir.outputs).toHaveLength(1);
   });
 });
 
@@ -202,14 +203,14 @@ describe('I/O circuits', () => {
 // Library from dependencies
 // ============================================================================
 
-describe('circuit._dependencies', () => {
+describe("a circuit's dependencies", () => {
   it('includes all referenced stdlib components', () => {
-    // And._dependencies is empty (it's a leaf primitive)
-    expect(And._dependencies.size).toBe(0);
+    // And has none (it's a leaf primitive)
+    expect(internalsOf(And).dependencies.size).toBe(0);
   });
 
   it('building a library from deps resolves all needed components', () => {
-    // Adder is composite — it has And, Or, Xor, etc. in _dependencies
+    // Adder is composite — it has And, Or, Xor, etc. as dependencies
     const circuitMap = new Map<string, CircuitIR>();
     const definitions: CircuitDefinitions & { addCircuit(c: CircuitIR): void } = {
       resolveCircuit: (name) => circuitMap.get(name),
@@ -222,12 +223,13 @@ describe('circuit._dependencies', () => {
       },
     };
     const adder = Adder();
-    definitions.addCircuit(adder.circuit);
-    for (const [, dep] of adder._dependencies) definitions.addCircuit(dep.circuit);
+    definitions.addCircuit(internalsOf(adder).ir);
+    for (const [, dep] of internalsOf(adder).dependencies)
+      definitions.addCircuit(internalsOf(dep).ir);
 
     expect(definitions.resolveCircuit('Adder')).toBeDefined();
     // All transitive deps are present
-    for (const [name] of adder._dependencies) {
+    for (const [name] of internalsOf(adder).dependencies) {
       expect(definitions.resolveCircuit(name)).toBeDefined();
     }
   });
@@ -253,9 +255,9 @@ describe('stdlib + builder integration', () => {
       ],
     });
 
-    expect(HalfAdder.circuit.nodes).toHaveLength(2);
-    expect(HalfAdder.circuit.nodes[0].componentRef).toBe('Xor');
-    expect(HalfAdder.circuit.nodes[1].componentRef).toBe('And');
-    expect(HalfAdder.circuit.connections).toHaveLength(6);
+    expect(internalsOf(HalfAdder).ir.nodes).toHaveLength(2);
+    expect(internalsOf(HalfAdder).ir.nodes[0].componentRef).toBe('Xor');
+    expect(internalsOf(HalfAdder).ir.nodes[1].componentRef).toBe('And');
+    expect(internalsOf(HalfAdder).ir.connections).toHaveLength(6);
   });
 });

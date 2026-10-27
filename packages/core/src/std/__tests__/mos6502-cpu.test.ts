@@ -1,9 +1,9 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { behaviorOf } from '../../internal.js';
+import { internalsOf } from '../../circuit/internals.js';
 import { simulate } from '../../simulator/simulate.js';
-import { checkSynthesizable } from '../../verilog/eval-synth.js';
+import { checkEvalSynthesizable } from '../../verilog/eval-synth.js';
 import * as MOS6502 from '../mos6502.js';
 import { MOS6502_Core } from '../mos6502-cpu.js';
 import { createHarteRunner, DOCUMENTED_OPCODES, type HarteCase } from './mos6502/harte.js';
@@ -72,19 +72,14 @@ describe('MOS6502_Core', () => {
 
   it('omits the debug ports unless asked', () => {
     const core = MOS6502_Core();
-    expect(core.circuit.outputs.map((p) => p.name).sort()).toEqual([
-      'addr',
-      'data_out',
-      'rw',
-      'sync',
-    ]);
+    expect(Object.keys(core.outputs).sort()).toEqual(['addr', 'data_out', 'rw', 'sync']);
   });
 
   it('keeps every 6502 eval inside the synthesizable subset', () => {
-    const evals = Object.values(MOS6502).map((c) => [c.circuit.name, behaviorOf(c)] as const);
+    const evals = Object.values(MOS6502).map((c) => [c.name, internalsOf(c).behavior] as const);
     for (const [name, entry] of evals) {
       if (!entry) throw new Error(`${name} carries no eval`);
-      const res = checkSynthesizable(entry.evalFn, entry.inputNames, entry.outputNames);
+      const res = checkEvalSynthesizable(entry.evalFn, entry.inputNames, entry.outputNames);
       expect({ name, errors: res.errors }).toEqual({ name, errors: [] });
     }
   });

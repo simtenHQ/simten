@@ -14,11 +14,12 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import type { CircuitDefinitions } from '../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
 import { RAM } from '../../std/index.js';
 import { getStdLibrary } from '../../std/library.js';
-import { exportVerilog } from '../exporter.js';
+import { exportVerilogFromIR } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { hasVerifier, verifyVerilog } from './verify.js';
 
@@ -54,11 +55,15 @@ function buildRam() {
 
   const definitions: CircuitDefinitions = {
     resolveCircuit: (name) =>
-      name === 'RamWrapper' ? RamWrapper.circuit : name === 'RAM' ? Ram.circuit : undefined,
+      name === 'RamWrapper'
+        ? internalsOf(RamWrapper).ir
+        : name === 'RAM'
+          ? internalsOf(Ram).ir
+          : undefined,
     getAllPrimitiveNames: () => ['RAM'],
   };
 
-  return { circuit: RamWrapper.circuit, definitions };
+  return { circuit: internalsOf(RamWrapper).ir, definitions };
 }
 
 function runSimulator(steps: Step[]): number[] {
@@ -96,7 +101,10 @@ d('RAM — JS simulator vs iverilog co-simulation', () => {
     const simOutputs = runSimulator(SEQUENCE);
 
     const { circuit, definitions } = buildRam();
-    const { verilog } = exportVerilog(circuit, definitions);
+    const { verilog } = exportVerilogFromIR(circuit, {
+      definitions: definitions,
+      behaviors: getStdLibrary().behaviors,
+    });
     const testbench = generateSequentialTestbench(circuit, buildVectors(SEQUENCE));
 
     const result = await verifyVerilog(verilog, testbench);

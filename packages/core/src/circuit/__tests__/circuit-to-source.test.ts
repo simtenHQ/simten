@@ -3,6 +3,7 @@ import { And, Not, Or, Register, Xor } from '../../std/index.js';
 import { CircuitToSourceError, circuitToSource } from '../circuit-to-source.js';
 import { executeCircuitCode } from '../execute.js';
 import { bit, bus, circuit, reg } from '../index.js';
+import { internalsOf } from '../internals.js';
 
 /** Strip imports so executeCircuitCode (which runs in a Function scope with
  *  stdlib pre-injected) doesn't choke on module syntax. The serializer no
@@ -37,7 +38,7 @@ describe('circuitToSource', () => {
     expect(result.circuit?.outputs.map((p) => p.name).sort()).toEqual(['carry', 'sum']);
     expect(result.circuit?.nodes.length).toBe(2);
     // Connection count matches: 4 sources × variable targets, total 6 wires
-    expect(result.circuit?.connections.length).toBe(HalfAdder.circuit.connections.length);
+    expect(result.circuit?.connections.length).toBe(internalsOf(HalfAdder).ir.connections.length);
   });
 
   // Skipped: this circuit has no `connect:` so it lands as a primitive shell,

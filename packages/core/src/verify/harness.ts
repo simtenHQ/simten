@@ -22,6 +22,7 @@
 
 import * as fc from 'fast-check';
 import type {
+  CheckOpts,
   CheckSummary,
   OracleDecl,
   VerifyContractError,
@@ -77,11 +78,6 @@ export function declareOracle(o: OracleDecl): void {
 /** Optional: label the circuit under test for the report. */
 export function describe(circuitName: string): void {
   _circuit = circuitName;
-}
-
-interface CheckOpts {
-  numRuns?: number;
-  oracle?: OracleDecl;
 }
 
 export const verify = {

@@ -33,11 +33,12 @@ import type {
   StateBlock,
 } from '../ir/circuit-ir.js';
 import { STDLIB_CIRCUITS } from '../std/index.js';
-import { behaviorOf, hasCallbacks } from './behavior.js';
+import { hasCallbacks } from './behavior.js';
 import type { Circuit } from './builder-types.js';
+import { internalsOf } from './internals.js';
 import { safeIdentifier } from './reserved-identifiers.js';
 
-const STDLIB_NAMES: ReadonlySet<string> = new Set(STDLIB_CIRCUITS.map((c) => c.circuit.name));
+const STDLIB_NAMES: ReadonlySet<string> = new Set(STDLIB_CIRCUITS.map((c) => c.name));
 
 export class CircuitToSourceError extends Error {
   constructor(message: string) {
@@ -58,16 +59,17 @@ export function circuitToSource(built: Circuit): string {
   // name (import primitives as a factory call) and never recursed into.
   const isPreInjected = (name: string) =>
     STDLIB_NAMES.has(name) || isKnownSerializablePrimitive(name);
+  const { ir: top, dependencies } = internalsOf(built);
   const userCircuits = new Map<string, CircuitIR>();
-  for (const [name, dep] of built._dependencies) {
+  for (const [name, dep] of dependencies) {
     if (!isPreInjected(name)) {
-      userCircuits.set(name, dep.circuit);
+      userCircuits.set(name, internalsOf(dep).ir);
     }
   }
-  for (const node of built.circuit.nodes) {
+  for (const node of top.nodes) {
     if (!isPreInjected(node.componentRef) && !userCircuits.has(node.componentRef)) {
-      const dep = built._dependencies.get(node.componentRef);
-      if (dep) userCircuits.set(node.componentRef, dep.circuit);
+      const dep = dependencies.get(node.componentRef);
+      if (dep) userCircuits.set(node.componentRef, internalsOf(dep).ir);
     }
   }
 
@@ -87,14 +89,14 @@ export function circuitToSource(built: Circuit): string {
   // by their real names (never reserved), so only these need remapping.
   const used = new Set<string>();
   const idMap = new Map<string, string>();
-  for (const c of [...ordered, built.circuit]) idMap.set(c.name, safeIdentifier(c.name, used));
+  for (const c of [...ordered, top]) idMap.set(c.name, safeIdentifier(c.name, used));
   const idOf = (name: string) => idMap.get(name) ?? name;
 
   // Which circuits carry eval/onTick callbacks, which the IR cannot express.
   const withCallbacks = new Set<string>();
-  for (const c of [built, ...built._dependencies.values()]) {
-    const behavior = behaviorOf(c);
-    if (behavior && hasCallbacks(behavior)) withCallbacks.add(c.circuit.name);
+  for (const c of [built, ...dependencies.values()]) {
+    const { behavior } = internalsOf(c);
+    if (behavior && hasCallbacks(behavior)) withCallbacks.add(c.name);
   }
   const emit = (c: CircuitIR) => emitCircuit(c, idOf, withCallbacks.has(c.name));
 
@@ -105,7 +107,7 @@ export function circuitToSource(built: Circuit): string {
 
   // Emit entry circuit. No `export` — the editor's sandbox evaluates source as
   // a script body via `new Function(...)`, which rejects ES module syntax.
-  lines.push(emit(built.circuit));
+  lines.push(emit(top));
 
   return lines.join('\n');
 }

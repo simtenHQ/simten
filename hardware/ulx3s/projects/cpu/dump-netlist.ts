@@ -21,7 +21,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { elaborate } from '@simten/core/internal';
+import { elaborate, internalsOf, libraryOf } from '@simten/core/internal';
 import { buildCPUCore } from './index.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -29,11 +29,13 @@ const GOLDEN_PATH = resolve(__dirname, 'netlist.golden.json');
 
 /** Canonical, deterministic serialization of the flattened RV32I_CPU_Core netlist. */
 export function dumpNetlist(): string {
-  const { circuit, lib } = buildCPUCore();
-  const flat = elaborate(circuit, lib, false, { expandReferences: true });
+  const { built } = buildCPUCore();
+  const flat = elaborate(internalsOf(built).ir, libraryOf(built).definitions, false, {
+    expandReferences: true,
+  });
 
   const canonical = {
-    top: circuit.name,
+    top: built.name,
     nodes: flat.nodes.map((n) => ({
       id: n.id,
       primitiveType: n.primitiveType,

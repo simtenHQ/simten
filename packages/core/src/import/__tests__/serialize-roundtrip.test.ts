@@ -107,7 +107,7 @@ describe('memory contents survive the round trip through generated source', () =
 
     const res = executeJsCode(source);
     expect(res.error, res.error ?? '').toBeNull();
-    const entry = res.builtCircuits.find((c) => c.circuit.name === 'RomProbe');
+    const entry = res.builtCircuits.find((c) => c.name === 'RomProbe');
     expect(entry).toBeDefined();
 
     const sim = simulate(entry as Circuit);
@@ -171,7 +171,7 @@ describe('real design (RV32I_CPU_Core) serializes fully clean and re-simulates',
     // and simulate — proves the generated source is executable, not just clean.
     const res = executeJsCode(source);
     expect(res.error, res.error ?? '').toBeNull();
-    const entry = res.builtCircuits.find((c) => c.circuit.name === 'RV32I_CPU_Core');
+    const entry = res.builtCircuits.find((c) => c.name === 'RV32I_CPU_Core');
     expect(entry).toBeDefined();
     const sim = simulate(entry as Circuit);
     sim.tick();

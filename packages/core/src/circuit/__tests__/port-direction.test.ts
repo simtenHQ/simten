@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { bit } from '../bit-bus.js';
 import { circuit } from '../circuit.js';
+import { internalsOf } from '../internals.js';
 
 // Type-level negative tests for #110: each `@ts-expect-error` line is
 // rejected by the compiler for the stated reason. Since #428 the build also
@@ -95,6 +96,6 @@ describe('port direction is enforced at the type level (#110)', () => {
         and1.out.to(outputs.carry),
       ],
     });
-    expect(HalfAdder.circuit.connections.length).toBeGreaterThan(0);
+    expect(internalsOf(HalfAdder).ir.connections.length).toBeGreaterThan(0);
   });
 });

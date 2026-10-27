@@ -21,8 +21,9 @@
  */
 
 import type { CircuitIR } from '../ir/circuit-ir.js';
-import { attachBehavior, type BehaviorTable } from './behavior.js';
+import type { BehaviorTable } from './behavior.js';
 import type { Circuit } from './builder-types.js';
+import { makeCircuit } from './internals.js';
 
 /**
  * Reconstruct a Circuit from sandbox-returned Circuit IR.
@@ -39,38 +40,16 @@ export function buildFromIR(
 ): Circuit {
   const dependencies = new Map<string, Circuit>();
   for (const dep of libraryCircuits) {
-    dependencies.set(dep.name, attachToJSON(wrap(dep, new Map(), behaviors)));
+    dependencies.set(dep.name, wrap(dep, new Map(), behaviors));
   }
-  return attachToJSON(wrap(circuit, dependencies, behaviors));
+  return wrap(circuit, dependencies, behaviors);
 }
 
-function wrap(c: CircuitIR, deps: Map<string, Circuit>, behaviors?: BehaviorTable): Circuit {
-  const inputs: Record<string, (typeof c.inputs)[number]> = {};
-  for (const p of c.inputs) inputs[p.name] = p;
-  const outputs: Record<string, (typeof c.outputs)[number]> = {};
-  for (const p of c.outputs) outputs[p.name] = p;
-  const nodes: Record<string, (typeof c.nodes)[number]> = {};
-  for (const n of c.nodes) nodes[n.id] = n;
-  const built = {
-    circuit: c,
-    inputs,
-    outputs,
-    nodes,
-    _dependencies: deps,
-  } as unknown as Circuit;
-  const behavior = c.implementation.kind === 'primitive' ? behaviors?.get(c.name) : undefined;
-  if (behavior) attachBehavior(built, behavior);
-  return built;
-}
-
-function attachToJSON<T extends Circuit>(built: T): T {
-  Object.defineProperty(built, 'toJSON', {
-    value: function () {
-      const deps: Record<string, unknown> = {};
-      for (const [n, d] of this._dependencies) deps[n] = d;
-      return { circuit: this.circuit, _dependencies: deps };
-    },
-    enumerable: false,
-  });
-  return built;
+function wrap(
+  ir: CircuitIR,
+  dependencies: Map<string, Circuit>,
+  behaviors?: BehaviorTable,
+): Circuit {
+  const behavior = ir.implementation.kind === 'primitive' ? behaviors?.get(ir.name) : undefined;
+  return makeCircuit({ ir, dependencies, args: {}, behavior });
 }

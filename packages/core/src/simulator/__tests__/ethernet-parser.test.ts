@@ -7,6 +7,7 @@
 
 import { describe, expect, it } from 'vitest';
 import { bit, bus, circuit, type MemoryContents } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import {
   Eth_AddrClassifier,
   Eth_CRC32,
@@ -168,10 +169,10 @@ function runPipeline(
     s.set({ enable: 1, reset: 0 });
 
     const out: Record<string, (number | boolean)[]> = {};
-    for (const port of Pipeline.circuit.outputs) out[port.name] = [];
+    for (const port of internalsOf(Pipeline).ir.outputs) out[port.name] = [];
 
     for (let i = 0; i < ticks; i++) {
-      for (const port of Pipeline.circuit.outputs) {
+      for (const port of internalsOf(Pipeline).ir.outputs) {
         const v = s.get(port.name as any);
         out[port.name].push(port.portType.kind === 'bit' ? Boolean(v) : (v as number));
       }

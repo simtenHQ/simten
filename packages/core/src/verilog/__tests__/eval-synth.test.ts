@@ -5,13 +5,14 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { type BehaviorTable, behaviorOf, libraryOf } from '../../circuit/behavior.js';
+import { type BehaviorTable, libraryOf } from '../../circuit/behavior.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import type { ArgumentValue } from '../../ir/circuit-ir.js';
 import { And, Xor } from '../../std/index.js';
 import { getStdLibrary } from '../../std/library.js';
 import {
-  checkSynthesizable,
+  checkEvalSynthesizable,
   emitVerilogFromEval,
   parseBehaviorSource,
   tryEmitFromEval,
@@ -263,18 +264,18 @@ describe('validateSynthAST', () => {
   });
 });
 
-// ── checkSynthesizable (high-level) ─────────────────────────────────────
+// ── checkEvalSynthesizable (one eval) ─────────────────────────────────────
 
-describe('checkSynthesizable', () => {
+describe('checkEvalSynthesizable', () => {
   it('returns valid for simple combinational', () => {
     const fn = ({ a, b }: any) => ({ out: a & b });
-    const result = checkSynthesizable(fn, ['a', 'b'], ['out']);
+    const result = checkEvalSynthesizable(fn, ['a', 'b'], ['out']);
     expect(result.valid).toBe(true);
   });
 
   it('returns invalid with errors for function calls', () => {
     const fn = ({ a }: any) => ({ out: parseInt(a) });
-    const result = checkSynthesizable(fn, ['a'], ['out']);
+    const result = checkEvalSynthesizable(fn, ['a'], ['out']);
     expect(result.valid).toBe(false);
     expect(result.errors.length).toBeGreaterThan(0);
   });
@@ -432,16 +433,16 @@ describe('tryEmitFromEval', () => {
 
 describe('stdlib eval synthesizability', () => {
   it('And eval is synthesizable', () => {
-    const entry = behaviorOf(And);
+    const entry = internalsOf(And).behavior;
     expect(entry).toBeDefined();
-    const result = checkSynthesizable(entry!.evalFn, entry!.inputNames, entry!.outputNames);
+    const result = checkEvalSynthesizable(entry!.evalFn, entry!.inputNames, entry!.outputNames);
     expect(result.valid).toBe(true);
   });
 
   it('Xor eval is synthesizable', () => {
-    const entry = behaviorOf(Xor);
+    const entry = internalsOf(Xor).behavior;
     expect(entry).toBeDefined();
-    const result = checkSynthesizable(entry!.evalFn, entry!.inputNames, entry!.outputNames);
+    const result = checkEvalSynthesizable(entry!.evalFn, entry!.inputNames, entry!.outputNames);
     expect(result.valid).toBe(true);
   });
 
@@ -449,7 +450,7 @@ describe('stdlib eval synthesizability', () => {
   it.skip('Adder eval is synthesizable', () => {
     const entry = getStdLibrary().behaviors.get('Adder');
     expect(entry).toBeDefined();
-    const result = checkSynthesizable(entry!.evalFn, entry!.inputNames, entry!.outputNames);
+    const result = checkEvalSynthesizable(entry!.evalFn, entry!.inputNames, entry!.outputNames);
     expect(result.valid).toBe(true);
   });
 });
@@ -477,8 +478,10 @@ describe('end-to-end eval-synth export', () => {
       ],
     });
 
-    const { definitions, behaviors } = libraryOf(MyCircuit);
-    const { verilog } = exportVerilog(MyCircuit.circuit, definitions, { behaviors });
+    // The exporter reads the circuit's own behavior, so the user's eval is
+    // translated rather than left as an unsupported primitive.
+    const { verilog, unsupported } = exportVerilog(MyCircuit);
+    expect(unsupported).toBeUndefined();
 
     // Should contain synthesized logic, NOT a WARNING comment
     expect(verilog).toContain('module TestSynthCircuit');
@@ -502,11 +505,12 @@ describe('top-level primitive simulation', () => {
     });
 
     const definitions = {
-      resolveCircuit: (name: string) => (name === 'TestDoubler' ? Doubler.circuit : undefined),
+      resolveCircuit: (name: string) =>
+        name === 'TestDoubler' ? internalsOf(Doubler).ir : undefined,
       getAllPrimitiveNames: () => ['TestDoubler'],
     };
 
-    const flat = elaborate(Doubler.circuit, definitions);
+    const flat = elaborate(internalsOf(Doubler).ir, definitions);
     expect(flat.nodes.length).toBe(1);
     expect(flat.nodes[0].primitiveType).toBe('TestDoubler');
 
@@ -533,11 +537,11 @@ describe('top-level primitive simulation', () => {
     });
 
     const definitions = {
-      resolveCircuit: (name: string) => (name === 'TestSimReg' ? MyReg.circuit : undefined),
+      resolveCircuit: (name: string) => (name === 'TestSimReg' ? internalsOf(MyReg).ir : undefined),
       getAllPrimitiveNames: () => ['TestSimReg'],
     };
 
-    const flat = elaborate(MyReg.circuit, definitions);
+    const flat = elaborate(internalsOf(MyReg).ir, definitions);
     expect(flat.nodes.length).toBe(1);
 
     const sim = createEngine(flat, {

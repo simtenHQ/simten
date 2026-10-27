@@ -11,7 +11,7 @@
  * - Apply selected circuit to canvas
  */
 
-import { autoHarness } from '@simten/core/internal';
+import { autoHarness, internalsOf } from '@simten/core/internal';
 import { HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
@@ -151,7 +151,7 @@ export const useCircuitPreviewStore = create<CircuitPreviewStore>()(
       // Ensure harness components (Switch, Led, etc.) are in the definitions
       const libStore = useCircuitDefinitionsStore.getState();
       for (const c of [Switch, Led, Input(), Output, HexDisplay()]) {
-        if (!libStore.resolveCircuit(c.circuit.name)) libStore.addCircuit(c.circuit);
+        if (!libStore.resolveCircuit(c.name)) libStore.addCircuit(internalsOf(c).ir);
       }
 
       // Wrap with Switch/Led harness so inputs/outputs are interactive on canvas

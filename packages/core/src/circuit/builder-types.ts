@@ -10,15 +10,7 @@
  * so TypeScript resolves everything in one pass — fast at any circuit size.
  */
 
-import type {
-  ArgumentValue,
-  BitType,
-  BusType,
-  CircuitIR,
-  Node,
-  PortDescriptor,
-  PortType,
-} from '../ir/circuit-ir.js';
+import type { ArgumentValue, BitType, BusType, PortType } from '../ir/circuit-ir.js';
 
 export type { ArgumentValue };
 
@@ -300,45 +292,30 @@ export interface CircuitMeta {
 // Built component
 // ============================================================================
 
-/** A fully built circuit that can be used as a node or simulated */
+/** Carries a composite's node types, for `CircuitLayout` in `@simten/ui`. Type-level only. */
+declare const __nodes: unique symbol;
+
+/**
+ * A built circuit: what `circuit()` returns, or a factory like `Adder` returns
+ * when called. Use it as a node in another circuit, or pass it to `simulate`.
+ *
+ * Only the name and ports are public. The circuit's insides (its netlist, its
+ * behavior, the options it was made with) are Simten's own business and can
+ * change in any release.
+ */
 export interface Circuit<
   Ins extends PortMap = PortMap,
   Outs extends PortMap = PortMap,
   Ns extends Record<string, unknown> = Record<string, unknown>,
 > {
-  /** The Circuit IR for this circuit. Contains the canonical representation
-   *  used by the simulator, Verilog exporter, and serialization — name, port
-   *  descriptors, node list, connection list, etc. Pass this (rather than
-   *  the `Circuit` wrapper) to APIs that consume IR. */
-  readonly circuit: CircuitIR;
-  /** Input ports keyed by name. Use this instead of
-   *  `circuit.inputs.find(p => p.name === '…')` when you need a specific
-   *  port descriptor — autocompletes against the actual port names. */
-  readonly inputs: { readonly [K in keyof Ins]: PortDescriptor };
-  /** Output ports keyed by name. Same shape and use case as `inputs`. */
-  readonly outputs: { readonly [K in keyof Outs]: PortDescriptor };
-  /** Sub-nodes keyed by their local id from the `nodes` config. Empty for
-   *  primitives (circuits defined with `eval` but no `nodes`); populated for
-   *  composite circuits. Useful for inspecting structure or driving
-   *  hierarchical UIs. */
-  readonly nodes: { readonly [K in keyof Ns]: Node };
-  /** @internal Type-level shape for generic propagation. Carries the
-   *  per-instance generic parameters so other generic helpers (`ConnectContext`,
-   *  `NodePortRefs`) can recover them via `infer`. Not for runtime use. */
-  readonly _shape: { inputs: Ins; outputs: Outs; nodes: Ns };
-  /** Sub-circuit definitions needed for simulation (transitive). Walk this
-   *  map to collect every component needed to register in a `CircuitDefinitions`
-   *  before simulating or rendering this circuit. */
-  readonly _dependencies: ReadonlyMap<string, Circuit>;
-  /** @internal Per-instance arguments baked in by a factory call. Populated
-   *  when this Circuit was produced by calling a parameterized factory
-   *  (e.g. `Register({ width: 16, value: 100 })`); undefined for bare
-   *  singletons. The parent `circuit()` reads this to populate
-   *  `irNodes[i].arguments`, where the simulator picks it up.
-   *  Structural args (e.g. `width`) have already done their job by the time
-   *  this is read (port widths baked in); state-initial / interactive args
-   *  (`value`, `init`, etc.) flow through to the simulator. */
-  readonly _args?: Record<string, ArgumentValue>;
+  /** The name given to `circuit()`. */
+  readonly name: string;
+  /** Input ports by name, each a `bit` or `bus(n)`. */
+  readonly inputs: Ins;
+  /** Output ports by name, each a `bit` or `bus(n)`. */
+  readonly outputs: Outs;
+  /** The node types of a composite, for type-level helpers to `infer`. Never set at runtime. */
+  readonly [__nodes]?: Ns;
 }
 
 // ============================================================================

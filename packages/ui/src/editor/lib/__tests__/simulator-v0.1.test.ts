@@ -10,13 +10,14 @@ import {
   createEngine,
   elaborate,
   getStdLibrary,
+  internalsOf,
 } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeEach, describe, expect, it } from 'vitest';
 import { useCircuitDefinitionsStore } from '../../stores/circuit-definitions-store';
 import { bitType, busType, type CircuitIR } from '../../types/circuit';
 
-const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
+const PRIMITIVES = STDLIB_CIRCUITS.map((c) => internalsOf(c).ir).filter(
   (c) => c.implementation.kind === 'primitive',
 );
 

@@ -26,7 +26,7 @@ import type {
   FlatSequentialState,
   SimulatorEngine,
 } from '@simten/core/internal';
-import { autoHarness, behaviorOf, isSequentialCircuit } from '@simten/core/internal';
+import { autoHarness, buildFromIR, internalsOf, isSequentialCircuit } from '@simten/core/internal';
 import { HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
 import {
   type BehaviorSource,
@@ -131,11 +131,11 @@ function extractBehaviorSources(circuit: Circuit): Record<string, BehaviorSource
   const visited = new Set<string>();
 
   function collect(c: Circuit) {
-    const name = c.circuit.name;
+    const { name } = c;
     if (visited.has(name)) return;
     visited.add(name);
 
-    const entry = behaviorOf(c);
+    const { behavior: entry, dependencies } = internalsOf(c);
     if (entry) {
       sources[name] = {
         evalSource: entry.evalFn.toString(),
@@ -145,9 +145,7 @@ function extractBehaviorSources(circuit: Circuit): Record<string, BehaviorSource
         stateKeys: entry.stateKeys,
       };
     }
-    for (const [, dep] of c._dependencies) {
-      if (dep) collect(dep);
-    }
+    for (const [, dep] of dependencies) collect(dep);
   }
 
   collect(circuit);
@@ -155,23 +153,13 @@ function extractBehaviorSources(circuit: Circuit): Record<string, BehaviorSource
 }
 
 /**
- * Build a minimal Circuit-like object from a Circuit IR and its dependencies.
+ * Build a Circuit from a Circuit IR and its dependencies.
  * Used by the editor to adapt sandbox compile results into the shape useCircuitSimulator expects.
- * The resulting object carries no behavior: the sandbox runs the behavior of its own
+ * The result carries no behavior: the sandbox runs the behavior of its own
  * prior sandbox.compile(source).
  */
 export function builtFromIR(circuit: CircuitIR, dependencies: CircuitIR[]): Circuit {
-  const depMap = new Map<string, Circuit>();
-  for (const dep of dependencies) {
-    depMap.set(dep.name, {
-      circuit: dep,
-      _dependencies: new Map(),
-    } as unknown as Circuit);
-  }
-  return {
-    circuit,
-    _dependencies: depMap,
-  } as unknown as Circuit;
+  return buildFromIR(circuit, dependencies);
 }
 
 /**
@@ -228,17 +216,13 @@ export function useCircuitSimulator(
       },
     };
     for (const c of [Switch, Led, Input(), Output, HexDisplay()]) {
-      definitions.addCircuit(c.circuit);
+      definitions.addCircuit(internalsOf(c).ir);
     }
-    if (circuit) {
-      definitions.addCircuit(circuit.circuit);
-      if (circuit._dependencies) {
-        for (const [, dep] of circuit._dependencies) {
-          if (dep?.circuit) definitions.addCircuit(dep.circuit);
-        }
-      }
-    }
-    return { rawCircuit: circuit?.circuit ?? null, definitions };
+    if (!circuit) return { rawCircuit: null, definitions };
+    const { ir, dependencies } = internalsOf(circuit);
+    definitions.addCircuit(ir);
+    for (const [, dep] of dependencies) definitions.addCircuit(internalsOf(dep).ir);
+    return { rawCircuit: ir, definitions };
   }, [circuit]);
 
   // ── Auto-harness (wrap with Switches/LEDs if enabled) ──
@@ -350,14 +334,13 @@ export function useCircuitSimulator(
       };
 
       // The raw circuit (referenced as "dut" by the harness)
-      addCircuit(circuit.circuit);
+      const { ir, dependencies } = internalsOf(circuit);
+      addCircuit(ir);
       // Its transitive dependencies
-      for (const [, dep] of circuit._dependencies) {
-        if (dep?.circuit) addCircuit(dep.circuit);
-      }
+      for (const [, dep] of dependencies) addCircuit(internalsOf(dep).ir);
       // Harness components (Switch, Led, etc.)
       for (const c of [Switch, Led, Input(), Output, HexDisplay()]) {
-        addCircuit(c.circuit);
+        addCircuit(internalsOf(c).ir);
       }
       // Anything else in the definitions
       const primNames = definitions.getAllPrimitiveNames();

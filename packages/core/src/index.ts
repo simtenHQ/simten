@@ -14,4 +14,4 @@
 
 export * from './circuit/index.js';
 export type { BitType, BitValue, BusType, BusValue, PortType } from './ir/circuit-ir.js';
-export { type SimulationHandle, simulate } from './simulator/simulate.js';
+export { type SimulationHandle, type Snapshot, simulate } from './simulator/simulate.js';

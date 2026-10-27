@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Circuit } from '../../circuit/index.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import {
   Eth_AddrClassifier,
   Eth_CRC32,
@@ -25,7 +26,7 @@ function sim<C extends Circuit>(
   try {
     s.set(inputs as any);
     const out: Record<string, number | boolean> = {};
-    for (const port of built.circuit.outputs) {
+    for (const port of internalsOf(built).ir.outputs) {
       const v = s.get(port.name as any);
       out[port.name] = port.portType.kind === 'bit' ? Boolean(v) : (v as number);
     }
@@ -47,10 +48,10 @@ function simTicks<C extends Circuit>(
     if (preTickSetup) preTickSetup(s);
     s.set(inputs as any);
     const out: Record<string, (number | boolean)[]> = {};
-    for (const port of built.circuit.outputs) out[port.name] = [];
+    for (const port of internalsOf(built).ir.outputs) out[port.name] = [];
     for (let i = 0; i < ticks; i++) {
       // Capture pre-edge values to match the legacy trace semantics
-      for (const port of built.circuit.outputs) {
+      for (const port of internalsOf(built).ir.outputs) {
         const v = s.get(port.name as any);
         out[port.name].push(port.portType.kind === 'bit' ? Boolean(v) : (v as number));
       }

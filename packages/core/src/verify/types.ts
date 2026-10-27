@@ -9,6 +9,12 @@
 
 export type OracleTier = 'A' | 'B' | 'C' | 'D' | 'E';
 
+/** Options for `verify.check`. */
+export interface CheckOpts {
+  numRuns?: number;
+  oracle?: OracleDecl;
+}
+
 /** Caller-declared statement of how independent the oracle is. Echoed verbatim. */
 export interface OracleDecl {
   tier: OracleTier;

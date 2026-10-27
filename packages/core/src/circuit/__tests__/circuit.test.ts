@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { behaviorOf } from '../behavior.js';
 import { bit, bus } from '../bit-bus.js';
 import { circuit } from '../circuit.js';
+import { internalsOf } from '../internals.js';
 
 // ============================================================================
 // Helper: pre-built leaf components for use as nodes
@@ -58,16 +58,16 @@ describe('bit and bus', () => {
 
 describe('combinational leaf', () => {
   it('builds an AND gate', () => {
-    expect(And.circuit.name).toBe('And');
-    expect(And.circuit.inputs).toHaveLength(2);
-    expect(And.circuit.outputs).toHaveLength(1);
-    expect(And.circuit.inputs[0].name).toBe('a');
-    expect(And.circuit.inputs[0].portType).toEqual({ kind: 'bit' });
-    expect(And.circuit.outputs[0].name).toBe('out');
-    expect(And.circuit.implementation).toEqual({ kind: 'primitive' });
-    expect(And.circuit.clocks).toHaveLength(0);
-    expect(And.circuit.state).toHaveLength(0);
-    expect(And.circuit.metadata?.timing).toBe('combinational');
+    expect(And.name).toBe('And');
+    expect(internalsOf(And).ir.inputs).toHaveLength(2);
+    expect(internalsOf(And).ir.outputs).toHaveLength(1);
+    expect(internalsOf(And).ir.inputs[0].name).toBe('a');
+    expect(internalsOf(And).ir.inputs[0].portType).toEqual({ kind: 'bit' });
+    expect(internalsOf(And).ir.outputs[0].name).toBe('out');
+    expect(internalsOf(And).ir.implementation).toEqual({ kind: 'primitive' });
+    expect(internalsOf(And).ir.clocks).toHaveLength(0);
+    expect(internalsOf(And).ir.state).toHaveLength(0);
+    expect(internalsOf(And).ir.metadata?.timing).toBe('combinational');
   });
 
   it('builds a bus-width component', () => {
@@ -77,14 +77,14 @@ describe('combinational leaf', () => {
       eval: ({ a, b }) => ({ sum: (a + b) & 0xff, carry: (a + b) >> 8 }),
     });
 
-    expect(Adder.circuit.inputs[0].portType).toEqual({ kind: 'bus', width: 8 });
-    expect(Adder.circuit.outputs[0].portType).toEqual({ kind: 'bus', width: 8 });
-    expect(Adder.circuit.outputs[1].portType).toEqual({ kind: 'bit' });
-    expect(Adder.circuit.outputs[1].name).toBe('carry');
+    expect(internalsOf(Adder).ir.inputs[0].portType).toEqual({ kind: 'bus', width: 8 });
+    expect(internalsOf(Adder).ir.outputs[0].portType).toEqual({ kind: 'bus', width: 8 });
+    expect(internalsOf(Adder).ir.outputs[1].portType).toEqual({ kind: 'bit' });
+    expect(internalsOf(Adder).ir.outputs[1].name).toBe('carry');
   });
 
   it('carries its eval function on the built circuit', () => {
-    const entry = behaviorOf(And);
+    const entry = internalsOf(And).behavior;
     expect(entry).toBeDefined();
     expect(entry!.evalFn({ a: 1, b: 1 })).toEqual({ out: 1 });
     expect(entry!.evalFn({ a: 1, b: 0 })).toEqual({ out: 0 });
@@ -97,8 +97,8 @@ describe('combinational leaf', () => {
       eval: ({ data }) => ({ result: data * 2 }),
     });
 
-    expect(Comp.circuit.inputs[0].portType).toEqual({ kind: 'bus', width: 8 });
-    expect(Comp.circuit.outputs[0].portType).toEqual({ kind: 'bus', width: 16 });
+    expect(internalsOf(Comp).ir.inputs[0].portType).toEqual({ kind: 'bus', width: 8 });
+    expect(internalsOf(Comp).ir.outputs[0].portType).toEqual({ kind: 'bus', width: 16 });
   });
 });
 
@@ -118,11 +118,11 @@ describe('sequential leaf', () => {
       }),
     });
 
-    expect(Counter.circuit.clocks).toHaveLength(1);
-    expect(Counter.circuit.clocks[0].name).toBe('clk');
-    expect(Counter.circuit.state).toHaveLength(1);
-    expect(Counter.circuit.metadata?.timing).toBe('sequential');
-    const entry = behaviorOf(Counter);
+    expect(internalsOf(Counter).ir.clocks).toHaveLength(1);
+    expect(internalsOf(Counter).ir.clocks[0].name).toBe('clk');
+    expect(internalsOf(Counter).ir.state).toHaveLength(1);
+    expect(internalsOf(Counter).ir.metadata?.timing).toBe('sequential');
+    const entry = internalsOf(Counter).behavior;
     expect(entry?.evalFn).toBeDefined();
     expect(entry?.onTickFn).toBeDefined();
     expect(entry?.stateKeys).toEqual(['total']);
@@ -137,10 +137,10 @@ describe('sequential leaf', () => {
       onTick: ({ d }) => ({ stored: d as number }),
     });
 
-    expect(Register.circuit.inputs).toHaveLength(1);
-    expect(Register.circuit.outputs).toHaveLength(1);
-    expect(Register.circuit.clocks).toHaveLength(1);
-    expect(Register.circuit.name).toBe('Register8');
+    expect(internalsOf(Register).ir.inputs).toHaveLength(1);
+    expect(internalsOf(Register).ir.outputs).toHaveLength(1);
+    expect(internalsOf(Register).ir.clocks).toHaveLength(1);
+    expect(Register.name).toBe('Register8');
   });
 });
 
@@ -162,13 +162,13 @@ describe('composite', () => {
       ],
     });
 
-    expect(HalfAdder.circuit.implementation).toEqual({ kind: 'composite' });
-    expect(HalfAdder.circuit.nodes).toHaveLength(2);
-    expect(HalfAdder.circuit.nodes[0].id).toBe('x');
-    expect(HalfAdder.circuit.nodes[0].componentRef).toBe('Xor');
-    expect(HalfAdder.circuit.nodes[1].id).toBe('a');
-    expect(HalfAdder.circuit.nodes[1].componentRef).toBe('And');
-    expect(HalfAdder.circuit.connections).toHaveLength(6);
+    expect(internalsOf(HalfAdder).ir.implementation).toEqual({ kind: 'composite' });
+    expect(internalsOf(HalfAdder).ir.nodes).toHaveLength(2);
+    expect(internalsOf(HalfAdder).ir.nodes[0].id).toBe('x');
+    expect(internalsOf(HalfAdder).ir.nodes[0].componentRef).toBe('Xor');
+    expect(internalsOf(HalfAdder).ir.nodes[1].id).toBe('a');
+    expect(internalsOf(HalfAdder).ir.nodes[1].componentRef).toBe('And');
+    expect(internalsOf(HalfAdder).ir.connections).toHaveLength(6);
   });
 
   it('builds a composite from composites', () => {
@@ -200,9 +200,9 @@ describe('composite', () => {
       ],
     });
 
-    expect(FullAdder.circuit.nodes).toHaveLength(3);
-    expect(FullAdder.circuit.nodes[0].componentRef).toBe('HalfAdder');
-    expect(FullAdder.circuit.connections).toHaveLength(8);
+    expect(internalsOf(FullAdder).ir.nodes).toHaveLength(3);
+    expect(internalsOf(FullAdder).ir.nodes[0].componentRef).toBe('HalfAdder');
+    expect(internalsOf(FullAdder).ir.connections).toHaveLength(8);
   });
 
   it('detects sequential when nodes contain sequential components', () => {
@@ -221,7 +221,7 @@ describe('composite', () => {
       connect: ({ inputs, outputs, nodes: { r } }) => [inputs.data.to(r.d), r.q.to(outputs.result)],
     });
 
-    expect(Pipeline.circuit.metadata?.timing).toBe('sequential');
+    expect(internalsOf(Pipeline).ir.metadata?.timing).toBe('sequential');
   });
 });
 
@@ -243,10 +243,10 @@ describe('parameterized', () => {
     const r8 = Register(8);
     const r16 = Register(16);
 
-    expect(r8.circuit.name).toBe('Register8');
-    expect(r8.circuit.inputs[0].portType).toEqual({ kind: 'bus', width: 8 });
-    expect(r16.circuit.name).toBe('Register16');
-    expect(r16.circuit.inputs[0].portType).toEqual({ kind: 'bus', width: 16 });
+    expect(r8.name).toBe('Register8');
+    expect(internalsOf(r8).ir.inputs[0].portType).toEqual({ kind: 'bus', width: 8 });
+    expect(r16.name).toBe('Register16');
+    expect(internalsOf(r16).ir.inputs[0].portType).toEqual({ kind: 'bus', width: 16 });
   });
 });
 
@@ -263,9 +263,9 @@ describe('metadata', () => {
       eval: ({ a }) => ({ result: a }),
     });
 
-    expect(ALU.circuit.metadata?.description).toBe('Arithmetic Logic Unit');
-    expect(ALU.circuit.metadata?.category).toBe('arithmetic');
-    expect(ALU.circuit.metadata?.icon).toBe('+');
+    expect(internalsOf(ALU).ir.metadata?.description).toBe('Arithmetic Logic Unit');
+    expect(internalsOf(ALU).ir.metadata?.category).toBe('arithmetic');
+    expect(internalsOf(ALU).ir.metadata?.icon).toBe('+');
   });
 });
 
@@ -393,9 +393,9 @@ describe('source components', () => {
       outputs: { value: bit },
     });
 
-    expect(Switch.circuit.implementation).toEqual({ kind: 'primitive' });
-    expect(Switch.circuit.inputs).toHaveLength(0);
-    expect(Switch.circuit.outputs).toHaveLength(1);
-    expect(Switch.circuit.metadata?.timing).toBe('combinational');
+    expect(internalsOf(Switch).ir.implementation).toEqual({ kind: 'primitive' });
+    expect(internalsOf(Switch).ir.inputs).toHaveLength(0);
+    expect(internalsOf(Switch).ir.outputs).toHaveLength(1);
+    expect(internalsOf(Switch).ir.metadata?.timing).toBe('combinational');
   });
 });

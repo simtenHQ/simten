@@ -6,7 +6,7 @@
  * The same names are exported from `@simten/core`.
  */
 
-export type { MemoryContents } from '../ir/circuit-ir.js';
+export type { ArgumentValue, MemoryContents } from '../ir/circuit-ir.js';
 export type { MemDecl, RegDecl } from './bit-bus.js';
 export { bit, bus, mem, reg } from './bit-bus.js';
 export type {
@@ -15,6 +15,7 @@ export type {
   CircuitMeta,
   ConnectContext,
   ConnectionDef,
+  NodeEntry,
   PortMap,
   PortValues,
   SinkPortRef,

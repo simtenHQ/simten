@@ -22,7 +22,7 @@
  */
 
 import type { CircuitIR } from '@simten/core/internal';
-import { executeCircuitCode } from '@simten/core/internal';
+import { executeCircuitCode, internalsOf } from '@simten/core/internal';
 import { Snake as BlogSnake } from '../../../../apps/web/src/features/blog/snake-in-hardware/circuits.js';
 import { EXAMPLES } from '../../../../apps/web/src/features/visual-editor/examples.js';
 import { buildSnake } from './index.js';
@@ -106,9 +106,10 @@ function diff(name: string, ref: CanonCircuit, other: CanonCircuit): string[] {
 const { built } = buildSnake();
 
 /** Canonical circuits by name: the FPGA top plus its whole dependency tree. */
-const canonical = new Map<string, CircuitIR>([[built.circuit.name, built.circuit]]);
-for (const [name, dep] of built._dependencies) {
-  if (dep.circuit.implementation.kind === 'composite') canonical.set(name, dep.circuit);
+const canonical = new Map<string, CircuitIR>([[built.name, internalsOf(built).ir]]);
+for (const [name, dep] of internalsOf(built).dependencies) {
+  const { ir } = internalsOf(dep);
+  if (ir.implementation.kind === 'composite') canonical.set(name, ir);
 }
 
 /** The shared tree the editor example must carry verbatim: SnakeCore + stages. */
@@ -117,15 +118,18 @@ const SHARED = ['SnakeCore', ...[...canonical.keys()].filter((n) => n.startsWith
 const problems: string[] = [];
 
 // Copy 1: blog post / landing page demo — full tree against canonical.
-problems.push(...diff('blog:Snake', canon(canonical.get('Snake')!), canon(BlogSnake.circuit)));
-for (const [name, dep] of BlogSnake._dependencies) {
-  if (dep.circuit.implementation.kind !== 'composite') continue;
+problems.push(
+  ...diff('blog:Snake', canon(canonical.get('Snake')!), canon(internalsOf(BlogSnake).ir)),
+);
+for (const [name, dep] of internalsOf(BlogSnake).dependencies) {
+  const { ir } = internalsOf(dep);
+  if (ir.implementation.kind !== 'composite') continue;
   const ref = canonical.get(name);
   if (!ref) {
     problems.push(`[blog:${name}] composite not present in canonical tree`);
     continue;
   }
-  problems.push(...diff(`blog:${name}`, canon(ref), canon(dep.circuit)));
+  problems.push(...diff(`blog:${name}`, canon(ref), canon(ir)));
 }
 
 // Copy 2: /circuit editor example source string.

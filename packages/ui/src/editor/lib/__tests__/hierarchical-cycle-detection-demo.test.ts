@@ -10,6 +10,7 @@ import {
   createEngine,
   elaborate,
   getStdLibrary,
+  internalsOf,
 } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -33,7 +34,7 @@ const BEHAVIORS = new Map<string, Behavior>([
   ],
 ]);
 
-const PRIMITIVES = STDLIB_CIRCUITS.map((c) => c.circuit).filter(
+const PRIMITIVES = STDLIB_CIRCUITS.map((c) => internalsOf(c).ir).filter(
   (c) => c.implementation.kind === 'primitive',
 );
 

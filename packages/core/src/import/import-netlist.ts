@@ -18,8 +18,9 @@
  * Follows auto-harness.ts: pure Circuit IR construction, no code execution.
  */
 
-import { type Behavior, behaviorOf } from '../circuit/behavior.js';
+import type { Behavior } from '../circuit/behavior.js';
 import type { Circuit } from '../circuit/builder-types.js';
+import { internalsOf } from '../circuit/internals.js';
 import type {
   ArgumentValue,
   CircuitIR,
@@ -142,7 +143,7 @@ interface LiftRule {
    */
   adaptOperands?: boolean;
   /** Explicit node arguments (shape) to store, for import-namespace primitives
-   *  whose `circuit()` config form doesn't carry `_args` (e.g. Dlatch). Lets the
+   *  whose `circuit()` config form records no options (e.g. Dlatch). Lets the
    *  serializer emit a factory call `Dlatch({ width, enPolarity })`. */
   nodeArgs?: (cell: YosysCell) => Record<string, number>;
 }
@@ -522,17 +523,17 @@ function instancesFrom(descs: readonly PortDescriptor[], nodeId: string): PortIn
 
 /** Width of a built component's input port (1 for a bit port). */
 function portWidth(built: Circuit, portName: string): number {
-  const p = built.circuit.inputs.find((d) => d.name === portName);
-  if (!p) throw new Error(`${built.circuit.name}: no input port '${portName}'`);
-  return p.portType.kind === 'bus' ? p.portType.width : 1;
+  const p = built.inputs[portName];
+  if (!p) throw new Error(`${built.name}: no input port '${portName}'`);
+  return p.kind === 'bus' ? p.width : 1;
 }
 
 function nodeFromBuilt(id: string, built: Circuit, args: Record<string, ArgumentValue>): Node {
-  const c = built.circuit;
+  const { ir: c, args: builtArgs } = internalsOf(built);
   return {
     id,
     componentRef: c.name,
-    arguments: { ...built._args, ...args },
+    arguments: { ...builtArgs, ...args },
     inputs: instancesFrom(c.inputs, id),
     outputs: instancesFrom(c.outputs, id),
     clocks: c.clocks.map((ck) => ({ id: `${id}.${ck.name}`, name: ck.name })),
@@ -547,11 +548,10 @@ interface ImportDeps {
 
 /** Collect a Circuit's circuit + transitive dependency circuits, with their behavior. */
 function collectDeps(built: Circuit, into: ImportDeps): void {
-  const name = built.circuit.name;
-  if (!into.definitions.has(name)) into.definitions.set(name, built.circuit);
-  const behavior = behaviorOf(built);
-  if (behavior && !into.behaviors.has(name)) into.behaviors.set(name, behavior);
-  for (const [, dep] of built._dependencies) collectDeps(dep, into);
+  const { ir, behavior, dependencies } = internalsOf(built);
+  if (!into.definitions.has(ir.name)) into.definitions.set(ir.name, ir);
+  if (behavior && !into.behaviors.has(ir.name)) into.behaviors.set(ir.name, behavior);
+  for (const [, dep] of dependencies) collectDeps(dep, into);
 }
 
 // ---------------------------------------------------------------------------
@@ -1272,8 +1272,9 @@ function translateModule(
     const built = rule.comp(cell);
     const args: Record<string, number> = rule.nodeArgs ? rule.nodeArgs(cell) : {};
     // bake width arg for lifted comps that carry it
-    if (built._args)
-      for (const [k, v] of Object.entries(built._args)) if (typeof v === 'number') args[k] = v;
+    for (const [k, v] of Object.entries(internalsOf(built).args)) {
+      if (typeof v === 'number') args[k] = v;
+    }
     pushBuilt(cid, built, args);
 
     for (const [cellPort, compPort] of Object.entries(rule.inMap)) {

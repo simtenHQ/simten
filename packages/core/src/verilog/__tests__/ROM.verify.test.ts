@@ -15,11 +15,12 @@
 
 import { describe, expect, it } from 'vitest';
 import { bus, circuit } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import { createEngine, elaborate } from '../../simulator/index.js';
 import { ROM } from '../../std/index.js';
 import { getStdLibrary } from '../../std/library.js';
-import { exportVerilog } from '../exporter.js';
+import { exportVerilogFromIR } from '../exporter.js';
 import { generateSequentialTestbench, type SequentialTestVector } from '../testbench-gen.js';
 import { hasVerifier, verifyVerilog } from './verify.js';
 
@@ -60,10 +61,10 @@ function buildRom() {
   // exporter's collectStateInits reads this at export time; the
   // simulator's initializer reads it at sim start.
   const romDefWithData: CircuitIR = {
-    ...Rom.circuit,
+    ...internalsOf(Rom).ir,
     state: [
       {
-        ...Rom.circuit.state[0],
+        ...internalsOf(Rom).ir.state[0],
         initialValue: {
           data: Object.fromEntries(ROM_CONTENTS),
           addressWidth: 16,
@@ -75,11 +76,15 @@ function buildRom() {
 
   const definitions: CircuitDefinitions = {
     resolveCircuit: (name) =>
-      name === 'RomWrapper' ? RomWrapper.circuit : name === 'ROM' ? romDefWithData : undefined,
+      name === 'RomWrapper'
+        ? internalsOf(RomWrapper).ir
+        : name === 'ROM'
+          ? romDefWithData
+          : undefined,
     getAllPrimitiveNames: () => ['ROM'],
   };
 
-  return { circuit: RomWrapper.circuit, definitions };
+  return { circuit: internalsOf(RomWrapper).ir, definitions };
 }
 
 function runSimulator(addrs: number[]): number[] {
@@ -126,7 +131,10 @@ d('ROM — JS simulator vs iverilog co-simulation (preloaded contents)', () => {
     expect(simOutputs).toEqual(expected);
 
     const { circuit, definitions } = buildRom();
-    const { verilog } = exportVerilog(circuit, definitions);
+    const { verilog } = exportVerilogFromIR(circuit, {
+      definitions: definitions,
+      behaviors: getStdLibrary().behaviors,
+    });
     const testbench = generateSequentialTestbench(circuit, buildVectors(READ_SEQUENCE));
 
     const result = await verifyVerilog(verilog, testbench);

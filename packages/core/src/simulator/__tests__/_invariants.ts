@@ -42,7 +42,9 @@
  *     circuits the project already depends on)
  */
 
-import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
+import { libraryOf } from '../../circuit/behavior.js';
+import type { Circuit } from '../../circuit/builder-types.js';
+import { internalsOf } from '../../circuit/internals.js';
 import { TOP_LEVEL_NODE } from '../../ir/circuit-ir.js';
 import { elaborate } from '../elaboration.js';
 import type { FlatCircuit, FlatNode } from '../types.js';
@@ -53,32 +55,8 @@ import type { FlatCircuit, FlatNode } from '../types.js';
  * so tests can elaborate directly without going through the simulator. Pure
  * test convenience — never call from product code.
  */
-// Loose type — Circuit lives in circuit.ts as a structural shape; we only
-// need .circuit and (optionally) ._dependencies here.
-// `_dependencies` is a ReadonlyMap on the real `Circuit`; declaring it
-// mutable here made every genuine Circuit unassignable to this helper.
-type CircuitLike = {
-  circuit: CircuitIR;
-  _dependencies?: ReadonlyMap<string, { circuit: CircuitIR }>;
-};
-
-export function elaborateBuilt(built: CircuitLike): FlatCircuit {
-  const circuitMap = new Map<string, CircuitIR>();
-  const library: CircuitDefinitions & { addCircuit(c: CircuitIR): void } = {
-    resolveCircuit: (name) => circuitMap.get(name),
-    getAllPrimitiveNames: () =>
-      [...circuitMap.entries()]
-        .filter(([, c]) => c.implementation.kind === 'primitive')
-        .map(([n]) => n),
-    addCircuit: (c) => {
-      circuitMap.set(c.name, c);
-    },
-  };
-  library.addCircuit(built.circuit);
-  if (built._dependencies) {
-    for (const [, dep] of built._dependencies) library.addCircuit(dep.circuit);
-  }
-  return elaborate(built.circuit, library);
+export function elaborateBuilt(built: Circuit): FlatCircuit {
+  return elaborate(internalsOf(built).ir, libraryOf(built).definitions);
 }
 
 export interface InvariantResult {

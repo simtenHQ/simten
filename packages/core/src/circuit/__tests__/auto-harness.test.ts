@@ -21,6 +21,7 @@ import { And, Or } from '../../std/index.js';
 import { autoHarness } from '../auto-harness.js';
 import { bit } from '../bit-bus.js';
 import { circuit } from '../circuit.js';
+import { internalsOf } from '../internals.js';
 
 function makeLibrary() {
   const store = new Map<string, CircuitIR>();
@@ -35,16 +36,18 @@ function makeLibrary() {
 
 /** The same circuit name, built with a varying input set — an editor session. */
 function build(inputs: Record<string, typeof bit>) {
-  return circuit('Editable', {
-    inputs: inputs as { a: typeof bit; b: typeof bit },
-    outputs: { out: bit },
-    nodes: { g1: And },
-    connect: ({ inputs: ins, outputs, nodes }) => [
-      ins.a.to(nodes.g1.a),
-      ins.b.to(nodes.g1.b),
-      nodes.g1.out.to(outputs.out),
-    ],
-  }).circuit;
+  return internalsOf(
+    circuit('Editable', {
+      inputs: inputs as { a: typeof bit; b: typeof bit },
+      outputs: { out: bit },
+      nodes: { g1: And },
+      connect: ({ inputs: ins, outputs, nodes }) => [
+        ins.a.to(nodes.g1.a),
+        ins.b.to(nodes.g1.b),
+        nodes.g1.out.to(outputs.out),
+      ],
+    }),
+  ).ir;
 }
 
 const dutPorts = (harness: CircuitIR) =>
@@ -113,12 +116,14 @@ describe('autoHarness library registration', () => {
 
   it('leaves an undriven output without a led', () => {
     const lib = makeLibrary();
-    const bare = circuit('Bare', {
-      inputs: { a: bit },
-      outputs: { out: bit },
-      nodes: { g1: And },
-      connect: ({ inputs, nodes }) => [inputs.a.to(nodes.g1.a)],
-    }).circuit;
+    const bare = internalsOf(
+      circuit('Bare', {
+        inputs: { a: bit },
+        outputs: { out: bit },
+        nodes: { g1: And },
+        connect: ({ inputs, nodes }) => [inputs.a.to(nodes.g1.a)],
+      }),
+    ).ir;
 
     const harness = autoHarness(bare, lib);
 
@@ -140,7 +145,7 @@ describe('autoHarness library registration', () => {
 describe('primitives', () => {
   it('harnesses every port of an eval-only primitive', () => {
     const lib = makeLibrary();
-    const harness = autoHarness(Or.circuit, lib);
+    const harness = autoHarness(internalsOf(Or).ir, lib);
 
     expect(harness.nodes.filter((n) => n.componentRef === 'Switch').map((n) => n.id)).toEqual([
       'a',

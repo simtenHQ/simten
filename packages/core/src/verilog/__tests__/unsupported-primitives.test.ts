@@ -23,33 +23,9 @@
 
 import { describe, expect, it } from 'vitest';
 import { bus, circuit } from '../../circuit/index.js';
-import type { CircuitDefinitions, CircuitIR } from '../../internal.js';
 import { And, Slice } from '../../std/index.js';
 import { exportVerilog } from '../index.js';
 import { UNSUPPORTED_MARKER } from '../primitive-map.js';
-
-/** Same shape as `exporter.test.ts`'s helper: the top circuit plus every
- *  transitive dependency, so elaboration can resolve the primitives. */
-function libraryFor(c: {
-  circuit: CircuitIR;
-  _dependencies: ReadonlyMap<string, { circuit: CircuitIR }>;
-}) {
-  const byName = new Map<string, CircuitIR>();
-  const definitions: CircuitDefinitions & { addCircuit(x: CircuitIR): void } = {
-    resolveCircuit: (name) => byName.get(name),
-    getAllPrimitiveNames: () =>
-      [...byName.entries()]
-        .filter(([, x]) => x.implementation.kind === 'primitive')
-        .map(([n]) => n),
-    addCircuit: (x) => {
-      byName.set(x.name, x);
-    },
-  };
-  definitions.addCircuit(c.circuit);
-  for (const [, dep] of c._dependencies)
-    definitions.addCircuit(dep.circuit ?? (dep as unknown as CircuitIR));
-  return definitions;
-}
 
 describe('verilog export: unsupported primitives', () => {
   it('reports unmapped primitives with their node ids', () => {
@@ -60,7 +36,7 @@ describe('verilog export: unsupported primitives', () => {
       connect: ({ inputs, outputs, nodes: { s0 } }) => [inputs.a.to(s0.in), s0.out.to(outputs.y)],
     });
 
-    const result = exportVerilog(WithSlice.circuit, libraryFor(WithSlice));
+    const result = exportVerilog(WithSlice);
 
     expect(result.unsupported).toBeDefined();
     expect(Object.keys(result.unsupported ?? {})).toContain('Slice');
@@ -84,7 +60,7 @@ describe('verilog export: unsupported primitives', () => {
       ],
     });
 
-    const result = exportVerilog(Clean.circuit, libraryFor(Clean));
+    const result = exportVerilog(Clean);
 
     expect(result.unsupported).toBeUndefined();
     expect(result.verilog).not.toContain(UNSUPPORTED_MARKER);

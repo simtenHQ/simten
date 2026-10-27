@@ -11,6 +11,7 @@ import fc from 'fast-check';
 import { describe, expect, it } from 'vitest';
 import type { Circuit } from '../../circuit/builder-types.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import { simulate } from '../../simulator/simulate.js';
 import * as rtl from '../primitives.js';
 
@@ -23,7 +24,7 @@ const sext = (v: number, w: number) => (v >>> 0 >= 2 ** (w - 1) ? (v >>> 0) - 2 
 function run(prim: Circuit, outW: number, ins: { a: number; b?: number; s?: number }): number {
   // Mirror the primitive's own port widths; a fixed 32 would mismatch narrower parts.
   const portOf = (name: string) =>
-    prim.circuit.inputs.find((p) => p.name === name)?.portType ?? port(32);
+    internalsOf(prim).ir.inputs.find((p) => p.name === name)?.portType ?? port(32);
   const inputs: Record<string, ReturnType<typeof port>> = { a: portOf('a') };
   if (ins.b !== undefined) inputs.b = portOf('b');
   if (ins.s !== undefined) inputs.s = portOf('s');

@@ -19,7 +19,7 @@
  */
 
 import { circuit } from '@simten/core';
-import { createEngine, elaborate, libraryOf } from '@simten/core/internal';
+import { createEngine, elaborate, internalsOf, libraryOf } from '@simten/core/internal';
 import { And, Constant, Led, Switch } from '@simten/core/std';
 import { MAP_REQUIRES, MAP_ROWS } from './map';
 
@@ -109,7 +109,9 @@ export function simulateMap(solved: ReadonlySet<string> = new Set()): MapState {
   const built = buildMapCircuit();
 
   const library = libraryOf(built);
-  const engine = createEngine(elaborate(built.circuit, library.definitions), { library });
+  const engine = createEngine(elaborate(internalsOf(built).ir, library.definitions), {
+    library,
+  });
 
   const levelIds = MAP_ROWS.flat();
   for (const levelId of levelIds) engine.setNode(switchId(levelId), solved.has(levelId) ? 1 : 0);

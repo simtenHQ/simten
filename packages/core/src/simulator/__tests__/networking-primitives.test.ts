@@ -8,6 +8,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Circuit } from '../../circuit/index.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import { MemBusMux, NIC_FIFO, UART_RX, UART_TX } from '../../std/index.js';
 import { simulate } from '../simulate.js';
 
@@ -20,7 +21,7 @@ function sim<C extends Circuit>(
   try {
     s.set(inputs as any);
     const out: Record<string, number | boolean> = {};
-    for (const port of built.circuit.outputs) {
+    for (const port of internalsOf(built).ir.outputs) {
       const v = s.get(port.name as any);
       out[port.name] = port.portType.kind === 'bit' ? Boolean(v) : (v as number);
     }
@@ -41,7 +42,7 @@ function simAfterTicks<C extends Circuit>(
     s.set(inputs as any);
     for (let i = 0; i < ticks; i++) s.tick();
     const out: Record<string, number | boolean> = {};
-    for (const port of built.circuit.outputs) {
+    for (const port of internalsOf(built).ir.outputs) {
       const v = s.get(port.name as any);
       out[port.name] = port.portType.kind === 'bit' ? Boolean(v) : (v as number);
     }

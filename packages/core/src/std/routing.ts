@@ -3,8 +3,9 @@
  */
 
 import { bit, bus } from '../circuit/bit-bus.js';
-import type { ArgumentValue, Circuit, PortMap } from '../circuit/builder-types.js';
+import type { Circuit, PortMap } from '../circuit/builder-types.js';
 import { circuit } from '../circuit/circuit.js';
+import { withArgs } from '../circuit/internals.js';
 import type { BitType, BusType } from '../ir/circuit-ir.js';
 
 /**
@@ -112,17 +113,11 @@ export const NibbleSplitter = circuit('NibbleSplitter', {
   eval: ({ in: val }) => ({ out0: val & 0xf, out1: (val >> 4) & 0xf }),
 });
 
-/**
- * Attach shape args so a source-compiled node carries them in
- * `node.arguments`, the same as the factory form of `circuit()` does. The
- * evals below read their width from there, never from the factory's `width`:
- * the editor sandbox rebuilds evals from their source, which drops closures.
- * The literal `8` fallback is only for a node somehow missing its args.
- */
-function withArgs<T extends Circuit>(c: T, args: Record<string, ArgumentValue>): T {
-  (c as { _args?: Record<string, ArgumentValue> })._args = args;
-  return c;
-}
+// `withArgs` gives a node its shape args in `node.arguments`, the same as the
+// factory form of `circuit()` does. The evals below read their width from
+// there, never from the factory's `width`: the editor sandbox rebuilds evals
+// from their source, which drops closures. The literal `8` fallback is only for
+// a node somehow missing its args.
 
 // These types ship in the editor's type bundle (dist/bundle.d.ts, size-capped
 // in dts-bundle.test.ts), so their notes are `//` comments, which declaration

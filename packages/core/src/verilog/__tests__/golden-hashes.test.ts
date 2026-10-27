@@ -27,8 +27,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { describe, expect, it } from 'vitest';
+import type { Circuit } from '../../circuit/builder-types.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import type { CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import {
   // Arithmetic (composites — these have `connect` and are touched by codemod)
   Adder,
@@ -63,30 +63,13 @@ import { exportVerilog } from '../exporter.js';
 
 const GOLDEN_FILE_REL = '../../../../../tools/codemod/golden-verilog-hashes.json';
 
-function libraryFor(c: {
-  circuit: CircuitIR;
-  _dependencies: ReadonlyMap<string, { circuit: CircuitIR }>;
-}): CircuitDefinitions {
-  const map = new Map<string, CircuitIR>();
-  map.set(c.circuit.name, c.circuit);
-  for (const [, dep] of c._dependencies) map.set(dep.circuit.name, dep.circuit);
-  return {
-    resolveCircuit: (name) => map.get(name),
-    getAllPrimitiveNames: () =>
-      [...map.entries()].filter(([, c]) => c.implementation.kind === 'primitive').map(([n]) => n),
-  };
-}
-
 function hash(s: string): string {
   return createHash('sha256').update(s).digest('hex');
 }
 
-function tryHash(
-  name: string,
-  c: { circuit: CircuitIR; _dependencies: ReadonlyMap<string, any> },
-): string | null {
+function tryHash(name: string, c: Circuit): string | null {
   try {
-    const { verilog } = exportVerilog(c.circuit, libraryFor(c));
+    const { verilog } = exportVerilog(c);
     return hash(verilog);
   } catch (err) {
     // Some primitives (Switch, Led, displays, RAMs requiring init) cannot be
@@ -149,7 +132,7 @@ function buildSimpleSequential() {
 
 // ── Hashable set ─────────────────────────────────────────────────────────────
 
-const subjects: Array<{ name: string; build: () => any }> = [
+const subjects: Array<{ name: string; build: () => Circuit }> = [
   // Stdlib — singletons are bare Circuits; parameterized components are
   // invoked with default args to capture the canonical (default-width) shape.
   // Widths are exercised through the synthetic composites further down.

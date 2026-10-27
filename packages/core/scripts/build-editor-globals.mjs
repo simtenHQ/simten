@@ -59,10 +59,11 @@ const jsdocBySymbol = extractJsDocBySymbol(bundleSrc);
 // never accidentally exposes non-stdlib root exports like `elaborate` or
 // `executeCircuitCode` as if they were sandbox globals.
 const std = await import(join(here, '..', 'dist', 'std', 'index.js'));
+const { isCircuit } = await import(join(here, '..', 'dist', 'circuit', 'internals.js'));
 
 // Mirror executeCircuitCode's scope construction (circuit/execute.ts:55-73):
 //   - Fixed core API: circuit, component (alias), bit, bus, reg, mem
-//   - Every stdlib Circuit injects under value.circuit.name
+//   - Every stdlib Circuit injects under value.name
 //   - Every stdlib function injects under its export name
 //
 // For each runtime name, we emit `declare const <runtimeName>: typeof core.<exportKey>`.
@@ -96,8 +97,8 @@ const helpers = [];
 
 for (const [exportName, value] of Object.entries(std)) {
   if (seen.has(exportName)) continue;
-  if (value && typeof value === 'object' && 'circuit' in value) {
-    const runtimeName = value.circuit.name;
+  if (isCircuit(value)) {
+    const runtimeName = value.name;
     if (seen.has(runtimeName)) continue;
     seen.add(runtimeName);
     if (runtimeName !== exportName) {

@@ -18,22 +18,23 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { internalsOf } from '../../circuit/internals.js';
 import { DFlipFlop, Register } from '../index.js';
 
 describe('declared state widths', () => {
   it('DFlipFlop stores one bit', () => {
-    expect(DFlipFlop().circuit.state[0].stateType).toEqual({ kind: 'bit' });
+    expect(internalsOf(DFlipFlop()).ir.state[0].stateType).toEqual({ kind: 'bit' });
   });
 
   it('Register state width tracks its port width', () => {
     for (const width of [1, 4, 8, 16, 32]) {
-      expect(Register({ width }).circuit.state[0].stateType).toEqual(
+      expect(internalsOf(Register({ width })).ir.state[0].stateType).toEqual(
         width === 1 ? { kind: 'bit' } : { kind: 'bus', width },
       );
     }
   });
 
   it('defaults to the documented 8-bit register', () => {
-    expect(Register().circuit.state[0].stateType).toEqual({ kind: 'bus', width: 8 });
+    expect(internalsOf(Register()).ir.state[0].stateType).toEqual({ kind: 'bus', width: 8 });
   });
 });

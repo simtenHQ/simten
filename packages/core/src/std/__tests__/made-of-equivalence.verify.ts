@@ -24,6 +24,7 @@
 import * as fc from 'fast-check';
 import type { Circuit } from '../../circuit/builder-types.js';
 import { circuit } from '../../circuit/circuit.js';
+import type { PortType } from '../../ir/circuit-ir.js';
 import type { SimulationHandle } from '../../simulator/simulate.js';
 import { simulate } from '../../simulator/simulate.js';
 import { declareOracle, describe, verify } from '../../verify/harness.js';
@@ -58,12 +59,8 @@ const track = <T extends SimulationHandle>(h: T): T => {
  * so wrap it in a pass-through composite to get the real behaviour.
  */
 function wrapPrimitive(prim: Circuit, name: string): Circuit {
-  const ins = Object.fromEntries(
-    Object.entries(prim.inputs).map(([k, d]) => [k, (d as { portType: unknown }).portType]),
-  );
-  const outs = Object.fromEntries(
-    Object.entries(prim.outputs).map(([k, d]) => [k, (d as { portType: unknown }).portType]),
-  );
+  const ins = prim.inputs;
+  const outs = prim.outputs;
   return circuit(name, {
     inputs: ins,
     outputs: outs,
@@ -86,9 +83,8 @@ interface ConnectArg {
 }
 
 /** Number of distinct values a port can hold. */
-function spaceOf(d: unknown): number {
-  const t = (d as { portType: { kind: string; width?: number } }).portType;
-  return t.kind === 'bit' ? 2 : 2 ** (t.width ?? 1);
+function spaceOf(t: PortType): number {
+  return t.kind === 'bit' ? 2 : 2 ** t.width;
 }
 
 interface Subject {

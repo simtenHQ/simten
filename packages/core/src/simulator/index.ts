@@ -7,7 +7,7 @@
  *
  * ```typescript
  * const library = libraryOf(top);
- * const flat = elaborate(top.circuit, library.definitions);
+ * const flat = elaborate(internalsOf(top).ir, library.definitions);
  * const engine = createEngine(flat, { library });
  * engine.setNode('switch1', 1);
  * const result = engine.tick();

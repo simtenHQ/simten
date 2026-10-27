@@ -11,7 +11,6 @@ export {
   type BehaviorFn,
   type BehaviorTable,
   type BehaviorValues,
-  behaviorOf,
   createDefinitions,
   emptyLibrary,
   type Library,
@@ -31,6 +30,7 @@ export {
   executeJsCode,
   stripTypes,
 } from './circuit/execute.js';
+export { type CircuitInternals, internalsOf, isCircuit } from './circuit/internals.js';
 export { isSequentialCircuit } from './circuit/is-sequential.js';
 export * from './import/index.js';
 export * from './ir/circuit-ir.js';
@@ -41,6 +41,7 @@ export {
   type SignalMetrics,
   type SimulationTrace,
 } from './simulator/trace-analysis.js';
-export { getStdLibrary } from './std/library.js';
+export { getStdLibrary, stdBehaviorsFor } from './std/library.js';
 export * from './tools/index.js';
 export { slugify } from './util/test-name.js';
+export { exportVerilogFromIR } from './verilog/exporter.js';

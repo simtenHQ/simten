@@ -1,5 +1,6 @@
 import type { Circuit } from '@simten/core/circuit';
 import type { PortDescriptor } from '@simten/core/internal';
+import { internalsOf } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { CircuitEmbed } from '@simten/embed';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -75,8 +76,8 @@ export function PrimitiveExplorer() {
   const grouped = useMemo(() => {
     const groups: Record<string, Circuit[]> = {};
     for (const comp of ALL_STD) {
-      if (!shouldShow(comp.circuit.name)) continue;
-      const cat = comp.circuit.metadata?.category ?? 'other';
+      if (!shouldShow(comp.name)) continue;
+      const cat = internalsOf(comp).ir.metadata?.category ?? 'other';
       if (!groups[cat]) groups[cat] = [];
       groups[cat].push(comp);
     }
@@ -91,8 +92,8 @@ export function PrimitiveExplorer() {
     for (const [cat, comps] of Object.entries(grouped)) {
       const matches = comps.filter(
         (c) =>
-          c.circuit.name.toLowerCase().includes(q) ||
-          (c.circuit.metadata?.description ?? '').toLowerCase().includes(q),
+          c.name.toLowerCase().includes(q) ||
+          (internalsOf(c).ir.metadata?.description ?? '').toLowerCase().includes(q),
       );
       if (matches.length > 0) result[cat] = matches;
     }
@@ -100,7 +101,7 @@ export function PrimitiveExplorer() {
   }, [grouped, search]);
 
   // Build a name→Circuit map for lookups
-  const byName = useMemo(() => new Map(ALL_STD.map((c) => [c.circuit.name, c])), []);
+  const byName = useMemo(() => new Map(ALL_STD.map((c) => [c.name, c])), []);
 
   const selected = selectedName ? (byName.get(selectedName) ?? null) : null;
 
@@ -160,30 +161,28 @@ export function PrimitiveExplorer() {
                   </div>
                   {filtered[cat].map((comp) => (
                     <button
-                      key={comp.circuit.name}
+                      key={comp.name}
                       onClick={() => {
-                        setSelectedName(comp.circuit.name);
+                        setSelectedName(comp.name);
                         setSearch('');
                         setDropdownOpen(false);
                       }}
                       className={`w-full text-left px-3 py-2 hover:bg-accent transition-colors flex items-center justify-between gap-2 ${
-                        selectedName === comp.circuit.name ? 'bg-accent' : ''
+                        selectedName === comp.name ? 'bg-accent' : ''
                       }`}
                     >
                       <div className="min-w-0">
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-medium text-foreground">
-                            {comp.circuit.name}
-                          </span>
+                          <span className="text-sm font-medium text-foreground">{comp.name}</span>
                           <span className="text-xs text-muted-foreground">
-                            {comp.circuit.metadata?.icon}
+                            {internalsOf(comp).ir.metadata?.icon}
                           </span>
                         </div>
                         <div className="text-xs text-muted-foreground truncate">
-                          {comp.circuit.metadata?.description}
+                          {internalsOf(comp).ir.metadata?.description}
                         </div>
                       </div>
-                      {(comp.circuit.clocks?.length ?? 0) > 0 && (
+                      {(internalsOf(comp).ir.clocks?.length ?? 0) > 0 && (
                         <span className="text-[9px] rounded bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-400 px-1.5 py-0.5 shrink-0">
                           CLK
                         </span>
@@ -203,34 +202,36 @@ export function PrimitiveExplorer() {
           {/* Header */}
           <div className="px-4 py-3 border-b border-border">
             <div className="flex items-center gap-2">
-              <span className="text-lg font-semibold text-foreground">{selected.circuit.name}</span>
-              <span className="text-muted-foreground">{selected.circuit.metadata?.icon}</span>
-              {(selected.circuit.clocks?.length ?? 0) > 0 && (
+              <span className="text-lg font-semibold text-foreground">{selected.name}</span>
+              <span className="text-muted-foreground">
+                {internalsOf(selected).ir.metadata?.icon}
+              </span>
+              {(internalsOf(selected).ir.clocks?.length ?? 0) > 0 && (
                 <span className="text-[10px] rounded bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-900/50 dark:text-purple-400 dark:border-purple-800/50 px-1.5 py-0.5">
                   Sequential
                 </span>
               )}
               <span className="text-[10px] rounded bg-muted text-muted-foreground border border-border px-1.5 py-0.5">
-                {CATEGORY_LABELS[selected.circuit.metadata?.category ?? ''] ??
-                  selected.circuit.metadata?.category}
+                {CATEGORY_LABELS[internalsOf(selected).ir.metadata?.category ?? ''] ??
+                  internalsOf(selected).ir.metadata?.category}
               </span>
             </div>
             <p className="text-sm text-muted-foreground mt-1">
-              {selected.circuit.metadata?.description}
+              {internalsOf(selected).ir.metadata?.description}
             </p>
           </div>
 
           {/* Ports */}
           <div className="px-4 py-3 border-b border-border flex flex-wrap gap-6">
-            <PortList ports={selected.circuit.inputs} label="Inputs" />
-            <PortList ports={selected.circuit.outputs} label="Outputs" />
-            {(selected.circuit.clocks?.length ?? 0) > 0 && (
+            <PortList ports={internalsOf(selected).ir.inputs} label="Inputs" />
+            <PortList ports={internalsOf(selected).ir.outputs} label="Outputs" />
+            {(internalsOf(selected).ir.clocks?.length ?? 0) > 0 && (
               <div>
                 <span className="text-[10px] uppercase tracking-wider text-muted-foreground">
                   Clocks
                 </span>
                 <div className="flex gap-1.5 mt-1">
-                  {selected.circuit.clocks!.map((c) => (
+                  {internalsOf(selected).ir.clocks!.map((c) => (
                     <span
                       key={c.name}
                       className="inline-flex items-center rounded bg-purple-100 dark:bg-purple-900/30 px-1.5 py-0.5 text-xs font-mono text-purple-700 dark:text-purple-300"
@@ -257,7 +258,7 @@ export function PrimitiveExplorer() {
 
 // Keep PrimitiveLink for inline use in tables (backwards compat)
 export function PrimitiveLink({ name, children }: { name: string; children?: React.ReactNode }) {
-  const hasDemo = ALL_STD.some((c) => c.circuit.name === name) && shouldShow(name);
+  const hasDemo = ALL_STD.some((c) => c.name === name) && shouldShow(name);
 
   if (!hasDemo) {
     return <code className="text-sm">{children ?? name}</code>;

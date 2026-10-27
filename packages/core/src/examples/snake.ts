@@ -37,7 +37,6 @@
  */
 
 import { bit, bus, circuit } from '../circuit/index.js';
-import type { CircuitDefinitions } from '../ir/circuit-ir.js';
 import {
   Adder,
   And,
@@ -657,15 +656,7 @@ export function buildSnake() {
     ],
   });
 
-  const definitions: CircuitDefinitions = {
-    resolveCircuit: (name) => {
-      if (name === 'Snake') return Snake.circuit;
-      return Snake._dependencies.get(name)?.circuit;
-    },
-    getAllPrimitiveNames: () => [...Snake._dependencies.keys()],
-  };
-
-  return { circuit: Snake.circuit, definitions, built: Snake, core: SnakeCore };
+  return { built: Snake, core: SnakeCore };
 }
 
 /**
