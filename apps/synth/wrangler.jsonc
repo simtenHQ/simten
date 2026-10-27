@@ -11,7 +11,7 @@
     {
       "class_name": "SynthContainer",
       "image": "./Dockerfile",
-      "max_instances": 2,
+      "max_instances": 1,
       "instance_type": "standard-1"
     }
   ],

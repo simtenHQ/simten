@@ -60,8 +60,9 @@ function PrivacyPage() {
           <strong>Shared circuit source (Cloudflare KV).</strong> If you press the
           &ldquo;Share&rdquo; button in the editor, the circuit source code is stored verbatim in
           Cloudflare KV under a content hash, so anyone with the link can load it. Source ≤ 100 KB.
-          TTL is 2 years and refreshes on every read (active links don&apos;t expire). Sharing is
-          rate-limited (30 shares per IP per 60 seconds).
+          TTL is 2 years, renewed when the link is opened in its final year (links that are still
+          being opened don&apos;t expire). Sharing is rate-limited (30 shares per IP per 60 seconds,
+          and a site-wide daily cap).
         </p>
 
         <H2>What we don&apos;t collect</H2>
@@ -156,7 +157,7 @@ function PrivacyPage() {
             Cloudflare Analytics Engine share counters: indefinite, but contain no personal data.
           </li>
           <li>
-            Shared circuits in KV: 2 years, refreshed on every read. Email{' '}
+            Shared circuits in KV: 2 years, renewed when opened in the final year. Email{' '}
             <a
               href="mailto:privacy@simten.dev"
               className="text-foreground underline underline-offset-2 hover:text-foreground/80"

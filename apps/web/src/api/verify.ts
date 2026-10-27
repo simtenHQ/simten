@@ -5,6 +5,9 @@
  * Local dev:  falls back to wrangler dev on localhost:55002.
  */
 
+import { type ApiEnv, checkLimits } from './limits';
+import { callService } from './service';
+
 interface VerifyResponse {
   success: boolean;
   compileError?: string;
@@ -18,10 +21,7 @@ interface VerifyResponse {
   iverilogStderr?: string;
 }
 
-export async function handleVerify(
-  request: Request,
-  env: Record<string, unknown>,
-): Promise<Response> {
+export async function handleVerify(request: Request, env: ApiEnv): Promise<Response> {
   let body: { verilog?: string; testbench?: string };
   try {
     body = await request.json();
@@ -43,18 +43,12 @@ export async function handleVerify(
     );
   }
 
-  const rl = (
-    env as { VERIFY_RL?: { limit: (k: { key: string }) => Promise<{ success: boolean }> } }
-  ).VERIFY_RL;
-  if (rl) {
-    const ip = request.headers.get('CF-Connecting-IP') ?? 'unknown';
-    const { success } = await rl.limit({ key: ip });
-    if (!success) {
-      return Response.json(
-        { success: false, compileError: 'Rate limit exceeded, try again in a minute' },
-        { status: 429 },
-      );
-    }
+  const rejected = await checkLimits('verify', request.headers.get('CF-Connecting-IP'), env);
+  if (rejected) {
+    return Response.json(
+      { success: false, compileError: rejected.error },
+      { status: rejected.status },
+    );
   }
 
   const payload = { verilog: body.verilog, testbench: body.testbench };
@@ -65,13 +59,13 @@ export async function handleVerify(
     body: JSON.stringify(payload),
   };
 
-  // Service binding (production) → local verifier container fallback (dev)
-  const verifier = env.VERIFIER as { fetch: typeof fetch } | undefined;
-
   try {
-    const resp = verifier
-      ? await verifier.fetch('https://verifier/verify', reqInit)
-      : await fetch('http://localhost:55002/verify', reqInit);
+    const resp = await callService(
+      env.VERIFIER,
+      'https://verifier/verify',
+      'http://localhost:55002/verify',
+      reqInit,
+    );
 
     const result: VerifyResponse = await resp.json();
     return Response.json(result, { status: resp.status });

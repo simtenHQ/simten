@@ -14,16 +14,8 @@ export class CompilerContainer extends Container<Env> {
 
 const app = new Hono<{ Bindings: Env }>();
 
-// CORS middleware
-app.use('*', async (c, next) => {
-  await next();
-  c.res.headers.set('Access-Control-Allow-Origin', c.req.header('Origin') ?? '*');
-  c.res.headers.set('Access-Control-Allow-Methods', 'POST, GET, OPTIONS');
-  c.res.headers.set('Access-Control-Allow-Headers', 'Content-Type');
-  c.res.headers.set('Access-Control-Max-Age', '86400');
-});
-
-app.options('*', (c) => new Response(null, { status: 204 }));
+// No CORS headers: browsers never call this worker. It is reached only through
+// the web worker's service binding, or from local tools on the dev machine.
 
 // Health check
 app.get('/', async (c) => {

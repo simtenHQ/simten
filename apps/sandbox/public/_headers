@@ -3,8 +3,12 @@
 # claiming a path's cache policy is the way to end up serving
 # `no-store, public, max-age=31536000` and trusting neither.
 
+# The `/*` block is also what the Vite dev and preview servers send (see
+# vite.config.ts), so the policy is written only here. Why each source is
+# allowed is explained in vite.config.ts.
+
 /*
-  Content-Security-Policy: default-src 'none'; script-src 'self' 'unsafe-eval' blob: https://esm.sh; connect-src 'self' https://esm.sh; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none';
+  Content-Security-Policy: default-src 'none'; script-src 'self' 'unsafe-eval' blob: https://esm.sh; connect-src 'self' https://esm.sh; worker-src 'self'; base-uri 'none'; form-action 'none'; object-src 'none'; frame-ancestors http: https:;
   X-Robots-Tag: noindex, nofollow
 
 # The shell names its assets by content hash, so those names change on every

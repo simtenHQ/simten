@@ -6,26 +6,36 @@
  */
 
 import { handleCompile } from './compile';
+import type { ApiEnv } from './limits';
 import { handleVerilogImport } from './synth';
 import { handleVerify } from './verify';
 
-export async function handleApiRoute(
-  request: Request,
-  env: Record<string, unknown>,
-): Promise<Response | null> {
-  const url = new URL(request.url);
+type Handler = (request: Request, env: ApiEnv) => Promise<Response>;
 
-  if (url.pathname === '/api/compile' && request.method === 'POST') {
-    return handleCompile(request, env);
+/** Every route here is a JSON POST. */
+const POST_ROUTES = new Map<string, Handler>([
+  ['/api/compile', handleCompile],
+  ['/api/verify', handleVerify],
+  ['/api/verilog-import', handleVerilogImport],
+]);
+
+export async function handleApiRoute(request: Request, env: ApiEnv): Promise<Response | null> {
+  const handler = POST_ROUTES.get(new URL(request.url).pathname);
+  if (!handler || request.method !== 'POST') return null;
+
+  // Browsers send a JSON content type to another origin only after a CORS
+  // preflight, and these routes answer none, so in a browser only same-origin
+  // pages can call them.
+  if (!isJson(request)) {
+    return Response.json(
+      { success: false, error: 'Content-Type must be application/json' },
+      { status: 415 },
+    );
   }
+  return handler(request, env);
+}
 
-  if (url.pathname === '/api/verify' && request.method === 'POST') {
-    return handleVerify(request, env);
-  }
-
-  if (url.pathname === '/api/verilog-import' && request.method === 'POST') {
-    return handleVerilogImport(request, env);
-  }
-
-  return null;
+function isJson(request: Request): boolean {
+  const type = request.headers.get('Content-Type') ?? '';
+  return type.split(';')[0].trim().toLowerCase() === 'application/json';
 }

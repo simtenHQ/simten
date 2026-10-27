@@ -23,6 +23,12 @@
     { "name": "SHARE_RL", "namespace_id": "1003", "simple": { "limit": 30, "period": 60 } },
     { "name": "SYNTH_RL", "namespace_id": "1004", "simple": { "limit": 5, "period": 60 } }
   ],
+  // Global per-service daily budgets (src/api/limits.ts). The class is
+  // exported from app/server.ts.
+  "durable_objects": {
+    "bindings": [{ "name": "DAILY_BUDGET", "class_name": "DailyBudget" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["DailyBudget"] }],
   "kv_namespaces": [
     {
       "binding": "CIRCUIT_SHARES",

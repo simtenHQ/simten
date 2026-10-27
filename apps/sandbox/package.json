@@ -7,6 +7,7 @@
     "build": "vite build",
     "preview": "vite preview --port 3002",
     "deploy": "pnpm run build && wrangler deploy",
+    "test": "vitest run",
     "test:e2e": "tsx e2e/watchdog.mts"
   },
   "dependencies": {
@@ -16,6 +17,7 @@
     "@simten/ui": "workspace:*",
     "vite": "^8.3.5",
     "typescript": "^5.8.3",
-    "wrangler": "^4.73.0"
+    "wrangler": "^4.73.0",
+    "vitest": "^5.0.5"
   }
 }
