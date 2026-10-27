@@ -32,6 +32,7 @@ import {
   type PrimitiveWires,
   type StateInit,
   UNSUPPORTED_MARKER,
+  usesStdMapping,
 } from './primitive-map.js';
 import type { ExportResult, VerilogExportOptions } from './types.js';
 import { INLINE_MEMORY_THRESHOLD } from './types.js';
@@ -48,6 +49,9 @@ const DEFAULT_OPTIONS: Required<VerilogExportOptions> = {
 };
 
 const RESET_NAME = 'rst_n';
+
+/** Std primitives whose output is as wide as their widest data input. */
+const PASS_THROUGH = new Set(['Mux', 'Mux2', 'Buffer', 'Probe']);
 
 function sanitizeId(id: string): string {
   return id.replace(/[.-]/g, '_').replace(/[^a-zA-Z0-9_]/g, '');
@@ -178,8 +182,22 @@ function emitFlatModule(
   const needsClock = flat.nodes.some((n) => isSequentialPrimitive(n.primitiveType));
   const needsReset = needsClock;
 
+  // Whether each primitive is std's own, so its hand-written mapping (and the
+  // name-keyed handling below) applies. One answer per name.
+  const stdByName = new Map<string, boolean>();
+  const isStd = (type: string) => {
+    let std = stdByName.get(type);
+    if (std === undefined) {
+      std = usesStdMapping(type, opts.behaviors);
+      stdByName.set(type, std);
+    }
+    return std;
+  };
+
   // Filter to logic nodes only (I/O becomes module ports via topLevelInputs/Outputs)
-  const logicNodes = flat.nodes.filter((n) => !isSinkPrimitive(n.primitiveType));
+  const logicNodes = flat.nodes.filter(
+    (n) => !(isSinkPrimitive(n.primitiveType) && isStd(n.primitiveType)),
+  );
 
   // ── Build wire map (connection source → wire name) ─────────────────
   const wireMap = new Map<string, string>(); // "nodeId.portName" → wire name
@@ -245,12 +263,7 @@ function emitFlatModule(
   while (widthChanged) {
     widthChanged = false;
     for (const node of flat.nodes) {
-      if (
-        node.primitiveType === 'Mux' ||
-        node.primitiveType === 'Mux2' ||
-        node.primitiveType === 'Buffer' ||
-        node.primitiveType === 'Probe'
-      ) {
+      if (PASS_THROUGH.has(node.primitiveType) && isStd(node.primitiveType)) {
         // Find max width among data inputs (exclude sel)
         let maxInputWidth = 1;
         for (const conn of flat.connections) {

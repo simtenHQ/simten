@@ -11,6 +11,7 @@
 import {
   type Behavior,
   type BehaviorTable,
+  definitionKey,
   emptyLibrary,
   type Library,
   type MutableLibrary,
@@ -20,6 +21,7 @@ import { sameDefinition } from '../circuit/circuit.js';
 import { internalsOf } from '../circuit/internals.js';
 import type { CircuitDefinitions, CircuitIR } from '../ir/circuit-ir.js';
 import { STDLIB_CIRCUITS } from './index.js';
+import { Combiner, Splitter } from './routing.js';
 
 let cached: Library | null = null;
 
@@ -70,6 +72,60 @@ function shapeKey(ir: CircuitIR): string {
   ]);
 }
 
+/** Std's IR and behavior for one primitive name. */
+interface StdPrimitive {
+  ir: CircuitIR;
+  behavior: Behavior;
+}
+
+/** `Splitter_4w`, `Combiner_16w`: a bit splitter or combiner of one width. */
+const PER_WIDTH = /^(Splitter|Combiner)_([1-9]\d?)w$/;
+const perWidth = new Map<string, StdPrimitive>();
+
+/**
+ * Std's primitive of this name, if std has one. Splitter and Combiner register
+ * one primitive per width (`Splitter_4w`), and the library holds only the
+ * default width, so the others are built on first use.
+ */
+function stdPrimitive(name: string): StdPrimitive | undefined {
+  const std = getStdLibrary();
+  const ir = std.definitions.resolveCircuit(name);
+  const behavior = std.behaviors.get(name);
+  if (ir && behavior) return { ir, behavior };
+  const bits = PER_WIDTH.exec(name);
+  if (!bits) return undefined;
+  let built = perWidth.get(name);
+  if (!built) {
+    const width = Number(bits[2]);
+    const internals = internalsOf(
+      bits[1] === 'Splitter' ? Splitter({ width }) : Combiner({ width }),
+    );
+    if (!internals.behavior) return undefined;
+    built = { ir: internals.ir, behavior: internals.behavior };
+    perWidth.set(name, built);
+  }
+  return built;
+}
+
+/**
+ * Whether `behavior` is std's own behavior for the primitive `name`, so std's
+ * hand-written Verilog for that name describes it. A user circuit that takes a
+ * std name (its own `Adder`) has its own behavior and fails this.
+ *
+ * Each factory call builds fresh closures, so `Adder({ width: 16 })` and the
+ * library's `Adder` carry different behavior objects. They are the same
+ * behavior when their `definitionKey`s match: the same ports, state and
+ * source text, the test `circuit()` uses to decide two circuits under one name
+ * are one circuit. Std's behaviors read nothing from a factory's scope (their
+ * widths come from the node's arguments), so equal source means equal logic.
+ */
+export function isStdBehavior(name: string, behavior: Behavior | undefined): boolean {
+  if (!behavior) return false;
+  const std = stdPrimitive(name)?.behavior;
+  if (!std) return false;
+  return behavior === std || definitionKey(behavior) === definitionKey(std);
+}
+
 /**
  * Std's behavior for the primitives in `definitions` that are std's own, for a
  * caller that has IR but no behavior (the editor page's Verilog export). A
@@ -81,14 +137,12 @@ export function stdBehaviorsFor(
   definitions: CircuitDefinitions,
   userNames: ReadonlySet<string>,
 ): BehaviorTable {
-  const std = getStdLibrary();
   const behaviors = new Map<string, Behavior>();
   for (const name of definitions.getAllPrimitiveNames()) {
     if (userNames.has(name)) continue;
     const ir = definitions.resolveCircuit(name);
-    const stdIR = std.definitions.resolveCircuit(name);
-    const behavior = std.behaviors.get(name);
-    if (ir && stdIR && behavior && shapeKey(ir) === shapeKey(stdIR)) behaviors.set(name, behavior);
+    const std = stdPrimitive(name);
+    if (ir && std && shapeKey(ir) === shapeKey(std.ir)) behaviors.set(name, std.behavior);
   }
   return behaviors;
 }
