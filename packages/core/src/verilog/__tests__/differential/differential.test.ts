@@ -415,6 +415,14 @@ evalCase(
   }),
 );
 evalCase(
+  "user Adder named like std's (#488)",
+  circuit('Adder', {
+    inputs: { a: bus(8), b: bus(8), carry_in: bit },
+    outputs: { sum: bus(8), carry_out: bit },
+    eval: ({ a, b }) => ({ sum: (a - b) & 0xff, carry_out: 0 }),
+  }),
+);
+evalCase(
   'eval && and ! on buses',
   circuit('EvLogical', {
     inputs: { a: bus(8), b: bus(8) },

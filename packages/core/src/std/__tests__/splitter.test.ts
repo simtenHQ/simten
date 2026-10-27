@@ -6,6 +6,7 @@
  * circuit must not share an evaluator.
  */
 import { describe, expect, it } from 'vitest';
+import { libraryOf } from '../../circuit/behavior.js';
 import { bus, circuit } from '../../circuit/index.js';
 import { internalsOf } from '../../circuit/internals.js';
 import { simulate } from '../../simulator/simulate.js';
@@ -73,7 +74,7 @@ describe('Splitter and Combiner', () => {
       ]),
     };
     const split = emitPrimitive({
-      behaviors: new Map(),
+      behaviors: libraryOf(Splitter({ width: 4 })).behaviors,
       nodeId: 's',
       primitiveType: 'Splitter_4w',
       args: { width: 4 },
