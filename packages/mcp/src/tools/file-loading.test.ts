@@ -113,6 +113,76 @@ export const Lookup = circuit('Lookup', {
   ],
 });
 `,
+  // Not exported, and two of them: both are listed, the last is simulated.
+  'pair.circuit.ts': `
+import { bit, circuit } from '@simten/core/circuit';
+import { Not } from '@simten/core/std';
+
+const Inverter = circuit('Inverter', {
+  inputs: { a: bit },
+  outputs: { y: bit },
+  nodes: { n: Not },
+  connect: ({ inputs, outputs, nodes: { n } }) => [inputs.a.to(n.in), n.out.to(outputs.y)],
+});
+
+circuit('Twice', {
+  inputs: { a: bit },
+  outputs: { y: bit },
+  nodes: { first: Inverter, second: Inverter },
+  connect: ({ inputs, outputs, nodes: { first, second } }) => [
+    inputs.a.to(first.a),
+    first.y.to(second.a),
+    second.y.to(outputs.y),
+  ],
+});
+`,
+  // No imports at all: a snippet against the injected standard library.
+  'snippet.circuit.ts': `
+export const Buffer = circuit('Buffer', {
+  inputs: { a: bit },
+  outputs: { y: bit },
+  nodes: { n: Not, m: Not },
+  connect: ({ inputs, outputs, nodes: { n, m } }) => [
+    inputs.a.to(n.in),
+    n.out.to(m.in),
+    m.out.to(outputs.y),
+  ],
+});
+`,
+  'syntax-error.circuit.ts': `
+import { bit, circuit } from '@simten/core/circuit';
+
+export const Broken = circuit('Broken', {
+  inputs: { a: bit },
+  outputs: { y: bit
+  connect: ({ inputs, outputs }) => [inputs.a.to(outputs.y)],
+});
+`,
+  'bad-port.circuit.ts': `
+import { bit, circuit } from '@simten/core/circuit';
+import { Not } from '@simten/core/std';
+
+export const BadPort = circuit('BadPort', {
+  inputs: { a: bit },
+  outputs: { y: bit },
+  nodes: { n: Not },
+  connect: ({ inputs, outputs, nodes: { n } }) => [
+    inputs.a.to(n.nope),
+    n.out.to(outputs.y),
+  ],
+});
+`,
+  'uses-bad-port.circuit.ts': `
+import { bit, circuit } from '@simten/core/circuit';
+import { BadPort } from './bad-port.circuit.js';
+
+export const UsesBadPort = circuit('UsesBadPort', {
+  inputs: { a: bit },
+  outputs: { y: bit },
+  nodes: { b: BadPort },
+  connect: ({ inputs, outputs, nodes: { b } }) => [inputs.a.to(b.a), b.y.to(outputs.y)],
+});
+`,
   'lookup.verify.ts': `
 import { simulate } from '@simten/core';
 import { declareOracle, describe, verify } from '@simten/core/verify';
@@ -173,11 +243,11 @@ afterAll(() => {
 
 const TIMEOUT = 60_000;
 
-// check_circuit and simulate_circuit run the file's text with its imports
-// stripped and the standard library injected, so a name imported from a
-// sibling file is never defined: they fail with "HalfAdder is not defined" and
-// "tableRom is not defined". verify_circuit loads the files as real modules and
-// passes. Marked as expected failures until the tools load files one way.
+// Before #497, check_circuit and simulate_circuit ran a file's text with its
+// imports stripped and the standard library injected, so a name imported from
+// a sibling file was never defined: they failed with "HalfAdder is not
+// defined" and "tableRom is not defined", while verify_circuit, which loads the
+// files as real modules, passed.
 
 describe('a circuit importing a sub-circuit from a sibling file', () => {
   it(
@@ -190,7 +260,7 @@ describe('a circuit importing a sub-circuit from a sibling file', () => {
     TIMEOUT,
   );
 
-  it.fails(
+  it(
     'check_circuit reports it valid',
     async () => {
       const result = await check({ filePath: join(project, 'top.circuit.ts') });
@@ -202,7 +272,7 @@ describe('a circuit importing a sub-circuit from a sibling file', () => {
     TIMEOUT,
   );
 
-  it.fails(
+  it(
     'simulate_circuit simulates it',
     async () => {
       const result = await simulate({
@@ -232,7 +302,7 @@ describe('a circuit importing a helper function from a sibling file', () => {
     TIMEOUT,
   );
 
-  it.fails(
+  it(
     'check_circuit reports it valid',
     async () => {
       const result = await check({ filePath: join(project, 'lookup.circuit.ts') });
@@ -244,7 +314,7 @@ describe('a circuit importing a helper function from a sibling file', () => {
     TIMEOUT,
   );
 
-  it.fails(
+  it(
     'simulate_circuit reads the table the helper built',
     async () => {
       const result = await simulate({
@@ -257,6 +327,144 @@ describe('a circuit importing a helper function from a sibling file', () => {
       const trace = JSON.parse(result.content[0].text);
       expect(trace.circuit).toBe('Lookup');
       expect(trace.signals.data).toEqual([{ value: 42, count: 1 }]);
+    },
+    TIMEOUT,
+  );
+});
+
+describe('a single file', () => {
+  it(
+    'lists every circuit it builds, exported or not, and simulates the last',
+    async () => {
+      const file = join(project, 'pair.circuit.ts');
+      const report = JSON.parse((await check({ filePath: file })).content[0].text);
+      expect(report.valid).toBe(true);
+      expect(report.analysis.circuitsDefined).toEqual(['Inverter', 'Twice']);
+
+      const result = await simulate({ filePath: file, ticks: 1, inputs: { a: 1 }, show: false });
+      expect(result.isError).toBeUndefined();
+      const trace = JSON.parse(result.content[0].text);
+      expect(trace.circuit).toBe('Twice');
+      expect(trace.signals.y).toEqual([{ value: 1, count: 1 }]);
+    },
+    TIMEOUT,
+  );
+
+  it(
+    'with no imports still runs against the injected standard library',
+    async () => {
+      const file = join(project, 'snippet.circuit.ts');
+      const report = JSON.parse((await check({ filePath: file })).content[0].text);
+      expect(report.valid).toBe(true);
+      expect(report.analysis.circuitsDefined).toEqual(['Buffer']);
+
+      const result = await simulate({ filePath: file, ticks: 1, inputs: { a: 1 }, show: false });
+      expect(JSON.parse(result.content[0].text).signals.y).toEqual([{ value: 1, count: 1 }]);
+    },
+    TIMEOUT,
+  );
+});
+
+describe('a project with no setup', () => {
+  it(
+    'checks and simulates a two-file project with no package.json or node_modules',
+    async () => {
+      const bare = realpathSync(mkdtempSync(join(tmpdir(), 'simten-497-bare-')));
+      try {
+        for (const name of ['half-adder.circuit.ts', 'top.circuit.ts']) {
+          writeFileSync(join(bare, name), FILES[name]);
+        }
+        const report = JSON.parse(
+          (await check({ filePath: join(bare, 'top.circuit.ts') })).content[0].text,
+        );
+        expect(report.diagnostics).toEqual([]);
+        expect(report.analysis.circuitsDefined).toEqual(['HalfAdder', 'Top']);
+      } finally {
+        rmSync(bare, { recursive: true, force: true });
+      }
+    },
+    TIMEOUT,
+  );
+
+  it(
+    'sees an edit to an imported file on the next call',
+    async () => {
+      const sub = join(project, 'half-adder.circuit.ts');
+      const run = async () => {
+        const result = await simulate({
+          filePath: join(project, 'top.circuit.ts'),
+          ticks: 1,
+          inputs: { a: 1, b: 1 },
+          show: false,
+        });
+        return JSON.parse(result.content[0].text).signals.carry;
+      };
+      expect(await run()).toEqual([{ value: 1, count: 1 }]);
+      writeFileSync(
+        sub,
+        FILES['half-adder.circuit.ts'].replace(
+          'nodes: { x: Xor, n: And }',
+          'nodes: { x: Xor, n: Xor }',
+        ),
+      );
+      try {
+        expect(await run()).toEqual([{ value: 0, count: 1 }]);
+      } finally {
+        writeFileSync(sub, FILES['half-adder.circuit.ts']);
+      }
+    },
+    TIMEOUT,
+  );
+});
+
+describe('an error in a circuit file', () => {
+  it(
+    'a syntax error comes back with the file and line',
+    async () => {
+      const file = join(project, 'syntax-error.circuit.ts');
+      const report = JSON.parse((await check({ filePath: file })).content[0].text);
+      expect(report.valid).toBe(false);
+      expect(report.diagnostics[0].line).toBe(7);
+      expect(report.diagnostics[0].message).toMatch(
+        /^syntax-error\.circuit\.ts:7:\d+: Expected "\}" but found "connect"$/,
+      );
+
+      const result = await simulate({ filePath: file, ticks: 1, show: false });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toBe(report.diagnostics[0].message);
+    },
+    TIMEOUT,
+  );
+
+  it(
+    'a throw inside circuit() comes back with the file and line, not a stack',
+    async () => {
+      const file = join(project, 'bad-port.circuit.ts');
+      const report = JSON.parse((await check({ filePath: file })).content[0].text);
+      expect(report.valid).toBe(false);
+      expect(report.diagnostics[0].line).toBe(5);
+      const message: string = report.diagnostics[0].message;
+      expect(message).toMatch(/^bad-port\.circuit\.ts:5:\d+: Circuit 'BadPort' validation failed/);
+      expect(message).toContain("Port 'nope' does not exist on node 'n'");
+      expect(message).not.toContain('    at ');
+
+      const result = await simulate({ filePath: file, ticks: 1, show: false });
+      expect(result.isError).toBe(true);
+      expect(result.content[0].text).toBe(message);
+    },
+    TIMEOUT,
+  );
+
+  it(
+    'an error in an imported file names that file',
+    async () => {
+      const report = JSON.parse(
+        (await check({ filePath: join(project, 'uses-bad-port.circuit.ts') })).content[0].text,
+      );
+      expect(report.valid).toBe(false);
+      // The line is in bad-port.circuit.ts, not the file being checked.
+      expect(report.diagnostics[0].line).toBeUndefined();
+      expect(report.diagnostics[0].message).toMatch(/^bad-port\.circuit\.ts:5:\d+: /);
     },
     TIMEOUT,
   );

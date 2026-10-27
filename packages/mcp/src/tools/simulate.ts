@@ -5,6 +5,7 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { readCircuitSource } from '../lib/file-reader.js';
+import { loadsAsModule, simulateFile } from '../lib/load-file.js';
 import { getPreviewServer } from '../lib/preview-singleton.js';
 import { traceSource } from '../lib/trace-source.js';
 
@@ -75,17 +76,16 @@ export function registerSimulateTool(server: McpServer): void {
         };
       }
 
-      // Direct in-process call — the local agent's compute is trusted (same
-      // model as the agent running tsx/npm test); no sandbox. Hangs are bounded
-      // by core's tick cap (max 10000) and unstable-loop guard.
-      const result = traceSource({
-        source: read.source,
-        sourceName: read.sourceName,
-        circuitName,
-        ticks,
-        inputs,
-        memoryData,
-      });
+      // A file loads as a module in a child process, the way verify_circuit
+      // loads it; source text runs in-process. Either way the local agent's
+      // compute is trusted (same model as the agent running tsx/npm test); no
+      // sandbox. Hangs are bounded by core's tick cap (max 10000) and
+      // unstable-loop guard, and a file's process by a timeout.
+      const options = { circuitName, ticks, inputs, memoryData };
+      const result =
+        read.file && loadsAsModule(read.source)
+          ? await simulateFile(read.file, options)
+          : traceSource({ source: read.source, sourceName: read.sourceName, ...options });
 
       if ('error' in result) {
         return {
