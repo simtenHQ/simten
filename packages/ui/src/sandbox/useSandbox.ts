@@ -48,10 +48,10 @@ import type {
 // Sandbox origin: defaults work for normal dev (localhost:3002) and production
 // (sandbox.simtenusercontent.dev). VITE_SANDBOX_ORIGIN is an optional escape hatch for
 // unusual setups (e.g. pointing local dev at a staging sandbox).
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const env = typeof import.meta !== 'undefined' ? (import.meta as any).env : undefined;
+const env = (import.meta as { env?: { VITE_SANDBOX_ORIGIN?: string; PROD?: boolean } }).env;
 const SANDBOX_ORIGIN: string =
-  env?.VITE_SANDBOX_ORIGIN || (env?.PROD ? 'https://sandbox.simtenusercontent.dev' : 'http://localhost:3002');
+  env?.VITE_SANDBOX_ORIGIN ||
+  (env?.PROD ? 'https://sandbox.simtenusercontent.dev' : 'http://localhost:3002');
 
 // How long to wait for the iframe's `ready` handshake before giving up on it.
 // Nothing else catches a sandbox that never comes up: `iframe.onerror` does not
