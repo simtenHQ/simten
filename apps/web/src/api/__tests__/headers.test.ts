@@ -32,7 +32,7 @@ describe('siteWideHeaders', () => {
 
   it('lets the page frame the sandbox', () => {
     const csp = new Map(siteWideHeaders(HEADERS_FILE)).get('Content-Security-Policy');
-    expect(csp).toMatch(/frame-src [^;]*https:\/\/sandbox\.simten\.dev/);
+    expect(csp).toMatch(/frame-src [^;]*https:\/\/sandbox\.simtenusercontent\.dev/);
   });
 });
 
