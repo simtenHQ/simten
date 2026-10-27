@@ -27,6 +27,8 @@ export interface WebComponentEmbedProps {
   href?: string;
   autoRunSpeed?: number;
   theme?: 'light' | 'dark';
+  /** The share the code came from (embed.simten.dev/s/<id>); Fork opens it. */
+  shareId?: string;
 }
 
 function WebComponentEmbedInner({
@@ -39,6 +41,7 @@ function WebComponentEmbedInner({
   href,
   autoRunSpeed,
   theme,
+  shareId,
 }: WebComponentEmbedProps) {
   const sandbox = useSandboxContext();
   // One compile slot per element. `sandbox.compile` with no slot writes to the
@@ -122,6 +125,7 @@ function WebComponentEmbedInner({
         description={description}
         href={href}
         forkSource={code}
+        shareId={shareId}
         autoRunSpeed={autoRunSpeed}
         theme={theme}
       />

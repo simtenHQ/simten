@@ -47,9 +47,9 @@ function mount(id: string, source: string): void {
   embed.setAttribute('theme', theme());
   embed.setAttribute('height', String(window.innerHeight));
   if (!request.controls) embed.setAttribute('show-controls', 'false');
-  // An `href` replaces the embed's Fork button, which would create a share
-  // from inside the frame. With no title or description there is no info
-  // bar to show it in, so the page's own "Open in Simten" link stands in.
+  // An `href` replaces the embed's Fork button. Fork is hidden in frames
+  // narrower than 768px, and there is no info bar to show `href` in, so the
+  // page's own "Open in Simten" link, to the same share, stands in for both.
   embed.setAttribute('href', `${SITE}/circuit/s/${id}`);
   root.replaceChildren(embed, openLink(id));
 

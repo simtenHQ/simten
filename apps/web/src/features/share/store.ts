@@ -28,20 +28,10 @@ export function validateShareInput(data: { source: string }): { source: string }
   return { source };
 }
 
-/** A create turned down by the share limits; `status` is the HTTP status to answer with. */
-export class ShareRejected extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-  ) {
-    super(message);
-  }
-}
-
 /**
  * Store `source` and return its hash. Counts against the share rate limit and
- * daily budget; throws `ShareRejected` when over either. The link never
- * expires.
+ * daily budget; throws with the rejection's message when over either. The
+ * link never expires.
  */
 export async function createShare(
   env: ApiEnv & { CIRCUIT_SHARES: ShareKV },
@@ -49,7 +39,7 @@ export async function createShare(
   source: string,
 ): Promise<string> {
   const rejected = await checkLimits('share', clientIp, env);
-  if (rejected) throw new ShareRejected(rejected.error, rejected.status);
+  if (rejected) throw new Error(rejected.error);
   const hash = await hashSource(source);
   await saveShare(env.CIRCUIT_SHARES, hash, source);
   return hash;

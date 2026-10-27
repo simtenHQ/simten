@@ -3,7 +3,7 @@
 '@simten/embed': minor
 ---
 
-Share links are always short now, and never expire:
+Share links never expire, and Fork creates a share only on simten.dev:
 
-- `@simten/embed`: Fork always creates a short `/circuit/s/<hash>` link. Off simten.dev it calls simten.dev's `POST /api/share` instead of putting the whole compressed source in the URL. `useShareCircuit()` always returns a function. Wires show again in `<circuit-embed>` in Chrome: the scoped Preflight no longer caps every `svg` at `max-width: 100%`.
-- `@simten/ui/share`: removed `encodeSourceForUrl`, `INLINE_URL_THRESHOLD` and `shouldUseShortLink`. `decodeSourceFromUrl` stays for links shared before short links. Added the KV storage format shared by simten.dev and embed.simten.dev: `ShareKV`, `saveShare`, `loadShare`, `isShareHash`, `validateShareHash`.
+- `@simten/embed`: Fork on simten.dev creates a short `/circuit/s/<hash>` link through the site, as before. Given a `shareId` (`share-id` on `<circuit-embed>`), Fork opens that share. Anywhere else it opens `/circuit/<encoded>` with the source in the URL. Wires show again in `<circuit-embed>` in Chrome: the scoped Preflight no longer caps every `svg` at `max-width: 100%`.
+- `@simten/ui/share`: removed `INLINE_URL_THRESHOLD` and `shouldUseShortLink`. Added the KV storage format shared by simten.dev and embed.simten.dev: `ShareKV`, `saveShare`, `loadShare`, `isShareHash`, `validateShareHash`.

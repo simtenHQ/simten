@@ -31,6 +31,7 @@ const CircuitEmbedWC = r2wc<WebComponentEmbedProps>(WebComponentEmbed, {
     href: 'string',
     autoRunSpeed: 'number',
     theme: 'string',
+    shareId: 'string',
   },
 });
 

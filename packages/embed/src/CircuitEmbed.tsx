@@ -21,7 +21,18 @@ import {
 } from '@simten/ui/primitives/tooltip';
 import { type CSSProperties, type ReactElement, type Ref, useState } from 'react';
 import { CircuitViewer, type CircuitViewerHandle, type HarnessedLayout } from './CircuitViewer';
-import { simtenHost, useShareCircuit } from './share-context';
+import { forkUrl } from './fork-url';
+import { useShareCircuit } from './share-context';
+
+/**
+ * Where Fork links open. simten.dev for everything except local dev of the
+ * embed itself (where the embed is mounted at localhost). Detected at runtime
+ * because the embed runs on third-party origins we don't control at build time.
+ */
+function simtenHost(): string {
+  if (typeof window === 'undefined') return 'https://simten.dev';
+  return window.location.hostname === 'localhost' ? window.location.origin : 'https://simten.dev';
+}
 
 export interface CircuitEmbedProps<C extends Circuit = Circuit> {
   /** The circuit to display (result of circuit()) */
@@ -56,9 +67,9 @@ export interface CircuitEmbedProps<C extends Circuit = Circuit> {
   description?: string;
   /**
    * Custom URL for the card's right-side link. When omitted (the common case),
-   * a Fork button is rendered that saves the circuit as a share link and opens
-   * it in the simten.dev editor at `/circuit/s/<hash>`. Pass `href` only to
-   * override.
+   * a Fork button is rendered that opens the circuit in the simten.dev editor:
+   * as a new share link on simten.dev, as `shareId`'s link when set, and
+   * otherwise via `/circuit/<lz-encoded-source>`. Pass `href` only to override.
    */
   href?: string;
   /**
@@ -68,6 +79,11 @@ export interface CircuitEmbedProps<C extends Circuit = Circuit> {
    * The web-component path passes the user's original `code` here.
    */
   forkSource?: string;
+  /**
+   * The share this circuit was loaded from, if any. Fork then opens
+   * `/circuit/s/<shareId>` instead of putting the source in the URL.
+   */
+  shareId?: string;
   /** Focus on specific node(s) */
   focus?: string | string[];
   /** Show port labels on nodes. @default true */
@@ -166,6 +182,7 @@ export function CircuitEmbed<C extends Circuit = Circuit>({
   autoRunSpeed = 500,
   initialInputs,
   forkSource,
+  shareId,
   onPortValuesChange,
   ref,
 }: CircuitEmbedProps<C> & { ref?: Ref<CircuitEmbedHandle> }): ReactElement {
@@ -178,12 +195,9 @@ export function CircuitEmbed<C extends Circuit = Circuit>({
     if (forkPending) return;
     try {
       const source = forkSource ?? circuitToSource(circuit);
-      // Always a short link, like the editor's Share (#368). On simten.dev the
-      // site provides its server function; elsewhere this is simten.dev's
-      // public share endpoint.
       setForkPending(true);
-      const { hash } = await shareCircuit(source);
-      window.open(`${simtenHost()}/circuit/s/${hash}`, '_blank', 'noopener');
+      const url = await forkUrl({ source, shareId, shareCircuit, host: simtenHost() });
+      window.open(url, '_blank', 'noopener');
     } catch (err) {
       setForkError(err instanceof Error ? err.message : "Couldn't fork this circuit");
       setTimeout(() => setForkError(null), 3000);

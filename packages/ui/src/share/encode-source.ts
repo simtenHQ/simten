@@ -1,9 +1,13 @@
-import { decompressFromEncodedURIComponent } from 'lz-string';
+import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
+
+/** For `<circuit-embed>`'s Fork on other sites, which opens `/circuit/<encoded>` rather than create a share. */
+export function encodeSourceForUrl(source: string): string {
+  return compressToEncodedURIComponent(source);
+}
 
 /**
- * Decodes the source from a `/circuit/<encoded>` link. Share links have been
- * short (`/circuit/s/<hash>`) since #368; this stays so links shared before
- * then keep opening.
+ * Decodes the source from a `/circuit/<encoded>` link: links shared before
+ * short links (#368), and Fork from `<circuit-embed>` on other sites.
  */
 export function decodeSourceFromUrl(encoded: string): string | null {
   try {

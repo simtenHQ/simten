@@ -1,18 +1,17 @@
-import { compressToEncodedURIComponent } from 'lz-string';
 import { describe, expect, it } from 'vitest';
-import { decodeSourceFromUrl, hashSource } from './encode-source.js';
+import { decodeSourceFromUrl, encodeSourceForUrl, hashSource } from './encode-source.js';
 import { isShareHash, loadShare, type ShareKV, saveShare, validateShareHash } from './store.js';
 
 describe('encode-source', () => {
-  // Links from before #368 inlined the lz-string-compressed source.
-  it('decodes a link shared before short links', () => {
+  // Links from before #368, and embed Fork off simten.dev, inline the compressed source.
+  it('round-trips a small circuit source', () => {
     const source = `import { circuit, bit } from "@simten/core";\nexport const HalfAdder = circuit("HalfAdder", { inputs: { a: bit, b: bit }, outputs: { sum: bit, carry: bit } });`;
-    expect(decodeSourceFromUrl(compressToEncodedURIComponent(source))).toBe(source);
+    expect(decodeSourceFromUrl(encodeSourceForUrl(source))).toBe(source);
   });
 
-  it('decodes unicode', () => {
+  it('round-trips unicode', () => {
     const source = `// Häuser • 電子\nconst x = "💡 ⚡ 🔌";\nexport default x;`;
-    expect(decodeSourceFromUrl(compressToEncodedURIComponent(source))).toBe(source);
+    expect(decodeSourceFromUrl(encodeSourceForUrl(source))).toBe(source);
   });
 
   it('returns null on garbage input', () => {

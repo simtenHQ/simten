@@ -1,13 +1,7 @@
 import { hashSource, loadShare, type ShareKV } from '@simten/ui/share';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fakeBudget, fakeRateLimiter } from '../../../api/__tests__/fakes';
-import {
-  createShare,
-  MAX_SOURCE_BYTES,
-  ShareRejected,
-  sourceBytes,
-  validateShareInput,
-} from '../store';
+import { createShare, MAX_SOURCE_BYTES, sourceBytes, validateShareInput } from '../store';
 
 afterEach(() => vi.unstubAllEnvs());
 
@@ -83,10 +77,7 @@ describe('createShare', () => {
     const env = { CIRCUIT_SHARES: kv, SHARE_RL: fakeRateLimiter(), DAILY_BUDGET: fakeBudget(2) };
     await createShare(env, '203.0.113.7', 'a');
     await createShare(env, '198.51.100.1', 'b');
-    const rejected = createShare(env, '192.0.2.5', 'c');
-    await expect(rejected).rejects.toThrow(/Daily limit/);
-    await expect(rejected).rejects.toMatchObject({ status: 429 });
-    await expect(rejected).rejects.toBeInstanceOf(ShareRejected);
+    await expect(createShare(env, '192.0.2.5', 'c')).rejects.toThrow(/Daily limit/);
     expect(kv.entries.size).toBe(2);
   });
 
