@@ -13,7 +13,7 @@ import { join } from 'node:path';
 
 const ROOT = join(import.meta.dirname, '..');
 
-export type App = 'sandbox' | 'game' | 'web';
+type App = 'sandbox' | 'game' | 'web';
 
 /** The environment for building and serving: the root .env (unless skipped), then this process's, then the sandbox origin. */
 export function siteEnv(sandboxOrigin: string, { dotenv = true } = {}): NodeJS.ProcessEnv {
