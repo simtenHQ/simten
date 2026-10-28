@@ -19,10 +19,20 @@ import {
 } from '@simten/core/internal';
 import { And, Led, Switch, Xor } from '@simten/core/std';
 import type { SandboxClient } from '@simten/sandbox';
-import { act, cleanup, render, renderHook, screen, waitFor } from '@testing-library/react';
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  renderHook,
+  screen,
+  waitFor,
+} from '@testing-library/react';
+import { ReactFlowProvider } from '@xyflow/react';
 import type { ReactNode } from 'react';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { NodeData } from '../../nodes';
+import { NumericInputNode } from '../../nodes/NumericInputNode';
 import { inProcessClient } from '../../sandbox/__tests__/in-process';
 import { SandboxProvider } from '../../sandbox/SandboxProvider';
 import { type UseSimulationResult, useSimulation } from '../../sandbox/useSimulation';
@@ -204,6 +214,37 @@ describe('CompositeInspectorDialog', () => {
     // Nothing the dialog did wrote to the circuit: the one input write is ours.
     const writes = transport.sent.filter((r) => r.type === 'set-input' || r.type === 'set');
     expect(writes).toHaveLength(1);
+  });
+});
+
+describe('a bus boundary port', () => {
+  // Wide boundary inputs render as NumericInputNode, which edits on click.
+  // In the inspector there's no handler to write with, so it's a reading.
+  function renderNumeric(onValueChange?: (value: number) => void) {
+    const data: NodeData = {
+      ...nodeData('__boundary_in_addr', 'Input'),
+      label: 'addr',
+      width: 32,
+      numericValue: 7,
+      outputNames: ['out'],
+      onValueChange,
+    };
+    render(
+      <ReactFlowProvider>
+        <NumericInputNode data={data} />
+      </ReactFlowProvider>,
+    );
+    fireEvent.click(screen.getByText('7'));
+  }
+
+  it('is a reading, not a field, without a handler', () => {
+    renderNumeric();
+    expect(screen.queryByRole('textbox')).toBeNull();
+  });
+
+  it('still edits on the canvas, where there is one', () => {
+    renderNumeric(() => {});
+    expect(screen.getByRole('textbox')).toBeTruthy();
   });
 });
 
