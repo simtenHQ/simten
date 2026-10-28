@@ -34,7 +34,8 @@ import {
 // run on their own thread, so what they need comes in through `initialize`.
 // The project's own .ts files load as ES modules even in a folder with no
 // package.json, which tsx alone would load as CommonJS, out of reach of this
-// hook: check_circuit and simulate_circuit need no project setup.
+// hook (fully so on Node 20, where require() calls bypass it): check_circuit
+// and simulate_circuit need no project setup.
 const HOOKS = `
 let options;
 export function initialize(data) {
@@ -46,10 +47,13 @@ export async function resolve(specifier, context, nextResolve) {
   const parent = context.parentURL;
   if (!parent || isOwn(parent) || !isCore(specifier)) {
     const resolved = await nextResolve(specifier, context);
-    const url = resolved.url;
+    // Where tsx can't hook require() (Node 20), it resolves a CommonJS .ts file
+    // imported from ESM to its own URL with a query on it; the file is the
+    // part before.
+    const file = resolved.url.replace(/(?:%3F|\\?).*$/, '');
     const isProjectTs =
-      url.startsWith('file:') && url.endsWith('.ts') && !url.includes('/node_modules/') && !isOwn(url);
-    return isProjectTs ? { ...resolved, format: 'module' } : resolved;
+      file.startsWith('file:') && file.endsWith('.ts') && !file.includes('/node_modules/') && !isOwn(file);
+    return isProjectTs ? { ...resolved, url: file, format: 'module' } : resolved;
   }
   const resolved = await nextResolve(specifier, { ...context, parentURL: options.anchor });
   if (specifier !== '@simten/core' && specifier !== '@simten/core/circuit') return resolved;
