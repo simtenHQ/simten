@@ -1,9 +1,10 @@
-import { useCircuitSimulator } from '@simten/embed';
+import { useSimulation } from '@simten/ui/sandbox';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { TestSystolic3x3 } from './circuits';
 
 export function useSystolicSimulator() {
-  const sim = useCircuitSimulator(TestSystolic3x3);
+  const sim = useSimulation(TestSystolic3x3);
+  const { state, actions } = sim;
   const [isRunning, setIsRunning] = useState(false);
   const [hasStarted, setHasStarted] = useState(false);
   const [speed, setSpeed] = useState(100);
@@ -12,29 +13,29 @@ export function useSystolicSimulator() {
 
   // Find the actual mangled node ID for "start" from the compiled circuit.
   const startNodeId = useMemo(() => {
-    if (!sim.circuit?.nodes) return null;
-    for (const node of sim.circuit.nodes) {
+    if (!state.circuit?.nodes) return null;
+    for (const node of state.circuit.nodes) {
       if (node.label === 'start' || node.id === 'start') return node.id;
     }
     return null;
-  }, [sim.circuit]);
+  }, [state.circuit]);
 
   // Monitor the circuit's formal `done` output port (was previously a
   // substring scan over portValues looking for a node named "done_led",
   // replaced with a declared top-level port).
   useEffect(() => {
-    const done = sim.portValues?.get('__top__.done');
+    const done = state.portValues?.get('__top__.done');
     if (done) {
       setIsDone(true);
       setIsRunning(false);
     }
-  }, [sim.portValues]);
+  }, [state.portValues]);
 
   // Auto-run interval
   useEffect(() => {
-    if (isRunning && sim.ready) {
+    if (isRunning && state.ready) {
       intervalRef.current = setInterval(() => {
-        sim.tick();
+        void actions.tick();
       }, speed);
     }
     return () => {
@@ -43,31 +44,31 @@ export function useSystolicSimulator() {
         intervalRef.current = null;
       }
     };
-  }, [isRunning, sim.ready, speed, sim.tick]);
+  }, [isRunning, state.ready, speed, actions]);
 
   const handleStart = useCallback(() => {
     if (startNodeId) {
-      sim.setNodeValue(startNodeId, 1);
+      void actions.setInput(startNodeId, 1);
     }
     setHasStarted(true);
     setIsDone(false);
     setIsRunning(true);
-  }, [startNodeId, sim]);
+  }, [startNodeId, actions]);
 
   const handleStep = useCallback(() => {
     if (!hasStarted && startNodeId) {
-      sim.setNodeValue(startNodeId, 1);
+      void actions.setInput(startNodeId, 1);
       setHasStarted(true);
     }
-    sim.tick();
-  }, [hasStarted, startNodeId, sim]);
+    void actions.tick();
+  }, [hasStarted, startNodeId, actions]);
 
   const handleReset = useCallback(() => {
     setIsRunning(false);
     setHasStarted(false);
     setIsDone(false);
-    sim.reset();
-  }, [sim]);
+    void actions.reset();
+  }, [actions]);
 
   return {
     sim,

@@ -19,7 +19,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@simten/ui/primitives/tooltip';
-import { type CSSProperties, type ReactElement, type Ref, useState } from 'react';
+import { type CSSProperties, type ReactElement, type ReactNode, type Ref, useState } from 'react';
 import { CircuitViewer, type CircuitViewerHandle, type HarnessedLayout } from './CircuitViewer';
 import { forkUrl } from './fork-url';
 import { useShareCircuit } from './share-context';
@@ -180,6 +180,68 @@ export function CircuitEmbed<C extends Circuit = Circuit>({
   onPortValuesChange,
   ref,
 }: CircuitEmbedProps<C> & { ref?: Ref<CircuitEmbedHandle> }): ReactElement {
+  return (
+    <EmbedCard
+      height={height}
+      aspectRatio={aspectRatio}
+      layout={layout as Record<string, { x: number; y: number }> | undefined}
+      title={title}
+      subtitle={subtitle}
+      description={description}
+      href={href}
+      forkSource={() => forkSource ?? circuitToSource(circuit)}
+    >
+      <CircuitViewer
+        ref={ref}
+        circuit={circuit}
+        height="100%"
+        showControls={showControls}
+        autoHarness
+        initialInputs={initialInputs}
+        layout={layout}
+        theme={theme}
+        focus={focus}
+        showPortLabels={showPortLabels}
+        onPortClick={onPortClick}
+        glowUnconnected={glowUnconnected}
+        autoRunSpeed={autoRunSpeed}
+        onPortValuesChange={onPortValuesChange}
+      />
+    </EmbedCard>
+  );
+}
+
+interface EmbedCardProps {
+  height?: number | string;
+  aspectRatio?: number;
+  /** Only used to infer the aspect ratio. */
+  layout?: Record<string, { x: number; y: number }>;
+  title?: string;
+  subtitle?: string;
+  description?: string;
+  href?: string;
+  /** The source the Fork button opens, read when it's clicked. */
+  forkSource: () => string;
+  /** The viewer. */
+  children: ReactNode;
+}
+
+/**
+ * The card around a viewer: sizing, the info bar and the Fork button.
+ * `CircuitEmbed` puts a `CircuitViewer` in it; `<circuit-embed>` puts the view
+ * of its own source-text simulation in it.
+ */
+export function EmbedCard({
+  height,
+  aspectRatio,
+  layout,
+  title,
+  subtitle,
+  description,
+  href,
+  forkSource,
+  children,
+}: EmbedCardProps): ReactElement {
   const hasInfoBar = title || description;
   const [forkError, setForkError] = useState<string | null>(null);
   const [forkPending, setForkPending] = useState(false);
@@ -188,7 +250,7 @@ export function CircuitEmbed<C extends Circuit = Circuit>({
   const onFork = async () => {
     if (forkPending) return;
     try {
-      const source = forkSource ?? circuitToSource(circuit);
+      const source = forkSource();
       setForkPending(true);
       const url = await forkUrl({ source, shareCircuit, host: simtenHost() });
       window.open(url, '_blank', 'noopener');
@@ -203,9 +265,7 @@ export function CircuitEmbed<C extends Circuit = Circuit>({
   // Sizing strategy: if `height` is set, use it (backwards compat).
   // Otherwise size width-responsively via aspect-ratio with mobile clamps.
   const useResponsive = height === undefined;
-  const aspect =
-    aspectRatio ??
-    inferAspectFromLayout(layout as Record<string, { x: number; y: number }> | undefined);
+  const aspect = aspectRatio ?? inferAspectFromLayout(layout);
   const responsiveStyle: CSSProperties = {
     width: '100%',
     aspectRatio: String(aspect),
@@ -239,22 +299,7 @@ export function CircuitEmbed<C extends Circuit = Circuit>({
         />
       )}
       <div style={canvasStyle} className="min-h-0">
-        <CircuitViewer
-          ref={ref}
-          circuit={circuit}
-          height="100%"
-          showControls={showControls}
-          autoHarness
-          initialInputs={initialInputs}
-          layout={layout}
-          theme={theme}
-          focus={focus}
-          showPortLabels={showPortLabels}
-          onPortClick={onPortClick}
-          glowUnconnected={glowUnconnected}
-          autoRunSpeed={autoRunSpeed}
-          onPortValuesChange={onPortValuesChange}
-        />
+        {children}
       </div>
       {hasInfoBar && (
         <div className="border-t border-[var(--embed-border)] px-4 py-3 flex items-end justify-between gap-4">

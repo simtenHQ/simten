@@ -1,19 +1,19 @@
-import { useCircuitSimulator } from '@simten/embed';
+import { useSimulation } from '@simten/ui/sandbox';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MiniSwitch2Port } from './circuits';
 
 export function useSwitchSimulator() {
-  const sim = useCircuitSimulator(MiniSwitch2Port);
+  const sim = useSimulation(MiniSwitch2Port);
+  const { state, actions } = sim;
   const [isRunning, setIsRunning] = useState(false);
   const [speed, setSpeed] = useState(50);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const initRef = useRef(false);
 
   // Find key node IDs by label
   const nodeIds = useMemo(() => {
-    if (!sim.circuit?.nodes) return null;
+    if (!state.circuit?.nodes) return null;
     const ids: Record<string, string> = {};
-    for (const node of sim.circuit.nodes) {
+    for (const node of state.circuit.nodes) {
       const label = node.label ?? node.id;
       if (
         label === 'always_ready' ||
@@ -26,23 +26,20 @@ export function useSwitchSimulator() {
       }
     }
     return ids;
-  }, [sim.circuit]);
+  }, [state.circuit]);
 
-  // Auto-toggle the always_ready switch on first load
+  // Turn the always_ready switch on once the circuit is up. Switches keep
+  // their position through a reset, so this runs once per session.
   useEffect(() => {
-    if (!sim.ready || !nodeIds || initRef.current) return;
-    initRef.current = true;
-
-    if (nodeIds.always_ready) {
-      sim.toggleNode(nodeIds.always_ready);
-    }
-  }, [sim.ready, nodeIds, sim.toggleNode]);
+    if (!state.ready || !nodeIds?.always_ready) return;
+    void actions.setInput(nodeIds.always_ready, 1);
+  }, [state.ready, nodeIds, actions]);
 
   // Auto-run interval
   useEffect(() => {
-    if (isRunning && sim.ready) {
+    if (isRunning && state.ready) {
       intervalRef.current = setInterval(() => {
-        sim.tick();
+        void actions.tick();
       }, speed);
     }
     return () => {
@@ -51,13 +48,12 @@ export function useSwitchSimulator() {
         intervalRef.current = null;
       }
     };
-  }, [isRunning, sim.ready, speed, sim.tick]);
+  }, [isRunning, state.ready, speed, actions]);
 
   const handleReset = useCallback(() => {
     setIsRunning(false);
-    initRef.current = false;
-    sim.reset();
-  }, [sim]);
+    void actions.reset();
+  }, [actions]);
 
   // Inject a packet on a given port by setting byte + valid, then ticking
   const injectByte = useCallback(
@@ -65,19 +61,19 @@ export function useSwitchSimulator() {
       if (!nodeIds) return;
       const byteNode = port === 0 ? nodeIds.p0_byte : nodeIds.p1_byte;
       const validNode = port === 0 ? nodeIds.p0_valid : nodeIds.p1_valid;
-      if (byteNode) sim.setNodeValue(byteNode, byte);
-      if (validNode) sim.setNodeValue(validNode, 1);
+      if (byteNode) void actions.setInput(byteNode, byte);
+      if (validNode) void actions.setInput(validNode, 1);
     },
-    [nodeIds, sim.setNodeValue],
+    [nodeIds, actions],
   );
 
   const clearValid = useCallback(
     (port: 0 | 1) => {
       if (!nodeIds) return;
       const validNode = port === 0 ? nodeIds.p0_valid : nodeIds.p1_valid;
-      if (validNode) sim.setNodeValue(validNode, 0);
+      if (validNode) void actions.setInput(validNode, 0);
     },
-    [nodeIds, sim.setNodeValue],
+    [nodeIds, actions],
   );
 
   return {

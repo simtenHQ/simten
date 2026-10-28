@@ -20,7 +20,7 @@ import type {
   CircuitDefinitions,
   CircuitIR,
   FlatPortValueMap,
-  FlatSequentialState,
+  PeripheralValue,
 } from '@simten/core/internal';
 import React, {
   type CSSProperties,
@@ -98,7 +98,8 @@ export interface CircuitCanvasProps {
   circuit?: CircuitIR | null;
   definitions?: CircuitDefinitions;
   portValues?: FlatPortValueMap | null;
-  sequentialState?: FlatSequentialState | null;
+  /** Screens, consoles, UARTs and the memories behind them, by node path. */
+  peripheralState?: ReadonlyMap<string, PeripheralValue> | null;
   draggable?: boolean;
   /**
    * Re-run the layout engine on every structural change, instead of only when
@@ -177,7 +178,7 @@ function CircuitCanvasInner({
   circuit,
   definitions: definitionsProp,
   portValues,
-  sequentialState,
+  peripheralState,
   draggable = true,
   autoLayout = false,
   layout,
@@ -246,7 +247,7 @@ function CircuitCanvasInner({
       metadata,
       definitions,
       portValues ?? undefined,
-      sequentialState ?? undefined,
+      peripheralState ?? undefined,
     );
 
     const nodesWithHandlers = projected.nodes.map((node) => {
@@ -319,7 +320,7 @@ function CircuitCanvasInner({
     metadata,
     definitions,
     portValues,
-    sequentialState,
+    peripheralState,
     onToggleNode,
     onSetNodeValue,
     onLoadMemory,

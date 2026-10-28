@@ -62,7 +62,7 @@ export function SystolicDemo() {
   // Build a label→nodeId map for reading input values
   const inputNodeIds = useMemo(() => {
     const map: Record<string, string> = {};
-    if (!sim.circuit?.nodes) return map;
+    if (!sim.state.circuit?.nodes) return map;
     const names = [
       'a00',
       'a01',
@@ -83,7 +83,7 @@ export function SystolicDemo() {
       'b21',
       'b22',
     ];
-    for (const node of sim.circuit.nodes) {
+    for (const node of sim.state.circuit.nodes) {
       for (const name of names) {
         if (node.label === name || node.id === name) {
           map[name] = node.id;
@@ -91,9 +91,17 @@ export function SystolicDemo() {
       }
     }
     return map;
-  }, [sim.circuit]);
+  }, [sim.state.circuit]);
 
-  if (!sim.ready) {
+  if (sim.state.error) {
+    return (
+      <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-6">
+        <div className="text-red-400 text-sm font-mono">{sim.state.error}</div>
+      </div>
+    );
+  }
+
+  if (!sim.state.ready) {
     return (
       <div className="rounded-xl border border-gray-700/50 bg-gray-100/50 dark:bg-gray-900/50 p-8">
         <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
@@ -104,18 +112,10 @@ export function SystolicDemo() {
     );
   }
 
-  if (sim.error) {
-    return (
-      <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-6">
-        <div className="text-red-400 text-sm font-mono">{sim.error}</div>
-      </div>
-    );
-  }
-
   // Read a port value by searching for a key containing the name
   const getPortValue = (name: string, suffix: string): number => {
-    if (!sim.portValues) return 0;
-    for (const [key, value] of sim.portValues) {
+    if (!sim.state.portValues) return 0;
+    for (const [key, value] of sim.state.portValues) {
       if (key.includes(name) && key.includes(suffix)) {
         return typeof value === 'number' ? value : 0;
       }
@@ -125,18 +125,18 @@ export function SystolicDemo() {
 
   // Read input node values (searches for nodeId.out in portValues)
   const getInputValue = (name: string): number => {
-    if (!sim.portValues) return 0;
+    if (!sim.state.portValues) return 0;
     // Try plain key first (TS builder format)
-    const plain = sim.portValues.get(`${name}.out`);
+    const plain = sim.state.portValues.get(`${name}.out`);
     if (plain !== undefined && typeof plain === 'number') return plain;
     // Try mapped nodeId (may differ from label)
     const nodeId = inputNodeIds[name];
     if (nodeId) {
-      const exact = sim.portValues.get(`${nodeId}.out`);
+      const exact = sim.state.portValues.get(`${nodeId}.out`);
       if (typeof exact === 'number') return exact;
     }
     // Fallback: legacy node ID format
-    for (const [key, value] of sim.portValues) {
+    for (const [key, value] of sim.state.portValues) {
       if (key.includes(`_${name}_`) && key.endsWith('.out')) {
         return typeof value === 'number' ? value : 0;
       }
@@ -214,12 +214,12 @@ export function SystolicDemo() {
 
         {/* Circuit canvas */}
         <CircuitCanvas
-          circuit={sim.circuit}
-          definitions={sim.definitions ?? undefined}
-          portValues={sim.portValues}
-          sequentialState={sim.sequentialState}
-          onToggleNode={sim.toggleNode}
-          onSetNodeValue={sim.setNodeValue}
+          circuit={sim.state.circuit}
+          definitions={sim.state.definitions ?? undefined}
+          portValues={sim.state.portValues}
+          peripheralState={sim.state.peripheralState}
+          onToggleNode={sim.actions.toggleNode}
+          onSetNodeValue={sim.actions.setInput}
           height={480}
           layout={SYSTOLIC_LAYOUT}
         />
@@ -272,7 +272,7 @@ export function SystolicDemo() {
             />
           </div>
           <span className="text-xs text-gray-500 dark:text-gray-400 font-mono tabular-nums">
-            Cycle {sim.cycleCount.toLocaleString()}
+            Cycle {sim.state.cycle.toLocaleString()}
           </span>
         </div>
       </div>
