@@ -230,6 +230,17 @@ describe('useSimulation', () => {
     expect(hook.result.current.state.portValues?.get('s.out')).toBe(0);
   });
 
+  it('toggles from a value written by setInputs that is still in flight', async () => {
+    const { hook } = render(AndGate, { harness: true });
+    await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
+    const { actions } = hook.result.current;
+    await act(async () => {
+      await Promise.all([actions.setInputs({ a: 1, b: 1 }), actions.toggleNode('a')]);
+    });
+    expect(hook.result.current.state.portValues?.get('a.out')).toBe(0);
+    expect(hook.result.current.state.outputs).toEqual({ y: 0 });
+  });
+
   it('drops a compile that finishes after a newer one started', async () => {
     const { hook, transport } = render(
       { source: COUNTER },

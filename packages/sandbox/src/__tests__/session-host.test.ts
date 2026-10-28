@@ -3,7 +3,7 @@ import { executeCircuitCode } from '@simten/core/internal';
 import { exportVerilog } from '@simten/core/verilog';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { HostClock } from '../session-host.js';
-import { ADDER, COUNTER, expectType, startHost } from './helpers.js';
+import { ADDER, COUNTER, D_LATCH, expectType, startHost } from './helpers.js';
 
 async function openCounter(history = 10, options: { harness?: boolean } = {}) {
   const host = startHost();
@@ -336,10 +336,71 @@ const Terminal = circuit('Terminal', {
   });
 });
 
+/** The latch open with d = 1 and en = 1, so q = 1. */
+async function openLatch() {
+  const host = startHost();
+  await host.call({ type: 'compile', compile: 'c1', source: D_LATCH });
+  await host.call({ type: 'open', session: 's1', compile: 'c1', circuit: 'DLatch', history: 0 });
+  const res = expectType(
+    await host.call({ type: 'set-input', session: 's1', values: { d: 1, en: 1 } }),
+    'updated',
+  );
+  expect(res.state.ports.get('q.in')).toBe(1);
+  return host;
+}
+
 describe('set-input', () => {
+  it('writes every path before the circuit settles', async () => {
+    const { call } = await openLatch();
+    // d and en fall together, so the latch holds the 1 it had.
+    const res = expectType(
+      await call({ type: 'set-input', session: 's1', values: { d: 0, en: 0 } }),
+      'updated',
+    );
+    expect(res.state.ports.get('q.in')).toBe(1);
+  });
+
+  it('settles after each request, so separate writes are seen in order', async () => {
+    // The bug in #521: d falls while en is still 1, the latch follows it, and
+    // en then holds the 0.
+    const { call } = await openLatch();
+    await call({ type: 'set-input', session: 's1', values: { d: 0 } });
+    const res = expectType(
+      await call({ type: 'set-input', session: 's1', values: { en: 0 } }),
+      'updated',
+    );
+    expect(res.state.ports.get('q.in')).toBe(0);
+  });
+
+  it('writes nothing when one path is not an input', async () => {
+    const { call } = await openLatch();
+    const res = expectType(
+      await call({ type: 'set-input', session: 's1', values: { d: 0, n1: 1 } }),
+      'failed',
+    );
+    expect(res.error).toMatch(/^setInput\('n1'\): 'n1' is a Nand, not an input/);
+    // d is still 1: en = 0 latches a 1, not a 0.
+    const after = expectType(
+      await call({ type: 'set-input', session: 's1', values: { en: 0 } }),
+      'updated',
+    );
+    expect(after.state.ports.get('q.in')).toBe(1);
+  });
+
+  it('still takes the single { path, value } form that older pages send', async () => {
+    const { call } = await openLatch();
+    await call({ type: 'set-input', session: 's1', path: 'en', value: 0 });
+    const res = expectType(
+      await call({ type: 'set-input', session: 's1', path: 'd', value: 0 }),
+      'updated',
+    );
+    // en fell first, so the latch holds its 1.
+    expect(res.state.ports.get('q.in')).toBe(1);
+  });
+
   it('writes a Switch of a harnessed circuit', async () => {
     const { call } = await openCounter(10, { harness: true });
-    expectType(await call({ type: 'set-input', session: 's1', path: 'en', value: 1 }), 'updated');
+    expectType(await call({ type: 'set-input', session: 's1', values: { en: 1 } }), 'updated');
     const res = expectType(await call({ type: 'tick', session: 's1', count: 2 }), 'updated');
     // The harness's display for `count` reads the counter.
     expect(res.state.ports.get('count.in')).toBe(2);
@@ -348,7 +409,7 @@ describe('set-input', () => {
   it('rejects a register path', async () => {
     const { call } = await openCounter();
     const res = expectType(
-      await call({ type: 'set-input', session: 's1', path: 'reg', value: 7 }),
+      await call({ type: 'set-input', session: 's1', values: { reg: 7 } }),
       'failed',
     );
     expect(res.error).toBe(
@@ -359,7 +420,7 @@ describe('set-input', () => {
   it('rejects a top-level input name, which is not a node path', async () => {
     const { call } = await openCounter();
     const res = expectType(
-      await call({ type: 'set-input', session: 's1', path: 'en', value: 1 }),
+      await call({ type: 'set-input', session: 's1', values: { en: 1 } }),
       'failed',
     );
     expect(res.error).toBe("setInput('en'): no node has that path.");
