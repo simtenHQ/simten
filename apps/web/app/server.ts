@@ -6,15 +6,16 @@
  */
 
 import handler from '@tanstack/react-start/server-entry';
-import headersFile from '../public/_headers?raw';
 import { isDevServer } from '../src/api/deploy-mode';
-import { siteWideHeaders, withHeaders } from '../src/api/headers';
+import { siteHeaders, withHeaders } from '../src/api/headers';
 import type { ApiEnv } from '../src/api/limits';
 import { handleApiRoute } from '../src/api/routes';
 
 export { DailyBudget } from '../src/api/daily-budget';
 
-const SITE_HEADERS = siteWideHeaders(headersFile);
+// The same origin the build's pages frame their sandbox from (see useSandbox.ts).
+const SANDBOX_ORIGIN: string | undefined = import.meta.env.VITE_SANDBOX_ORIGIN;
+const SITE_HEADERS = siteHeaders(SANDBOX_ORIGIN);
 
 export default {
   async fetch(request: Request, env: ApiEnv, _ctx: ExecutionContext): Promise<Response> {

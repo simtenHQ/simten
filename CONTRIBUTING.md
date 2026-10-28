@@ -141,7 +141,7 @@ The subject should describe the *outcome*, not the change. "Fix bug" is bad. "Dr
 
 Circuit code is arbitrary TypeScript, so neither the web app nor the game ever runs it directly. Every surface that runs user code (the editor, the game, embed pages, `<circuit-embed>`) sends it to `apps/sandbox`, a hidden iframe on its own origin, which runs it in a Web Worker and sends back plain JSON. Because it's a different origin, user code can't read the main site's cookies, storage or DOM.
 
-- **Where it runs:** `localhost:3002` in dev, `sandbox.simtenusercontent.dev` in production. Set `VITE_SANDBOX_ORIGIN` to point at a different one, e.g. a staging sandbox.
+- **Where it runs:** `localhost:3002` in dev, `sandbox.simtenusercontent.dev` in production. Set `VITE_SANDBOX_ORIGIN` at build time to point at a different one, e.g. a staging sandbox; the web and game CSPs follow it, so their `frame-src` allows that origin instead.
 - **If it isn't running:** nothing compiles or grades. The app waits about 10 seconds for the iframe to say it's ready, then gives up. If circuits silently never simulate, check that `pnpm dev:sandbox` (or `pnpm dev:all`) is up.
 - **What code sees:** the sandbox strips `import` lines and provides the stdlib as globals. That's why game stubs and solutions can keep real imports for `tsc` and still run.
 - **Deploying:** the production web app and game load the deployed sandbox. Changes to `@simten/core` or the sandbox itself only show up on simten.dev and play.simten.dev after `pnpm deploy:sandbox`.

@@ -1,44 +1,34 @@
-import { readFileSync } from 'node:fs';
-import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { siteWideHeaders, withHeaders } from '../headers';
+import { headersFile, siteCsp, siteHeaders, withHeaders } from '../headers';
 
-const HEADERS_FILE = readFileSync(join(__dirname, '../../../public/_headers'), 'utf8');
+// The policy simten.dev has sent since the CSP was enforced (#489). A build
+// with no VITE_SANDBOX_ORIGIN must keep sending exactly this.
+const PRODUCTION_CSP =
+  "default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.jsdelivr.net https://static.cloudflareinsights.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self' data: https://cdn.jsdelivr.net; img-src 'self' data: blob:; connect-src 'self' https://cdn.jsdelivr.net https://data.jsdelivr.com https://api.github.com https://raw.githubusercontent.com https://cloudflareinsights.com ws://localhost:*; worker-src 'self' blob: data:; frame-src https://sandbox.simtenusercontent.dev https://embed.simten.dev https://www.youtube.com; frame-ancestors 'self'; object-src 'none'; base-uri 'self'; form-action 'self'";
 
-describe('siteWideHeaders', () => {
-  it('reads only the /* block', () => {
-    const file = [
-      '# comment',
-      '/assets/*',
-      '  Cache-Control: immutable',
-      '',
-      '/*',
-      '  # comment inside a block',
-      '  X-One: a: b',
-      '  X-Two: c',
-      '/other',
-      '  X-Three: d',
-    ].join('\n');
-    expect(siteWideHeaders(file)).toEqual([
-      ['X-One', 'a: b'],
-      ['X-Two', 'c'],
-    ]);
+describe('siteCsp', () => {
+  it('is the production policy when the build sets no sandbox origin', () => {
+    expect(siteCsp()).toBe(PRODUCTION_CSP);
+    expect(siteCsp('')).toBe(PRODUCTION_CSP);
   });
 
-  it('finds the CSP in the real _headers file', () => {
-    const names = siteWideHeaders(HEADERS_FILE).map(([name]) => name);
-    expect(names).toContain('Content-Security-Policy');
+  it('frames the sandbox the build points at, and changes nothing else', () => {
+    expect(siteCsp('http://localhost:4302')).toBe(
+      PRODUCTION_CSP.replace(
+        'frame-src https://sandbox.simtenusercontent.dev ',
+        'frame-src http://localhost:4302 ',
+      ),
+    );
   });
+});
 
-  it('lets the page frame the sandbox', () => {
-    const csp = new Map(siteWideHeaders(HEADERS_FILE)).get('Content-Security-Policy');
-    expect(csp).toMatch(/frame-src [^;]*https:\/\/sandbox\.simtenusercontent\.dev/);
-  });
-
-  it('frames the embed page for the Share preview, and is itself framed only by itself', () => {
-    const csp = new Map(siteWideHeaders(HEADERS_FILE)).get('Content-Security-Policy');
-    expect(csp).toMatch(/frame-src [^;]*https:\/\/embed\.simten\.dev/);
-    expect(csp).toMatch(/frame-ancestors 'self'(;|$)/);
+describe('site headers', () => {
+  it('send the same CSP from the worker and from _headers', () => {
+    expect(siteHeaders()).toEqual([['Content-Security-Policy', PRODUCTION_CSP]]);
+    expect(headersFile()).toContain(`\n/*\n  Content-Security-Policy: ${PRODUCTION_CSP}\n`);
+    expect(headersFile('http://localhost:4302')).toContain(
+      `  Content-Security-Policy: ${siteCsp('http://localhost:4302')}\n`,
+    );
   });
 });
 

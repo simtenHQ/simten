@@ -1,14 +1,13 @@
 /**
  * Two plain servers for the e2e run:
  *   HOST  someone else's page that iframes whatever `?src=` names.
- *   SITE  a page sent with simten.dev's own headers (the `/*` block of
- *         apps/web/public/_headers, read the way the web worker reads it), to
+ *   SITE  a page sent with simten.dev's own headers (siteHeaders() from
+ *         apps/web/src/api/headers.ts, as the web worker sends them), to
  *         check the main site still refuses to be framed.
  */
 
-import { readFileSync } from 'node:fs';
 import { createServer } from 'node:http';
-import { siteWideHeaders } from '../../web/src/api/headers.ts';
+import { siteHeaders as webSiteHeaders } from '../../web/src/api/headers.ts';
 import { HOST_PORT, SITE_PORT } from './setup.ts';
 
 const escapeAttribute = (s: string) =>
@@ -24,9 +23,7 @@ createServer((req, res) => {
         title="Toggle (Simten)"></iframe>`);
 }).listen(HOST_PORT);
 
-const siteHeaders = siteWideHeaders(
-  readFileSync(new URL('../../web/public/_headers', import.meta.url), 'utf8'),
-);
+const siteHeaders = webSiteHeaders();
 createServer((_req, res) => {
   res.writeHead(200, Object.fromEntries([...siteHeaders, ['Content-Type', 'text/html']]));
   res.end('<!doctype html><title>simten.dev</title><p>simten.dev stand-in</p>');
