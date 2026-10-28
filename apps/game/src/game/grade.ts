@@ -151,7 +151,7 @@ export async function grade(
     }
 
     // ── 4. the truth table ──
-    await runtime.select(target, all);
+    await runtime.select(target);
     for (const [index, vector] of level.vectors.entries()) {
       const ports = await runtime.evaluate(vector.inputs, level.outputs);
       const actual: Record<string, number> = {};
@@ -179,5 +179,8 @@ export async function grade(
   } catch (e) {
     const message = e instanceof RuntimeFailure || e instanceof Error ? e.message : String(e);
     return { status: 'error', message };
+  } finally {
+    // Freeing is housekeeping, not part of the verdict.
+    await runtime.close().catch(() => {});
   }
 }

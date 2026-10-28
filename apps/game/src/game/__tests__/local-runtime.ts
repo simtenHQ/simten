@@ -3,33 +3,38 @@
  *
  * The browser grades in the sandbox iframe. Nothing about the *rules* needs an
  * iframe, though, so the suite drives the same grader through
- * `executeCircuitCode` and the simulator engine directly. That is what lets the
+ * `executeCircuitCode` and core's `Simulation` directly. That is what lets the
  * validation gate run in CI.
  *
- * It goes to the engine rather than `simulate()` because a self-contained
- * level's signals are Switch and Led nodes, not ports, and `Simulation.get`
- * reads top-level ports only. Reading an `Led` named `out` means reading
- * exactly `out.in`, so the raw port map is what is needed.
+ * It follows the sandbox's rules: a vector input is a top-level port (`set`)
+ * or a Switch/Input node (`setInput` in the sandbox, which refuses anything
+ * else), and outputs are read from the flat port map, where a self-contained
+ * level's `Led` named `out` is exactly `out.in`.
  *
  * Deliberately not exported from the app: shipping a path that executes player
  * source in the main frame would defeat the sandbox.
  */
 
-import type { Behavior, CircuitIR } from '@simten/core/internal';
+import type { Simulation } from '@simten/core';
 import {
-  createEngine,
-  elaborate,
+  type CircuitIR,
+  createSimulation,
   executeCircuitCode,
   getStdLibrary,
   internalsOf,
+  type Library,
+  nodesOf,
 } from '@simten/core/internal';
 import type { GradeRuntime } from '../runtime';
 import { RuntimeFailure, readOutputs, splitInputs } from '../runtime';
 
+/** What the sandbox's `setInput` accepts. */
+const INPUT_COMPONENTS = new Set(['Switch', 'Input']);
+
 export function localRuntime(): GradeRuntime {
   let compiled: CircuitIR[] = [];
-  let behaviors: ReadonlyMap<string, Behavior> = new Map();
-  let engine: ReturnType<typeof createEngine> | null = null;
+  let library: Library | null = null;
+  let simulation: Simulation | null = null;
   let selected: CircuitIR | null = null;
 
   return {
@@ -41,12 +46,13 @@ export function localRuntime(): GradeRuntime {
         .getAllCircuitNames()
         .map((n) => definitions.resolveCircuit(n))
         .filter((c): c is CircuitIR => c != null);
-      behaviors = result.library.behaviors;
+      library = result.library;
       return { circuits: result.circuits.map((c) => internalsOf(c).ir), libraryCircuits: compiled };
     },
 
-    async select(target, all) {
-      const byName = new Map([...compiled, ...all].map((c) => [c.name, c]));
+    async select(target) {
+      if (!library) throw new RuntimeFailure('compile() was not called before select()');
+      const byName = new Map(compiled.map((c) => [c.name, c]));
       const definitions = {
         resolveCircuit: (name: string) => byName.get(name),
         getAllPrimitiveNames: () =>
@@ -54,34 +60,39 @@ export function localRuntime(): GradeRuntime {
             .filter((c) => c.implementation?.kind === 'primitive')
             .map((c) => c.name),
       };
-      // As the sandbox's compile-ir: std's behavior under the compiled source's.
-      engine = createEngine(elaborate(target, definitions), {
-        library: { definitions, behaviors: new Map([...getStdLibrary().behaviors, ...behaviors]) },
+      // As the sandbox's open: std's behavior under the compiled source's.
+      simulation = createSimulation(target, {
+        definitions,
+        behaviors: new Map([...getStdLibrary().behaviors, ...library.behaviors]),
       });
       selected = target;
     },
 
     async evaluate(inputs, outputs) {
-      if (!engine || !selected) {
+      if (!simulation || !selected) {
         throw new RuntimeFailure('select() was not called before evaluate()');
       }
-      // The same split as `sandboxRuntime`: a port in an abstracted level, a
-      // Switch node in a self-contained one.
-      const { ports, nodes } = splitInputs(selected, inputs);
-      for (const [name, value] of Object.entries(ports)) engine.setInput(name, value);
-      for (const [path, value] of Object.entries(nodes)) engine.setNode(path, value);
-      // A clock cycle, because that is what the browser does: `sandboxRuntime`
-      // grades through `sandbox.tick`. This used `runCombinational`, which
-      // settles the logic without advancing a clock; the two agreed on every
-      // combinational level and silently disagreed on anything clocked, so a
-      // level that graded correctly in the browser could never pass CI. A
-      // latch hides the difference, being combinational feedback; a flip-flop
-      // does not, and simply never advances.
-      engine.tick();
+      const nodes = nodesOf(simulation);
+      const { ports, nodes: inputNodes } = splitInputs(selected, inputs);
+      for (const [path, value] of Object.entries(inputNodes)) {
+        const type = nodes.primitiveOf(path);
+        if (!type || !INPUT_COMPONENTS.has(type)) {
+          throw new RuntimeFailure(`\`${path}\` is a ${type}, not a Switch or Input`);
+        }
+        nodes.set(path, value);
+      }
+      if (Object.keys(ports).length > 0) simulation.set(ports);
+      // A clock cycle, as the browser grades: `sandboxRuntime` ticks after
+      // every vector. Settling alone agrees on every combinational level and
+      // silently disagrees on anything clocked, so a level that graded
+      // correctly in the browser could never pass CI.
+      simulation.tick();
+      return readOutputs(Object.fromEntries(nodes.ports()), outputs);
+    },
 
-      const values: Record<string, number | boolean> = {};
-      for (const [k, v] of engine.getPortValues()) values[k] = v;
-      return readOutputs(values, outputs);
+    async close() {
+      simulation = null;
+      selected = null;
     },
   };
 }

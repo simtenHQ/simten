@@ -55,6 +55,20 @@ function NumericInputControl({ data }: { data: NodeData }) {
   const hexDigits = Math.ceil(width / 4);
   const hexValue = currentValue.toString(16).toUpperCase().padStart(hexDigits, '0');
 
+  // Nothing to write to (the inspector's boundary ports): a reading, not a control.
+  if (!data.onValueChange) {
+    return (
+      <div className="flex flex-col items-center gap-1.5">
+        <div className="w-14 h-7 flex items-center justify-center rounded bg-[var(--embed-bg-tertiary)] text-emerald-400 font-mono text-sm font-bold">
+          0x{hexValue}
+        </div>
+        <div className="text-[10px] text-[var(--embed-text-secondary)] font-mono">
+          = {currentValue}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center gap-1.5">
       <div className="flex items-center gap-1">
@@ -106,10 +120,23 @@ function NumericInputControl({ data }: { data: NodeData }) {
   );
 }
 
-export function InputNode({ data, selected }: InputNodeProps) {
-  const value = data.value ?? false;
-  const isNumericInput = data.componentRef === 'Input';
+/** A Switch with nothing to write to (the inspector's boundary ports): a lamp, not a switch. */
+function SwitchLamp({ data, value }: { data: NodeData; value: boolean }) {
+  return (
+    <div
+      role="img"
+      aria-label={`${data.label || data.componentRef}: ${value ? 'on' : 'off'}`}
+      className={cn(
+        'h-5 w-5 rounded-full shadow-sm',
+        value
+          ? 'bg-gradient-to-br from-emerald-400 to-green-500'
+          : 'bg-gradient-to-br from-gray-300 to-gray-400',
+      )}
+    />
+  );
+}
 
+function SwitchToggle({ data, value }: { data: NodeData; value: boolean }) {
   const handleToggle = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
@@ -117,6 +144,56 @@ export function InputNode({ data, selected }: InputNodeProps) {
     },
     [data],
   );
+
+  return (
+    <>
+      <button
+        onClick={handleToggle}
+        role="switch"
+        aria-checked={value}
+        aria-label={data.label || data.componentRef}
+        className={cn(
+          'group relative h-9 w-16 rounded-full transition-all duration-300 ease-in-out',
+          'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 hover:shadow-md active:scale-95',
+          value
+            ? 'bg-gradient-to-r from-emerald-500 to-green-500 shadow-sm'
+            : 'bg-gradient-to-r from-gray-300 to-gray-400 shadow-sm',
+        )}
+      >
+        <span
+          className={cn(
+            'absolute top-0.5 flex items-center justify-center',
+            'h-8 w-8 rounded-full bg-white',
+            'shadow-lg transition-all duration-300 ease-out',
+            value ? 'translate-x-[1.875rem]' : 'translate-x-0.5',
+          )}
+        >
+          <span className="absolute inset-1 rounded-full bg-gradient-to-br from-white to-gray-50" />
+          <span
+            className={cn(
+              'relative z-10 h-2 w-2 rounded-full transition-all duration-300',
+              value
+                ? 'bg-gradient-to-br from-emerald-400 to-green-500'
+                : 'bg-gradient-to-br from-gray-300 to-gray-400',
+            )}
+          />
+        </span>
+      </button>
+      <div
+        className={cn(
+          'text-xs font-semibold tracking-wide transition-colors duration-300',
+          value ? 'text-emerald-400' : 'text-[var(--embed-text-secondary)]',
+        )}
+      >
+        {value ? 'ON' : 'OFF'}
+      </div>
+    </>
+  );
+}
+
+export function InputNode({ data, selected }: InputNodeProps) {
+  const value = data.value ?? false;
+  const isNumericInput = data.componentRef === 'Input';
 
   const outputPorts: PortConfig[] = data.outputNames.map((name, index) => ({
     name,
@@ -142,49 +219,10 @@ export function InputNode({ data, selected }: InputNodeProps) {
 
         {isNumericInput ? (
           <NumericInputControl data={data} />
+        ) : data.onToggle ? (
+          <SwitchToggle data={data} value={value} />
         ) : (
-          <>
-            <button
-              onClick={handleToggle}
-              role="switch"
-              aria-checked={value}
-              aria-label={data.label || data.componentRef}
-              className={cn(
-                'group relative h-9 w-16 rounded-full transition-all duration-300 ease-in-out',
-                'focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 focus-visible:ring-offset-2 focus-visible:ring-offset-gray-900 hover:shadow-md active:scale-95',
-                value
-                  ? 'bg-gradient-to-r from-emerald-500 to-green-500 shadow-sm'
-                  : 'bg-gradient-to-r from-gray-300 to-gray-400 shadow-sm',
-              )}
-            >
-              <span
-                className={cn(
-                  'absolute top-0.5 flex items-center justify-center',
-                  'h-8 w-8 rounded-full bg-white',
-                  'shadow-lg transition-all duration-300 ease-out',
-                  value ? 'translate-x-[1.875rem]' : 'translate-x-0.5',
-                )}
-              >
-                <span className="absolute inset-1 rounded-full bg-gradient-to-br from-white to-gray-50" />
-                <span
-                  className={cn(
-                    'relative z-10 h-2 w-2 rounded-full transition-all duration-300',
-                    value
-                      ? 'bg-gradient-to-br from-emerald-400 to-green-500'
-                      : 'bg-gradient-to-br from-gray-300 to-gray-400',
-                  )}
-                />
-              </span>
-            </button>
-            <div
-              className={cn(
-                'text-xs font-semibold tracking-wide transition-colors duration-300',
-                value ? 'text-emerald-400' : 'text-[var(--embed-text-secondary)]',
-              )}
-            >
-              {value ? 'ON' : 'OFF'}
-            </div>
-          </>
+          <SwitchLamp data={data} value={value} />
         )}
       </div>
     </BaseNode>

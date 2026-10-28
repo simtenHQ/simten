@@ -9,9 +9,9 @@
  *   step. Opening it shows a gate-level build of the same function, proven
  *   equivalent to it by `made-of-equivalence.verify.ts`.
  *
- * The reference build is never elaborated into the running netlist; it is
- * constructed here, on demand, for display in a dialog that runs its own
- * simulator. Drilling an Adder costs nothing until someone drills it.
+ * The reference build is never elaborated into the running netlist. Its IR is
+ * constructed here, on demand, for display; the inspector runs it as a second
+ * session in the sandbox. Drilling an Adder costs nothing until someone drills it.
  *
  * Frames carry their own circuit definitions. A reference build introduces circuits the
  * page has never heard of — FigletStream depends on `Adder`, not on the
@@ -21,6 +21,7 @@
  */
 
 import {
+  type ArgumentValue,
   type CircuitDefinitions,
   type CircuitIR,
   internalsOf,
@@ -44,8 +45,13 @@ function layer(base: CircuitDefinitions, extra: Map<string, CircuitIR>): Circuit
   };
 }
 
+/** A child's dotted path under `parent`, or the node id itself at a session's top level. */
+const childPath = (parent: string, nodeId: string) => (parent ? `${parent}.${nodeId}` : nodeId);
+
 /**
  * Resolve the frame a double-click should push, or null if the node is a leaf.
+ * `parentPath` is the path of the frame the node was clicked in: empty on the
+ * canvas itself, whose node ids are already paths in its session.
  *
  * Composites win over reference builds: if a user has defined their own Adder
  * with real structure, that structure is the truth and should be what opens.
@@ -53,15 +59,17 @@ function layer(base: CircuitDefinitions, extra: Map<string, CircuitIR>): Circuit
 export function resolveDrillTarget(
   nodeData: NodeData,
   definitions: CircuitDefinitions,
+  parentPath = '',
 ): InspectorFrame | null {
   const { componentRef } = nodeData;
   const nodeLabel = nodeData.label ?? componentRef;
+  const path = childPath(parentPath, nodeData.nodeId);
 
   const componentDef = definitions.resolveCircuit(componentRef);
   if (componentDef?.implementation.kind === 'composite' && componentDef.nodes.length > 0) {
     // Carry the definitions forward so a frame opened from inside a reference build
     // keeps seeing the gates that build introduced.
-    return { componentName: componentRef, componentDef, nodeLabel, definitions };
+    return { componentName: componentRef, componentDef, nodeLabel, definitions, path };
   }
 
   const build = MADE_OF[componentRef];
@@ -69,7 +77,7 @@ export function resolveDrillTarget(
 
   // Build to this node's own arguments, so Adder({width:16}) opens 16 stages
   // and Adder({width:8}) opens 8.
-  const args = (nodeData.arguments ?? {}) as Record<string, never>;
+  const args = (nodeData.arguments ?? {}) as Record<string, ArgumentValue>;
   let built: unknown;
   try {
     built = build(args);
@@ -88,5 +96,8 @@ export function resolveDrillTarget(
     componentDef: ir,
     nodeLabel,
     definitions: layer(definitions, extra),
+    // The build is the top level of its own session, fed from this primitive.
+    path: '',
+    reference: { instance: path, circuit: built },
   };
 }

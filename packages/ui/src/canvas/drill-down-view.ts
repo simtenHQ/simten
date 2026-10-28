@@ -5,11 +5,19 @@
  * When a user drills into a composite (e.g., HalfAdder), we need to:
  * 1. Show its internal nodes on the canvas
  * 2. Add synthetic boundary nodes for the composite's ports
- * 3. Scope port values so internal node IDs match simulation keys
+ * 3. Scope the session's port values so internal node IDs match its keys
  */
 
 import type { BitValue, BusValue } from '@simten/core';
-import type { CircuitIR, Connection, FlatPortValueMap, Node } from '@simten/core/internal';
+import {
+  type CircuitDefinitions,
+  type CircuitIR,
+  type Connection,
+  type FlatPortValueMap,
+  type Node,
+  TOP_LEVEL_NODE,
+} from '@simten/core/internal';
+import { resolvePortValue } from './projection';
 
 /** Prefix for synthetic boundary input nodes */
 export const BOUNDARY_IN_PREFIX = '__boundary_in_';
@@ -110,54 +118,51 @@ export function createDrillDownViewCircuit(composite: CircuitIR): CircuitIR {
 }
 
 /**
- * Scopes port values for a drilled-in view.
+ * The values a drilled-in view shows, read from its session's flat port map.
  *
- * The flat simulator produces port value keys with hierarchical prefixes like
- * "ha1_abc.xor1_def.out". When we drill into "ha1_abc", we need to strip
- * that prefix so keys become "xor1_def.out" — matching the composite's internal node IDs.
+ * Inside: the keys under `path.`, with the prefix stripped, so `dut.ha1.x.out`
+ * becomes `x.out` and matches the composite's own node ids. At a session's top
+ * level (`path` empty) the keys already are.
  *
- * Also maps boundary port values: the composite instance's own port values
- * get mapped to synthetic boundary node IDs.
+ * Boundary: flattening dissolves a composite's own ports, so there is no
+ * `dut.ha1.a` in the map. Each boundary node takes the value of the inside port
+ * it is wired to, looked up the way the canvas colours a wire into a composite
+ * (`resolvePortValue`). At a top level the circuit's own ports are in the map
+ * as `__top__.<name>` and are read directly.
  */
 export function scopePortValues(
-  portValues: FlatPortValueMap,
-  prefix: string,
-  composite?: CircuitIR,
+  portValues: ReadonlyMap<string, number>,
+  path: string,
+  view: CircuitIR,
+  definitions: CircuitDefinitions,
 ): FlatPortValueMap {
-  if (!prefix) return portValues;
-
   const scoped = new Map<string, BitValue | BusValue>();
-
-  for (const [key, value] of portValues.entries()) {
-    if (key.startsWith(prefix)) {
-      const scopedKey = key.slice(prefix.length);
-      scoped.set(scopedKey, value);
-    }
+  const prefix = path ? `${path}.` : '';
+  for (const [key, value] of portValues) {
+    if (key.startsWith(prefix)) scoped.set(key.slice(prefix.length), value);
   }
 
-  // Map boundary port values from the parent scope
-  // The composite instance's ports in the parent are keyed as "nodeId.portName"
-  // We map them to "__boundary_in_portName.out" and "__boundary_out_portName.in"
-  if (composite) {
-    // Strip trailing dot from prefix to get the instance nodeId
-    const instanceId = prefix.endsWith('.') ? prefix.slice(0, -1) : prefix;
-
-    for (const port of composite.inputs) {
-      const parentKey = `${instanceId}.${port.name}`;
-      const value = portValues.get(parentKey);
-      if (value !== undefined) {
-        scoped.set(`${BOUNDARY_IN_PREFIX}${port.name}.out`, value);
-      }
+  /** The value at the other end of the first resolvable wire on `side` of a boundary node. */
+  const inside = (boundaryId: string, side: 'source' | 'target') => {
+    for (const conn of view.connections) {
+      if (conn[side].nodeId !== boundaryId) continue;
+      const other = side === 'source' ? conn.target : conn.source;
+      const value = resolvePortValue(other, view, definitions, scoped);
+      if (value !== undefined) return value;
     }
+    return undefined;
+  };
+  const own = (name: string) => (path ? undefined : portValues.get(`${TOP_LEVEL_NODE}.${name}`));
 
-    for (const port of composite.outputs) {
-      const parentKey = `${instanceId}.${port.name}`;
-      const value = portValues.get(parentKey);
-      if (value !== undefined) {
-        scoped.set(`${BOUNDARY_OUT_PREFIX}${port.name}.in`, value);
-      }
-    }
+  for (const port of view.inputs) {
+    const id = `${BOUNDARY_IN_PREFIX}${port.name}`;
+    const value = own(port.name) ?? inside(id, 'source');
+    if (value !== undefined) scoped.set(`${id}.out`, value);
   }
-
+  for (const port of view.outputs) {
+    const id = `${BOUNDARY_OUT_PREFIX}${port.name}`;
+    const value = own(port.name) ?? inside(id, 'target');
+    if (value !== undefined) scoped.set(`${id}.in`, value);
+  }
   return scoped;
 }

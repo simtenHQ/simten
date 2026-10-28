@@ -337,7 +337,7 @@ function projectCircuitToNodes(
  * lands on something the flat map knows about. Depth is bounded by nesting, and
  * `seen` stops a malformed circuit from looping forever.
  */
-function resolvePortValue(
+export function resolvePortValue(
   path: PortPath,
   circuit: CircuitIR,
   definitions: CircuitDefinitions,

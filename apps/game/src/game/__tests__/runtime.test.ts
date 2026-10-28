@@ -17,8 +17,21 @@
 import { bit, circuit } from '@simten/core/circuit';
 import { internalsOf } from '@simten/core/internal';
 import { Led, Not, Switch } from '@simten/core/std';
+import { SandboxClient, type SandboxTransport } from '@simten/sandbox';
+import { SessionHost } from '@simten/sandbox/host';
+import type { SandboxMessage, SessionRequest } from '@simten/sandbox/protocol';
 import { describe, expect, it } from 'vitest';
-import { RuntimeFailure, readOutputs, resolveOutput, splitInputs } from '../runtime';
+import { grade } from '../grade';
+import { LEVELS } from '../levels';
+import {
+  RuntimeFailure,
+  readOutputs,
+  resolveOutput,
+  sandboxRuntime,
+  splitInputs,
+} from '../runtime';
+import { SOLUTIONS } from '../solutions';
+import { localRuntime } from './local-runtime';
 
 describe('resolveOutput / readOutputs', () => {
   it('strips the __top__ prefix', () => {
@@ -100,5 +113,91 @@ describe('splitInputs', () => {
   it('throws for a name that is neither, rather than driving nothing', () => {
     expect(() => splitInputs(ported, { b: 1 })).toThrow(RuntimeFailure);
     expect(() => splitInputs(ported, { b: 1 })).toThrow('`Ported` has no input port or node `b`');
+  });
+});
+
+/** A session host in this process, through a transport that structured-clones like postMessage. */
+function inProcess(sent: SessionRequest[] = []): SandboxTransport {
+  let host: SessionHost | null = null;
+  return {
+    connect(receive) {
+      host = new SessionHost({
+        post: (message) => {
+          if (message.type === 'progressed') return;
+          const copy = structuredClone(message) as SandboxMessage;
+          setTimeout(() => receive(copy), 0);
+        },
+      });
+      setTimeout(() => receive({ type: 'ready' }), 0);
+    },
+    send(request) {
+      sent.push(request);
+      const copy = structuredClone(request);
+      setTimeout(() => host?.handle(copy), 0);
+    },
+    close() {
+      host = null;
+    },
+  };
+}
+
+describe('sandboxRuntime', () => {
+  // The browser grades through the sandbox; levels.test.ts proves every level
+  // on the local runtime. This ties the two together, with one known
+  // difference below.
+  it('grades every level the same as the local runtime', { timeout: 60_000 }, async () => {
+    const sandbox = new SandboxClient({ transport: inProcess() });
+    try {
+      for (const level of LEVELS) {
+        for (const source of [SOLUTIONS[level.id], level.stub]) {
+          const local = await grade(localRuntime(), level, source);
+          const remote = await grade(sandboxRuntime(sandbox), level, source);
+          if (level.id === 'd-latch' && source === SOLUTIONS[level.id]) continue;
+          expect(remote, level.id).toEqual(local);
+        }
+      }
+    } finally {
+      sandbox.dispose();
+    }
+  });
+
+  // A bug in the browser grader, on main before #417 PR 7 and after it. The
+  // sandbox settles after each `setInput`, so a vector's switches change one
+  // at a time: row 2 sets d = 0 while en is still 1, the latch follows d, and
+  // en = 0 then holds the 0. The local runtime writes both before settling.
+  // Fixing it needs a request that writes several inputs at once. When this
+  // test fails, the bug is fixed: drop the exception above and this test.
+  it('fails the d-latch reference solution in the browser, as on main', async () => {
+    const sandbox = new SandboxClient({ transport: inProcess() });
+    try {
+      const level = LEVELS.find((l) => l.id === 'd-latch');
+      if (!level) throw new Error('no d-latch level');
+      const remote = await grade(sandboxRuntime(sandbox), level, SOLUTIONS[level.id]);
+      expect(remote).toMatchObject({
+        status: 'fail',
+        failure: { kind: 'vector', index: 1, actual: { q: 0 } },
+      });
+      expect(await grade(localRuntime(), level, SOLUTIONS[level.id])).toMatchObject({
+        status: 'pass',
+      });
+    } finally {
+      sandbox.dispose();
+    }
+  });
+
+  it('frees its compile and session when grading ends', async () => {
+    const sent: SessionRequest[] = [];
+    const sandbox = new SandboxClient({ transport: inProcess(sent) });
+    try {
+      const level = LEVELS[0];
+      const verdict = await grade(sandboxRuntime(sandbox), level, SOLUTIONS[level.id]);
+      expect(verdict.status).toBe('pass');
+      const types = sent.map((r) => r.type);
+      expect(types.filter((t) => t === 'open')).toHaveLength(1);
+      expect(types).toContain('close');
+      expect(types).toContain('release');
+    } finally {
+      sandbox.dispose();
+    }
   });
 });

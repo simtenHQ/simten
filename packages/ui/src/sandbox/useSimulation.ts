@@ -77,6 +77,8 @@ export interface SimulationViewState {
   notice: string | null;
 
   circuit: CircuitIR | null;
+  /** The simulated circuit by the name given to `circuit(...)`, before any harness. Export uses it. */
+  circuitName: string | null;
   definitions: CircuitDefinitions | null;
   /** Every circuit the last good compile built, for pickers. */
   circuits: CircuitIR[];
@@ -435,6 +437,7 @@ export function useSimulation(
     error: unavailable ?? actionError ?? closedBySandbox,
     notice: current?.status === 'restarted' ? current.notice : actionNotice,
     circuit: session?.circuit ?? null,
+    circuitName: live?.name ?? null,
     definitions,
     circuits: compiled?.circuits ?? NO_CIRCUITS,
     isSequential: session?.isSequential ?? false,

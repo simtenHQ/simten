@@ -5,6 +5,7 @@
   "scripts": {
     "bench": "pnpm --filter @simten/core bench",
     "bench:browser": "tsx bench/browser.mts",
+    "check:site": "tsx e2e/site-checks.mts",
     "build": "pnpm -r build",
     "dev": "dotenv -- pnpm --filter @simten/web dev",
     "dev:game": "dotenv -- pnpm --filter @simten/game dev",

@@ -94,6 +94,7 @@ export function CORDICDemo() {
           definitions={sim.state.definitions ?? undefined}
           portValues={sim.state.portValues}
           peripheralState={sim.state.peripheralState}
+          simulation={sim}
           onToggleNode={sim.actions.toggleNode}
           onSetNodeValue={sim.actions.setInput}
           height={400}

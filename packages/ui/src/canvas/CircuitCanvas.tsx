@@ -32,6 +32,7 @@ import React, {
   useState,
 } from 'react';
 import type { NodeData } from '../nodes';
+import type { UseSimulationResult } from '../sandbox/useSimulation';
 import { CompositeInspectorDialog } from './CompositeInspectorDialog';
 import { resolveDrillTarget } from './drill-target';
 import { useDetectTheme } from './hooks/useDetectTheme';
@@ -100,6 +101,13 @@ export interface CircuitCanvasProps {
   portValues?: FlatPortValueMap | null;
   /** Screens, consoles, UARTs and the memories behind them, by node path. */
   peripheralState?: ReadonlyMap<string, PeripheralValue> | null;
+  /**
+   * The simulation this canvas shows, for the built-in drill-down inspector:
+   * it reads its values and drives its clock. `circuit` should be the
+   * simulation's own circuit, so the canvas's node ids are paths in it.
+   * Without one the inspector draws structure only.
+   */
+  simulation?: UseSimulationResult | null;
   draggable?: boolean;
   /**
    * Re-run the layout engine on every structural change, instead of only when
@@ -179,6 +187,7 @@ function CircuitCanvasInner({
   definitions: definitionsProp,
   portValues,
   peripheralState,
+  simulation = null,
   draggable = true,
   autoLayout = false,
   layout,
@@ -481,7 +490,8 @@ function CircuitCanvasInner({
     setInspectorStack((prev) => prev.slice(0, index + 1));
   }, []);
 
-  // Default double-click handler: opens inspector for composites
+  // Default double-click handler: opens the inspector for composites. Node ids
+  // here are paths in the simulation, so the root frame's path is the id.
   const defaultNodeDoubleClick = useCallback(
     (nodeData: NodeData) => {
       if (!nodeData.isComposite && !nodeData.hasReference) return;
@@ -569,6 +579,7 @@ function CircuitCanvasInner({
         <CompositeInspectorDialog
           stack={inspectorStack}
           definitions={definitions}
+          simulation={simulation}
           theme={theme}
           onClose={closeInspector}
           onPopLevel={popInspectorLevel}

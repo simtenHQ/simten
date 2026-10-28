@@ -18,6 +18,20 @@ export interface InspectorFrame {
    * and the dialog renders an empty canvas.
    */
   definitions?: CircuitDefinitions;
+  /**
+   * Dotted instance path of this component in the session the frame reads,
+   * such as `dut.ha1`. Empty for a session's top level: a reference build's
+   * root, or a circuit with no harness around it.
+   */
+  path: string;
+  /**
+   * Set on a primitive's gate-level reference build (`circuit`, built on the
+   * page to the node's arguments). The build isn't in the running netlist, so
+   * it runs as a second session in the same sandbox, fed with the inputs of
+   * the primitive at `instance` in the main session. Frames opened inside it
+   * read that session too.
+   */
+  reference?: { instance: string; circuit: Circuit };
 }
 
 /** Screen rect of the node that triggered the dialog (for animate-from-origin) */

@@ -5,9 +5,9 @@
  * `useSandboxClient` use. The client is created when the first of them mounts,
  * so a page with no circuits loads no sandbox.
  *
- * Until the editor, the game and the inspector move over (#417, PR 7), it also
- * holds the old slot sandbox for `useSandboxContext`. That iframe loads on its
- * first request, so a page that only uses the new client doesn't load two.
+ * It also holds the old slot sandbox for `useSandboxContext`, which nothing in
+ * the apps calls any more; #417 PR 8 deletes it. Its iframe only loads on a first
+ * request, so with no callers it never does.
  */
 
 import { SandboxClient } from '@simten/sandbox';
