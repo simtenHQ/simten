@@ -75,28 +75,34 @@ editor.current?.setValue(example.code);
 
 ## Source → live circuit
 
-The editor produces a string. To turn that string into a running simulation, use the compile hooks from `@simten/embed`. Both require a [`SandboxProvider`](/docs/security) ancestor: user code compiles and runs in the sandbox iframe, never the main frame.
+The editor produces a string. To turn that string into a running simulation, use `useSimulation` from `@simten/ui/sandbox`. User code compiles and runs in the sandbox iframe, never the main frame. Put a [`SandboxProvider`](/docs/security) high up so every simulation on the page shares one sandbox; without one, each `useSimulation` makes its own.
 
-### useCompiledCircuit
+### useSimulation
 
-The turnkey hook: source in, a running simulator out. It composes the compile bridge with `builtFromIR` + [`useCircuitSimulator`](/docs/building-custom-uis).
+Source in, a running simulation out.
 
 ```tsx
-import { SandboxProvider } from '@simten/ui/sandbox';
-import { useCompiledCircuit } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
+import { SandboxProvider, useSimulation } from '@simten/ui/sandbox';
 
 function Playground() {
   const [source, setSource] = useState(SEED);
-  const sim = useCompiledCircuit(source, { autoHarness: true });
+  const { compileError, state, actions } = useSimulation({ source }, { harness: true });
 
   return (
     <div className="split">
-      <SimtenCodeEditor value={source} onChange={setSource} diagnostics={/* from your compiler */ []} />
+      <SimtenCodeEditor
+        value={source}
+        onChange={setSource}
+        diagnostics={compileError ? [compileError] : []}
+      />
       <CircuitCanvas
-        circuit={sim.circuit}
-        portValues={sim.portValues}
-        sequentialState={sim.sequentialState}
+        circuit={state.circuit}
+        definitions={state.definitions ?? undefined}
+        portValues={state.portValues}
+        peripheralState={state.peripheralState}
+        onToggleNode={actions.toggleNode}
+        onSetNodeValue={actions.setInput}
       />
     </div>
   );
@@ -106,26 +112,39 @@ function Playground() {
 <SandboxProvider><Playground /></SandboxProvider>;
 ```
 
-It debounces edits, keeps the last good circuit when a compile fails, picks the last-defined circuit (override with `select`), and returns the full [`useCircuitSimulator`](/docs/building-custom-uis) surface plus `compileError` and `compiling`.
-
-### useCircuitCompiler
-
-The lower-level hook, for when you need to route the compile result somewhere custom rather than straight into a simulator. The `/circuit` editor uses it to feed its own selection stores. It owns only the compile mechanics and takes no opinion about what happens next.
+It debounces edits (`debounceMs`, 300 by default), keeps the last good circuit running when a compile fails, and simulates the last circuit the source builds. Pass `circuit` to choose another, by name or with a function over the compiled circuits:
 
 ```tsx
-const { result, definitions, diagnostics, compiling, compile } = useCircuitCompiler(source, {
-  autoCompile: true,
-  debounceMs: 500,
-});
+useSimulation({ source, circuit: 'FullAdder' });
 ```
 
 | Returns | |
 |---|---|
-| `result` | Last successful compile (`circuits`, `libraryCircuits`, `portValues`), retained across a later failure |
-| `definitions` | Component lookup (`resolveCircuit`, `getAllPrimitiveNames`, `getAllCircuitNames`) |
-| `diagnostics` | Compile errors; pass straight to `SimtenCodeEditor`'s `diagnostics` prop |
-| `compiling` | True while a compile is in flight |
-| `compile()` | Trigger a compile now, bypassing the debounce |
+| `compileError` | The last compile's error, with `line` and `column` when it has a location; pass it to `SimtenCodeEditor`'s `diagnostics` prop |
+| `state` | `ready`, `error`, `circuit`, `definitions`, `circuits` (every circuit the compile built), `cycle`, `portValues`, `outputs`, `peripheralState`, `isRunning` |
+| `history` | `length`, `index` and `isViewingPast`, for clock controls |
+| `actions` | `set`, `setInput`, `toggleNode`, `tick`, `reset`, `stepBack`, `stepForward`, `seek`, `run`, `pause`, `setSpeed`, `sample`, `scan`, `recompile`, `exportVerilog` |
+
+`actions` keeps one identity for the life of the component, so it's safe in dependency arrays. `recompile()` compiles now, skipping the debounce.
+
+### Compiling without simulating
+
+To compile once and read the result, ask the sandbox client directly:
+
+```tsx
+import { useSandboxClient } from '@simten/ui/sandbox';
+
+const sandbox = useSandboxClient();
+useEffect(() => {
+  if (!sandbox) return;
+  sandbox.compile(source).then((compiled) => {
+    // compiled.circuits, compiled.libraryCircuits, compiled.definitions
+    sandbox.release(compiled);
+  });
+}, [sandbox, source]);
+```
+
+Outside React, `SandboxClient` from `@simten/sandbox` does the same.
 
 ## Owning your own Monaco
 

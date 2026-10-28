@@ -1,24 +1,18 @@
 /**
  * CircuitViewer — the single "render an interactive circuit" component.
  *
- * Takes a Circuit, wires up simulation, and renders CircuitCanvas + ClockControls.
- * Pure props — no stores. Everything else (CircuitEmbed, EditorWorkspace, <circuit-embed>)
- * is a thin wrapper around this.
+ * Takes a Circuit, simulates it in the sandbox (`useSimulation`), and renders
+ * CircuitCanvas + ClockControls. Pure props, no stores. CircuitEmbed wraps it;
+ * `<circuit-embed>` simulates its source text and renders `SimulationView`.
  */
 
 import type { Circuit } from '@simten/core/circuit';
 import type { FlatPortValueMap } from '@simten/core/internal';
 import type { CircuitLayout } from '@simten/ui/canvas';
 import { CircuitCanvas, ClockControls, useDetectTheme } from '@simten/ui/canvas';
-import {
-  type ReactElement,
-  type Ref,
-  useCallback,
-  useEffect,
-  useImperativeHandle,
-  useRef,
-} from 'react';
-import { useCircuitSimulator } from './hooks/useCircuitSimulator';
+import { type UseSimulationResult, useSimulation } from '@simten/ui/sandbox';
+import { type ReactElement, type Ref, useEffect, useImperativeHandle, useRef } from 'react';
+import { ErrorDisplay } from './components/ErrorDisplay';
 
 /**
  * Type-level model of what `autoHarness` produces at runtime: it wraps the
@@ -28,7 +22,7 @@ import { useCircuitSimulator } from './hooks/useCircuitSimulator';
  * resolves to exactly that key set.
  */
 type HarnessedCircuit<C extends Circuit> =
-  C extends Circuit<infer Ins, infer Outs, any>
+  C extends Circuit<infer Ins, infer Outs, Record<string, unknown>>
     ? Circuit<
         Ins,
         Outs,
@@ -98,20 +92,36 @@ export interface CircuitViewerProps<C extends Circuit = Circuit> {
 export interface CircuitViewerHandle {
   tick: () => void;
   reset: () => void;
-  setNodeValue: (nodeId: string, value: number | Map<number, number>) => void;
-  /** Start the simulator's internal auto-run loop. Equivalent to clicking the
-   *  in-canvas play button — the play/pause control will stop it normally. */
+  /** Set a Switch or Input node. Other nodes are rejected: the page only flips inputs. */
+  setNodeValue: (nodeId: string, value: number) => void;
+  /** Start auto-run in the sandbox. Equivalent to clicking the play button;
+   *  called before the circuit has opened, it starts once it does. */
   startAutoRun: (ticksPerSecond: number) => void;
-  /** Stop the simulator's internal auto-run loop. */
+  /** Stop auto-run. */
   stopAutoRun: () => void;
 }
 
 export function CircuitViewer<C extends Circuit = Circuit>({
   circuit,
-  height = 300,
-  showControls = true,
   autoHarness = false,
   initialInputs,
+  ...view
+}: CircuitViewerProps<C> & { ref?: Ref<CircuitViewerHandle> }): ReactElement {
+  const simulation = useSimulation(circuit, { harness: autoHarness, initialInputs });
+  return <SimulationView simulation={simulation} {...view} />;
+}
+
+/** What `SimulationView` draws, apart from the simulation itself. */
+type SimulationViewProps = Omit<CircuitViewerProps, 'circuit' | 'autoHarness' | 'initialInputs'> & {
+  simulation: UseSimulationResult;
+  ref?: Ref<CircuitViewerHandle>;
+};
+
+/** The canvas and clock controls for a simulation that's already running. */
+export function SimulationView({
+  simulation,
+  height = 300,
+  showControls = true,
   layout,
   theme,
   focus,
@@ -122,14 +132,14 @@ export function CircuitViewer<C extends Circuit = Circuit>({
   renderOverlay,
   onPortValuesChange,
   ref,
-}: CircuitViewerProps<C> & { ref?: Ref<CircuitViewerHandle> }): ReactElement {
-  const sim = useCircuitSimulator(circuit, { autoHarness, initialInputs });
+}: SimulationViewProps): ReactElement {
+  const { compileError, state, history, actions } = simulation;
   const detectedTheme = useDetectTheme();
   const resolvedTheme = theme ?? detectedTheme;
 
   // Capture the callback in a ref so inline functions don't cause the
   // firing effect below to re-run on every parent render. The effect
-  // depends only on [sim.ready, sim.portValues], not on the callback
+  // depends only on [state.ready, state.portValues], not on the callback
   // identity, so passing `onPortValuesChange={(pv) => setX(pv)}` is
   // safe even though it creates a new function reference each render.
   const onPortValuesChangeRef = useRef(onPortValuesChange);
@@ -137,48 +147,37 @@ export function CircuitViewer<C extends Circuit = Circuit>({
     onPortValuesChangeRef.current = onPortValuesChange;
   });
 
-  // Fire once the sim is ready and port values have first settled; then
-  // fire on every subsequent settled change. The empty-map guard avoids
-  // a spurious fire during the initial compile-but-not-yet-propagated
-  // window. The hook only exposes settled states, so no debouncing is
-  // needed for intermediate propagation steps.
+  // Fire once the simulation is ready and port values have first settled;
+  // then on every settled change. The sandbox only reports settled states.
   useEffect(() => {
-    if (!sim.ready || !sim.portValues || sim.portValues.size === 0) return;
-    onPortValuesChangeRef.current?.(sim.portValues);
-  }, [sim.ready, sim.portValues]);
-
-  const handleTick = useCallback(() => {
-    sim.tick();
-  }, [sim.tick]);
-
-  const handleReset = useCallback(() => {
-    sim.reset();
-  }, [sim.reset]);
+    if (!state.ready || !state.portValues || state.portValues.size === 0) return;
+    onPortValuesChangeRef.current?.(state.portValues);
+  }, [state.ready, state.portValues]);
 
   useImperativeHandle(
     ref,
     () => ({
-      tick: handleTick,
-      reset: handleReset,
-      setNodeValue: sim.setNodeValue,
-      startAutoRun: sim.startAutoRun,
-      stopAutoRun: sim.stopAutoRun,
+      tick: () => void actions.tick(),
+      reset: () => void actions.reset(),
+      setNodeValue: (nodeId, value) => void actions.setInput(nodeId, value),
+      startAutoRun: (ticksPerSecond) => void actions.run(ticksPerSecond),
+      stopAutoRun: () => void actions.pause(),
     }),
-    [handleTick, handleReset, sim.setNodeValue, sim.startAutoRun, sim.stopAutoRun],
+    [actions],
   );
 
-  if (sim.error) {
+  // A compile error only matters while there's nothing to show: once a
+  // circuit is running, the last good one stays up.
+  const error = state.error ?? (state.ready ? null : (compileError?.message ?? null));
+  if (error) {
     return (
       <div style={{ height }} className="flex items-center justify-center p-4">
-        <div className="text-sm text-red-400 bg-red-500/10 rounded p-3 border border-red-500/20">
-          <div className="font-medium mb-1">Compilation Error</div>
-          <div className="font-mono text-xs">{sim.error}</div>
-        </div>
+        <ErrorDisplay error={error} />
       </div>
     );
   }
 
-  if (!sim.ready) {
+  if (!state.ready) {
     return (
       <div
         style={{ height }}
@@ -189,26 +188,19 @@ export function CircuitViewer<C extends Circuit = Circuit>({
     );
   }
 
-  const controlHeight = sim.isSequential && showControls ? 40 : 0;
+  const controlHeight = state.isSequential && showControls ? 40 : 0;
   const canvasHeight = typeof height === 'number' ? height - controlHeight : height;
 
   return (
     <div style={{ height }} className="flex flex-col" data-embed-theme={resolvedTheme}>
       <div className="flex-1 min-h-0">
         <CircuitCanvas
-          circuit={sim.circuit}
-          definitions={sim.definitions ?? undefined}
-          portValues={sim.portValues}
-          sequentialState={sim.sequentialState}
-          onToggleNode={sim.toggleNode}
-          onSetNodeValue={sim.setNodeValue}
-          onLoadMemory={(nodeId, memData) => {
-            const engine = sim.getSimulator();
-            if (engine) {
-              engine.setNode(nodeId, memData);
-              sim.runCombinational();
-            }
-          }}
+          circuit={state.circuit}
+          definitions={state.definitions ?? undefined}
+          portValues={state.portValues}
+          peripheralState={state.peripheralState}
+          onToggleNode={actions.toggleNode}
+          onSetNodeValue={actions.setInput}
           height={canvasHeight}
           focus={focus}
           showPortLabels={showPortLabels}
@@ -220,24 +212,21 @@ export function CircuitViewer<C extends Circuit = Circuit>({
           {...(theme ? { theme } : {})}
         />
       </div>
-      {sim.isSequential && showControls && (
+      {state.isSequential && showControls && (
         <ClockControls
-          cycle={sim.cycleCount}
-          historyLength={sim.history?.length ?? 0}
-          historyIndex={sim.historyIndex ?? -1}
-          isRunning={sim.isRunning}
-          isViewingPast={sim.isViewingPast ?? false}
-          onStep={handleTick}
-          onRun={() => sim.startAutoRun(15)}
-          onPause={() => sim.stopAutoRun()}
-          onReset={handleReset}
-          onStepBack={() => sim.stepBack()}
+          cycle={state.cycle}
+          historyLength={history.length}
+          historyIndex={history.index}
+          isRunning={state.isRunning}
+          isViewingPast={history.isViewingPast}
+          onStep={() => void actions.tick()}
+          onRun={() => void actions.run(15)}
+          onPause={() => void actions.pause()}
+          onReset={() => void actions.reset()}
+          onStepBack={() => void actions.stepBack()}
           onStepForward={() => {
-            if (sim.isViewingPast) {
-              sim.stepForward();
-            } else {
-              handleTick();
-            }
+            if (history.isViewingPast) void actions.stepForward();
+            else void actions.tick();
           }}
           speed={5}
         />

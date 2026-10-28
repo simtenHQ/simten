@@ -1,53 +1,29 @@
-import { useCircuitSimulator } from '@simten/embed';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSimulation } from '@simten/ui/sandbox';
+import { useCallback, useEffect } from 'react';
+import { cyclesPerSecond, useAutoRun } from '@/lib/auto-run';
 import { CORDICCircuit } from './circuits';
 
+/** One iteration every 100ms until the slider says otherwise. */
+const OPTIONS = { speed: cyclesPerSecond(100) };
+
 export function useCORDICSimulator() {
-  const sim = useCircuitSimulator(CORDICCircuit);
-  const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(100);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [isDone, setIsDone] = useState(false);
+  const sim = useSimulation(CORDICCircuit, OPTIONS);
+  const { state, actions } = sim;
+  const run = useAutoRun(sim);
 
-  // Monitor the circuit's formal `done` output port (was previously a
-  // substring scan over portValues looking for a node named "doneLed",
-  // replaced with a declared top-level port).
-  useEffect(() => {
-    const done = sim.portValues?.get('__top__.done');
-    if (done) {
-      setIsDone(true);
-      setIsRunning(false);
-    }
-  }, [sim.portValues]);
+  // The circuit's `done` output. It holds once the iterations run out.
+  const isDone = state.portValues?.get('__top__.done') === 1;
 
-  // Auto-run interval
+  // Stop the clock at Done. The worker may run a cycle or two past it before
+  // the pause lands; the result registers hold, so nothing visible moves.
   useEffect(() => {
-    if (isRunning && sim.ready) {
-      intervalRef.current = setInterval(() => {
-        sim.tick();
-      }, speed);
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [isRunning, sim.ready, speed, sim.tick]);
+    if (isDone && state.isRunning) void actions.pause();
+  }, [isDone, state.isRunning, actions]);
 
   const handleReset = useCallback(() => {
-    setIsRunning(false);
-    setIsDone(false);
-    sim.reset();
-  }, [sim]);
+    void actions.pause();
+    void actions.reset();
+  }, [actions]);
 
-  return {
-    sim,
-    isRunning,
-    setIsRunning,
-    speed,
-    setSpeed,
-    isDone,
-    handleReset,
-  };
+  return { sim, ...run, isDone, handleReset };
 }

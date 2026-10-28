@@ -8,7 +8,7 @@ import {
 } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { CircuitEmbed } from '@simten/embed';
-import { useSandboxContext } from '@simten/ui/sandbox';
+import { useSandboxClient } from '@simten/ui/sandbox';
 import { useEffect, useState } from 'react';
 
 const FULL_ADDER_SOURCE = `
@@ -80,7 +80,7 @@ function ConnectionArrow({ from, to }: { from: string; to: string }) {
 }
 
 export function PipelineVisualizer() {
-  const sandbox = useSandboxContext();
+  const sandbox = useSandboxClient();
   const [activeTab, setActiveTab] = useState<Tab>('source');
   const [compiled, setCompiled] = useState<
     | null
@@ -94,15 +94,25 @@ export function PipelineVisualizer() {
   >(null);
 
   useEffect(() => {
-    sandbox.compile(FULL_ADDER_SOURCE).then((result) => {
-      if ('error' in result) {
-        setCompiled({ error: result.error });
-        return;
-      }
+    if (!sandbox) return;
+    let cancelled = false;
+    sandbox.compile(FULL_ADDER_SOURCE).then(
+      (result) => {
+        // Only the IR is needed; the sandbox can drop the rest.
+        sandbox.release(result);
+        if (cancelled) return;
+        showStages(result.circuits, result.libraryCircuits);
+      },
+      (e: unknown) => {
+        if (!cancelled) setCompiled({ error: e instanceof Error ? e.message : String(e) });
+      },
+    );
+    return () => {
+      cancelled = true;
+    };
 
+    function showStages(circuits: CircuitIR[], libraryCircuits: CircuitIR[]) {
       try {
-        const { circuits, libraryCircuits } = result;
-
         // Build resolveCircuit from sandbox-returned IR (no new Function())
         const allCircuits = [...circuits, ...libraryCircuits];
         const circuitMap = new Map(allCircuits.map((c) => [c.name, c]));
@@ -132,9 +142,8 @@ export function PipelineVisualizer() {
       } catch (e) {
         setCompiled({ error: String(e) });
       }
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    }
+  }, [sandbox]);
 
   if (compiled === null) {
     return (

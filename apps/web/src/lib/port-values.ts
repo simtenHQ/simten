@@ -10,7 +10,7 @@
  * outputs through it).
  *
  * The map is keyed by `<nodeId>.<portName>`. For an auto-harnessed
- * circuit (`useCircuitSimulator(c, { autoHarness: true })`):
+ * circuit (`useSimulation(c, { harness: true })`):
  *   - Input port `a`  → Switch node `a`, output value at `a.out`
  *   - Output port `s` → Led/HexDisplay node `s`, equivalent values at
  *                       `dut.s` (the original circuit's output port)

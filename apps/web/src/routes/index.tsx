@@ -2,11 +2,11 @@ import { bit, circuit } from '@simten/core/circuit';
 import { And, DFlipFlop, Or, Xor } from '@simten/core/std';
 import { CircuitEmbed } from '@simten/embed';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Container } from '@/components/Container';
 import { HighlightedCode } from '@/components/HighlightedCode';
 import { Section, SectionHeading } from '@/components/SectionHeading';
-import { usePongSimulator } from '@/features/blog/pong-in-hardware/usePongSimulator';
+import { PONG_GRID, usePongSimulator } from '@/features/blog/pong-in-hardware/usePongSimulator';
 import { useSnakeSimulator } from '@/features/blog/snake-in-hardware/useSnakeSimulator';
 import { RV32IDebuggerPreview } from '@/features/learn/cpu-debugger/RV32IDebuggerPreview';
 import { ClaudeDemoSection } from '@/features/splash/ClaudeDemoSection';
@@ -871,58 +871,33 @@ const GAP = 2;
 // Pong Card
 // ============================================================================
 
-const PONG_GRID = 16;
 const PONG_PX = 12;
 const PONG_GAP = 1;
 
-function usePongPixels(sequentialState: unknown): number[] {
-  return useMemo(() => {
-    const pixels = new Array(PONG_GRID * PONG_GRID).fill(0);
-    const state = sequentialState as { currentState?: Map<string, unknown> } | null;
-    if (!state?.currentState) return pixels;
-    for (const [nodeId, nodeState] of state.currentState) {
-      if (nodeState instanceof Map && nodeId.toLowerCase().includes('ram')) {
-        const mem = nodeState as Map<number, number>;
-        for (let addr = 0; addr < PONG_GRID * PONG_GRID; addr++) {
-          pixels[addr] = mem.get(addr) ?? 0;
-        }
-        break;
-      }
-    }
-    return pixels;
-  }, [sequentialState]);
-}
-
 function PongCard() {
-  const { sim, isRunning, setIsRunning } = usePongSimulator();
-  const pixels = usePongPixels(sim.sequentialState);
+  const { sim, pixels, isRunning, setIsRunning, sendLeftDirection, sendRightDirection } =
+    usePongSimulator();
   const total = PONG_GRID * PONG_PX + (PONG_GRID - 1) * PONG_GAP;
 
-  // Map a key code into the pong simulator's keyboard inputs.
-  // Codes match the values usePongSimulator listens for on the global keydown.
+  // Tap a key code into both paddles' keyboard inputs. Codes match the values
+  // usePongSimulator listens for on the global keydown.
   const sendKey = useCallback(
     (code: number) => {
-      const nodes = sim.circuit?.nodes ?? [];
-      const ids: Record<string, string> = {};
-      for (const node of nodes) {
-        if (node.label === 'keyboard0' || node.id === 'keyboard0') ids.k0 = node.id;
-        if (node.label === 'keyboard1' || node.id === 'keyboard1') ids.k1 = node.id;
-      }
-      if (ids.k0) sim.setNodeValue(ids.k0, code);
-      if (ids.k1) sim.setNodeValue(ids.k1, code);
+      sendLeftDirection(code);
+      sendRightDirection(code);
       // Release after a brief moment so it acts as a tap, not a hold.
       setTimeout(() => {
-        if (ids.k0) sim.setNodeValue(ids.k0, 0);
-        if (ids.k1) sim.setNodeValue(ids.k1, 0);
+        sendLeftDirection(0);
+        sendRightDirection(0);
       }, 80);
     },
-    [sim],
+    [sendLeftDirection, sendRightDirection],
   );
 
   return (
     <div className="flex flex-col rounded-lg border border-border overflow-hidden bg-card">
       <div className="h-[320px] sm:h-[360px] flex items-center justify-center bg-black p-4 sm:p-6">
-        {sim.ready ? (
+        {sim.state.ready ? (
           <svg
             viewBox={`0 0 ${total} ${total}`}
             preserveAspectRatio="xMidYMid meet"
@@ -955,7 +930,7 @@ function PongCard() {
           <div className="flex items-center gap-1.5 mt-2">
             <button
               onClick={() => setIsRunning(!isRunning)}
-              disabled={!sim.ready}
+              disabled={!sim.state.ready}
               className={`px-4 py-1.5 rounded-md text-xs font-semibold shadow-sm transition-colors disabled:opacity-40 ${
                 isRunning
                   ? 'bg-amber-500 hover:bg-amber-400 text-white'
@@ -998,17 +973,17 @@ function SnakeCard() {
   // Set default direction to right once ready
   const directionSetRef = useRef(false);
   useEffect(() => {
-    if (sim.ready && !directionSetRef.current) {
+    if (sim.state.ready && !directionSetRef.current) {
       directionSetRef.current = true;
       sendDirection(1); // right (2-bit encoding: 0=up, 1=right, 2=down, 3=left)
     }
-  }, [sim.ready, sendDirection]);
+  }, [sim.state.ready, sendDirection]);
 
   return (
     <div className="flex flex-col rounded-lg border border-border overflow-hidden bg-card">
       {/* Preview: square so the grid fills the card at any width */}
       <div className="h-[320px] sm:h-[360px] flex items-center justify-center bg-black p-4 sm:p-6">
-        {sim.ready ? (
+        {sim.state.ready ? (
           <svg
             viewBox={`0 0 ${total} ${total}`}
             preserveAspectRatio="xMidYMid meet"
@@ -1042,7 +1017,7 @@ function SnakeCard() {
           <div className="flex items-center gap-1.5 mt-2">
             <button
               onClick={() => setIsRunning(!isRunning)}
-              disabled={!sim.ready}
+              disabled={!sim.state.ready}
               className={`px-4 py-1.5 rounded-md text-xs font-semibold shadow-sm transition-colors disabled:opacity-40 ${
                 isRunning
                   ? 'bg-amber-500 hover:bg-amber-400 text-white'

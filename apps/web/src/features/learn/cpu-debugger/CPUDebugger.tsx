@@ -359,9 +359,9 @@ export function CPUDebugger() {
 
   const handleCompile = () => compile(source, language);
 
-  const loading = !!compiled && !sim.ready;
-  const narrative = sim.ready
-    ? describeCurrentCycle(pipelineStages, disasmLines, sim.cycleCount)
+  const loading = !!compiled && !sim.state.ready;
+  const narrative = sim.state.ready
+    ? describeCurrentCycle(pipelineStages, disasmLines, sim.state.cycle)
     : null;
 
   return (
@@ -416,11 +416,11 @@ export function CPUDebugger() {
             </button>
 
             {/* Simulator controls, only when loaded */}
-            {sim.ready && (
+            {sim.state.ready && (
               <>
                 <div className="h-4 w-px bg-border" />
                 <button
-                  onClick={sim.tick}
+                  onClick={() => void sim.actions.tick()}
                   disabled={isRunning}
                   className="px-3 py-1 rounded text-xs font-medium bg-muted hover:bg-muted/80 text-foreground transition-colors disabled:opacity-40"
                 >
@@ -443,7 +443,7 @@ export function CPUDebugger() {
                   Reset
                 </button>
                 <span className="ml-1 font-mono text-xs text-muted-foreground tabular-nums">
-                  Cycle {sim.cycleCount.toLocaleString()}
+                  Cycle {sim.state.cycle.toLocaleString()}
                 </span>
               </>
             )}

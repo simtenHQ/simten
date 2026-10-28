@@ -25,7 +25,7 @@
  */
 
 import type { CircuitIR } from '@simten/core/internal';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import type {
   BehaviorSource,
   CompileIRResult,
@@ -263,7 +263,17 @@ export interface SandboxHandle {
   status: SandboxStatus;
 }
 
-export function useSandbox(): SandboxHandle {
+interface UseSandboxOptions {
+  /**
+   * Load the iframe on the first request (or `isReady()` call) instead of on
+   * mount. `SandboxProvider` uses it so a page that only uses the new
+   * `SandboxClient` doesn't also load an idle slot sandbox.
+   */
+  lazy?: boolean;
+}
+
+export function useSandbox(options: UseSandboxOptions = {}): SandboxHandle {
+  const lazy = options.lazy === true;
   const stateRef = useRef<SandboxState>({
     iframe: null,
     ready: false,
@@ -333,7 +343,7 @@ export function useSandbox(): SandboxHandle {
     // same window, so without this a response from someone else's iframe
     // resolves whichever of our pending requests happens to share its id —
     // which made three embeds on one page all render the first circuit.
-    if (state.iframe && event.source !== state.iframe.contentWindow) return;
+    if (!state.iframe || event.source !== state.iframe.contentWindow) return;
     const data = event.data as { type: string; id?: string };
 
     if (data.type === 'ready') {
@@ -365,25 +375,37 @@ export function useSandbox(): SandboxHandle {
   const recreateIframeRef = useRef(recreateIframe);
   recreateIframeRef.current = recreateIframe;
 
-  useEffect(() => {
-    const container = document.createElement('div');
-    container.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
-    document.body.appendChild(container);
-    containerRef.current = container;
-
+  // The container and iframe are created on demand: on mount, or with `lazy`
+  // on the first request. A request can come from a child's mount effect,
+  // which runs before this hook's own, so the container is made here too.
+  const ensureIframe = useCallback(() => {
     const state = stateRef.current;
+    if (state.iframe || state.unavailable || typeof document === 'undefined') return;
+    let container = containerRef.current;
+    if (!container) {
+      container = document.createElement('div');
+      container.style.cssText = 'position:absolute;left:-9999px;top:-9999px;';
+      document.body.appendChild(container);
+      containerRef.current = container;
+    }
     createIframe(state, container, handleMessage, recreateIframe, markUnavailable);
+  }, [handleMessage, recreateIframe, markUnavailable]);
 
+  useEffect(() => {
+    if (!lazy) ensureIframe();
+    const state = stateRef.current;
     return () => {
       window.removeEventListener('message', handleMessage);
       if (state.readyTimer) {
         clearTimeout(state.readyTimer);
         state.readyTimer = null;
       }
-      container.remove();
+      state.iframe = null;
+      state.ready = false;
+      containerRef.current?.remove();
       containerRef.current = null;
     };
-  }, [handleMessage, recreateIframe, markUnavailable]);
+  }, [lazy, ensureIframe, handleMessage]);
 
   // No per-request timeout here — the sandbox's own 5s worker timeout always
   // sends back an error response if user code hangs. The one case that produces
@@ -391,6 +413,7 @@ export function useSandbox(): SandboxHandle {
   // ready-handshake timeout rather than by timing out each request.
   const send = useCallback(
     <T extends SandboxResult>(message: RequestBody): Promise<T | SandboxError> => {
+      ensureIframe();
       return new Promise((resolve) => {
         const state = stateRef.current;
 
@@ -421,7 +444,7 @@ export function useSandbox(): SandboxHandle {
         }
       });
     },
-    [],
+    [ensureIframe],
   );
 
   const compile = useCallback(
@@ -644,22 +667,47 @@ export function useSandbox(): SandboxHandle {
     [send],
   );
 
-  const isReady = useCallback(() => stateRef.current.ready, []);
+  // Asking whether it's ready counts as using it: callers that wait for
+  // readiness before their first request would otherwise wait forever.
+  const isReady = useCallback(() => {
+    ensureIframe();
+    return stateRef.current.ready;
+  }, [ensureIframe]);
 
-  return {
-    status,
-    compile,
-    compileIR,
-    tick,
-    tickN,
-    renderSamples,
-    scanPort,
-    reset,
-    setNode,
-    snapshot,
-    restore,
-    pruneSnapshots,
-    dispose,
-    isReady,
-  };
+  // One object per status, so consumers that depend on the handle don't
+  // re-run their effects on every render of the component that owns it.
+  return useMemo(
+    () => ({
+      status,
+      compile,
+      compileIR,
+      tick,
+      tickN,
+      renderSamples,
+      scanPort,
+      reset,
+      setNode,
+      snapshot,
+      restore,
+      pruneSnapshots,
+      dispose,
+      isReady,
+    }),
+    [
+      status,
+      compile,
+      compileIR,
+      tick,
+      tickN,
+      renderSamples,
+      scanPort,
+      reset,
+      setNode,
+      snapshot,
+      restore,
+      pruneSnapshots,
+      dispose,
+      isReady,
+    ],
+  );
 }

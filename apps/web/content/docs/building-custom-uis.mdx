@@ -1,6 +1,6 @@
 ---
 title: Building custom UIs
-description: Four tiers, from drop-in <CircuitEmbed /> to full composition with useCircuitSimulator + CircuitCanvas.
+description: Four tiers, from drop-in <CircuitEmbed /> to full composition with useSimulation + CircuitCanvas.
 ---
 
 import { Tier2EmbedWithCallback, Tier4FullComposition } from '../../src/features/docs/CustomCompositionDemo'
@@ -18,7 +18,7 @@ the highest one that gives you what you need.
 These tiers all take a circuit you already have. If instead you want
 users to *edit source* and watch it simulate live, an editor beside a
 canvas, see [Code Editor](/docs/code-editor), which pairs
-`SimtenCodeEditor` with `useCompiledCircuit`.
+`SimtenCodeEditor` with `useSimulation`.
 
 ## Embed a circuit
 
@@ -172,40 +172,44 @@ side.
 
 When you want to break out of the embed's chrome entirely and build
 your own frontend on top of the simulator, drop down to the underlying
-primitives. `useCircuitSimulator` gives you the live state and the
-actions; render whatever React you want with them. The circuit becomes
-your engine, your component is the UI.
+primitives. `useSimulation` from `@simten/ui/sandbox` gives you the
+live state and the actions; render whatever React you want with them.
+The circuit becomes your engine, your component is the UI.
 
 ```tsx
-import { useCircuitSimulator } from '@simten/embed'
+import { useSimulation } from '@simten/ui/sandbox'
 import { TruthTable, computeActiveRow } from '@/components/TruthTable'
 
 function HalfAdderWithCustomControls() {
-  const sim = useCircuitSimulator(HalfAdder, { autoHarness: true })
-  const a = readPortBit(sim.portValues, 'a')
-  const b = readPortBit(sim.portValues, 'b')
-  const sum = readPortBit(sim.portValues, 'sum')
-  const carry = readPortBit(sim.portValues, 'carry')
+  const { state, actions } = useSimulation(HalfAdder, { harness: true })
+  const a = readPortBit(state.portValues, 'a')
+  const b = readPortBit(state.portValues, 'b')
+  const sum = readPortBit(state.portValues, 'sum')
+  const carry = readPortBit(state.portValues, 'carry')
 
   return (
     <>
-      {/* Custom toggle buttons drive sim.setNodeValue */}
-      <ToggleControl value={a} onToggle={() => sim.setNodeValue('a', a ? 0 : 1)} />
-      <ToggleControl value={b} onToggle={() => sim.setNodeValue('b', b ? 0 : 1)} />
+      {/* Custom toggle buttons flip the harness's switches */}
+      <ToggleControl value={a} onToggle={() => actions.setInput('a', a ? 0 : 1)} />
+      <ToggleControl value={b} onToggle={() => actions.setInput('b', b ? 0 : 1)} />
 
-      {/* Styled LED readouts pull from sim.portValues */}
+      {/* Styled LED readouts pull from state.portValues */}
       <LedReadout lit={sum === 1} label="sum" />
       <LedReadout lit={carry === 1} label="carry" />
 
       <TruthTable
         columns={COLUMNS}
         rows={ROWS}
-        highlightRow={computeActiveRow(sim.portValues, COLUMNS, ROWS)}
+        highlightRow={computeActiveRow(state.portValues, COLUMNS, ROWS)}
       />
     </>
   )
 }
 ```
+
+`actions.setInput` writes switches and input nodes only, the things a
+person at the board could change. To drive a bare circuit's own inputs
+without a harness, use `actions.set({ a: 1 })`.
 
 **Live demo**: same `HalfAdder` circuit as tier 2, but rendered as
 custom toggle buttons and LED indicators instead of a schematic. No
@@ -213,10 +217,10 @@ custom toggle buttons and LED indicators instead of a schematic. No
 
 <Tier4FullComposition />
 
-The single `useCircuitSimulator(HalfAdder)` call creates one simulator
-instance. Custom UI reads from `sim.portValues` and writes via
-`sim.setNodeValue`; the truth table reads from the same map. One sim,
-many consumers, all of them yours.
+The single `useSimulation(HalfAdder)` call opens one simulation in the
+sandbox. Custom UI reads from `state.portValues` and writes through
+`actions.setInput`; the truth table reads from the same map. One
+simulation, many consumers, all of them yours.
 
 The simulator is still doing real work: compiling, propagating,
 exposing port values through the sandbox iframe like every other
@@ -257,7 +261,7 @@ Two examples of tier 4 on simten.dev itself:
 ## Security
 
 Composing the primitives directly doesn't bypass anything;
-`useCircuitSimulator` routes every tier's simulation work through
+`useSimulation` routes every tier's simulation work through
 the same cross-origin sandbox iframe that `<CircuitEmbed />` uses
 internally. See [Security architecture](/docs/security) for the
 full picture (origin isolation, Web Worker thread isolation, CSP,
@@ -270,7 +274,7 @@ postMessage boundary).
 | 1 | You just want a circuit on a page | `<CircuitEmbed circuit={X} />` |
 | 2 | A sibling reacts to switch toggles | `<CircuitEmbed onPortValuesChange={...} />` |
 | 3 | A sibling drives the switches | `ref={...}` + `setNodeValue` |
-| 4 | You want fully custom chrome / layout | `useCircuitSimulator` + `CircuitCanvas` |
+| 4 | You want fully custom chrome / layout | `useSimulation` + `CircuitCanvas` |
 
 Most production simten.dev pages use tier 1. The `/learn/adders` half-
 and full-adder sections use tier 2 (live truth tables). Tier 3 isn't

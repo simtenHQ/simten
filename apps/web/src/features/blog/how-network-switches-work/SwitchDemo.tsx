@@ -26,7 +26,7 @@ export function SwitchDemo() {
    */
   const injectFrame = useCallback(
     async (port: 0 | 1) => {
-      if (!sim.ready) return;
+      if (!sim.state.ready) return;
       setInjecting(true);
       const payload = port === 0 ? PAYLOAD_0 : PAYLOAD_1;
       const frame = [...PREAMBLE, ...payload];
@@ -35,7 +35,7 @@ export function SwitchDemo() {
 
       for (let i = 0; i < frame.length; i++) {
         injectByte(port, frame[i]);
-        sim.tick();
+        void sim.actions.tick();
         if (i < PREAMBLE.length) {
           addLog(`  [${i}] Preamble: 0x${frame[i].toString(16).padStart(2, '0')}`);
         } else {
@@ -48,15 +48,23 @@ export function SwitchDemo() {
 
       // Tick a bunch of times to let forwarding + egress complete
       for (let i = 0; i < 30; i++) {
-        sim.tick();
+        void sim.actions.tick();
       }
       addLog(`Port ${port}: Forwarding complete.`);
       setInjecting(false);
     },
-    [sim, injectByte, clearValid, addLog],
+    [sim.state.ready, sim.actions, injectByte, clearValid, addLog],
   );
 
-  if (!sim.ready) {
+  if (sim.state.error) {
+    return (
+      <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-6">
+        <div className="text-red-400 text-sm font-mono">{sim.state.error}</div>
+      </div>
+    );
+  }
+
+  if (!sim.state.ready) {
     return (
       <div className="rounded-xl border border-gray-700/50 bg-gray-100/50 dark:bg-gray-900/50 p-8">
         <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
@@ -67,16 +75,8 @@ export function SwitchDemo() {
     );
   }
 
-  if (sim.error) {
-    return (
-      <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-6">
-        <div className="text-red-400 text-sm font-mono">{sim.error}</div>
-      </div>
-    );
-  }
-
   // Read port values from the simulator
-  const portValues = sim.portValues ?? {};
+  const portValues = sim.state.portValues ?? {};
   const getVal = (key: string) => {
     for (const [k, v] of Object.entries(portValues)) {
       if (k.includes(key)) return v as number;
@@ -195,7 +195,7 @@ export function SwitchDemo() {
           {isRunning ? 'Pause' : 'Free Run'}
         </button>
         <button
-          onClick={sim.tick}
+          onClick={() => void sim.actions.tick()}
           disabled={isRunning}
           className="px-3 py-2 text-sm font-medium rounded-md bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors disabled:opacity-40"
         >
@@ -222,7 +222,7 @@ export function SwitchDemo() {
           />
         </div>
         <span className="text-xs text-gray-500 dark:text-gray-400 font-mono tabular-nums">
-          Cycle {sim.cycleCount.toLocaleString()}
+          Cycle {sim.state.cycle.toLocaleString()}
         </span>
       </div>
     </div>
