@@ -66,11 +66,10 @@ export function localRuntime(): GradeRuntime {
         throw new RuntimeFailure('select() was not called before evaluate()');
       }
       // The same split as `sandboxRuntime`: a port in an abstracted level, a
-      // Switch node in a self-contained one. The engine takes either name.
+      // Switch node in a self-contained one.
       const { ports, nodes } = splitInputs(selected, inputs);
-      for (const [name, value] of Object.entries({ ...ports, ...nodes })) {
-        engine.setNode(name, value);
-      }
+      for (const [name, value] of Object.entries(ports)) engine.setInput(name, value);
+      for (const [path, value] of Object.entries(nodes)) engine.setNode(path, value);
       // A clock cycle, because that is what the browser does: `sandboxRuntime`
       // grades through `sandbox.tick`. This used `runCombinational`, which
       // settles the logic without advancing a clock; the two agreed on every

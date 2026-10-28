@@ -121,19 +121,21 @@ class DefaultSimulatorEngine implements SimulatorEngine {
     this.cacheValid = false;
   }
 
-  setNode(name: string, value: PrimitiveState): void {
+  setInput(name: string, value: BitValue | BusValue): void {
+    if (!this.flatCircuit) return;
+    const key = `${TOP_LEVEL_NODE}.${name}`;
+    if (!this.topLevelInputs.has(key)) {
+      throw new Error(unknownInputMessage(name, this.topLevelInputs));
+    }
+    this.topLevelInputs.set(key, value);
+    this.cacheValid = false;
+  }
+
+  setNode(path: string, value: PrimitiveState): void {
     if (!this.flatCircuit || !this.numericCircuit) return;
 
-    // First, check if this is a top-level input
-    const topLevelKey = `${TOP_LEVEL_NODE}.${name}`;
-    if (this.topLevelInputs.has(topLevelKey)) {
-      this.topLevelInputs.set(topLevelKey, value as BitValue | BusValue);
-      this.cacheValid = false;
-      return;
-    }
-
-    const node = this.nodesById.get(name);
-    if (!node) throw new Error(unknownNodeMessage(name, this.topLevelInputs, this.flatCircuit));
+    const node = this.nodesById.get(path);
+    if (!node) throw new Error(unknownNodeMessage(path, this.flatCircuit));
 
     // If it has sequential state (ROM, RAM, Register, DFlipFlop) → write state
     const idx = this.numericCircuit.nodeIdToIndex.get(node.id);
@@ -472,21 +474,20 @@ export function createEngine(circuit: FlatCircuit, options: InitOptions): Simula
   return engine;
 }
 
-/**
- * The error for a `setNode` name that is neither a top-level input nor a node
- * id. Names the inputs, and the nodes the name is a suffix of, since a short
- * name for a nested node is the usual mistake.
- */
-function unknownNodeMessage(
-  name: string,
-  topLevelInputs: ReadonlyMap<string, unknown>,
-  circuit: FlatCircuit,
-): string {
+/** The error for a `setInput` name that isn't a top-level input. Names the inputs there are. */
+function unknownInputMessage(name: string, topLevelInputs: ReadonlyMap<string, unknown>): string {
   const prefix = `${TOP_LEVEL_NODE}.`;
   const inputs = [...topLevelInputs.keys()].map((key) => key.slice(prefix.length));
-  const nested = circuit.nodes.filter((n) => n.id.endsWith(`.${name}`)).map((n) => n.id);
-  let message = `setNode: "${name}" is not a top-level input or a node path.`;
-  message += ` Inputs: ${inputs.length > 0 ? inputs.join(', ') : '(none)'}.`;
-  if (nested.length > 0) message += ` Nodes ending in "${name}": ${nested.slice(0, 5).join(', ')}.`;
+  return `setInput: "${name}" is not a top-level input. Inputs: ${inputs.length > 0 ? inputs.join(', ') : '(none)'}.`;
+}
+
+/**
+ * The error for a `setNode` path that isn't a node. Names the nodes the path
+ * is a suffix of, since a short name for a nested node is the usual mistake.
+ */
+function unknownNodeMessage(path: string, circuit: FlatCircuit): string {
+  const nested = circuit.nodes.filter((n) => n.id.endsWith(`.${path}`)).map((n) => n.id);
+  let message = `setNode: "${path}" is not a node path.`;
+  if (nested.length > 0) message += ` Nodes ending in "${path}": ${nested.slice(0, 5).join(', ')}.`;
   return message;
 }

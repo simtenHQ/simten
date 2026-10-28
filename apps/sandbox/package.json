@@ -11,10 +11,10 @@
     "test:e2e": "tsx e2e/watchdog.mts"
   },
   "dependencies": {
-    "@simten/core": "workspace:*"
+    "@simten/core": "workspace:*",
+    "@simten/sandbox": "workspace:*"
   },
   "devDependencies": {
-    "@simten/ui": "workspace:*",
     "vite": "^8.3.5",
     "typescript": "^5.8.3",
     "wrangler": "^4.73.0",

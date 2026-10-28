@@ -128,10 +128,10 @@ describe('restore', () => {
       connect: ({ inputs, outputs, nodes: { ff } }) => [inputs.d.to(ff.d), ff.q.to(outputs.q)],
     });
     const engine = engineFor(Latch);
-    engine.setNode('d', 0);
+    engine.setInput('d', 0);
     engine.tick();
     const snap = engine.snapshot();
-    engine.setNode('d', 1);
+    engine.setInput('d', 1);
     engine.tick();
     expect(engine.getOutput('__top__', 'q')).toBe(1);
 
@@ -179,7 +179,7 @@ describe('restore', () => {
       },
     });
     const engine = engineFor(Logger);
-    engine.setNode('d', 11);
+    engine.setInput('d', 11);
     engine.tick();
     const snap = engine.snapshot();
     // The logger is the only stateful node, so its state is the only entry.
@@ -190,7 +190,7 @@ describe('restore', () => {
     expect(logAt(snap).get(0)).toBe(11);
     expect(logAt(snap).has(1)).toBe(false);
 
-    engine.setNode('d', 22);
+    engine.setInput('d', 22);
     engine.tick();
     expect(logAt(engine.snapshot()).get(1)).toBe(22);
     // The earlier snapshot still has only the first write.
@@ -214,13 +214,13 @@ describe('propagation loop cap', () => {
       ],
     });
     const engine = engineFor(Ring);
-    engine.setNode('en', 1);
+    engine.setInput('en', 1);
     expect(engine.runCombinational().error).toMatch(
       /did not stabilize after 10000 evaluations.*oscillating.*Still changing: n\d/,
     );
 
     const ticking = engineFor(Ring);
-    ticking.setNode('en', 1);
+    ticking.setInput('en', 1);
     expect(() => ticking.tick()).toThrow(/oscillating/);
   });
 
@@ -241,7 +241,7 @@ describe('propagation loop cap', () => {
       },
     });
     const engine = engineFor(Chain);
-    engine.setNode('a', 1);
+    engine.setInput('a', 1);
     expect(engine.runCombinational().error).toBeUndefined();
     expect(engine.getOutput('__top__', 'y')).toBe(1);
   });

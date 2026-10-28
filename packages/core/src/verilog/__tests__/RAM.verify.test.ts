@@ -74,9 +74,9 @@ function runSimulator(steps: Step[]): number[] {
   const outputs: number[] = [];
 
   for (const step of steps) {
-    sim.setNode('addr', step.addr);
-    sim.setNode('data_in', step.data_in);
-    sim.setNode('we', step.we);
+    sim.setInput('addr', step.addr);
+    sim.setInput('data_in', step.data_in);
+    sim.setInput('we', step.we);
     sim.tick();
     const v = sim.getPortValues().get('__top__.data_out');
     outputs.push(typeof v === 'number' ? (v >>> 0) & 0xff : 0);

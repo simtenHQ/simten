@@ -53,7 +53,7 @@ export function load(workload: Workload): Loaded {
   return {
     engine,
     step: () => {
-      for (const { name, mask } of inputs) engine.setNode(name, next() & mask);
+      for (const { name, mask } of inputs) engine.setInput(name, next() & mask);
       engine.tick();
     },
   };

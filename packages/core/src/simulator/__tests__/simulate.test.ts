@@ -206,9 +206,19 @@ describe('exact names', () => {
     nodesOf(sim).set('inner.reg', 5);
     expect(nodesOf(sim).ports().get('inner.reg.q')).toBe(5);
     expect(() => nodesOf(sim).set('reg', 1)).toThrow(
-      'setNode: "reg" is not a top-level input or a node path. Inputs: en. Nodes ending in "reg": inner.reg.',
+      'setNode: "reg" is not a node path. Nodes ending in "reg": inner.reg.',
     );
-    expect(() => nodesOf(sim).set('nope', 1)).toThrow(/"nope" is not a top-level input/);
+    expect(() => nodesOf(sim).set('nope', 1)).toThrow('setNode: "nope" is not a node path.');
+  });
+
+  it('set takes top-level input names only, and nodesOf(sim).set node paths only', () => {
+    const sim: Simulation = simulate(Wrapped);
+    // A node path is not an input name, even when the node exists.
+    expect(() => sim.set({ 'inner.reg': 1 })).toThrow(/no input named 'inner.reg'/);
+    // A top-level input name is not a node path.
+    expect(() => nodesOf(sim).set('en', 1)).toThrow('setNode: "en" is not a node path.');
+    sim.set({ en: 1 });
+    expect(sim.get('ready')).toBe(0);
   });
 });
 
@@ -457,6 +467,13 @@ describe('nodesOf', () => {
     sim.set({ ch: 105 });
     sim.tick();
     expect(nodesOf(sim).peripherals().get('con')).toBe('Hi');
+  });
+
+  it('names the primitive type at a node path', () => {
+    const sim = simulate(Counter);
+    expect(nodesOf(sim).primitiveOf('reg')).toBe('Register');
+    expect(nodesOf(sim).primitiveOf('inc')).toBe('Inc8');
+    expect(nodesOf(sim).primitiveOf('q')).toBeUndefined();
   });
 
   it('throws for an object simulate() did not make', () => {

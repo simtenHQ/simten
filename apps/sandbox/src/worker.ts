@@ -1,24 +1,32 @@
 /**
  * Sandbox worker. Runs all user code and owns all simulation state.
  *
- * Holds every slot's simulator, definitions, behavior and snapshots, and
- * handles every request type. `main.ts` only relays messages and watches for a
- * hang: if a request takes longer than 5s it terminates this worker, starts a
- * new one and recompiles each slot at cycle 0. Anything kept here (snapshots,
- * cycle count, switch positions) is lost on a restart.
+ * Two protocols share it until the old one is deleted (#417, PR 8):
  *
- * compile, two modes:
+ * - Session requests (they name a `session` or a `compile`) go to the
+ *   `SessionHost` from `@simten/sandbox/host`: compiles and sessions by id,
+ *   history and the auto-run loop in here, large ticks in slices.
+ * - Slot requests (the rest) are handled below, as before: one simulator per
+ *   slot, history kept as snapshots for the page to name.
+ *
+ * `main.ts` only relays messages and watches for silence: if the worker owes
+ * an answer or frames and says nothing for 5s, it's terminated, a new one is
+ * started, and every slot, compile and session is replayed at cycle 0.
+ * Anything kept here (snapshots, cycle count, switch positions) is lost then.
+ *
+ * Source compiles, two modes:
  *   No imports  → executeCircuitCode() via new Function()
  *   Has imports → load npm packages via an esm.sh Blob URL module, then
  *                 executeJsCode() with the merged scope
  * Either way the circuits the source builds carry their eval/onTick closures,
- * and each slot's simulator runs the behavior table of its own compile.
+ * and each slot or session runs the behavior table of its own compile.
  * Nothing is shared between compiles, so user code can't change another
- * slot's behavior or the stdlib's.
+ * compile's behavior or the stdlib's.
  *
- * compile-ir carries evals as source text from the page. An eval whose text
- * matches one the compile already has (std's, or the source slot's) keeps that
- * closure; any other is rebuilt with new Function (closures don't survive).
+ * Slot compile-ir carries evals as source text from the page. An eval whose
+ * text matches one the compile already has (std's, or the source slot's)
+ * keeps that closure; any other is rebuilt with new Function (closures don't
+ * survive).
  *
  * Output is plain structured-clone data only: no functions, no class instances.
  */
@@ -39,12 +47,15 @@ import {
   libraryOf,
   stripTypes,
 } from '@simten/core/internal';
-import type {
-  BehaviorSource,
-  SandboxRequest,
-  SandboxResult,
-  WorkerResponse,
-} from '@simten/ui/sandbox/protocol';
+import { SessionHost } from '@simten/sandbox/host';
+import {
+  type BehaviorSource,
+  isSessionRequest,
+  type SandboxRequest,
+  type SandboxResult,
+  type WorkerRequest,
+  type WorkerResponse,
+} from '@simten/sandbox/protocol';
 import {
   containsDynamicImport,
   extractAndRewriteImports,
@@ -95,6 +106,7 @@ type Simulator = ReturnType<typeof createEngine>;
 
 interface FlatCircuitLike {
   nodes: Array<{ id: string; primitiveType: string; arguments: Record<string, unknown> }>;
+  topLevelInputs: Array<{ name: string }>;
 }
 
 interface SlotState {
@@ -212,9 +224,24 @@ function portValues(values: ReadonlyMap<string, BitValue | BusValue>): Record<st
   return Object.fromEntries(values);
 }
 
-function applyInputs(sim: Simulator, inputs: Record<string, number | boolean>) {
+/**
+ * The slot protocol takes a top-level input name or a node path in one field,
+ * and a top-level input wins when both exist. The engine takes them
+ * separately, so the choice is made here.
+ */
+function setByNameOrPath(
+  slot: SlotState,
+  name: string,
+  value: BitValue | BusValue | Map<number, number>,
+) {
+  const isInput = slot.flatCircuit.topLevelInputs.some((p) => p.name === name);
+  if (isInput && !(value instanceof Map)) slot.simulator.setInput(name, value);
+  else slot.simulator.setNode(name, value);
+}
+
+function applyInputs(slot: SlotState, inputs: Record<string, number | boolean>) {
   for (const [name, value] of Object.entries(inputs)) {
-    sim.setNode(name, value as BitValue | BusValue);
+    setByNameOrPath(slot, name, value as BitValue | BusValue);
   }
 }
 
@@ -418,7 +445,7 @@ type Req<T extends SandboxRequest['type']> = Extract<SandboxRequest, { type: T }
 function tick(req: Req<'tick'>): SandboxResult {
   const slot = requireSlot(req.slot);
   const sim = slot.simulator;
-  if (req.inputs) applyInputs(sim, req.inputs);
+  if (req.inputs) applyInputs(slot, req.inputs);
   const result = sim.tick();
   return {
     type: 'ticked',
@@ -433,7 +460,7 @@ function tick(req: Req<'tick'>): SandboxResult {
 function tickN(req: Req<'tick-n'>): SandboxResult {
   const slot = requireSlot(req.slot);
   const sim = slot.simulator;
-  if (req.inputs) applyInputs(sim, req.inputs);
+  if (req.inputs) applyInputs(slot, req.inputs);
   let last: ReturnType<Simulator['tick']> | null = null;
   const count = Math.max(0, req.n | 0);
   for (let i = 0; i < count; i++) last = sim.tick();
@@ -449,8 +476,9 @@ function tickN(req: Req<'tick-n'>): SandboxResult {
 // Tick `count` times and return one port's value after every tick (audio).
 // Inputs are applied once and held for the whole run.
 function renderSamples(req: Req<'render-samples'>): SandboxResult {
-  const sim = requireSlot(req.slot).simulator;
-  if (req.inputs) applyInputs(sim, req.inputs);
+  const slot = requireSlot(req.slot);
+  const sim = slot.simulator;
+  if (req.inputs) applyInputs(slot, req.inputs);
   const n = Math.max(0, req.count | 0);
   const samples: number[] = new Array(n).fill(0);
   for (let i = 0; i < n; i++) samples[i] = asNumber(sim.tick().portValues.get(req.portKey));
@@ -460,11 +488,12 @@ function renderSamples(req: Req<'render-samples'>): SandboxResult {
 // Drive `addrNodeId` through 0..count-1 and sample `valuePortKey` after each
 // combinational settle, without advancing the clock (debug-port reads).
 function scanPort(req: Req<'scan-port'>): SandboxResult {
-  const sim = requireSlot(req.slot).simulator;
+  const slot = requireSlot(req.slot);
+  const sim = slot.simulator;
   const n = Math.max(0, req.count | 0);
   const values: number[] = new Array(n).fill(0);
   for (let i = 0; i < n; i++) {
-    sim.setNode(req.addrNodeId, i);
+    setByNameOrPath(slot, req.addrNodeId, i);
     sim.runCombinational();
     values[i] = asNumber(sim.getPortValues().get(req.valuePortKey));
   }
@@ -486,7 +515,7 @@ function reset(req: Req<'reset'>): SandboxResult {
 function setNode(req: Req<'set-node'>): SandboxResult {
   const slot = requireSlot(req.slot);
   // Map values load ROM/RAM contents.
-  slot.simulator.setNode(req.nodeId, req.value as BitValue | BusValue);
+  setByNameOrPath(slot, req.nodeId, req.value as BitValue | BusValue | Map<number, number>);
   slot.simulator.runCombinational();
   return {
     type: 'node-set',
@@ -538,8 +567,12 @@ async function handle(req: SandboxRequest): Promise<SandboxResult> {
   }
 }
 
-self.onmessage = async (event: MessageEvent) => {
-  const req = event.data as SandboxRequest;
+const host = new SessionHost({
+  post: (message) => self.postMessage(message),
+  execute: executeSource,
+});
+
+async function handleSlotRequest(req: SandboxRequest) {
   let result: SandboxResult;
   try {
     result = await handle(req);
@@ -548,4 +581,10 @@ self.onmessage = async (event: MessageEvent) => {
   }
   const response: WorkerResponse = { ...result, id: req.id };
   self.postMessage(response);
+}
+
+self.onmessage = (event: MessageEvent) => {
+  const req = event.data as WorkerRequest;
+  if (isSessionRequest(req)) host.handle(req);
+  else void handleSlotRequest(req);
 };

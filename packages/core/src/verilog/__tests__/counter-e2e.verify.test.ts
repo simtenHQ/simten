@@ -100,8 +100,8 @@ function runSimulator(steps: Step[]): number[] {
   });
   const outputs: number[] = [];
   for (const step of steps) {
-    sim.setNode('enable', step.enable);
-    sim.setNode('clear', step.clear);
+    sim.setInput('enable', step.enable);
+    sim.setInput('clear', step.clear);
     sim.tick();
     const v = sim.getPortValues().get('__top__.count');
     outputs.push(typeof v === 'number' ? (v >>> 0) & 0xff : 0);

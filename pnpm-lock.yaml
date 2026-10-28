@@ -228,10 +228,10 @@ importers:
       '@simten/core':
         specifier: workspace:*
         version: link:../../packages/core
-    devDependencies:
-      '@simten/ui':
+      '@simten/sandbox':
         specifier: workspace:*
-        version: link:../../packages/ui
+        version: link:../../packages/sandbox
+    devDependencies:
       typescript:
         specifier: ^5.8.3
         version: 5.9.3
@@ -532,6 +532,22 @@ importers:
         specifier: ^5.0.5
         version: 5.0.5(@types/node@20.19.33)(jsdom@27.4.0)(vite@8.3.5)
 
+  packages/sandbox:
+    dependencies:
+      '@simten/core':
+        specifier: workspace:^
+        version: link:../core
+    devDependencies:
+      '@types/node':
+        specifier: ^20
+        version: 20.19.33
+      typescript:
+        specifier: ^5
+        version: 5.9.3
+      vitest:
+        specifier: ^5.0.5
+        version: 5.0.5(@types/node@20.19.33)(jsdom@27.4.0)(vite@8.3.5)
+
   packages/ui:
     dependencies:
       '@dagrejs/dagre':
@@ -543,6 +559,9 @@ importers:
       '@simten/core':
         specifier: workspace:^
         version: link:../core
+      '@simten/sandbox':
+        specifier: workspace:^
+        version: link:../sandbox
       '@typescript/ata':
         specifier: ^0.9.8
         version: 0.9.8(typescript@5.9.3)

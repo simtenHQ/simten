@@ -27,6 +27,7 @@ const PACKAGE_JSONS = [
   'packages/ui/package.json',
   'packages/embed/package.json',
   'packages/mcp/package.json',
+  'packages/sandbox/package.json',
 ];
 
 type ExportEntry = string | { types?: string; import?: string; default?: string; require?: string };

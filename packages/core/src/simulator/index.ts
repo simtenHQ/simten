@@ -9,7 +9,7 @@
  * const library = libraryOf(top);
  * const flat = elaborate(internalsOf(top).ir, library.definitions);
  * const engine = createEngine(flat, { library });
- * engine.setNode('switch1', 1);
+ * engine.setInput('enable', 1);
  * const result = engine.tick();
  * ```
  *

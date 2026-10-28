@@ -102,7 +102,7 @@ jobs:
         # https://github.com/arethetypeswrong/arethetypeswrong.github.io/pull/263
         # Re-enable here once a new attw release ships.
         run: |
-          for pkg in core ui embed mcp; do
+          for pkg in core sandbox ui embed mcp; do
             pnpm dlx publint "packages/$pkg"
           done
 
@@ -229,11 +229,12 @@ jobs:
         # of this job's five minutes.
         run: pnpm exec playwright install --only-shell chromium
 
-      - name: Build core and ui
-        # The embed bundle resolves both through their built `dist/`. Two steps
-        # so ui never builds ahead of core (see the workspace build above).
+      - name: Build core, sandbox and ui
+        # The embed bundle resolves them through their built `dist/`. One at a
+        # time, in dependency order (see the workspace build above).
         run: |
           pnpm --filter @simten/core build
+          pnpm --filter @simten/sandbox build
           pnpm --filter @simten/ui build
 
       - name: Embed (Playwright)

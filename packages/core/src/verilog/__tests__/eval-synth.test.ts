@@ -354,7 +354,7 @@ describe('top-level primitive simulation', () => {
     const sim = createEngine(flat, {
       library: { definitions, behaviors: libraryOf(Doubler).behaviors },
     });
-    sim.setNode('a', 5);
+    sim.setInput('a', 5);
     sim.runCombinational();
     const vals = sim.getPortValues();
     expect(vals.get('__top__.result')).toBe(10);
@@ -384,8 +384,8 @@ describe('top-level primitive simulation', () => {
     const sim = createEngine(flat, {
       library: { definitions, behaviors: libraryOf(MyReg).behaviors },
     });
-    sim.setNode('data', 42);
-    sim.setNode('we', 1);
+    sim.setInput('data', 42);
+    sim.setInput('we', 1);
     sim.tick(); // clock edge: value ← 42
     const vals = sim.getPortValues();
     expect(vals.get('__top__.q')).toBe(42);

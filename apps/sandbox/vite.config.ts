@@ -58,6 +58,12 @@ export default defineConfig({
   resolve: {
     dedupe: ['@simten/core'],
   },
+  // The worker is a module worker (`type: 'module'` in main.ts). Building it as
+  // ES lets Vite split out what it loads with import(), such as the Verilog
+  // exporter, which an iife worker would inline.
+  worker: {
+    format: 'es',
+  },
   build: {
     outDir: 'dist',
     rollupOptions: {

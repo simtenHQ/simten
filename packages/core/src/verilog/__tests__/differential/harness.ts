@@ -161,7 +161,7 @@ function runSimulator(
   });
   const trace: (number | undefined)[][] = [];
   for (const v of vectors) {
-    for (const [name, value] of Object.entries(v)) engine.setNode(name, value);
+    for (const [name, value] of Object.entries(v)) engine.setInput(name, value);
     engine.tick();
     const values = engine.getPortValues();
     trace.push(
