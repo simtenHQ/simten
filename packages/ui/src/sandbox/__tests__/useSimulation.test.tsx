@@ -257,6 +257,22 @@ describe('useSimulation', () => {
     expect(hook.result.current.state.portValues?.get('a.out')).toBe(0);
   });
 
+  it('keeps a later write when an earlier one to the same path is rejected', async () => {
+    const { hook } = render(AndGate, { harness: true });
+    await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
+    const { actions } = hook.result.current;
+    await act(async () => {
+      await actions.setInput('a', 1);
+      // Both in flight: the record is rejected, then a = 0 lands.
+      const rejected = actions.setInputs({ a: 1, 'dut.g': 1 });
+      const later = actions.setInput('a', 0);
+      await rejected;
+      // a = 0 is still in flight, so the toggle must flip from it, not from 1.
+      await Promise.all([later, actions.toggleNode('a')]);
+    });
+    expect(hook.result.current.state.portValues?.get('a.out')).toBe(1);
+  });
+
   it('drops a compile that finishes after a newer one started', async () => {
     const { hook, transport } = render(
       { source: COUNTER },

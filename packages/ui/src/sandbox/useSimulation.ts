@@ -235,6 +235,22 @@ interface Live {
   name: string;
 }
 
+/**
+ * Undo a rejected write's entries in `written`: each path goes back to what was
+ * remembered `before`, unless a later write has replaced the value since.
+ */
+function restoreWritten(
+  written: Map<string, number>,
+  values: Record<string, number>,
+  before: Map<string, number | undefined>,
+): void {
+  for (const [path, value] of before) {
+    if (written.get(path) !== values[path]) continue;
+    if (value === undefined) written.delete(path);
+    else written.set(path, value);
+  }
+}
+
 export function useSimulation(
   source: SimulationSource | null,
   options: UseSimulationOptions = {},
@@ -507,7 +523,7 @@ export function useSimulation(
     /**
      * Remember each value before sending it, for `toggleNode`; see `written`.
      * A rejected write changed nothing in the sandbox, so put back what was
-     * remembered before it.
+     * remembered before it, unless a later write has replaced the value since.
      */
     function setInputs(values: Record<string, number>): Promise<void> {
       return withSession(undefined, async (s) => {
@@ -517,10 +533,7 @@ export function useSimulation(
         try {
           await s.setInputs(values);
         } catch (e) {
-          for (const [path, value] of before) {
-            if (value === undefined) written.current.delete(path);
-            else written.current.set(path, value);
-          }
+          restoreWritten(written.current, values, before);
           throw e;
         }
       });
