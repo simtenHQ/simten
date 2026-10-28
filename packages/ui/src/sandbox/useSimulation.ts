@@ -55,6 +55,8 @@ export interface UseSimulationOptions {
   history?: number;
   /** Memory contents by node path, loaded before cycle 0. A new object reopens the session (a new program). */
   memory?: Record<string, MemoryContents>;
+  /** Auto-run speed in cycles per second until `run` or `setSpeed` changes it. @default 15 */
+  speed?: number;
 }
 
 /**
@@ -257,8 +259,8 @@ export function useSimulation(
   const liveRef = useRef<Live | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
-  const [speed, setSpeedState] = useState(DEFAULT_SPEED);
-  const speedRef = useRef(DEFAULT_SPEED);
+  const [speed, setSpeedState] = useState(options.speed ?? DEFAULT_SPEED);
+  const speedRef = useRef(speed);
   /** A `run` called before the session opened (an embed's handle on mount); it starts when it does. */
   const pendingRun = useRef<number | null>(null);
   /**

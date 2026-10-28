@@ -1,5 +1,5 @@
 import { useSimulation } from '@simten/ui/sandbox';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { CRC32ByteDemo } from '../circuits';
 
 // CRC-32 software reference for verification display
@@ -17,12 +17,9 @@ function CRC32DemoInner() {
   const [dataInput, setDataInput] = useState('49'); // ASCII '1'
   const [cycleCount, setCycleCount] = useState(0);
   const [softwareCRC, setSoftwareCRC] = useState(0xff);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Read the current CRC output from portValues
-  const currentCRC = (() => {
-    return state.portValues?.get('display.in') ?? 0;
-  })();
+  // The step's output, the CRC one byte on from the register.
+  const currentCRC = state.portValues?.get('display.in') ?? 0;
 
   const handleStep = useCallback(() => {
     const byteVal = Math.max(0, Math.min(255, parseInt(dataInput, 10) || 0));
@@ -34,21 +31,11 @@ function CRC32DemoInner() {
   }, [actions, dataInput]);
 
   const handleReset = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
     void actions.reset();
     setCycleCount(0);
     setSoftwareCRC(0xff);
     setDataInput('49');
   }, [actions]);
-
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
 
   if (state.error) {
     return (

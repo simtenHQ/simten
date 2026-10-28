@@ -1,6 +1,7 @@
 import type { MemoryContents } from '@simten/core/internal';
 import { useSimulation } from '@simten/ui/sandbox';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useAutoRun } from '@/lib/auto-run';
 import { RV32I_CPU } from './rv32i-cpu.circuit';
 
 // ABI register names for RV32I
@@ -110,69 +111,62 @@ export function useRV32IDebugger() {
   const [compiling, setCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
 
-  const [isRunning, setIsRunning] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-
   // Harnessed, so `debug_addr` is an Input node the debugger can scan, as a
   // JTAG probe would. The program is part of what the simulation is built
   // from: a new program opens a new session at cycle 0, as loading a program
   // does on real hardware.
+  // Run executes 10 cycles a second, slow enough to watch the pipeline.
   const options = useMemo(
-    () => ({ harness: true, memory: romData ? { [`${CPU}.imem`]: romData } : undefined }),
+    () => ({
+      harness: true,
+      memory: romData ? { [`${CPU}.imem`]: romData } : undefined,
+      speed: 10,
+    }),
     [romData],
   );
   const sim = useSimulation(RV32I_CPU, options);
   const { state, actions } = sim;
+  const { isRunning, setIsRunning } = useAutoRun(sim);
 
-  // Auto-run
-  useEffect(() => {
-    if (isRunning && state.ready) {
-      intervalRef.current = setInterval(() => void actions.tick(), 100);
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+  const compile = useCallback(
+    async (source: string, language: string) => {
+      setCompiling(true);
+      setCompileError(null);
+      void actions.pause();
+      try {
+        const resp = await fetch('/api/compile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source, language, disassemble: true }),
+        });
+        const data = (await resp.json()) as {
+          success: boolean;
+          binary?: string; // Go []byte → base64 in JSON
+          disassembly?: string;
+          stderr?: string;
+          error?: string;
+        };
+        if (!data.success || !data.binary) {
+          setCompileError(data.stderr ?? data.error ?? 'Compilation failed');
+          return;
+        }
+        const result: CompileResult = {
+          binary: data.binary,
+          disassembly: data.disassembly ?? '',
+        };
+        setCompiled(result);
+        setRomData(binaryToROM(data.binary));
+      } catch (e) {
+        setCompileError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setCompiling(false);
       }
-    };
-  }, [isRunning, state.ready, actions]);
-
-  const compile = useCallback(async (source: string, language: string) => {
-    setCompiling(true);
-    setCompileError(null);
-    setIsRunning(false);
-    try {
-      const resp = await fetch('/api/compile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source, language, disassemble: true }),
-      });
-      const data = (await resp.json()) as {
-        success: boolean;
-        binary?: string; // Go []byte → base64 in JSON
-        disassembly?: string;
-        stderr?: string;
-        error?: string;
-      };
-      if (!data.success || !data.binary) {
-        setCompileError(data.stderr ?? data.error ?? 'Compilation failed');
-        return;
-      }
-      const result: CompileResult = {
-        binary: data.binary,
-        disassembly: data.disassembly ?? '',
-      };
-      setCompiled(result);
-      setRomData(binaryToROM(data.binary));
-    } catch (e) {
-      setCompileError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setCompiling(false);
-    }
-  }, []);
+    },
+    [actions],
+  );
 
   const reset = useCallback(() => {
-    setIsRunning(false);
+    void actions.pause();
     void actions.reset();
   }, [actions]);
 

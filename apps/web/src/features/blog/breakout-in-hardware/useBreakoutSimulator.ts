@@ -1,5 +1,6 @@
 import { useSimulation } from '@simten/ui/sandbox';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { cyclesPerSecond, useAutoRun } from '@/lib/auto-run';
 import { Breakout } from './circuits';
 
 const PIXELS = 512; // 32x16 combinational raster readout
@@ -8,13 +9,12 @@ const PIXELS = 512; // 32x16 combinational raster readout
 const TICK_MS = 35;
 // Harnessed, so `scan_addr`, `keyboard` and `game_en` are input nodes the page
 // can drive, and the outputs are read off their displays.
-const OPTIONS = { harness: true };
+const OPTIONS = { harness: true, speed: cyclesPerSecond(TICK_MS) };
 
 export function useBreakoutSimulator() {
   const sim = useSimulation(Breakout, OPTIONS);
   const { state, actions } = sim;
-  const [isRunning, setIsRunning] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { isRunning, setIsRunning } = useAutoRun(sim);
   const [pixels, setPixels] = useState<number[]>(new Array(PIXELS).fill(0));
 
   // Refresh the screen after every tick: sweep scan_addr 0..511 and read
@@ -62,38 +62,22 @@ export function useBreakoutSimulator() {
     };
   }, [actions]);
 
-  // Run: one game step (one clock tick) per interval, like snake. The screen
-  // refresh is driven by the cycleCount effect above. If a game step lands the
-  // circuit in a wall redraw (the fill FSM, high on `is_filling`, after a death
-  // or at power-on), burst through its ~128 clocks in one shot so the wall snaps
-  // back full instantly, as it does on the FPGA at MHz. A recursive timeout
-  // (not setInterval) keeps the async tick/scan/burst from overlapping.
+  // The sandbox runs the game a step at a time. When a step lands in a wall
+  // redraw (the fill FSM, high on `is_filling`, after a death or at power-on),
+  // burst through its ~128 clocks in one request so the wall snaps back full
+  // at once, as it does on the FPGA at MHz. It runs between auto-run frames,
+  // in order with them. The effect fires once per rising edge.
+  const isFilling = state.portValues?.get('is_filling.in') === 1;
   useEffect(() => {
-    if (!isRunning || !state.ready) return;
-    let cancelled = false;
-    const loop = async () => {
-      if (cancelled) return;
-      await actions.tick();
-      const status = await actions.scan('scan_addr', 'is_filling.in', 1);
-      if (!cancelled && status[0]) await actions.tick(140);
-      if (!cancelled) intervalRef.current = setTimeout(loop, TICK_MS);
-    };
-    loop();
-    return () => {
-      cancelled = true;
-      if (intervalRef.current) {
-        clearTimeout(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [isRunning, state.ready, actions]);
+    if (isRunning && isFilling) void actions.tick(140);
+  }, [isRunning, isFilling, actions]);
 
   const stepFrame = useCallback(() => {
     void actions.tick(4); // one ball-move worth of steps, so Step visibly advances
   }, [actions]);
 
   const handleReset = useCallback(() => {
-    setIsRunning(false);
+    void actions.pause();
     void actions.reset();
     // Fill the brick wall (128 ticks); the new cycle count refreshes the screen.
     void actions.tick(130);

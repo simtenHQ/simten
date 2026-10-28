@@ -256,6 +256,28 @@ describe('auto-run', () => {
     expect(messages.length).toBe(afterPause);
   });
 
+  it('runs speeds slower than the frame rate', async () => {
+    vi.useFakeTimers();
+    const clock: HostClock = {
+      now: () => Date.now(),
+      setTimeout: (callback, ms) => setTimeout(callback, ms),
+      clearTimeout: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+    };
+    const { call } = startHost({ clock });
+    await call({ type: 'compile', compile: 'c1', source: COUNTER });
+    await call({ type: 'open', session: 's1', compile: 'c1', circuit: 'Counter', history: 0 });
+    await call({ type: 'set', session: 's1', values: { en: 1 } });
+    // Under half a cycle a frame: the debt has to build up over several frames.
+    const running = call({ type: 'run', session: 's1', speed: 10, frameRate: 30 });
+    await vi.advanceTimersByTimeAsync(2000);
+    await running;
+    const paused = call({ type: 'pause', session: 's1' });
+    await vi.advanceTimersByTimeAsync(0);
+    const cycle = expectType(await paused, 'updated').state.cycle;
+    expect(cycle).toBeGreaterThanOrEqual(19);
+    expect(cycle).toBeLessThanOrEqual(21);
+  });
+
   it('changes speed when run is called while running', async () => {
     vi.useFakeTimers();
     const clock: HostClock = {

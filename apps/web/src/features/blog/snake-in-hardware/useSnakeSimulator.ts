@@ -1,17 +1,17 @@
 import { useSimulation } from '@simten/ui/sandbox';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { cyclesPerSecond, useAutoRun } from '@/lib/auto-run';
 import { Snake } from './circuits';
 
 // Harnessed, so `dir` and `scan_addr` are Input nodes the page can drive, as
-// a person at the board would, and `pixel_out` is read off its display.
-const OPTIONS = { harness: true };
+// a person at the board would, and `pixel_out` is read off its display. One
+// game step every 60ms until the slider says otherwise.
+const OPTIONS = { harness: true, speed: cyclesPerSecond(60) };
 
 export function useSnakeSimulator() {
   const sim = useSimulation(Snake, OPTIONS);
   const { state, actions } = sim;
-  const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(60);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { isRunning, setIsRunning, speed, setSpeed } = useAutoRun(sim);
   const [pixels, setPixels] = useState<number[]>(new Array(64).fill(0));
 
   // Refresh framebuffer after every tick by scanning scan_addr 0–63
@@ -54,24 +54,9 @@ export function useSnakeSimulator() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [sendDirection]);
 
-  // Auto-run interval
-  useEffect(() => {
-    if (isRunning && state.ready) {
-      intervalRef.current = setInterval(() => {
-        void actions.tick();
-      }, speed);
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [isRunning, state.ready, speed, actions]);
-
   // Reset returns to cycle 0, which changes `state.cycle` and so rescans the screen.
   const handleReset = useCallback(() => {
-    setIsRunning(false);
+    void actions.pause();
     void actions.reset();
   }, [actions]);
 

@@ -1,13 +1,15 @@
 import { useSimulation } from '@simten/ui/sandbox';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
+import { cyclesPerSecond, useAutoRun } from '@/lib/auto-run';
 import { MiniSwitch2Port } from './circuits';
 
+/** One cycle every 50ms until the slider says otherwise. */
+const OPTIONS = { speed: cyclesPerSecond(50) };
+
 export function useSwitchSimulator() {
-  const sim = useSimulation(MiniSwitch2Port);
+  const sim = useSimulation(MiniSwitch2Port, OPTIONS);
   const { state, actions } = sim;
-  const [isRunning, setIsRunning] = useState(false);
-  const [speed, setSpeed] = useState(50);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const { isRunning, setIsRunning, speed, setSpeed } = useAutoRun(sim);
 
   // Find key node IDs by label
   const nodeIds = useMemo(() => {
@@ -35,23 +37,8 @@ export function useSwitchSimulator() {
     void actions.setInput(nodeIds.always_ready, 1);
   }, [state.ready, nodeIds, actions]);
 
-  // Auto-run interval
-  useEffect(() => {
-    if (isRunning && state.ready) {
-      intervalRef.current = setInterval(() => {
-        void actions.tick();
-      }, speed);
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [isRunning, state.ready, speed, actions]);
-
   const handleReset = useCallback(() => {
-    setIsRunning(false);
+    void actions.pause();
     void actions.reset();
   }, [actions]);
 

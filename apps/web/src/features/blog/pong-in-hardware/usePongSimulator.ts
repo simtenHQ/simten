@@ -1,19 +1,20 @@
 import type { PeripheralValue } from '@simten/core/internal';
 import { useSimulation } from '@simten/ui/sandbox';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PongSimple } from './circuits';
 
 /** The framebuffer is 16x16, one byte per pixel. */
 export const PONG_GRID = 16;
 
-/** The framebuffer RAM's contents, read from the peripheral state. */
+/** One game frame is a 14-phase pipeline: 14 clock cycles. */
+const CYCLES_PER_FRAME = 14;
+
+/** The framebuffer: the contents of the `ram` node, which the screen reads. */
 function framebuffer(peripherals: ReadonlyMap<string, PeripheralValue>): number[] {
   const pixels = new Array(PONG_GRID * PONG_GRID).fill(0);
-  for (const [nodeId, contents] of peripherals) {
-    if (contents instanceof Map && nodeId.toLowerCase().includes('ram')) {
-      for (let addr = 0; addr < pixels.length; addr++) pixels[addr] = contents.get(addr) ?? 0;
-      break;
-    }
+  const ram = peripherals.get('ram');
+  if (ram instanceof Map) {
+    for (let addr = 0; addr < pixels.length; addr++) pixels[addr] = ram.get(addr) ?? 0;
   }
   return pixels;
 }
@@ -25,8 +26,8 @@ export function usePongSimulator() {
   const sim = useSimulation(PongSimple);
   const { state, actions } = sim;
   const [isRunning, setIsRunning] = useState(false);
+  // Milliseconds per game frame.
   const [speed, setSpeed] = useState(60);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pixels = useMemo(() => framebuffer(state.peripheralState), [state.peripheralState]);
 
   // Find node IDs for keyboard inputs and switches
@@ -116,22 +117,18 @@ export function usePongSimulator() {
     };
   }, [state.ready, sendLeftDirection, sendRightDirection]);
 
-  // Auto-run interval: run a complete 14-phase game frame each time.
-  // Speed controls how often frames run (higher = slower ball + paddles).
-  // One 14-cycle tick per frame is one sandbox round trip and one React
-  // update, so React renders only at end-of-frame (no mid-cycle flicker).
+  // Pong has no frame sync, so the page asks for whole 14-cycle frames; a worker-run frame lands mid-draw and tears.
   useEffect(() => {
-    if (isRunning && state.ready) {
-      intervalRef.current = setInterval(() => {
-        void actions.tick(14);
-      }, speed);
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
+    if (!isRunning || !state.ready) return;
+    let inFlight = false;
+    const timer = setInterval(() => {
+      if (inFlight) return;
+      inFlight = true;
+      void actions.tick(CYCLES_PER_FRAME).finally(() => {
+        inFlight = false;
+      });
+    }, speed);
+    return () => clearInterval(timer);
   }, [isRunning, state.ready, speed, actions]);
 
   const handleReset = useCallback(() => {

@@ -1,15 +1,16 @@
 import { useSimulation } from '@simten/ui/sandbox';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { cyclesPerSecond, useAutoRun } from '@/lib/auto-run';
 import { TestSystolic3x3 } from './circuits';
 
+/** One cycle every 100ms until the slider says otherwise. */
+const OPTIONS = { speed: cyclesPerSecond(100) };
+
 export function useSystolicSimulator() {
-  const sim = useSimulation(TestSystolic3x3);
+  const sim = useSimulation(TestSystolic3x3, OPTIONS);
   const { state, actions } = sim;
-  const [isRunning, setIsRunning] = useState(false);
+  const run = useAutoRun(sim);
   const [hasStarted, setHasStarted] = useState(false);
-  const [speed, setSpeed] = useState(100);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [isDone, setIsDone] = useState(false);
 
   // Find the actual mangled node ID for "start" from the compiled circuit.
   const startNodeId = useMemo(() => {
@@ -20,39 +21,19 @@ export function useSystolicSimulator() {
     return null;
   }, [state.circuit]);
 
-  // Monitor the circuit's formal `done` output port (was previously a
-  // substring scan over portValues looking for a node named "done_led",
-  // replaced with a declared top-level port).
-  useEffect(() => {
-    const done = state.portValues?.get('__top__.done');
-    if (done) {
-      setIsDone(true);
-      setIsRunning(false);
-    }
-  }, [state.portValues]);
+  // The circuit's `done` output. It holds once the array has drained.
+  const isDone = state.portValues?.get('__top__.done') === 1;
 
-  // Auto-run interval
+  // Stop the clock at Done. The worker may run a cycle past it before the
+  // pause lands; the accumulators hold, so nothing visible moves.
   useEffect(() => {
-    if (isRunning && state.ready) {
-      intervalRef.current = setInterval(() => {
-        void actions.tick();
-      }, speed);
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [isRunning, state.ready, speed, actions]);
+    if (isDone && state.isRunning) void actions.pause();
+  }, [isDone, state.isRunning, actions]);
 
   const handleStart = useCallback(() => {
-    if (startNodeId) {
-      void actions.setInput(startNodeId, 1);
-    }
+    if (startNodeId) void actions.setInput(startNodeId, 1);
     setHasStarted(true);
-    setIsDone(false);
-    setIsRunning(true);
+    void actions.run();
   }, [startNodeId, actions]);
 
   const handleStep = useCallback(() => {
@@ -64,22 +45,10 @@ export function useSystolicSimulator() {
   }, [hasStarted, startNodeId, actions]);
 
   const handleReset = useCallback(() => {
-    setIsRunning(false);
     setHasStarted(false);
-    setIsDone(false);
+    void actions.pause();
     void actions.reset();
   }, [actions]);
 
-  return {
-    sim,
-    isRunning,
-    setIsRunning,
-    hasStarted,
-    speed,
-    setSpeed,
-    isDone,
-    handleStart,
-    handleStep,
-    handleReset,
-  };
+  return { sim, ...run, hasStarted, isDone, handleStart, handleStep, handleReset };
 }
