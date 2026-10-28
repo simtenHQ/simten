@@ -194,9 +194,6 @@ export function EditorWorkspace({
   // resulting session opens or the compile fails (see the effects below).
   const pendingRenderRef = useRef<string | null>(null);
 
-  // Track whether we've loaded content so we can skip the first MCP cache replay
-  const hasLoadedContentRef = useRef(false);
-
   // Export to Verilog, in the sandbox, with the compile's own behavior. The
   // sandbox exports the circuit the session was opened on, not its harness.
   const circuitName = state.circuitName;
@@ -313,19 +310,21 @@ export function EditorWorkspace({
     sendRenderResult(reqId, { ok: true, circuitName: circuit.name });
   }, [circuit, sendRenderResult]);
 
-  const failure = compileError?.message ?? state.error;
+  // Keyed on the error object, not its text: every failed compile makes a new
+  // one, so a second broken source with the same message is answered too.
+  const openError = state.error;
   useEffect(() => {
     const reqId = pendingRenderRef.current;
+    const failure = compileError?.message ?? openError;
     if (!reqId || !failure) return;
     pendingRenderRef.current = null;
     sendRenderResult(reqId, { ok: false, error: failure });
-  }, [failure, sendRenderResult]);
+  }, [compileError, openError, sendRenderResult]);
 
   // Load an example into the editor
   const loadExample = useCallback(
     (example: Example) => {
       editorRef.current?.setValue(example.code);
-      hasLoadedContentRef.current = true;
       setTimeout(() => void actions.recompile(), 100);
     },
     [actions],
@@ -433,7 +432,6 @@ export function EditorWorkspace({
                 <VerilogImportSheet
                   onImport={(source) => {
                     editorRef.current?.setValue(source);
-                    hasLoadedContentRef.current = true;
                     setTimeout(() => void actions.recompile(), 100);
                   }}
                 />

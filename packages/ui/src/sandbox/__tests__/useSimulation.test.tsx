@@ -101,6 +101,8 @@ describe('useSimulation', () => {
     await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
     const { state } = hook.result.current;
     expect(state.circuit?.name).toBe('AndGateDemo');
+    // Export and the game's drilldown need the circuit, not its harness.
+    expect(state.circuitName).toBe('AndGate');
     expect(state.definitions?.resolveCircuit('Switch')).toBeDefined();
     expect(state.outputs).toEqual({ y: 0 });
 
