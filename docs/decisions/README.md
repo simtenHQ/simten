@@ -12,3 +12,4 @@ Short records of choices that shape the codebase: what was decided, what was rej
 | [0006](0006-own-simulator.md) | Our own simulator, not Verilator or iverilog | Accepted |
 | [0007](0007-server-side-toolchains.md) | Yosys, iverilog, nextpnr and gcc in containers | Accepted |
 | [0008](0008-sandbox-domain.md) | The sandbox on its own domain | Accepted |
+| [0009](0009-simulation-runtime.md) | One simulation, run in the sandbox | Accepted |
