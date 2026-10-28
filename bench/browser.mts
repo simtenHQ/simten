@@ -272,7 +272,6 @@ async function rv32iMax(page: Page): Promise<Record<string, number>> {
 // Auto-run is capped by the speed slider (10k ticks/s), so its frame rate is
 // the more sensitive number.
 const SCENARIOS: { url: string; run: (p: Page) => Promise<Record<string, number>> }[] = [
-  { url: PARENT, run: rv32iMax },
   { url: `${GAME}/nand`, run: async (p) => ({ 'level load (nand), ms': await levelLoadMs(p) }) },
   { url: EDITOR_6502, run: async (p) => ({ 'editor load (6502), ms': await readyEditor(p) }) },
   { url: EDITOR_6502, run: async (p) => ({ 'step (6502), ms': await stepMs(p) }) },
@@ -290,6 +289,9 @@ const SCENARIOS: { url: string; run: (p: Page) => Promise<Record<string, number>
       return { 'auto-run (rv32i), ticks/s': r.ticks, 'auto-run (rv32i), fps': r.fps };
     },
   },
+  // Last: it holds the CPU flat out for a while, which would slow the load
+  // timings that come after it.
+  { url: PARENT, run: rv32iMax },
 ];
 
 interface Baseline {
