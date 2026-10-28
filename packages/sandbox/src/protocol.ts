@@ -85,6 +85,17 @@ export type SessionRequest =
       options?: VerilogExportOptions;
     }
   | { id: string; type: 'set'; session: SessionId; values: Record<string, number> }
+  | {
+      id: string;
+      type: 'set-input';
+      session: SessionId;
+      /** Values by node path. All are written before the circuit settles. */
+      values: Record<string, number>;
+    }
+  /**
+   * The single-write form that pages built before #521 send. The host still
+   * accepts it until those pages are redeployed; it goes in #417 PR 8.
+   */
   | { id: string; type: 'set-input'; session: SessionId; path: string; value: number }
   | { id: string; type: 'tick'; session: SessionId; count: number }
   | { id: string; type: 'run'; session: SessionId; speed: number; frameRate: number }

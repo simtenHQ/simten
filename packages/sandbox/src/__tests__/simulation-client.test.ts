@@ -14,7 +14,7 @@ import { createRelay } from '../relay.js';
 import { portTransport, SandboxClient, type SandboxTransport } from '../sandbox-client.js';
 import { SessionHost } from '../session-host.js';
 import type { SimulationClient } from '../simulation-client.js';
-import { ADDER, COUNTER } from './helpers.js';
+import { ADDER, COUNTER, D_LATCH } from './helpers.js';
 
 interface SandboxOptions {
   /** Silence the watchdog allows. */
@@ -166,6 +166,29 @@ describe('SimulationClient', () => {
     expect(error).toBeInstanceOf(SandboxError);
     expect((error as SandboxError).code).toBe('failed');
     expect((error as SandboxError).message).toMatch(/'reg' is a Register, not an input/);
+  });
+
+  it('setInputs writes several switches in one request', async () => {
+    const sent: SessionRequest[] = [];
+    const { client } = startSandbox({ onSend: (request) => sent.push(request) });
+    const compiled = await client.compile(D_LATCH);
+    const sim = await client.open({ compiled, circuit: 'DLatch' });
+    await sim.setInputs({ d: 1, en: 1 });
+    await sim.setInputs({ d: 0, en: 0 });
+    expect(sim.getState().ports.get('q.in')).toBe(1);
+    const writes = sent.filter((r) => r.type === 'set-input');
+    expect(writes.map((r) => ('values' in r ? r.values : null))).toEqual([
+      { d: 1, en: 1 },
+      { d: 0, en: 0 },
+    ]);
+  });
+
+  it('setInput sends a one-entry record', async () => {
+    const sent: SessionRequest[] = [];
+    const { client } = startSandbox({ onSend: (request) => sent.push(request) });
+    const sim = await client.open({ compiled: await client.compile(D_LATCH), circuit: 'DLatch' });
+    await sim.setInput('d', 1);
+    expect(sent.find((r) => r.type === 'set-input')).toMatchObject({ values: { d: 1 } });
   });
 
   it('streams auto-run frames to subscribers and stops on pause', async () => {

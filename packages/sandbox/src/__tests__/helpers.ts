@@ -25,6 +25,21 @@ const Add = circuit('Add', {
 })
 `;
 
+/** A gated D latch built from NANDs, driven by two switches: the game's d-latch level. */
+export const D_LATCH = `
+const DLatch = circuit('DLatch', {
+  nodes: { d: Switch, en: Switch, n1: Nand, n2: Nand, n3: Nand, n4: Nand, q: Led },
+  connect: ({ nodes: { d, en, n1, n2, n3, n4, q } }) => [
+    d.out.to(n1.a),
+    en.out.to(n1.b, n2.b),
+    n1.out.to(n2.a, n3.a),
+    n2.out.to(n4.b),
+    n3.out.to(n4.a, q.in),
+    n4.out.to(n3.b),
+  ],
+})
+`;
+
 /** A request without its id. */
 type Body = SessionRequest extends infer R
   ? R extends SessionRequest

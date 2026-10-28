@@ -26,6 +26,7 @@ await sim.run(1000); // 1000 cycles a second, in the worker
 | Method | What it does |
 |---|---|
 | `setInput(path, value)` | Set a Switch or Input node inside the circuit. Anything else is rejected. |
+| `setInputs(values)` | Set several of those nodes, by path, before the circuit settles. If one path is rejected, none are set. |
 | `run(speed)`, `pause()` | Auto-run in the worker, which pushes about 30 updates a second. |
 | `sample(port, count)` | Tick `count` times and return a port's value after each tick. |
 | `scan(path, port, count)` | Drive an input through `0..count-1` and read a port each time, without ticking. |

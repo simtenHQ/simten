@@ -208,8 +208,10 @@ function HalfAdderWithCustomControls() {
 ```
 
 `actions.setInput` writes switches and input nodes only, the things a
-person at the board could change. To drive a bare circuit's own inputs
-without a harness, use `actions.set({ a: 1 })`.
+person at the board could change. `actions.setInputs({ a: 1, b: 0 })`
+writes several before the circuit settles, so nothing sees them change
+one at a time. To drive a bare circuit's own inputs without a harness,
+use `actions.set({ a: 1 })`.
 
 **Live demo**: same `HalfAdder` circuit as tier 2, but rendered as
 custom toggle buttons and LED indicators instead of a schematic. No

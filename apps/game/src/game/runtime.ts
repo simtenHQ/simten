@@ -133,7 +133,9 @@ export function sandboxRuntime(sandbox: SandboxClient): GradeRuntime {
         throw new RuntimeFailure('select() was not called before evaluate()');
       }
       const { ports, nodes } = splitInputs(selected, inputs);
-      for (const [path, value] of Object.entries(nodes)) await session.setInput(path, value);
+      // One request for the whole vector: written one at a time, a latch would
+      // see the switches change in order and could follow a value it should hold.
+      if (Object.keys(nodes).length > 0) await session.setInputs(nodes);
       if (Object.keys(ports).length > 0) await session.set(ports);
       await session.tick();
       return readOutputs(Object.fromEntries(session.getState().ports), outputs);

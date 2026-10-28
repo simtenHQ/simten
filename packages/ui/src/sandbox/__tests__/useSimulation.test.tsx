@@ -230,6 +230,49 @@ describe('useSimulation', () => {
     expect(hook.result.current.state.portValues?.get('s.out')).toBe(0);
   });
 
+  it('toggles from a value written by setInputs that is still in flight', async () => {
+    const { hook } = render(AndGate, { harness: true });
+    await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
+    const { actions } = hook.result.current;
+    await act(async () => {
+      await Promise.all([actions.setInputs({ a: 1, b: 1 }), actions.toggleNode('a')]);
+    });
+    expect(hook.result.current.state.portValues?.get('a.out')).toBe(0);
+    expect(hook.result.current.state.outputs).toEqual({ y: 0 });
+  });
+
+  it('forgets a rejected setInputs, so a toggle flips from the real value', async () => {
+    const { hook } = render(AndGate, { harness: true });
+    await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
+    const { actions } = hook.result.current;
+    await act(async () => {
+      await actions.setInput('a', 1);
+      // `dut.g` is the And gate inside the harness: the whole record is rejected and a stays 1.
+      await actions.setInputs({ a: 0, 'dut.g': 1 });
+    });
+    expect(hook.result.current.state.error).toMatch(/'dut.g' is a And, not an input/);
+    await act(async () => {
+      await actions.toggleNode('a');
+    });
+    expect(hook.result.current.state.portValues?.get('a.out')).toBe(0);
+  });
+
+  it('keeps a later write when an earlier one to the same path is rejected', async () => {
+    const { hook } = render(AndGate, { harness: true });
+    await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
+    const { actions } = hook.result.current;
+    await act(async () => {
+      await actions.setInput('a', 1);
+      // Both in flight: the record is rejected, then a = 0 lands.
+      const rejected = actions.setInputs({ a: 1, 'dut.g': 1 });
+      const later = actions.setInput('a', 0);
+      await rejected;
+      // a = 0 is still in flight, so the toggle must flip from it, not from 1.
+      await Promise.all([later, actions.toggleNode('a')]);
+    });
+    expect(hook.result.current.state.portValues?.get('a.out')).toBe(1);
+  });
+
   it('drops a compile that finishes after a newer one started', async () => {
     const { hook, transport } = render(
       { source: COUNTER },

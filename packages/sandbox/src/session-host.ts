@@ -328,6 +328,15 @@ function openSimulation(target: Openable, request: Request<'open'>): Opened {
   return { simulation, ir, library };
 }
 
+/**
+ * The paths and values a `set-input` writes. The old `{ path, value }` form
+ * becomes a one-entry record, so both forms take the same path through the
+ * host. The old form goes in #417 PR 8.
+ */
+function inputValues(request: Request<'set-input'>): Record<string, number> {
+  return 'values' in request ? request.values : { [request.path]: request.value };
+}
+
 export class SessionHost {
   private readonly post: (message: HostMessage) => void;
   private readonly execute: (source: string) => ExecuteResult | Promise<ExecuteResult>;
@@ -461,14 +470,13 @@ export class SessionHost {
   private async apply(request: SessionScopedRequest): Promise<Reply> {
     if (request.type === 'open') return this.open(request);
     const session = this.requireSession(request.session);
-    const { simulation, nodes } = session;
+    const { simulation } = session;
     switch (request.type) {
       case 'set':
         simulation.set(request.values);
         return this.updated(session);
       case 'set-input':
-        this.requireInput(session, request.path, 'setInput');
-        nodes.set(request.path, request.value);
+        this.setInputs(session, inputValues(request));
         return this.updated(session);
       case 'tick':
         await this.slicedTick(session, request.id, request.count);
@@ -539,6 +547,18 @@ export class SessionHost {
       history: { ...simulation.history },
       isRunning: session.run !== null,
     };
+  }
+
+  /**
+   * Write every path, then let the next read settle the circuit once, as
+   * `set` does for names. A vector that changes two switches at once must not
+   * be seen half-applied. Every path is checked before any is written, so a
+   * bad one leaves the inputs as they were.
+   */
+  private setInputs(session: HostSession, values: Record<string, number>): void {
+    const entries = Object.entries(values);
+    for (const [path] of entries) this.requireInput(session, path, 'setInput');
+    for (const [path, value] of entries) session.nodes.set(path, value);
   }
 
   /** Only what a person at the board could change: a Switch, or an Input (keyboards write those). */

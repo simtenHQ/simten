@@ -102,6 +102,8 @@ export interface SimulationActions {
   set(values: Record<string, number>): Promise<void>;
   /** Write a Switch or Input node (keyboards write Inputs) by node path. Nothing else. */
   setInput(path: string, value: number): Promise<void>;
+  /** Write several Switch or Input nodes by node path, all before the circuit settles. */
+  setInputs(values: Record<string, number>): Promise<void>;
   /** Flip a Switch node between 0 and 1. */
   toggleNode(path: string): Promise<void>;
   tick(count?: number): Promise<void>;
@@ -233,6 +235,22 @@ interface Live {
   name: string;
 }
 
+/**
+ * Undo a rejected write's entries in `written`: each path goes back to what was
+ * remembered `before`, unless a later write has replaced the value since.
+ */
+function restoreWritten(
+  written: Map<string, number>,
+  values: Record<string, number>,
+  before: Map<string, number | undefined>,
+): void {
+  for (const [path, value] of before) {
+    if (written.get(path) !== values[path]) continue;
+    if (value === undefined) written.delete(path);
+    else written.set(path, value);
+  }
+}
+
 export function useSimulation(
   source: SimulationSource | null,
   options: UseSimulationOptions = {},
@@ -266,7 +284,7 @@ export function useSimulation(
   /** A `run` called before the session opened (an embed's handle on mount); it starts when it does. */
   const pendingRun = useRef<number | null>(null);
   /**
-   * Values written with `setInput` since the session last moved through
+   * Values written with `setInput` or `setInputs` since the session last moved through
    * history. `toggleNode` reads these first: the pushed state lags behind
    * writes still in flight, so a fast double click would otherwise flip from
    * the same stale value twice.
@@ -502,12 +520,29 @@ export function useSimulation(
       setActionError(message);
     }
 
+    /**
+     * Remember each value before sending it, for `toggleNode`; see `written`.
+     * A rejected write changed nothing in the sandbox, so put back what was
+     * remembered before it, unless a later write has replaced the value since.
+     */
+    function setInputs(values: Record<string, number>): Promise<void> {
+      return withSession(undefined, async (s) => {
+        const paths = Object.keys(values);
+        const before = new Map(paths.map((path) => [path, written.current.get(path)]));
+        for (const path of paths) written.current.set(path, values[path]);
+        try {
+          await s.setInputs(values);
+        } catch (e) {
+          restoreWritten(written.current, values, before);
+          throw e;
+        }
+      });
+    }
+
     return {
       set: (values) => withSession(undefined, (s) => s.set(values)),
-      setInput: (path, value) => {
-        written.current.set(path, value);
-        return withSession(undefined, (s) => s.setInput(path, value));
-      },
+      setInput: (path, value) => setInputs({ [path]: value }),
+      setInputs,
       toggleNode: (path) =>
         withSession(undefined, (s) => {
           // A Switch only changes when the page writes it, so the last write

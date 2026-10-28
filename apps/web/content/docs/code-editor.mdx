@@ -123,7 +123,7 @@ useSimulation({ source, circuit: 'FullAdder' });
 | `compileError` | The last compile's error, with `line` and `column` when it has a location; pass it to `SimtenCodeEditor`'s `diagnostics` prop |
 | `state` | `ready`, `error`, `circuit`, `definitions`, `circuits` (every circuit the compile built), `cycle`, `portValues`, `outputs`, `peripheralState`, `isRunning` |
 | `history` | `length`, `index` and `isViewingPast`, for clock controls |
-| `actions` | `set`, `setInput`, `toggleNode`, `tick`, `reset`, `stepBack`, `stepForward`, `seek`, `run`, `pause`, `setSpeed`, `sample`, `scan`, `recompile`, `exportVerilog` |
+| `actions` | `set`, `setInput`, `setInputs`, `toggleNode`, `tick`, `reset`, `stepBack`, `stepForward`, `seek`, `run`, `pause`, `setSpeed`, `sample`, `scan`, `recompile`, `exportVerilog` |
 
 `actions` keeps one identity for the life of the component, so it's safe in dependency arrays. `recompile()` compiles now, skipping the debounce.
 
