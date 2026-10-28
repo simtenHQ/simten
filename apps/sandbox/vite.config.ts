@@ -61,8 +61,19 @@ export default defineConfig({
   // The worker is a module worker (`type: 'module'` in main.ts). Building it as
   // ES lets Vite split out what it loads with import(), such as the Verilog
   // exporter, which an iife worker would inline.
+  //
+  // The worker is minified for whitespace only. The Verilog exporter turns a
+  // primitive's `eval` into logic by reading the function's source, and std's
+  // primitives (the 6502's timing, decode and ALU parts) are bundled into the
+  // worker. Full minification rewrites them into `a&&(b=c)`, `!!x` and comma
+  // sequences the exporter doesn't translate, so they exported as unsupported
+  // (#502). Renaming is off too, so the exported Verilog keeps the source's
+  // names. Cost: the worker is about 112 KB gzipped instead of 90 KB.
   worker: {
     format: 'es',
+    rolldownOptions: {
+      output: { minify: { compress: false, mangle: false, codegen: { removeWhitespace: true } } },
+    },
   },
   build: {
     outDir: 'dist',
