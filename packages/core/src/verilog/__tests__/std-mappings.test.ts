@@ -12,7 +12,6 @@ import { libraryOf } from '../../circuit/behavior.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { internalsOf } from '../../circuit/internals.js';
 import { Adder, Combiner, Mux, Splitter, Xor } from '../../std/index.js';
-import { stdBehaviorsFor } from '../../std/library.js';
 import { exportVerilog, exportVerilogFromIR } from '../exporter.js';
 
 /** A user `Adder` with std's ports that subtracts instead. */
@@ -86,29 +85,12 @@ describe("hand-written mappings apply only to std's own primitives", () => {
         "assign w_add_sum = (($signed({1'b0, a}) - $signed({1'b0, b})) & 255);",
       );
     });
-
-    it("gives the editor's user Adder no std behavior, so it is unsupported", () => {
-      const top = addTop(MyAdder);
-      const { definitions } = libraryOf(top);
-      const behaviors = stdBehaviorsFor(definitions, new Set(['Adder']));
-      const result = exportVerilogFromIR(internalsOf(top).ir, { definitions, behaviors });
-      expect(result.unsupported).toEqual({ Adder: ['add'] });
-      expect(result.verilog).not.toContain(STD_ADDER_LINE);
-    });
   });
 
   describe("std's own primitives keep their mappings", () => {
     it.each([8, 16, 32])('Adder w%i', (width) => {
       const { verilog, unsupported } = exportVerilog(addTop(Adder({ width }), width));
       expect(unsupported).toBeUndefined();
-      expect(verilog).toContain(STD_ADDER_LINE);
-    });
-
-    it('Adder through the editor path', () => {
-      const top = addTop(Adder());
-      const { definitions } = libraryOf(top);
-      const behaviors = stdBehaviorsFor(definitions, new Set());
-      const { verilog } = exportVerilogFromIR(internalsOf(top).ir, { definitions, behaviors });
       expect(verilog).toContain(STD_ADDER_LINE);
     });
 
@@ -145,15 +127,9 @@ describe("hand-written mappings apply only to std's own primitives", () => {
           c.out.to(outputs.y),
         ],
       });
-      const { definitions } = libraryOf(top);
-      const behaviors = stdBehaviorsFor(definitions, new Set());
-      for (const result of [
-        exportVerilog(top),
-        exportVerilogFromIR(internalsOf(top).ir, { definitions, behaviors }),
-      ]) {
-        expect(result.unsupported).toBeUndefined();
-        expect(result.verilog).toContain('assign w_s_bit0 = a[0];');
-      }
+      const { verilog, unsupported } = exportVerilog(top);
+      expect(unsupported).toBeUndefined();
+      expect(verilog).toContain('assign w_s_bit0 = a[0];');
     });
   });
 });

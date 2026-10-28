@@ -33,7 +33,6 @@
     "./canvas": "./src/canvas/index.ts",
     "./waveform": "./src/waveform/WaveformViewer.tsx",
     "./sandbox": "./src/sandbox/index.ts",
-    "./sandbox/protocol": "./src/sandbox/protocol.ts",
     "./share": "./src/share/index.ts",
     "./primitives/tooltip": "./src/primitives/tooltip.tsx",
     "./package.json": "./package.json",
@@ -88,10 +87,6 @@
       "./sandbox": {
         "types": "./dist/sandbox/index.d.ts",
         "import": "./dist/sandbox/index.js"
-      },
-      "./sandbox/protocol": {
-        "types": "./dist/sandbox/protocol.d.ts",
-        "import": "./dist/sandbox/protocol.js"
       },
       "./share": {
         "types": "./dist/share/index.d.ts",

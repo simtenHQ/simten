@@ -387,15 +387,17 @@ describe('set-input', () => {
     expect(after.state.ports.get('q.in')).toBe(1);
   });
 
-  it('still takes the single { path, value } form that older pages send', async () => {
+  it('fails the single { path, value } form without writing', async () => {
     const { call } = await openLatch();
-    await call({ type: 'set-input', session: 's1', path: 'en', value: 0 });
+    // Pages built before #521 sent this. None are live, and the type no longer has it.
+    const old = { type: 'set-input', session: 's1', path: 'en', value: 0 };
+    expectType(await call(old as unknown as Parameters<typeof call>[0]), 'failed');
+    // en is still 1, so d falling still reaches q.
     const res = expectType(
-      await call({ type: 'set-input', session: 's1', path: 'd', value: 0 }),
+      await call({ type: 'set-input', session: 's1', values: { d: 0 } }),
       'updated',
     );
-    // en fell first, so the latch holds its 1.
-    expect(res.state.ports.get('q.in')).toBe(1);
+    expect(res.state.ports.get('q.in')).toBe(0);
   });
 
   it('writes a Switch of a harnessed circuit', async () => {

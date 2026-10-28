@@ -172,13 +172,9 @@ window.send = (req) => new Promise((resolve) => {
 const RV32I_SOURCE = EXAMPLES.find((e) => e.id === 'rv32i-computer')?.code ?? '';
 
 /**
- * The RV32I example at the engine's limit, two ways:
- *
- * - the worker's auto-run loop (session messages): asks for far more cycles
- *   a second than the engine can run, so each frame runs as many as fit in
- *   80% of it, and counts what the pushed frames report;
- * - the page-driven loop the editor uses today (slot messages): `tick-n`
- *   back to back, each sized to take about as long as a frame.
+ * The RV32I example at the engine's limit: the worker's auto-run loop, asked
+ * for far more cycles a second than the engine can run, so each frame runs as
+ * many as fit in 80% of it. Counts what the pushed frames report.
  *
  * Also logs the size of one auto-run frame, to see whether sending only the
  * ports that changed would be worth it.
@@ -201,33 +197,17 @@ async function rv32iMax(page: Page): Promise<Record<string, number>> {
     const first = frames[0].state;
     const last = frames[frames.length - 1].state;
     const one = JSON.stringify([...last.ports, ...(last.peripherals ?? new Map())]);
-
-    // The old way: one round trip per batch.
-    await window.send({ type: 'compile', source, slot: 'rv' });
-    let n = 100;
-    let cycles = 0;
-    const t1 = performance.now();
-    while (performance.now() - t1 < 3000) {
-      const start = performance.now();
-      await window.send({ type: 'tick-n', n, slot: 'rv' });
-      const ms = performance.now() - start;
-      cycles += n;
-      n = Math.max(1, Math.round((n * 26) / Math.max(1, ms)));
-    }
-    const slotSecs = (performance.now() - t1) / 1000;
     return {
       ticks: Math.round((last.cycle - first.cycle) / secs),
       fps: Math.round(frames.length / secs),
-      pageDriven: Math.round(cycles / slotSecs),
       ports: last.ports.size,
       kb: Math.round(one.length / 102.4) / 10,
     };
-  })()`)) as { ticks: number; fps: number; pageDriven: number; ports: number; kb: number };
+  })()`)) as { ticks: number; fps: number; ports: number; kb: number };
   console.log(`  one rv32i frame: ${result.ports} ports, about ${result.kb} KB as JSON`);
   return {
     'auto-run (rv32i), max ticks/s': result.ticks,
     'auto-run (rv32i), max frames/s': result.fps,
-    'page-driven (rv32i), max ticks/s': result.pageDriven,
   };
 }
 
