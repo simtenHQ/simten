@@ -6,6 +6,7 @@ import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { checkCircuit } from '../lib/check-circuit.js';
 import { readCircuitSource } from '../lib/file-reader.js';
+import { checkFile, loadsAsModule } from '../lib/load-file.js';
 
 export function registerCheckTool(server: McpServer): void {
   server.tool(
@@ -24,7 +25,15 @@ export function registerCheckTool(server: McpServer): void {
         };
       }
 
-      const result = checkCircuit({ source: read.source, sourceName: read.sourceName });
+      // A file loads as a module, the way verify_circuit loads it; source text
+      // runs in-process.
+      const result =
+        read.file && loadsAsModule(read.source)
+          ? await checkFile(read.file)
+          : checkCircuit({ source: read.source, sourceName: read.sourceName });
+      if ('error' in result) {
+        return { content: [{ type: 'text' as const, text: result.error }], isError: true };
+      }
 
       return {
         content: [{ type: 'text' as const, text: JSON.stringify(result, null, 2) }],

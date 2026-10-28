@@ -5,9 +5,10 @@
  */
 
 import type { CircuitDefinitions } from '@simten/core/internal';
+import type { Compiled } from './compile-file.js';
 import { compileSource } from './compile-source.js';
 
-interface CheckResult {
+export interface CheckResult {
   valid: boolean;
   canSimulate: boolean;
   diagnostics: Array<{
@@ -31,8 +32,14 @@ export function checkCircuit(
   params: { source: string; sourceName?: string },
   _definitions?: CircuitDefinitions,
 ): CheckResult {
-  const compiled = compileSource(params.source, params.sourceName);
+  return checkCompiled(compileSource(params.source, params.sourceName));
+}
 
+/** The check result for circuits already compiled; `at` places a compile error. */
+export function checkCompiled(
+  compiled: Compiled,
+  at?: { line: number; column: number },
+): CheckResult {
   if (compiled.error) {
     return {
       valid: false,
@@ -43,6 +50,7 @@ export function checkCircuit(
           code: 'compile-error',
           severity: 'error',
           message: compiled.error,
+          ...at,
         },
       ],
       analysis: {

@@ -11,6 +11,8 @@ import { resolve } from 'node:path';
 interface ReadResult {
   source: string;
   sourceName?: string;
+  /** The absolute path the source was read from, when it came from a file. */
+  file?: string;
   error?: string;
 }
 
@@ -32,7 +34,7 @@ export function readCircuitSource(params: { source?: string; filePath?: string }
       return { source: '', error: `Cannot read file: ${absPath}` };
     }
 
-    return { source: raw, sourceName: absPath };
+    return { source: raw, sourceName: absPath, file: absPath };
   }
 
   return { source: '', error: 'Either "source" or "filePath" must be provided' };

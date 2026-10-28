@@ -16,12 +16,13 @@ import {
   type SimulationTrace,
   TOP_LEVEL_NODE,
 } from '@simten/core/internal';
+import type { Compiled } from './compile-file.js';
 import { compileSource } from './compile-source.js';
 import { exportVCD } from './vcd-export.js';
 
 type RLEValue = { value: BitValue | BusValue; count: number };
 
-interface SimulateResult {
+export interface SimulateResult {
   circuit: string;
   ticks: number;
   inputs: string[];
@@ -31,13 +32,12 @@ interface SimulateResult {
   vcd: string;
 }
 
-interface SimulateError {
+export interface SimulateError {
   error: string;
 }
 
-export function traceSource(params: {
-  source: string;
-  sourceName?: string;
+/** What to simulate and how, for circuits already compiled. */
+export interface TraceOptions {
   circuitName?: string;
   ticks?: number;
   // Numeric: `setNode` does not coerce, and this map feeds `topLevelInputs`,
@@ -50,11 +50,21 @@ export function traceSource(params: {
    * `{ address: value }` contents.
    */
   memoryData?: Record<string, MemoryContents>;
-}): SimulateResult | SimulateError {
+}
+
+export function traceSource(
+  params: TraceOptions & { source: string; sourceName?: string },
+): SimulateResult | SimulateError {
+  return traceCompiled(compileSource(params.source, params.sourceName), params);
+}
+
+/** Simulate one of the compiled circuits: `circuitName`, else the last one built. */
+export function traceCompiled(
+  compiled: Compiled,
+  params: TraceOptions,
+): SimulateResult | SimulateError {
   const ticks = params.ticks ?? 10;
 
-  // Compile TypeScript circuit code
-  const compiled = compileSource(params.source, params.sourceName);
   if (compiled.error) {
     return { error: compiled.error };
   }
