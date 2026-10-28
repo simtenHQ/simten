@@ -76,7 +76,10 @@ export type PeripheralValue = number | string | ReadonlyMap<number, number>;
 
 /** The flat, untyped view of a simulation. For the sandbox, the canvas and tests. */
 export interface SimulationNodes {
-  /** Write a node by exact dotted instance path: a Switch/Input value, a register, or memory contents. Unknown paths throw. */
+  /**
+   * Write a node by exact dotted instance path: a Switch/Input value, a register, or memory
+   * contents. Unknown paths throw, and a top-level input name isn't a path: drive those with `sim.set`.
+   */
   set(path: string, value: number | MemoryContents): void;
   /** Tick without recording history; then `record()` once. For the sandbox's sliced ticks. */
   advance(count: number): void;
@@ -86,6 +89,8 @@ export interface SimulationNodes {
   ports(): ReadonlyMap<string, number>;
   /** State of nodes on a peripheral bus (screens, consoles, UARTs), by node path. */
   peripherals(): ReadonlyMap<string, PeripheralValue>;
+  /** The primitive type of the node at `path` (`'Switch'`, `'Register'`), or undefined when no node has that path. */
+  primitiveOf(path: string): string | undefined;
 }
 
 const nodesBySimulation = new WeakMap<Simulation, SimulationNodes>();
@@ -112,6 +117,7 @@ export function createSimulation(
     inputNames: circuit.inputs.map((p) => p.name),
     outputNames: circuit.outputs.map((p) => p.name),
     peripheralNodes: () => peripheralBusNodes(flat, library.definitions),
+    primitiveTypes: () => new Map(flat.nodes.map((n) => [n.id, n.primitiveType])),
   });
   nodesBySimulation.set(simulation, simulation.nodes);
   return simulation;
@@ -130,6 +136,7 @@ interface EngineSimulationOptions {
   inputNames: readonly string[];
   outputNames: readonly string[];
   peripheralNodes: () => ReadonlySet<string>;
+  primitiveTypes: () => ReadonlyMap<string, string>;
 }
 
 class EngineSimulation implements Simulation {
@@ -144,6 +151,8 @@ class EngineSimulation implements Simulation {
   private readonly outputNameSet: ReadonlySet<string>;
   private readonly findPeripheralNodes: () => ReadonlySet<string>;
   private peripheralNodes: ReadonlySet<string> | null = null;
+  private readonly findPrimitiveTypes: () => ReadonlyMap<string, string>;
+  private primitiveTypes: ReadonlyMap<string, string> | null = null;
 
   private cycleCount = 0;
   /** An input changed since the logic last settled. Reads settle first. */
@@ -160,6 +169,7 @@ class EngineSimulation implements Simulation {
     this.outputNames = options.outputNames;
     this.outputNameSet = new Set(options.outputNames);
     this.findPeripheralNodes = options.peripheralNodes;
+    this.findPrimitiveTypes = options.primitiveTypes;
 
     engine.runCombinational();
     this.startHistory();
@@ -173,6 +183,10 @@ class EngineSimulation implements Simulation {
         return this.engine.getPortValues();
       },
       peripherals: () => this.peripherals(),
+      primitiveOf: (path) => {
+        this.primitiveTypes ??= this.findPrimitiveTypes();
+        return this.primitiveTypes.get(path);
+      },
     };
   }
 
@@ -193,7 +207,7 @@ class EngineSimulation implements Simulation {
       }
     }
     for (const [name, value] of entries) {
-      if (value !== undefined) this.engine.setNode(name, value);
+      if (value !== undefined) this.engine.setInput(name, value);
     }
     this.dirty = true;
   }
