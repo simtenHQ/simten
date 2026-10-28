@@ -123,6 +123,7 @@ type Response = {
   sessions?: string[];
   dropped?: string[];
   state?: { cycle: number; isRunning: boolean; ports: Record<string, number> };
+  result?: { verilog: string };
 };
 
 // Counts up once a cycle, and hangs in its eval once the count reaches 50:
@@ -349,6 +350,14 @@ try {
     (await send({ type: 'compile', compile: 'fib', source: FIBONACCI })).type === 'compiled',
   );
   await send({ type: 'open', session: 'fib-1', compile: 'fib', circuit: 'Fibonacci', history: 10 });
+  // The exporter is a chunk of its own, fetched on the first export: it must
+  // load under the sandbox's CSP.
+  const exported = await send({ type: 'export', compile: 'fib', circuit: 'Fibonacci' });
+  check(
+    'export loads the exporter and returns Verilog',
+    exported.type === 'exported' && /module Fibonacci/.test(exported.result?.verilog ?? ''),
+    exported.error ?? exported.type,
+  );
   const probeStart = Date.now();
   await send({ type: 'tick', session: 'slow-1', count: 2000 });
   const msPerCycle = (Date.now() - probeStart) / 2000;

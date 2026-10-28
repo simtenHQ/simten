@@ -27,7 +27,6 @@ import {
   createSimulation,
   type ExecuteResult,
   executeCircuitCode,
-  exportVerilogFromIR,
   getStdLibrary,
   internalsOf,
   type Library,
@@ -35,7 +34,6 @@ import {
   nodesOf,
   type SimulationNodes,
 } from '@simten/core/internal';
-import type { ExportResult } from '@simten/core/verilog';
 import type {
   BehaviorSource,
   CompileId,
@@ -446,7 +444,9 @@ export class SessionHost {
 
   private async exportCircuit(request: Request<'export'>): Promise<Reply> {
     const target = await this.findCircuit(request.compile, request.circuit);
-    const result: ExportResult = exportVerilogFromIR(target.ir, target.library, request.options);
+    // Loaded on first use: see export-circuit.ts.
+    const { exportVerilogFromIR } = await import('./export-circuit.js');
+    const result = exportVerilogFromIR(target.ir, target.library, request.options);
     return { type: 'exported', result };
   }
 
