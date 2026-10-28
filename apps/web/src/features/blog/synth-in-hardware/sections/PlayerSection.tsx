@@ -1,6 +1,6 @@
 import { internalsOf } from '@simten/core/internal';
-import { useCircuitSimulator } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
+import { useSimulation } from '@simten/ui/sandbox';
 import { useMemo, useState } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 import { buildVoice, DEFAULT_ENV_STEP, WAVES } from '../circuits';
@@ -16,6 +16,8 @@ const LABELS: Record<(typeof WAVES)[number], string> = {
 
 /** Enough ticks to move the counters visibly without blurring past them. */
 const STEP_TICKS = 64;
+/** No time travel here, so no history: playback asks for a chunk of samples ~40 times a second. */
+const OPTIONS = { history: 0 };
 
 export function PlayerSection() {
   const [wave, setWave] = useState(3); // saw
@@ -27,8 +29,8 @@ export function PlayerSection() {
   const { resolvedTheme } = useTheme();
 
   const voice = useMemo(() => buildVoice(), []);
-  const sim = useCircuitSimulator(voice, { autoHarness: false });
-  const { playing, toggle, scope } = useLiveVoice(sim, { wave, decay });
+  const { state, actions } = useSimulation(voice, OPTIONS);
+  const { playing, toggle, scope } = useLiveVoice(actions.sample, { wave, decay });
 
   return (
     <section className="py-12">
@@ -53,9 +55,9 @@ export function PlayerSection() {
         <div className="h-[520px] bg-gray-50 dark:bg-gray-950">
           <CircuitCanvas
             circuit={internalsOf(voice).ir}
-            definitions={sim.definitions ?? undefined}
-            portValues={sim.portValues}
-            sequentialState={sim.sequentialState}
+            definitions={state.definitions ?? undefined}
+            portValues={state.portValues}
+            peripheralState={state.peripheralState}
             draggable={false}
             autoLayout
             theme={resolvedTheme === 'dark' ? 'dark' : 'light'}
@@ -65,7 +67,7 @@ export function PlayerSection() {
         <div className="border-t border-gray-200 dark:border-gray-800 p-4">
           <Scope samples={scope} className="w-full h-24 block" />
           <div className="mt-1 text-xs text-gray-500 dark:text-gray-400 tabular-nums">
-            audio &middot; {sim.cycleCount.toLocaleString()} ticks elapsed
+            audio &middot; {state.cycle.toLocaleString()} ticks elapsed
           </div>
         </div>
 
@@ -74,15 +76,15 @@ export function PlayerSection() {
             <button
               type="button"
               onClick={toggle}
-              disabled={!sim.ready}
+              disabled={!state.ready}
               className="px-5 py-2.5 rounded-md bg-blue-600 text-white font-medium hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               {playing ? 'Stop' : 'Play'}
             </button>
             <button
               type="button"
-              onClick={() => sim.tickN(STEP_TICKS)}
-              disabled={playing || !sim.ready}
+              onClick={() => void actions.tick(STEP_TICKS)}
+              disabled={playing || !state.ready}
               className="px-4 py-2.5 rounded-md border border-gray-200 dark:border-gray-800 text-gray-700 dark:text-gray-200 hover:border-gray-300 dark:hover:border-gray-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Step {STEP_TICKS}

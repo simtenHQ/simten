@@ -1,5 +1,5 @@
-import { useCircuitSimulator } from '@simten/embed';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useSimulation } from '@simten/ui/sandbox';
+import { useCallback, useState } from 'react';
 import { CRC32ByteDemo } from '../circuits';
 
 // CRC-32 software reference for verification display
@@ -13,63 +13,45 @@ function crc32Byte(crc: number, byte: number): number {
 }
 
 function CRC32DemoInner() {
-  const sim = useCircuitSimulator(CRC32ByteDemo);
+  const { state, actions } = useSimulation(CRC32ByteDemo);
   const [dataInput, setDataInput] = useState('49'); // ASCII '1'
   const [cycleCount, setCycleCount] = useState(0);
   const [softwareCRC, setSoftwareCRC] = useState(0xff);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Read the current CRC output from portValues
-  const currentCRC = (() => {
-    if (!sim.portValues) return 0;
-    const v = sim.portValues.get('display.in');
-    if (v !== undefined && typeof v === 'number') return v;
-    for (const [key, value] of sim.portValues) {
-      if (key.includes('display') && typeof value === 'number') return value;
-    }
-    return 0;
-  })();
+  // The step's output, the CRC one byte on from the register.
+  const currentCRC = state.portValues?.get('display.in') ?? 0;
 
   const handleStep = useCallback(() => {
     const byteVal = Math.max(0, Math.min(255, parseInt(dataInput, 10) || 0));
-    sim.setNodeValue?.('data', byteVal);
-    sim.tick();
+    // In order: the sandbox applies one session's requests as they're sent.
+    void actions.setInput('data', byteVal);
+    void actions.tick();
     setCycleCount((c) => c + 1);
     setSoftwareCRC((prev) => crc32Byte(prev, byteVal));
-  }, [sim, dataInput]);
+  }, [actions, dataInput]);
 
   const handleReset = useCallback(() => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-    sim.reset();
+    void actions.reset();
     setCycleCount(0);
     setSoftwareCRC(0xff);
     setDataInput('49');
-  }, [sim]);
+  }, [actions]);
 
-  useEffect(() => {
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, []);
+  if (state.error) {
+    return (
+      <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-6">
+        <div className="text-red-400 text-sm font-mono">{state.error}</div>
+      </div>
+    );
+  }
 
-  if (!sim.ready) {
+  if (!state.ready) {
     return (
       <div className="rounded-xl border border-gray-700/50 bg-gray-100/50 dark:bg-gray-900/50 p-8">
         <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-600 border-t-blue-400" />
           <span className="text-sm">Compiling CRC-32 circuit...</span>
         </div>
-      </div>
-    );
-  }
-
-  if (sim.error) {
-    return (
-      <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-6">
-        <div className="text-red-400 text-sm font-mono">{sim.error}</div>
       </div>
     );
   }

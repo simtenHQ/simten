@@ -54,21 +54,21 @@ export function BreakoutDemo() {
   const { sim, pixels, isRunning, setIsRunning, stepFrame, handleReset, sendDirection } =
     useBreakoutSimulator();
 
-  if (!sim.ready) {
+  if (sim.state.error) {
+    return (
+      <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-6">
+        <div className="text-red-400 text-sm font-mono">{sim.state.error}</div>
+      </div>
+    );
+  }
+
+  if (!sim.state.ready) {
     return (
       <div className="rounded-xl border border-gray-700/50 bg-gray-100/50 dark:bg-gray-900/50 p-8">
         <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-600 border-t-blue-400" />
           <span className="text-sm">Compiling Breakout circuit...</span>
         </div>
-      </div>
-    );
-  }
-
-  if (sim.error) {
-    return (
-      <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-6">
-        <div className="text-red-400 text-sm font-mono">{sim.error}</div>
       </div>
     );
   }
@@ -151,7 +151,7 @@ export function BreakoutDemo() {
           Reset
         </button>
         <span className="ml-auto text-xs text-gray-500 dark:text-gray-400 font-mono tabular-nums">
-          Cycle {sim.cycleCount.toLocaleString()}
+          Cycle {sim.state.cycle.toLocaleString()}
         </span>
       </div>
     </div>

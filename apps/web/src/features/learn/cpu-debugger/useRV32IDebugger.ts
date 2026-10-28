@@ -1,5 +1,7 @@
-import { useCircuitSimulator } from '@simten/embed';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import type { MemoryContents } from '@simten/core/internal';
+import { useSimulation } from '@simten/ui/sandbox';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useAutoRun } from '@/lib/auto-run';
 import { RV32I_CPU } from './rv32i-cpu.circuit';
 
 // ABI register names for RV32I
@@ -78,31 +80,25 @@ function parseDisassembly(text: string): DisasmLine[] {
   return lines;
 }
 
-/** Convert base64-encoded binary to a Map for loading into ROM via setNodeValue */
-function binaryToROM(base64: string): Map<number, number> {
+/** Convert base64-encoded binary to instruction-memory contents, byte by byte. */
+function binaryToROM(base64: string): MemoryContents {
   const raw = atob(base64);
-  const m = new Map<number, number>();
+  const contents: MemoryContents = {};
   for (let i = 0; i < raw.length; i++) {
     const b = raw.charCodeAt(i);
-    if (b !== 0) m.set(i, b);
+    if (b !== 0) contents[i] = b;
   }
-  return m;
+  return contents;
 }
 
-/** Read a 32-bit port value from portValues by node label + port name.
- *  Node IDs are mangled: RV32I_CPU_ifid_pc_<timestamp>_<random>.q
- *  so we match by _nodeLabel_ substring + .portName suffix.
- */
-function readPort(
-  portValues: ReadonlyMap<string, boolean | number> | null,
-  nodeLabel: string,
-  portName: string,
-): number | null {
-  if (!portValues) return null;
-  const val = portValues.get(`${nodeLabel}.${portName}`);
-  if (val === undefined) return null;
-  return typeof val === 'number' ? val >>> 0 : null;
+/** Read one of the CPU's 32-bit outputs, off the display the harness gives it. */
+function readOutput(portValues: ReadonlyMap<string, number> | null, name: string): number | null {
+  const val = portValues?.get(`${name}.in`);
+  return val === undefined ? null : val >>> 0;
 }
+
+/** The CPU's node in the harness; its memories are under this path. */
+const CPU = 'dut';
 
 interface CompileResult {
   binary: string; // base64
@@ -111,88 +107,83 @@ interface CompileResult {
 
 export function useRV32IDebugger() {
   const [compiled, setCompiled] = useState<CompileResult | null>(null);
-  const [romData, setRomData] = useState<Map<number, number> | null>(null);
+  const [romData, setRomData] = useState<MemoryContents | null>(null);
   const [compiling, setCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
 
-  const [isRunning, setIsRunning] = useState(false);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  // Harnessed, so `debug_addr` is an Input node the debugger can scan, as a
+  // JTAG probe would. The program is part of what the simulation is built
+  // from: a new program opens a new session at cycle 0, as loading a program
+  // does on real hardware.
+  // Run executes 10 cycles a second, slow enough to watch the pipeline.
+  const options = useMemo(
+    () => ({
+      harness: true,
+      memory: romData ? { [`${CPU}.imem`]: romData } : undefined,
+      speed: 10,
+    }),
+    [romData],
+  );
+  const sim = useSimulation(RV32I_CPU, options);
+  const { state, actions } = sim;
+  const { isRunning, setIsRunning } = useAutoRun(sim);
 
-  const sim = useCircuitSimulator(RV32I_CPU);
-
-  // Load ROM data into imem via setNodeValue when ready
-  useEffect(() => {
-    if (!sim.ready || !romData) return;
-    sim.setNodeValue('imem', romData);
-    sim.runCombinational();
-  }, [sim.ready, romData]);
-
-  // Auto-run
-  useEffect(() => {
-    if (isRunning && sim.ready) {
-      intervalRef.current = setInterval(() => sim.tick(), 100);
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
+  const compile = useCallback(
+    async (source: string, language: string) => {
+      setCompiling(true);
+      setCompileError(null);
+      void actions.pause();
+      try {
+        const resp = await fetch('/api/compile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ source, language, disassemble: true }),
+        });
+        const data = (await resp.json()) as {
+          success: boolean;
+          binary?: string; // Go []byte → base64 in JSON
+          disassembly?: string;
+          stderr?: string;
+          error?: string;
+        };
+        if (!data.success || !data.binary) {
+          setCompileError(data.stderr ?? data.error ?? 'Compilation failed');
+          return;
+        }
+        const result: CompileResult = {
+          binary: data.binary,
+          disassembly: data.disassembly ?? '',
+        };
+        setCompiled(result);
+        setRomData(binaryToROM(data.binary));
+      } catch (e) {
+        setCompileError(e instanceof Error ? e.message : String(e));
+      } finally {
+        setCompiling(false);
       }
-    };
-  }, [isRunning, sim.ready, sim.tick]);
-
-  const compile = useCallback(async (source: string, language: string) => {
-    setCompiling(true);
-    setCompileError(null);
-    setIsRunning(false);
-    try {
-      const resp = await fetch('/api/compile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ source, language, disassemble: true }),
-      });
-      const data = (await resp.json()) as {
-        success: boolean;
-        binary?: string; // Go []byte → base64 in JSON
-        disassembly?: string;
-        stderr?: string;
-        error?: string;
-      };
-      if (!data.success || !data.binary) {
-        setCompileError(data.stderr ?? data.error ?? 'Compilation failed');
-        return;
-      }
-      const result: CompileResult = {
-        binary: data.binary,
-        disassembly: data.disassembly ?? '',
-      };
-      setCompiled(result);
-      setRomData(binaryToROM(data.binary));
-    } catch (e) {
-      setCompileError(e instanceof Error ? e.message : String(e));
-    } finally {
-      setCompiling(false);
-    }
-  }, []);
+    },
+    [actions],
+  );
 
   const reset = useCallback(() => {
-    setIsRunning(false);
-    sim.reset();
-  }, [sim.reset]);
+    void actions.pause();
+    void actions.reset();
+  }, [actions]);
 
   // Pipeline-stage PCs read from RV32I_Core's debug outputs (top-level ports),
   // the pipeline registers now live inside the `cpu` sub-node, so we no longer
   // reach internal node labels. MEM/WB outputs are PC+4 of the in-flight
   // instruction; subtract 4 to recover the stage PC.
   const pipelineStages: PipelineStages = {
-    IF: readPort(sim.portValues, '__top__', 'if_pc'),
-    ID: readPort(sim.portValues, '__top__', 'id_pc'),
-    EX: readPort(sim.portValues, '__top__', 'ex_pc'),
+    IF: readOutput(state.portValues, 'if_pc'),
+    ID: readOutput(state.portValues, 'id_pc'),
+    EX: readOutput(state.portValues, 'ex_pc'),
     MEM: (() => {
-      const v = readPort(sim.portValues, '__top__', 'mem_pc4');
+      const v = readOutput(state.portValues, 'mem_pc4');
       return v != null ? (v - 4) >>> 0 : null;
     })(),
     WB: (() => {
-      const v = readPort(sim.portValues, '__top__', 'wb_pc4');
+      const v = readOutput(state.portValues, 'wb_pc4');
       return v != null ? (v - 4) >>> 0 : null;
     })(),
   };
@@ -205,11 +196,11 @@ export function useRV32IDebugger() {
   const [registers, setRegisters] = useState<Map<number, number>>(new Map());
 
   useEffect(() => {
-    if (!sim.ready) return;
+    if (!state.ready) return;
     let cancelled = false;
     (async () => {
-      const values = await sim.scanPort('debug_addr', '__top__.debug_value', 32);
-      if (cancelled || !values) return;
+      const values = await actions.scan('debug_addr', 'debug_value.in', 32);
+      if (cancelled || values.length === 0) return;
       const map = new Map<number, number>();
       for (let i = 0; i < values.length; i++) map.set(i, values[i] >>> 0);
       setRegisters(map);
@@ -217,7 +208,7 @@ export function useRV32IDebugger() {
     return () => {
       cancelled = true;
     };
-  }, [sim.ready, sim.cycleCount, sim.scanPort]);
+  }, [state.ready, state.cycle, actions]);
 
   // Track which registers changed last tick
   const prevRegistersRef = useRef<Map<number, number>>(new Map());

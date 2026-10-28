@@ -5,10 +5,10 @@
  * The audio and the canvas are fed from the same ticks of the same circuit, so
  * what you watch is what you hear rather than two simulations that agree.
  *
- * `renderSamples` is what makes that possible over the sandbox boundary:
- * `tickN` reports only where the circuit ended up, and a second of sound is
- * 22,050 intermediate values. One `tick` call per sample would be that many
- * round trips a second.
+ * `sample` is what makes that possible over the sandbox boundary: `tick`
+ * reports only where the circuit ended up, and a second of sound is 22,050
+ * intermediate values. One `tick` call per sample would be that many round
+ * trips a second.
  *
  * The AudioContext has to live here, because workers and iframes have no Web
  * Audio. It asks for chunks and schedules each against
@@ -17,7 +17,7 @@
  * nothing.
  */
 
-import type { useCircuitSimulator } from '@simten/embed';
+import type { SimulationActions } from '@simten/ui/sandbox';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BEAT_SAMPLES, incFor, SAMPLE_RATE, SCORE } from './circuits';
 
@@ -29,8 +29,6 @@ const LEAD_SECONDS = 0.2;
 const CHUNK_SAMPLES = 1024;
 const SCOPE_SAMPLES = 1024;
 
-type Simulator = ReturnType<typeof useCircuitSimulator>;
-
 interface VoiceControls {
   /** Index into WAVES: the ROM bank the phase is read from. */
   wave: number;
@@ -38,7 +36,7 @@ interface VoiceControls {
   decay: number;
 }
 
-export function useLiveVoice(sim: Simulator, controls: VoiceControls) {
+export function useLiveVoice(sample: SimulationActions['sample'], controls: VoiceControls) {
   const ctxRef = useRef<AudioContext | null>(null);
   const nextStartRef = useRef(0);
   /** requestAnimationFrame handle for the pump. rAF rather than a timer
@@ -69,7 +67,7 @@ export function useLiveVoice(sim: Simulator, controls: VoiceControls) {
     // trig is high for the first sample of a note only, a one-tick gate, so it
     // gets a run of its own.
     const count = pos.sample === 0 ? 1 : Math.min(CHUNK_SAMPLES, remaining);
-    const raw = await sim.renderSamples('audio', count, {
+    const raw = await sample('__top__.audio', count, {
       inc: incFor(note.hz),
       trig: pos.sample === 0 ? 1 : 0,
       wave: controlsRef.current.wave,
@@ -82,7 +80,7 @@ export function useLiveVoice(sim: Simulator, controls: VoiceControls) {
       pos.note = (pos.note + 1) % SCORE.length;
     }
     return raw;
-  }, [sim.renderSamples]);
+  }, [sample]);
 
   const stop = useCallback(() => {
     playingRef.current = false;

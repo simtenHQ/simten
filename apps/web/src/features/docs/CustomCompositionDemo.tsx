@@ -1,7 +1,7 @@
 /**
  * Live interactive demo used by /docs/building-custom-uis to illustrate
  * tier 2 (CircuitEmbed + onPortValuesChange) and tier 4 (full composition
- * via useCircuitSimulator + CircuitCanvas).
+ * via useSimulation + your own UI).
  *
  * Self-contained: defines its own HalfAdder, doesn't rely on any
  * /learn-page modules. Keeps the docs page reproducible in isolation.
@@ -10,7 +10,8 @@
 import { bit, circuit } from '@simten/core/circuit';
 import type { FlatPortValueMap } from '@simten/core/internal';
 import { And, Xor } from '@simten/core/std';
-import { CircuitEmbed, useCircuitSimulator } from '@simten/embed';
+import { CircuitEmbed } from '@simten/embed';
+import { useSimulation } from '@simten/ui/sandbox';
 import { useState } from 'react';
 import { computeActiveRow, TruthTable } from '@/components/TruthTable';
 import { readPortBit } from '@/lib/port-values';
@@ -26,6 +27,9 @@ const HalfAdder = circuit('HalfAdderDocsDemo', {
     andGate.out.to(outputs.carry),
   ],
 });
+
+/** A switch per input and a lamp per output, so the buttons below are Switch nodes. */
+const HARNESSED = { harness: true };
 
 const HA_COLUMNS = [
   { name: 'a', group: 'input' as const },
@@ -83,12 +87,12 @@ export function Tier2EmbedWithCallback() {
  * frontend.
  */
 export function Tier4FullComposition() {
-  const sim = useCircuitSimulator(HalfAdder, { autoHarness: true });
-  const a = readPortBit(sim.portValues, 'a');
-  const b = readPortBit(sim.portValues, 'b');
-  const sum = readPortBit(sim.portValues, 'sum');
-  const carry = readPortBit(sim.portValues, 'carry');
-  const activeRow = computeActiveRow(sim.portValues, HA_COLUMNS, HA_ROWS);
+  const { state, actions } = useSimulation(HalfAdder, HARNESSED);
+  const a = readPortBit(state.portValues, 'a');
+  const b = readPortBit(state.portValues, 'b');
+  const sum = readPortBit(state.portValues, 'sum');
+  const carry = readPortBit(state.portValues, 'carry');
+  const activeRow = computeActiveRow(state.portValues, HA_COLUMNS, HA_ROWS);
 
   return (
     <div className="my-6 flex flex-col lg:flex-row lg:items-center gap-4">
@@ -98,12 +102,12 @@ export function Tier4FullComposition() {
             <ToggleControl
               label="a"
               value={a ?? 0}
-              onToggle={() => sim.setNodeValue('a', a ? 0 : 1)}
+              onToggle={() => void actions.setInput('a', a ? 0 : 1)}
             />
             <ToggleControl
               label="b"
               value={b ?? 0}
-              onToggle={() => sim.setNodeValue('b', b ? 0 : 1)}
+              onToggle={() => void actions.setInput('b', b ? 0 : 1)}
             />
             <LedReadout label="sum" lit={sum === 1} />
             <LedReadout label="carry" lit={carry === 1} />

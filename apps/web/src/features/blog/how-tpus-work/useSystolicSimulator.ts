@@ -1,84 +1,54 @@
-import { useCircuitSimulator } from '@simten/embed';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useSimulation } from '@simten/ui/sandbox';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { cyclesPerSecond, useAutoRun } from '@/lib/auto-run';
 import { TestSystolic3x3 } from './circuits';
 
+/** One cycle every 100ms until the slider says otherwise. */
+const OPTIONS = { speed: cyclesPerSecond(100) };
+
 export function useSystolicSimulator() {
-  const sim = useCircuitSimulator(TestSystolic3x3);
-  const [isRunning, setIsRunning] = useState(false);
+  const sim = useSimulation(TestSystolic3x3, OPTIONS);
+  const { state, actions } = sim;
+  const run = useAutoRun(sim);
   const [hasStarted, setHasStarted] = useState(false);
-  const [speed, setSpeed] = useState(100);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const [isDone, setIsDone] = useState(false);
 
   // Find the actual mangled node ID for "start" from the compiled circuit.
   const startNodeId = useMemo(() => {
-    if (!sim.circuit?.nodes) return null;
-    for (const node of sim.circuit.nodes) {
+    if (!state.circuit?.nodes) return null;
+    for (const node of state.circuit.nodes) {
       if (node.label === 'start' || node.id === 'start') return node.id;
     }
     return null;
-  }, [sim.circuit]);
+  }, [state.circuit]);
 
-  // Monitor the circuit's formal `done` output port (was previously a
-  // substring scan over portValues looking for a node named "done_led",
-  // replaced with a declared top-level port).
-  useEffect(() => {
-    const done = sim.portValues?.get('__top__.done');
-    if (done) {
-      setIsDone(true);
-      setIsRunning(false);
-    }
-  }, [sim.portValues]);
+  // The circuit's `done` output. It holds once the array has drained.
+  const isDone = state.portValues?.get('__top__.done') === 1;
 
-  // Auto-run interval
+  // Stop the clock at Done. The worker may run a cycle past it before the
+  // pause lands; the accumulators hold, so nothing visible moves.
   useEffect(() => {
-    if (isRunning && sim.ready) {
-      intervalRef.current = setInterval(() => {
-        sim.tick();
-      }, speed);
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [isRunning, sim.ready, speed, sim.tick]);
+    if (isDone && state.isRunning) void actions.pause();
+  }, [isDone, state.isRunning, actions]);
 
   const handleStart = useCallback(() => {
-    if (startNodeId) {
-      sim.setNodeValue(startNodeId, 1);
-    }
+    if (startNodeId) void actions.setInput(startNodeId, 1);
     setHasStarted(true);
-    setIsDone(false);
-    setIsRunning(true);
-  }, [startNodeId, sim]);
+    void actions.run();
+  }, [startNodeId, actions]);
 
   const handleStep = useCallback(() => {
     if (!hasStarted && startNodeId) {
-      sim.setNodeValue(startNodeId, 1);
+      void actions.setInput(startNodeId, 1);
       setHasStarted(true);
     }
-    sim.tick();
-  }, [hasStarted, startNodeId, sim]);
+    void actions.tick();
+  }, [hasStarted, startNodeId, actions]);
 
   const handleReset = useCallback(() => {
-    setIsRunning(false);
     setHasStarted(false);
-    setIsDone(false);
-    sim.reset();
-  }, [sim]);
+    void actions.pause();
+    void actions.reset();
+  }, [actions]);
 
-  return {
-    sim,
-    isRunning,
-    setIsRunning,
-    hasStarted,
-    speed,
-    setSpeed,
-    isDone,
-    handleStart,
-    handleStep,
-    handleReset,
-  };
+  return { sim, ...run, hasStarted, isDone, handleStart, handleStep, handleReset };
 }

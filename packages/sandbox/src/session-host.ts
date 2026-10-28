@@ -713,7 +713,10 @@ export class SessionHost {
       }
       this.send(undefined, this.updated(session));
       // Fell behind: carry at most a frame of debt rather than queue it all.
-      if (run.owed > perFrame) run.owed = perFrame;
+      // At least one cycle, or a speed under one cycle per two frames would
+      // never build up the whole cycle it needs to run.
+      const cap = Math.max(perFrame, 1);
+      if (run.owed > cap) run.owed = cap;
       run.nextAt += run.frameMs;
       // More than a frame late: start the schedule again from now.
       if (run.nextAt < now - run.frameMs) run.nextAt = now;

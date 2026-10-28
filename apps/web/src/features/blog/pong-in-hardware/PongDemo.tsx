@@ -1,36 +1,8 @@
-import { useMemo } from 'react';
-import { usePongSimulator } from './usePongSimulator';
+import { PONG_GRID as GRID_SIZE, usePongSimulator } from './usePongSimulator';
 
-const GRID_SIZE = 16;
 const PIXEL_SIZE = 24;
 const PIXEL_GAP = 2;
 const TOTAL_SIZE = GRID_SIZE * PIXEL_SIZE + (GRID_SIZE - 1) * PIXEL_GAP;
-
-/**
- * Extract pixel data from the simulator's sequential state.
- * The PongSimple circuit stores framebuffer pixels in DualPortRAM
- * at addresses 0-255 (16x16 grid).
- */
-function usePixels(sequentialState: unknown): number[] {
-  return useMemo(() => {
-    const pixels = new Array(GRID_SIZE * GRID_SIZE).fill(0);
-    const state = sequentialState as {
-      currentState?: Map<string, unknown>;
-    } | null;
-    if (!state?.currentState) return pixels;
-
-    for (const [nodeId, nodeState] of state.currentState) {
-      if (nodeState instanceof Map && nodeId.toLowerCase().includes('ram')) {
-        const mem = nodeState as Map<number, number>;
-        for (let addr = 0; addr < GRID_SIZE * GRID_SIZE; addr++) {
-          pixels[addr] = mem.get(addr) ?? 0;
-        }
-        break;
-      }
-    }
-    return pixels;
-  }, [sequentialState]);
-}
 
 function PaddlePad({
   label,
@@ -82,6 +54,7 @@ function PaddlePad({
 export function PongDemo() {
   const {
     sim,
+    pixels,
     isRunning,
     setIsRunning,
     speed,
@@ -91,23 +64,21 @@ export function PongDemo() {
     sendRightDirection,
   } = usePongSimulator();
 
-  const pixels = usePixels(sim.sequentialState);
+  if (sim.state.error) {
+    return (
+      <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-6">
+        <div className="text-red-400 text-sm font-mono">{sim.state.error}</div>
+      </div>
+    );
+  }
 
-  if (!sim.ready) {
+  if (!sim.state.ready) {
     return (
       <div className="rounded-xl border border-gray-700/50 bg-gray-100/50 dark:bg-gray-900/50 p-8">
         <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-600 border-t-blue-400" />
           <span className="text-sm">Compiling Pong circuit...</span>
         </div>
-      </div>
-    );
-  }
-
-  if (sim.error) {
-    return (
-      <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-6">
-        <div className="text-red-400 text-sm font-mono">{sim.error}</div>
       </div>
     );
   }
@@ -180,7 +151,7 @@ export function PongDemo() {
           {isRunning ? 'Pause' : 'Run'}
         </button>
         <button
-          onClick={sim.tick}
+          onClick={() => void sim.actions.tick()}
           disabled={isRunning}
           className="px-3 py-2 text-sm font-medium rounded-md bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors disabled:opacity-40"
         >
@@ -204,7 +175,7 @@ export function PongDemo() {
           />
         </div>
         <span className="text-xs text-gray-500 dark:text-gray-400 font-mono tabular-nums">
-          Cycle {sim.cycleCount.toLocaleString()}
+          Cycle {sim.state.cycle.toLocaleString()}
         </span>
       </div>
     </div>

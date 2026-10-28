@@ -287,7 +287,7 @@ function InspectorCanvas({
         circuit={viewCircuit}
         definitions={definitions}
         portValues={portValues}
-        sequentialState={null}
+        peripheralState={null}
         onToggleNode={handleToggle}
         onSetNodeValue={handleNumericChange}
         onNodeDoubleClick={handleNodeDoubleClick}

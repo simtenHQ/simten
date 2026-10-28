@@ -118,11 +118,11 @@ export function CPU6502Demo() {
 
   // Auto-start running after compile → load → simulator rebuild
   useEffect(() => {
-    if (autoRunRef.current && sim.ready) {
+    if (autoRunRef.current && sim.state.ready) {
       autoRunRef.current = false;
       setIsRunning(true);
     }
-  }, [sim.ready, setIsRunning]);
+  }, [sim.state.ready, setIsRunning]);
 
   const handleSelectProgram = useCallback(
     (id: string) => {
@@ -150,7 +150,7 @@ export function CPU6502Demo() {
     );
   }
 
-  if (loading || !sim.ready) {
+  if (loading || !sim.state.ready) {
     return (
       <div className="rounded-xl border border-gray-700/50 bg-gray-100/50 dark:bg-gray-900/50 p-8">
         <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
@@ -364,7 +364,7 @@ export function CPU6502Demo() {
         {/* Step */}
         <button
           type="button"
-          onClick={sim.tick}
+          onClick={() => void sim.actions.tick()}
           disabled={isRunning}
           className="px-3 py-2 text-sm font-medium rounded-md bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors disabled:opacity-40"
         >
@@ -401,7 +401,7 @@ export function CPU6502Demo() {
 
         {/* Cycle counter */}
         <span className="text-xs text-gray-500 dark:text-gray-400 font-mono tabular-nums">
-          Cycle {sim.cycleCount.toLocaleString()}
+          Cycle {sim.state.cycle.toLocaleString()}
         </span>
       </div>
     </div>

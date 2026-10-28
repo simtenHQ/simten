@@ -630,7 +630,7 @@ export function EditorWorkspace({
                         showControls
                         renderEmptyState={bootDone && codeEmpty ? renderEmptyState : undefined}
                         portValues={sim.portValues}
-                        sequentialState={sim.sequentialState}
+                        peripheralState={sim.peripheralState}
                         onToggleNode={onToggleNode}
                         onSetNodeValue={onSetNodeValue}
                         onLoadMemory={onLoadMemory}
@@ -662,7 +662,7 @@ export function EditorWorkspace({
                     showControls
                     renderEmptyState={bootDone && codeEmpty ? renderEmptyState : undefined}
                     portValues={sim.portValues}
-                    sequentialState={sim.sequentialState}
+                    peripheralState={sim.peripheralState}
                     onToggleNode={onToggleNode}
                     onSetNodeValue={onSetNodeValue}
                     onLoadMemory={onLoadMemory}

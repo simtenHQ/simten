@@ -1,20 +1,41 @@
-import { useCircuitSimulator } from '@simten/embed';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { PeripheralValue } from '@simten/core/internal';
+import { useSimulation } from '@simten/ui/sandbox';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PongSimple } from './circuits';
 
+/** The framebuffer is 16x16, one byte per pixel. */
+export const PONG_GRID = 16;
+
+/** One game frame is a 14-phase pipeline: 14 clock cycles. */
+const CYCLES_PER_FRAME = 14;
+
+/** The framebuffer: the contents of the `ram` node, which the screen reads. */
+function framebuffer(peripherals: ReadonlyMap<string, PeripheralValue>): number[] {
+  const pixels = new Array(PONG_GRID * PONG_GRID).fill(0);
+  const ram = peripherals.get('ram');
+  if (ram instanceof Map) {
+    for (let addr = 0; addr < pixels.length; addr++) pixels[addr] = ram.get(addr) ?? 0;
+  }
+  return pixels;
+}
+
+/** The switches that run the game, on from the start. */
+const ENABLES = ['phaseEnable', 'updateEnable', 'writeEnable'];
+
 export function usePongSimulator() {
-  const sim = useCircuitSimulator(PongSimple);
+  const sim = useSimulation(PongSimple);
+  const { state, actions } = sim;
   const [isRunning, setIsRunning] = useState(false);
+  // Milliseconds per game frame.
   const [speed, setSpeed] = useState(60);
-  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const hasInitialized = useRef(false);
+  const pixels = useMemo(() => framebuffer(state.peripheralState), [state.peripheralState]);
 
   // Find node IDs for keyboard inputs and switches
   const nodeIds = useMemo(() => {
     const map: Record<string, string> = {};
-    if (!sim.circuit?.nodes) return map;
-    const names = ['keyboard0', 'keyboard1', 'phaseEnable', 'updateEnable', 'writeEnable'];
-    for (const node of sim.circuit.nodes) {
+    if (!state.circuit?.nodes) return map;
+    const names = ['keyboard0', 'keyboard1', ...ENABLES];
+    for (const node of state.circuit.nodes) {
       for (const name of names) {
         if (node.label === name || node.id === name) {
           map[name] = node.id;
@@ -22,39 +43,35 @@ export function usePongSimulator() {
       }
     }
     return map;
-  }, [sim.circuit]);
+  }, [state.circuit]);
 
-  // Auto-toggle switches when simulator is ready
-  // Constants are now embedded via Input(value=...) and Register(initial=...)
+  // Turn the enable switches on once the circuit is up. Switches keep their
+  // position through a reset, as on a real board, so this runs once per session.
   useEffect(() => {
-    if (sim.ready && !hasInitialized.current) {
-      hasInitialized.current = true;
-
-      // Toggle switches ON
-      if (nodeIds.phaseEnable) sim.toggleNode(nodeIds.phaseEnable);
-      if (nodeIds.updateEnable) sim.toggleNode(nodeIds.updateEnable);
-      if (nodeIds.writeEnable) sim.toggleNode(nodeIds.writeEnable);
+    if (!state.ready) return;
+    for (const name of ENABLES) {
+      if (nodeIds[name]) void actions.setInput(nodeIds[name], 1);
     }
-  }, [sim.ready, sim.toggleNode, nodeIds]);
+  }, [state.ready, actions, nodeIds]);
 
   // Each paddle gets its own keyboard input node so both can be held at once
   const sendLeftDirection = useCallback(
     (code: number) => {
-      if (nodeIds.keyboard0) sim.setNodeValue(nodeIds.keyboard0, code);
+      if (nodeIds.keyboard0) void actions.setInput(nodeIds.keyboard0, code);
     },
-    [nodeIds, sim.setNodeValue],
+    [nodeIds, actions],
   );
 
   const sendRightDirection = useCallback(
     (code: number) => {
-      if (nodeIds.keyboard1) sim.setNodeValue(nodeIds.keyboard1, code);
+      if (nodeIds.keyboard1) void actions.setInput(nodeIds.keyboard1, code);
     },
-    [nodeIds, sim.setNodeValue],
+    [nodeIds, actions],
   );
 
   // Keyboard listener: W/S drive the left paddle, arrows the right
   useEffect(() => {
-    if (!sim.ready) return;
+    if (!state.ready) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       switch (e.key) {
@@ -98,34 +115,30 @@ export function usePongSimulator() {
       window.removeEventListener('keydown', handleKeyDown);
       window.removeEventListener('keyup', handleKeyUp);
     };
-  }, [sim.ready, sendLeftDirection, sendRightDirection]);
+  }, [state.ready, sendLeftDirection, sendRightDirection]);
 
-  // Auto-run interval: run a complete 14-phase game frame each time.
-  // Speed controls how often frames run (higher = slower ball + paddles).
-  // tickN batches all 14 cycles into one sandbox round-trip and one React
-  // update, so React renders only at end-of-frame (no mid-cycle flicker).
+  // Pong has no frame sync, so the page asks for whole 14-cycle frames; a worker-run frame lands mid-draw and tears.
   useEffect(() => {
-    if (isRunning && sim.ready) {
-      intervalRef.current = setInterval(() => {
-        sim.tickN(14);
-      }, speed);
-    }
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
-    };
-  }, [isRunning, sim.ready, speed, sim.tickN]);
+    if (!isRunning || !state.ready) return;
+    let inFlight = false;
+    const timer = setInterval(() => {
+      if (inFlight) return;
+      inFlight = true;
+      void actions.tick(CYCLES_PER_FRAME).finally(() => {
+        inFlight = false;
+      });
+    }, speed);
+    return () => clearInterval(timer);
+  }, [isRunning, state.ready, speed, actions]);
 
   const handleReset = useCallback(() => {
     setIsRunning(false);
-    hasInitialized.current = false;
-    sim.reset();
-  }, [sim]);
+    void actions.reset();
+  }, [actions]);
 
   return {
     sim,
+    pixels,
     isRunning,
     setIsRunning,
     speed,

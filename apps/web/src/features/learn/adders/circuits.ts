@@ -16,7 +16,7 @@ import type { BlogCircuit } from '@/features/blog/types';
 
 // ── Half adder ─────────────────────────────────────────────────────────
 // Exported so HalfAdderSection can drive it directly via the composition
-// pattern (useCircuitSimulator + CircuitCanvas + the live truth table).
+// pattern (CircuitEmbed + onPortValuesChange + the live truth table).
 export const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
   outputs: { sum: bit, carry: bit },
@@ -108,7 +108,7 @@ const CarryLookaheadDemo = RippleCarryDemo; // placeholder
 export const ADDER_CIRCUITS = {
   // halfAdder / fullAdder used to live here as standalone Demo wrappers.
   // The half-adder and full-adder sections now drive HalfAdder / FullAdder
-  // directly via useCircuitSimulator + autoHarness, so those entries are
+  // directly through CircuitEmbed, so those entries are
   // gone; the bare circuits are exported above for that composition.
   rippleCarry: {
     name: '8-bit ripple-carry adder',

@@ -21,21 +21,21 @@ export function CORDICDemo() {
 
   // Read display values from port values
   const getDisplayValue = (name: string): number => {
-    if (!sim.portValues) return 0;
+    if (!sim.state.portValues) return 0;
     // Try plain key first (TS builder format)
     const displayKey = `${name}Display.in`;
-    const plain = sim.portValues.get(displayKey);
+    const plain = sim.state.portValues.get(displayKey);
     if (plain !== undefined && typeof plain === 'number') return plain;
-    const plainQ = sim.portValues.get(`${name}.q`);
+    const plainQ = sim.state.portValues.get(`${name}.q`);
     if (plainQ !== undefined && typeof plainQ === 'number') return plainQ;
     // Fallback: legacy node ID format
-    for (const [key, value] of sim.portValues) {
+    for (const [key, value] of sim.state.portValues) {
       if (key.includes(name) && (key.includes('Display') || key.includes('display'))) {
         return typeof value === 'number' ? value : 0;
       }
     }
     // Fallback: search register outputs
-    for (const [key, value] of sim.portValues) {
+    for (const [key, value] of sim.state.portValues) {
       if (key.includes(`_${name}_`) && key.endsWith('.q')) {
         return typeof value === 'number' ? value : 0;
       }
@@ -43,21 +43,21 @@ export function CORDICDemo() {
     return 0;
   };
 
-  if (!sim.ready) {
+  if (sim.state.error) {
+    return (
+      <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-6">
+        <div className="text-red-400 text-sm font-mono">{sim.state.error}</div>
+      </div>
+    );
+  }
+
+  if (!sim.state.ready) {
     return (
       <div className="rounded-xl border border-gray-700/50 bg-gray-100/50 dark:bg-gray-900/50 p-8">
         <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
           <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-600 border-t-blue-400" />
           <span className="text-sm">Compiling CORDIC circuit...</span>
         </div>
-      </div>
-    );
-  }
-
-  if (sim.error) {
-    return (
-      <div className="rounded-xl border border-red-800/50 bg-red-950/30 p-6">
-        <div className="text-red-400 text-sm font-mono">{sim.error}</div>
       </div>
     );
   }
@@ -90,12 +90,12 @@ export function CORDICDemo() {
 
         {/* Circuit canvas */}
         <CircuitCanvas
-          circuit={sim.circuit}
-          definitions={sim.definitions ?? undefined}
-          portValues={sim.portValues}
-          sequentialState={sim.sequentialState}
-          onToggleNode={sim.toggleNode}
-          onSetNodeValue={sim.setNodeValue}
+          circuit={sim.state.circuit}
+          definitions={sim.state.definitions ?? undefined}
+          portValues={sim.state.portValues}
+          peripheralState={sim.state.peripheralState}
+          onToggleNode={sim.actions.toggleNode}
+          onSetNodeValue={sim.actions.setInput}
           height={400}
           layout={CORDIC_LAYOUT}
         />
@@ -114,7 +114,7 @@ export function CORDICDemo() {
             {isRunning ? 'Pause' : 'Run'}
           </button>
           <button
-            onClick={sim.tick}
+            onClick={() => void sim.actions.tick()}
             disabled={isRunning || isDone}
             className="px-3 py-2 text-sm font-medium rounded-md bg-gray-700 hover:bg-gray-600 text-gray-200 transition-colors disabled:opacity-40"
           >
@@ -138,7 +138,7 @@ export function CORDICDemo() {
             />
           </div>
           <span className="text-xs text-gray-500 dark:text-gray-400 font-mono tabular-nums">
-            Cycle {sim.cycleCount.toLocaleString()}
+            Cycle {sim.state.cycle.toLocaleString()}
           </span>
         </div>
       </div>

@@ -10,7 +10,7 @@ import type {
   CircuitDefinitions,
   CircuitIR,
   FlatPortValueMap,
-  FlatSequentialState,
+  PeripheralValue,
   PortPath,
 } from '@simten/core/internal';
 import { hasMadeOf } from '@simten/core/std';
@@ -89,7 +89,7 @@ function projectCircuitToNodes(
   metadata: MetadataState,
   definitions: CircuitDefinitions,
   portValues?: FlatPortValueMap,
-  seqState?: FlatSequentialState,
+  peripheralState?: ReadonlyMap<string, PeripheralValue>,
 ): ReactFlowNode<NodeData>[] {
   const reactFlowNodes: ReactFlowNode<NodeData>[] = [];
 
@@ -176,17 +176,17 @@ function projectCircuitToNodes(
       const totalPixels = screenW * screenH;
       pixels = new Array(totalPixels).fill(0);
 
-      if (seqState && portValues) {
+      if (peripheralState && portValues) {
         const dataInConnection = Array.from(circuit.connections).find(
           (conn) => conn.target.nodeId === node.id && conn.target.portName === 'dataIn',
         );
         if (dataInConnection) {
           const sourceNode = circuit.nodes.find((n) => n.id === dataInConnection.source.nodeId);
           if (sourceNode?.componentRef === 'DualPortRAM') {
-            const ramState = seqState.currentState.get(sourceNode.id);
+            const ramState = peripheralState.get(sourceNode.id);
             if (ramState instanceof Map) {
               for (let addr = 0; addr < totalPixels; addr++) {
-                pixels[addr] = (ramState as Map<number, number>).get(addr) ?? 0;
+                pixels[addr] = ramState.get(addr) ?? 0;
               }
             }
           } else if (sourceNode?.componentRef === 'Mux') {
@@ -200,10 +200,10 @@ function projectCircuitToNodes(
             if (muxInputConnection) {
               const ramNode = circuit.nodes.find((n) => n.id === muxInputConnection.source.nodeId);
               if (ramNode?.componentRef === 'DualPortRAM') {
-                const ramState = seqState.currentState.get(ramNode.id);
+                const ramState = peripheralState.get(ramNode.id);
                 if (ramState instanceof Map) {
                   for (let addr = 0; addr < totalPixels; addr++) {
-                    pixels[addr] = (ramState as Map<number, number>).get(addr) ?? 0;
+                    pixels[addr] = ramState.get(addr) ?? 0;
                   }
                 }
               }
@@ -216,29 +216,28 @@ function projectCircuitToNodes(
       const rasterH = (node.arguments.height as number) ?? 8;
       const rasterPixels = rasterW * rasterH;
       pixels = new Array(rasterPixels).fill(0);
-      if (seqState) {
-        const displayState = seqState.currentState.get(node.id);
+      if (peripheralState) {
+        const displayState = peripheralState.get(node.id);
         if (displayState instanceof Map) {
           for (let addr = 0; addr < rasterPixels; addr++) {
-            pixels[addr] = (displayState as Map<number, number>).get(addr) ?? 0;
+            pixels[addr] = displayState.get(addr) ?? 0;
           }
         }
       }
     } else if (node.componentRef === 'Console') {
-      if (seqState) {
-        const consoleState = seqState.currentState.get(node.id);
+      if (peripheralState) {
+        const consoleState = peripheralState.get(node.id);
         if (typeof consoleState === 'string') consoleText = consoleState;
       }
     } else if (node.componentRef === 'UART_TX') {
-      if (seqState) {
-        const uartState = seqState.currentState.get(node.id);
+      if (peripheralState) {
+        const uartState = peripheralState.get(node.id);
         if (typeof uartState === 'string') uartText = uartState;
       }
     } else if (node.componentRef === 'NIC_FIFO') {
-      if (seqState) {
-        const state = seqState.currentState.get(node.id);
-        if (state instanceof Map) {
-          const s = state as Map<number, number>;
+      if (peripheralState) {
+        const s = peripheralState.get(node.id);
+        if (s instanceof Map) {
           const txWp = s.get(0x2000) ?? 0;
           const txRp = s.get(0x2001) ?? 0;
           const rxCount = s.get(0x2012) ?? 0;
@@ -278,11 +277,11 @@ function projectCircuitToNodes(
   }
 
   // Surface nested console/UART nodes
-  if (seqState) {
+  if (peripheralState) {
     const existingNodeIds = new Set(reactFlowNodes.map((n) => n.id));
     let consoleIndex = 0;
 
-    for (const [nodeId, state] of seqState.currentState.entries()) {
+    for (const [nodeId, state] of peripheralState.entries()) {
       if (existingNodeIds.has(nodeId)) continue;
       if (typeof state === 'string') {
         const pathParts = nodeId.split('.');
@@ -443,12 +442,12 @@ export function projectCircuitToReactFlow(
   metadata: MetadataState,
   definitions: CircuitDefinitions,
   portValues?: FlatPortValueMap,
-  seqState?: FlatSequentialState,
+  peripheralState?: ReadonlyMap<string, PeripheralValue>,
 ) {
   if (!circuit) return { nodes: [], edges: [] };
 
   return {
-    nodes: projectCircuitToNodes(circuit, metadata, definitions, portValues, seqState),
+    nodes: projectCircuitToNodes(circuit, metadata, definitions, portValues, peripheralState),
     edges: projectCircuitToEdges(circuit, definitions, portValues),
   };
 }

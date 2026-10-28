@@ -24,6 +24,8 @@ import type {
   CircuitIR,
   FlatPortValueMap,
   FlatSequentialState,
+  PeripheralValue,
+  PrimitiveState,
   SimulatorEngine,
 } from '@simten/core/internal';
 import { autoHarness, buildFromIR, internalsOf, isSequentialCircuit } from '@simten/core/internal';
@@ -54,6 +56,8 @@ export interface SimulatorState {
   circuit: CircuitIR | null;
   portValues: FlatPortValueMap | null;
   sequentialState: FlatSequentialState | null;
+  /** The same peripheral state, in the shape `CircuitCanvas` takes. */
+  peripheralState: ReadonlyMap<string, PeripheralValue>;
   definitions: CircuitDefinitions | null;
   history: readonly { engineSnapshot: unknown; metadata?: unknown }[];
   historyIndex: number;
@@ -523,7 +527,7 @@ export function useCircuitSimulator(
       if (!ready) return null;
       // Map values (for ROM/RAM loading) are supported via structured clone in postMessage.
       // Same reasoning as setNode: no history entry on this path.
-      const result = await sandbox.setNode(nodeId, value as any, slotId);
+      const result = await sandbox.setNode(nodeId, value, slotId);
       if ('error' in result) return null;
       const pvMap = new Map<string, BitValue | BusValue>();
       for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
@@ -750,8 +754,11 @@ export function useCircuitSimulator(
   const sequentialState = useMemo<FlatSequentialState | null>(() => {
     const entries = Object.entries(peripheralState);
     if (entries.length === 0) return null;
-    const currentState = new Map<string, any>();
-    for (const [k, v] of entries) currentState.set(k, v);
+    const currentState = new Map<string, PrimitiveState>();
+    for (const [k, v] of entries) {
+      if (typeof v === 'number' || typeof v === 'string' || v instanceof Map)
+        currentState.set(k, v);
+    }
     return {
       currentState,
       nextState: new Map(),
@@ -759,6 +766,14 @@ export function useCircuitSimulator(
       cycleCount: cycle,
     };
   }, [peripheralState, cycle]);
+
+  const peripheralMap = useMemo(() => {
+    const map = new Map<string, PeripheralValue>();
+    for (const [k, v] of Object.entries(peripheralState)) {
+      if (typeof v === 'number' || typeof v === 'string' || v instanceof Map) map.set(k, v);
+    }
+    return map;
+  }, [peripheralState]);
 
   // Shadow-typed history for the UI: the consumer only needs a length for
   // showing the `N/M` counter and the ◀ ▶ enable logic. historyLen drives
@@ -817,6 +832,7 @@ export function useCircuitSimulator(
     circuit: harnessedCircuit,
     portValues: portValues.size > 0 ? portValues : null,
     sequentialState,
+    peripheralState: peripheralMap,
     definitions,
     history: historyForUi,
     historyIndex,

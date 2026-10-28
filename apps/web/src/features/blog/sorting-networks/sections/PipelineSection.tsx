@@ -1,26 +1,19 @@
-import { useCircuitSimulator } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
+import { useSimulation } from '@simten/ui/sandbox';
 import { PipelinedSortDemo } from '../circuits';
 
 export function PipelineSection() {
-  const sim = useCircuitSimulator(PipelinedSortDemo);
+  const sim = useSimulation(PipelinedSortDemo);
 
-  // Read output values from portValues; keys are like "sorter.s0", "sorter.s1", etc.
-  const getOutputValue = (key: string): number => {
-    if (!sim.portValues) return 0;
-    const direct = sim.portValues.get(key);
-    if (direct !== undefined && typeof direct === 'number') return direct;
-    // Fallback: scan for a key ending with the suffix
-    for (const [k, v] of sim.portValues) {
-      if (k.endsWith(key)) return typeof v === 'number' ? v : 0;
-    }
-    return 0;
-  };
+  // The sorter's outputs, read where they arrive: the displays d0..d3. The
+  // sorter is a composite, so its own boundary ports aren't in the port map.
+  const getOutputValue = (display: string): number =>
+    sim.state.portValues?.get(`${display}.in`) ?? 0;
 
-  const s0 = getOutputValue('sorter.s0');
-  const s1 = getOutputValue('sorter.s1');
-  const s2 = getOutputValue('sorter.s2');
-  const s3 = getOutputValue('sorter.s3');
+  const s0 = getOutputValue('d0');
+  const s1 = getOutputValue('d1');
+  const s2 = getOutputValue('d2');
+  const s3 = getOutputValue('d3');
 
   return (
     <section className="py-12">
@@ -52,7 +45,7 @@ export function PipelineSection() {
       </div>
 
       <div className="mt-8 rounded-xl border border-gray-200 dark:border-gray-700/50 bg-gray-100 dark:bg-gray-900/80 overflow-hidden">
-        {!sim.ready && (
+        {!sim.state.ready && (
           <div className="p-8">
             <div className="flex items-center gap-3 text-gray-500 dark:text-gray-400">
               <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 dark:border-gray-600 border-t-blue-400" />
@@ -61,7 +54,7 @@ export function PipelineSection() {
           </div>
         )}
 
-        {sim.ready && (
+        {sim.state.ready && (
           <>
             {/* Output values header */}
             <div className="px-4 py-3 border-b border-gray-200 dark:border-gray-700/50">
@@ -85,7 +78,7 @@ export function PipelineSection() {
                     </span>
                   </div>
                 </div>
-                {sim.cycleCount >= 3 && (
+                {sim.state.cycle >= 3 && (
                   <span className="ml-auto text-xs font-medium text-green-600 dark:text-green-400 bg-green-100 dark:bg-green-900/30 px-2 py-1 rounded">
                     Pipeline full &middot; 1 sort/cycle
                   </span>
@@ -95,34 +88,34 @@ export function PipelineSection() {
 
             {/* Circuit canvas */}
             <CircuitCanvas
-              circuit={sim.circuit}
-              definitions={sim.definitions ?? undefined}
-              portValues={sim.portValues}
-              sequentialState={sim.sequentialState}
-              onToggleNode={sim.toggleNode}
-              onSetNodeValue={sim.setNodeValue}
+              circuit={sim.state.circuit}
+              definitions={sim.state.definitions ?? undefined}
+              portValues={sim.state.portValues}
+              peripheralState={sim.state.peripheralState}
+              onToggleNode={sim.actions.toggleNode}
+              onSetNodeValue={sim.actions.setInput}
               height={400}
             />
 
             {/* Controls bar */}
             <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-100 dark:bg-gray-900/90">
               <button
-                onClick={sim.tick}
+                onClick={() => void sim.actions.tick()}
                 className="px-4 py-2 text-sm font-medium rounded-md bg-blue-600 hover:bg-blue-500 text-white transition-colors"
               >
                 Step
               </button>
               <button
-                onClick={sim.reset}
+                onClick={() => void sim.actions.reset()}
                 className="px-3 py-2 text-sm font-medium rounded-md bg-gray-200 hover:bg-gray-300 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 transition-colors"
               >
                 Reset
               </button>
               <span className="ml-auto text-xs text-gray-500 dark:text-gray-400 font-mono tabular-nums">
-                Cycle {sim.cycleCount}
-                {sim.cycleCount < 3 && (
+                Cycle {sim.state.cycle}
+                {sim.state.cycle < 3 && (
                   <span className="ml-2 text-amber-600 dark:text-amber-400">
-                    ({3 - sim.cycleCount} cycle{3 - sim.cycleCount !== 1 ? 's' : ''} until first
+                    ({3 - sim.state.cycle} cycle{3 - sim.state.cycle !== 1 ? 's' : ''} until first
                     result)
                   </span>
                 )}

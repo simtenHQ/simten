@@ -1,4 +1,4 @@
-import { useCircuitSimulator } from '@simten/embed';
+import { useSimulation } from '@simten/ui/sandbox';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Blog6502Computer, romImage } from './computer6502.circuit';
 
@@ -96,17 +96,17 @@ export function useSimulator6502() {
     () => (state.rom ? Blog6502Computer({ rom: romImage(state.rom) }) : null),
     [state.rom],
   );
-  const sim = useCircuitSimulator(circuit);
+  const sim = useSimulation(circuit);
+  const { outputs } = sim.state;
 
   const consoleText = (() => {
-    if (!sim.sequentialState?.currentState) return '';
-    for (const [key, value] of sim.sequentialState.currentState) {
+    for (const [key, value] of sim.state.peripheralState) {
       if (key.toLowerCase().includes('console') && typeof value === 'string') return value;
     }
     return '';
   })();
 
-  const pc = sim.outputs.pc ?? 0;
+  const pc = outputs.pc ?? 0;
   const recentPcs = useRef<number[]>([]);
   useEffect(() => {
     recentPcs.current = [...recentPcs.current.slice(-3), pc];
@@ -118,13 +118,14 @@ export function useSimulator6502() {
 
   // Run loop: one sandbox round trip per batch, then a frame for the page to
   // repaint. Pauses itself once the program parks in its final `while(1)`.
-  const { tickN, ready } = sim;
+  const { ready } = sim.state;
+  const { tick } = sim.actions;
   useEffect(() => {
     if (!isRunning || !ready) return;
     let cancelled = false;
     void (async () => {
       while (!cancelled) {
-        await tickN(batchRef.current);
+        await tick(batchRef.current);
         await new Promise((r) => requestAnimationFrame(r));
         // A finished program jumps to itself, so after several large batches
         // in a row the PC is still within a few bytes.
@@ -143,7 +144,7 @@ export function useSimulator6502() {
     return () => {
       cancelled = true;
     };
-  }, [isRunning, ready, tickN]);
+  }, [isRunning, ready, tick]);
 
   const restart = useCallback(() => {
     setIsRunning(false);
@@ -183,11 +184,11 @@ export function useSimulator6502() {
     consoleText,
     registers: {
       pc,
-      a: sim.outputs.a ?? 0,
-      x: sim.outputs.x ?? 0,
-      y: sim.outputs.y ?? 0,
-      s: sim.outputs.s ?? 0,
-      p: sim.outputs.p ?? 0,
+      a: outputs.a ?? 0,
+      x: outputs.x ?? 0,
+      y: outputs.y ?? 0,
+      s: outputs.s ?? 0,
+      p: outputs.p ?? 0,
     },
     halted,
 

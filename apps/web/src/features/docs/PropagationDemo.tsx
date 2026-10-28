@@ -7,8 +7,8 @@ import {
   tracePropagation,
 } from '@simten/core/internal';
 import { And, Led, Switch, Xor } from '@simten/core/std';
-import { useCircuitSimulator } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
+import { useSimulation } from '@simten/ui/sandbox';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const HalfAdder = circuit('HalfAdder', {
@@ -77,7 +77,7 @@ function describeStep(step: PropagationStep): string {
 }
 
 export function PropagationDemo() {
-  const sim = useCircuitSimulator(HalfAdderDemo);
+  const sim = useSimulation(HalfAdderDemo);
   const [activeStep, setActiveStep] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -129,9 +129,9 @@ export function PropagationDemo() {
 
   // Find which circuit-level node label matches for the focus prop
   const focusLabel = useMemo(() => {
-    if (!currentStep || !sim.circuit) return null;
+    if (!currentStep || !sim.state.circuit) return null;
     // Try to find a node whose label or id matches the trace nodeId
-    for (const node of sim.circuit.nodes) {
+    for (const node of sim.state.circuit.nodes) {
       const nodeLabel = node.label || node.id;
       // Plain key match (TS builder format: nodeId equals label)
       if (currentStep.nodeId === nodeLabel) return nodeLabel;
@@ -139,11 +139,11 @@ export function PropagationDemo() {
       if (currentStep.nodeId.includes(`_${nodeLabel}_`)) return nodeLabel;
     }
     return null;
-  }, [currentStep, sim.circuit]);
+  }, [currentStep, sim.state.circuit]);
 
   const description = currentStep ? describeStep(currentStep) : null;
 
-  if (!sim.ready || !sim.circuit) {
+  if (!sim.state.ready || !sim.state.circuit) {
     return (
       <div className="rounded-xl border border-gray-700/50 bg-gray-900/50 flex items-center justify-center h-48 text-gray-500 text-sm">
         Compiling circuit...
@@ -263,12 +263,12 @@ export function PropagationDemo() {
 
       {/* Circuit */}
       <CircuitCanvas
-        circuit={sim.circuit}
-        definitions={sim.definitions ?? undefined}
-        portValues={sim.portValues}
-        sequentialState={sim.sequentialState}
-        onToggleNode={sim.toggleNode}
-        onSetNodeValue={sim.setNodeValue}
+        circuit={sim.state.circuit}
+        definitions={sim.state.definitions ?? undefined}
+        portValues={sim.state.portValues}
+        peripheralState={sim.state.peripheralState}
+        onToggleNode={sim.actions.toggleNode}
+        onSetNodeValue={sim.actions.setInput}
         height={280}
         focus={focusLabel ? [focusLabel] : undefined}
         theme="dark"
