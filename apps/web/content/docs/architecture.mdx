@@ -223,14 +223,16 @@ One hook, `useSimulation`, compiles and simulates. Give it a circuit built on th
 | Call | Input | Used by |
 |------|-------|---------|
 | `useSimulation(circuit, options)` | `Circuit` built on the page, sent as IR plus behavior as text (`compile-ir`) | `CircuitViewer` → `CircuitEmbed`, landing page, blog demos, docs demos, the RV32I debugger |
-| `useSimulation({ source, circuit? }, options)` | source text | `<circuit-embed>` |
-| `useSandboxClient().compile(source)` | source text | code that compiles without simulating, such as the docs pipeline visualizer |
+| `useSimulation({ source, circuit? }, options)` | source text | the editor, the game's level page and map drilldown, `<circuit-embed>` |
+| `useSandboxClient()` | source text | code that compiles without simulating: the game's grader, the docs pipeline visualizer |
 
 `options` takes `harness` (wrap in switches and lamps), `initialInputs`, `history` (200 steps by default) and `memory` (contents by node path, loaded before cycle 0; a new object opens a new session, as loading a program does on real hardware). The page can write only switches and input nodes (`actions.setInput`) and a bare circuit's own inputs (`actions.set`).
 
 Each `SandboxProvider` holds one sandbox, and each `useSimulation` under it opens its own session, so simulation state never leaks across embeds. Every `<circuit-embed>` element has a provider, and so a sandbox, of its own.
 
-The editor, the game and the drill-down inspector still use the older `useCircuitSimulator` and `useSandbox` from `@simten/embed` and `@simten/ui/sandbox`, which keep a slot per consumer in the same sandbox app. They move to `useSimulation` next (#417).
+The drill-down inspector is a view of the simulation the canvas is showing. It draws a composite from its definition and reads its values from the same session's port map by dotted path (`dut.ha1.x.out`), so it shows the same cycle as the canvas and moves with it while auto-run is on. It writes nothing: a composite's input ports are drawn as indicators, not switches. A primitive's gate-level reference build (`MADE_OF`, an `Adder` drawn as full adders) isn't in the running circuit, so while its frame is open it runs as a second session in the same sandbox, fed the primitive's input values from the first.
+
+The editor's Verilog export runs in the sandbox too (`actions.exportVerilog()`), with the compile's own behavior, so a design exports the same in the browser as headless.
 
 Data flows one direction, from the compiled circuit to the sandbox to the UI:
 
@@ -244,36 +246,11 @@ circuit() or source text
    CircuitCanvas (rendering)
 ```
 
-### Editor State Management
+### Editor state
 
-The `/editor` page uses [Zustand](https://zustand-demo.pmnd.rs/) with Immer middleware for state that multiple sibling components need to share. Three stores handle the compilation→simulation→rendering pipeline:
+The editor holds the source text and passes it to `useSimulation` with `harness: true`. The canvas draws the session's own circuit (`state.circuit`), so its node ids are paths in the simulation it shows, and the inspector, a program upload and the keyboard all address nodes by those ids. A program loaded on an instruction memory goes in through the `memory` option, so loading or clearing one starts a new session at cycle 0.
 
-| Store | What it holds | Written by | Read by |
-|-------|--------------|------------|---------|
-| `useCircuitPreviewStore` | List of compiled `CircuitIR` objects from the last successful compilation | The compile effect (fed by `useCircuitCompiler`) | Circuit selector UI |
-| `useCircuitStore` | The currently active `CircuitIR` (selected from the preview list) | Preview store / circuit selector | Canvas, ChatPanel, Verilog export, MCP state callbacks |
-| `useCircuitDefinitionsStore` | The `CircuitDefinitions` that resolves component names to definitions | The compile effect (fed by `useCircuitCompiler`) | Canvas, ChatPanel, Verilog export |
-
-The data flows in one direction:
-
-```
-Monaco compiles
-     │
-     ▼
-useCircuitPreviewStore  (all compiled circuits)
-     │
-     ▼
-useCircuitStore         (the active circuit)
-     │
-     ├──→ useCircuitSimulator(circuit) → sandbox-backed simulation state
-     ├──→ ChatPanel (reads circuit for AI context)
-     ├──→ Verilog export (reads circuit + library)
-     └──→ MCP callbacks (reads circuit for state responses)
-```
-
-**Why stores instead of props?** The editor page has multiple sibling consumers: Monaco, the circuit canvas, the AI chat panel, the Verilog export button, and MCP callbacks all need the current circuit and library. Threading this through props would mean `EditorWorkspace` becomes a giant prop-drilling intermediary. Zustand gives each consumer direct access with fine-grained subscriptions (a store update only re-renders components that read the changed slice).
-
-**Why not stores in embeds?** Embeds (`CircuitEmbed`, `CircuitViewer`) are props-driven: they receive a `Circuit` and manage simulation internally. They don't need shared state because there's only one consumer (the canvas). This keeps embeds self-contained and avoids leaking store state between multiple `<CircuitEmbed>` instances on the same page.
+The Zustand stores in `@simten/ui/editor/stores` predate this and the editor no longer reads them; they stay exported for other users of the package.
 
 ### Import paths
 
