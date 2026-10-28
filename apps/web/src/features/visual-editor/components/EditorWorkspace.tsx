@@ -7,22 +7,9 @@
 
 'use client';
 
-import { exportVerilogFromIR, stdBehaviorsFor } from '@simten/core/internal';
-import { builtFromIR, useCircuitCompiler, useCircuitSimulator } from '@simten/embed';
+import type { CircuitIR, MemoryContents } from '@simten/core/internal';
 import { CircuitCanvas } from '@simten/ui/canvas';
-import {
-  ClockControls,
-  DEFAULT_SPEED,
-  ReactFlowProvider,
-  SignalOutputPanel,
-} from '@simten/ui/editor/components';
-
-import {
-  useCircuitDefinitionsStore,
-  useCircuitPreviewStore,
-  useCircuitStore,
-} from '@simten/ui/editor/stores';
-import type { CircuitIR } from '@simten/ui/editor/types';
+import { ClockControls, ReactFlowProvider } from '@simten/ui/editor/components';
 import {
   registerSimtenThemes,
   SIMTEN_DARK,
@@ -31,31 +18,29 @@ import {
   type SimtenCodeEditorHandle,
 } from '@simten/ui/monaco';
 import { Button } from '@simten/ui/primitives/button';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@simten/ui/primitives/resizable';
 import { TooltipProvider } from '@simten/ui/primitives/tooltip';
+import { useSimulation } from '@simten/ui/sandbox';
+import { WaveformViewer } from '@simten/ui/waveform';
 import { Download, Loader2, Share2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SiteHeader } from '@/components/SiteHeader';
 import { useTheme } from '@/components/ThemeProvider';
 import { ErrorDisplay } from '@/features/code-editor';
 import { ShareDialog } from '@/features/share/ShareDialog';
-
-/** Check if a circuit name is an auto-generated harness (autoHarness appends 'Demo') */
-function isHarnessName(name: string): boolean {
-  return name.endsWith('Demo') || name.endsWith('Harness');
-}
-
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@simten/ui/primitives/resizable';
-import { WaveformViewer } from '@simten/ui/waveform';
 import { useMCPConnection } from '@/hooks/useMCPConnection';
 import { CATEGORY_COLORS, CATEGORY_LABELS, EXAMPLES, type Example } from '../examples';
 import { VerilogImportSheet } from './VerilogImportSheet';
 
 /** Why the panels clip with an inline style: see the panel layout below. */
 const CLIP = { overflow: 'hidden' } as const;
+
+/** No programs loaded. One object, so clearing twice doesn't reopen the session. */
+const NO_MEMORY: Record<string, MemoryContents> = {};
 
 const SCAN_CODES: Record<string, number> = {
   ArrowUp: 0x48,
@@ -158,28 +143,25 @@ export function EditorWorkspace({
   initialSource,
   standalone = false,
 }: EditorWorkspaceProps) {
-  const setCompiledCircuits = useCircuitPreviewStore((state) => state.setCompiledCircuits);
-  const circuit = useCircuitStore((state) => state.circuit);
   const { resolvedTheme } = useTheme();
 
-  // Editor source, lifted here from the (now-deleted) TSEditor so the compile
-  // hook and the store-wiring effects can read it.
+  // Editor source. Typing recompiles after a 500ms pause.
   const [code, setCode] = useState(initialSource ?? '');
-  const codeRef = useRef(code);
-  codeRef.current = code;
 
-  // Compile mechanics live in @simten/embed; we own only what to do with the
-  // result (the store-wiring effects below). 'editor-main' slot + 500ms debounce
-  // preserve the previous TSEditor behaviour.
-  const compiler = useCircuitCompiler(code, {
-    autoCompile: true,
-    debounceMs: 500,
-    slot: 'editor-main',
-  });
+  /**
+   * Programs loaded into memory nodes on the canvas, by node path. A memory's
+   * contents are part of what a session is built from, so a new program (or
+   * clearing one) opens a new session from cycle 0, as reloading a program
+   * does on real hardware.
+   */
+  const [memory, setMemory] = useState(NO_MEMORY);
 
-  // Read by the Verilog export, which runs from a stable callback.
-  const compileResultRef = useRef(compiler.result);
-  compileResultRef.current = compiler.result;
+  // Compiles the source and simulates its last circuit in the sandbox,
+  // wrapped in switches and displays for its ports.
+  const simulation = useSimulation({ source: code }, { debounceMs: 500, harness: true, memory });
+  const { compileError, state, history, actions } = simulation;
+  const circuit = state.circuit;
+  const diagnostics = useMemo(() => (compileError ? [compileError] : []), [compileError]);
 
   const codeEmpty = code.trim() === '';
   // Don't render the picker during the boot window; the resizable panels and
@@ -190,14 +172,6 @@ export function EditorWorkspace({
     const t = setTimeout(() => setBootDone(true), 400);
     return () => clearTimeout(t);
   }, []);
-
-  // Build a Circuit-like object from the compile result for useCircuitSimulator.
-  // When the editor's source was compiled via sandbox.compile(), evals are already
-  // registered in the sandbox, so no need to transfer them via evalSources.
-  const editorCircuit = useMemo<import('@simten/core/circuit').Circuit | null>(() => {
-    if (!compiler.result || !circuit) return null;
-    return builtFromIR(circuit, [...compiler.result.libraryCircuits, ...compiler.result.circuits]);
-  }, [compiler.result, circuit]);
 
   // Verilog export button state. Export used to fail into
   // a bare console.error, which was survivable when the only failure was a throw
@@ -216,37 +190,17 @@ export function EditorWorkspace({
 
   // Editor handle for imperative get/set of the Monaco source.
   const editorRef = useRef<SimtenCodeEditorHandle>(null);
-  // requestId of an in-flight show_circuit render-ack (set in onSource, cleared
-  // when the resulting compile succeeds/fails; see handleCompile / handleCompileError).
+  // requestId of an in-flight show_circuit render-ack, cleared when the
+  // resulting session opens or the compile fails (see the effects below).
   const pendingRenderRef = useRef<string | null>(null);
 
-  // Track whether we've loaded content so we can skip the first MCP cache replay
-  const hasLoadedContentRef = useRef(false);
-
-  // Export to Verilog, uses the definitions store
-  const handleExportVerilog = useCallback(() => {
-    const store = useCircuitDefinitionsStore.getState();
-    let currentCircuit = useCircuitStore.getState().circuit;
-    if (!currentCircuit || !store.definitions) return;
-
-    // If this is an auto-generated harness, export the real circuit instead
-    if (isHarnessName(currentCircuit.name)) {
-      const baseName = currentCircuit.name.replace(/(Demo|Harness)$/, '');
-      const realCircuit = store.resolveCircuit(baseName);
-      if (realCircuit) currentCircuit = realCircuit;
-    }
-
+  // Export to Verilog, in the sandbox, with the compile's own behavior. The
+  // sandbox exports the circuit the session was opened on, not its harness.
+  const circuitName = state.circuitName;
+  const handleExportVerilog = useCallback(async () => {
+    if (!circuitName) return;
     try {
-      // The page has IR but no behavior, so std's behavior goes only to std's
-      // own primitives: never to a name the source defines, which exports as
-      // unsupported. Exporting in the sandbox worker, which has the real
-      // behavior, is #417.
-      const userNames = new Set(compileResultRef.current?.circuits.map((c) => c.name));
-      const behaviors = stdBehaviorsFor(store, userNames);
-      const { verilog, files, unsupported } = exportVerilogFromIR(currentCircuit, {
-        definitions: store,
-        behaviors,
-      });
+      const { verilog, files, unsupported } = await actions.exportVerilog();
 
       // An export with unmapped primitives is the dangerous case: it parses,
       // it synthesizes, and it does not do what the circuit does. Yosys will
@@ -279,7 +233,7 @@ export function EditorWorkspace({
         URL.revokeObjectURL(url);
       };
 
-      download(`${currentCircuit.name}.v`, verilog);
+      download(`${circuitName}.v`, verilog);
       for (const [name, contents] of Object.entries(files)) {
         download(name, contents);
       }
@@ -290,7 +244,7 @@ export function EditorWorkspace({
       });
       console.error('Verilog export failed:', e);
     }
-  }, []);
+  }, [actions, circuitName]);
 
   // ── Share button ──
   // The dialog creates the share link when it opens: always a short link
@@ -299,58 +253,21 @@ export function EditorWorkspace({
   const [shareOpen, setShareOpen] = useState(false);
   const getShareSource = useCallback(() => editorRef.current?.getValue() ?? '', []);
 
-  // ── Simulation, uses same sandbox-backed hook as embeds ──
-  // The editor already compiled source via sandbox.compile(), so evals exist in the sandbox.
-  // useCircuitSimulator sends the harnessed Circuit IR to the sandbox via compileIR.
-  // Cast needed because useCircuitSimulator requires a Circuit; we always
-  // provide one once the editor has compiled (see editorCircuit guard).
-  const sim = useCircuitSimulator(editorCircuit, { autoHarness: false });
-  const showClockControls = sim.isSequential;
+  const showClockControls = state.isSequential;
 
   // Keyboard scan code input for Input nodes (e.g. keyboard-driven CPU demos)
-  useKeyboardInput(
-    circuit,
-    useCallback(
-      (nodeId: string, scanCode: number) => {
-        sim.setNode(nodeId, scanCode);
-      },
-      [sim.setNode],
-    ),
-  );
+  useKeyboardInput(circuit, actions.setInput);
 
-  // Circuit definitions for CircuitCanvas, from the store
-  const resolveCircuit = useCircuitDefinitionsStore((s) => s.resolveCircuit);
-  const getAllPrimitiveNames = useCircuitDefinitionsStore((s) => s.getAllPrimitiveNames);
-  const definitions = useMemo(
-    () => ({
-      resolveCircuit,
-      getAllPrimitiveNames,
-    }),
-    [resolveCircuit, getAllPrimitiveNames],
-  );
-
-  // Keep sim state in ref for MCP callbacks and stable canvas callbacks
-  const simRef = useRef(sim);
-  simRef.current = sim;
-
-  // Stable canvas callbacks: read sim via ref so they never change reference.
-  // Without this, inline lambdas here cause projectedNodes to recompute on every
-  // sim tick (portValues changes → EditorWorkspace re-renders → new fn refs →
-  // projectedNodes recomputes → setNodes → ReactFlow churns).
-  const onToggleNode = useCallback((nodeId: string) => {
-    const pv = simRef.current.portValues;
-    const outKey = `${nodeId}.out`;
-    const currentValue = pv?.get(outKey);
-    // Numeric toggle; same semantics as the old `!currentValue`, undefined → 1.
-    simRef.current.setNode(nodeId, currentValue ? 0 : 1);
-    simRef.current.runCombinational();
-  }, []);
-  const onSetNodeValue = useCallback((nodeId: string, value: number) => {
-    simRef.current.setNode(nodeId, value);
-    simRef.current.runCombinational();
-  }, []);
-  const onLoadMemory = useCallback((nodeId: string, memData: Map<number, number>) => {
-    simRef.current.setNodeValue(nodeId, memData);
+  // A program loaded on an RV32I_InstrMem or DualPortROM node, or cleared
+  // (an empty map). Node ids on the canvas are paths in the session.
+  const onLoadMemory = useCallback((nodeId: string, data: Map<number, number>) => {
+    setMemory((current) => {
+      const { [nodeId]: _old, ...rest } = current;
+      if (data.size === 0) return rest;
+      const contents: MemoryContents = {};
+      for (const [address, value] of data) contents[address] = value;
+      return { ...rest, [nodeId]: contents };
+    });
   }, []);
 
   // Studio connection (WebSocket to MCP server)
@@ -368,64 +285,49 @@ export function EditorWorkspace({
       (source: string, requestId?: string) => {
         pendingRenderRef.current = requestId ?? null;
         editorRef.current?.setValue(source);
-        setTimeout(() => void compiler.compile(), 100);
+        setTimeout(() => void actions.recompile(), 100);
       },
-      [compiler.compile],
+      [actions],
     ),
-    getCircuitState: useCallback(() => {
-      const currentCircuit = useCircuitStore.getState().circuit;
-      const sim = simRef.current;
-      return {
-        cycleCount: sim.cycleCount,
-        inputs: {},
-        outputs: {},
-        isSequential: sim.isSequential,
-        circuitName: currentCircuit?.name ?? null,
-        timestamp: Date.now(),
-      };
-    }, []),
+    // useMCPConnection keeps its callbacks in a ref, so this reads the
+    // latest state without needing a stable identity.
+    getCircuitState: () => ({
+      cycleCount: state.cycle,
+      inputs: {},
+      outputs: {},
+      isSequential: state.isSequential,
+      circuitName: circuit?.name ?? null,
+      timestamp: Date.now(),
+    }),
   });
 
-  // On each successful compile, push the result into the selection stores. Set
-  // the definitions FIRST; applyToCanvas fires inside setCompiledCircuits and needs
-  // every definition (including user circuits) before adding harness components.
-  // Also acknowledges an in-flight show_circuit render request (success).
+  // A show_circuit render request is answered once its session opens, or
+  // when its compile or open fails.
   useEffect(() => {
-    const result = compiler.result;
-    if (!result) return;
-    if (compiler.definitions) {
-      useCircuitDefinitionsStore.getState().setDefinitions(compiler.definitions);
-    }
-    setCompiledCircuits(result.circuits, codeRef.current);
-    if (pendingRenderRef.current) {
-      const reqId = pendingRenderRef.current;
-      pendingRenderRef.current = null;
-      const name =
-        useCircuitStore.getState().circuit?.name ??
-        result.circuits[result.circuits.length - 1]?.name ??
-        null;
-      sendRenderResult(reqId, { ok: true, circuitName: name });
-    }
-  }, [compiler.result, compiler.definitions, setCompiledCircuits, sendRenderResult]);
+    const reqId = pendingRenderRef.current;
+    if (!reqId || !circuit) return;
+    pendingRenderRef.current = null;
+    sendRenderResult(reqId, { ok: true, circuitName: circuit.name });
+  }, [circuit, sendRenderResult]);
 
-  // On a compile failure, acknowledge an in-flight show_circuit render request.
+  // Keyed on the error object, not its text: every failed compile makes a new
+  // one, so a second broken source with the same message is answered too.
+  const openError = state.error;
   useEffect(() => {
-    if (compiler.diagnostics.length === 0) return;
-    if (pendingRenderRef.current) {
-      const reqId = pendingRenderRef.current;
-      pendingRenderRef.current = null;
-      sendRenderResult(reqId, { ok: false, error: compiler.diagnostics[0].message });
-    }
-  }, [compiler.diagnostics, sendRenderResult]);
+    const reqId = pendingRenderRef.current;
+    const failure = compileError?.message ?? openError;
+    if (!reqId || !failure) return;
+    pendingRenderRef.current = null;
+    sendRenderResult(reqId, { ok: false, error: failure });
+  }, [compileError, openError, sendRenderResult]);
 
   // Load an example into the editor
   const loadExample = useCallback(
     (example: Example) => {
       editorRef.current?.setValue(example.code);
-      hasLoadedContentRef.current = true;
-      setTimeout(() => void compiler.compile(), 100);
+      setTimeout(() => void actions.recompile(), 100);
     },
-    [compiler.compile],
+    [actions],
   );
 
   // First-run hint: pulse the Run button so a new user knows to press it to
@@ -530,8 +432,7 @@ export function EditorWorkspace({
                 <VerilogImportSheet
                   onImport={(source) => {
                     editorRef.current?.setValue(source);
-                    hasLoadedContentRef.current = true;
-                    setTimeout(() => void compiler.compile(), 100);
+                    setTimeout(() => void actions.recompile(), 100);
                   }}
                 />
 
@@ -605,16 +506,19 @@ export function EditorWorkspace({
                     <SimtenCodeEditor
                       ref={editorRef}
                       value={code}
-                      onChange={(value) => setCode(value ?? '')}
+                      onChange={(value) => {
+                        setCode(value ?? '');
+                        // An edit starts a new run of the new circuit, without
+                        // the programs loaded into the old one.
+                        setMemory(NO_MEMORY);
+                      }}
                       theme={resolvedTheme === 'dark' ? SIMTEN_DARK : SIMTEN_LIGHT}
-                      diagnostics={compiler.diagnostics}
+                      diagnostics={diagnostics}
                       beforeMount={(m) => registerSimtenThemes(m, { lightBackground: '#faf9f4' })}
                       options={{ 'semanticHighlighting.enabled': true }}
                     />
                   </div>
-                  {compiler.diagnostics.length > 0 && (
-                    <ErrorDisplay errors={compiler.diagnostics} />
-                  )}
+                  {diagnostics.length > 0 && <ErrorDisplay errors={diagnostics} />}
                 </div>
               </ResizablePanel>
               <ResizableHandle withHandle />
@@ -625,14 +529,15 @@ export function EditorWorkspace({
                     <ResizablePanel defaultSize={65} minSize={20} style={CLIP}>
                       <CircuitCanvas
                         circuit={circuit}
-                        definitions={definitions}
+                        definitions={state.definitions ?? undefined}
                         theme={theme}
                         showControls
                         renderEmptyState={bootDone && codeEmpty ? renderEmptyState : undefined}
-                        portValues={sim.portValues}
-                        peripheralState={sim.peripheralState}
-                        onToggleNode={onToggleNode}
-                        onSetNodeValue={onSetNodeValue}
+                        portValues={state.portValues}
+                        peripheralState={state.peripheralState}
+                        simulation={simulation}
+                        onToggleNode={actions.toggleNode}
+                        onSetNodeValue={actions.setInput}
                         onLoadMemory={onLoadMemory}
                       />
                     </ResizablePanel>
@@ -657,14 +562,15 @@ export function EditorWorkspace({
                 ) : (
                   <CircuitCanvas
                     circuit={circuit}
-                    definitions={definitions}
+                    definitions={state.definitions ?? undefined}
                     theme={theme}
                     showControls
                     renderEmptyState={bootDone && codeEmpty ? renderEmptyState : undefined}
-                    portValues={sim.portValues}
-                    peripheralState={sim.peripheralState}
-                    onToggleNode={onToggleNode}
-                    onSetNodeValue={onSetNodeValue}
+                    portValues={state.portValues}
+                    peripheralState={state.peripheralState}
+                    simulation={simulation}
+                    onToggleNode={actions.toggleNode}
+                    onSetNodeValue={actions.setInput}
                     onLoadMemory={onLoadMemory}
                   />
                 )}
@@ -676,31 +582,27 @@ export function EditorWorkspace({
           {bootDone && showClockControls && (
             <div className="flex items-center gap-4 border-t border-border bg-card/95 px-6 py-1.5">
               <ClockControls
-                cycle={sim.cycleCount}
-                historyLength={sim.history.length}
-                historyIndex={sim.historyIndex}
-                isRunning={sim.isRunning}
-                isViewingPast={sim.isViewingPast}
-                speed={sim.speed || DEFAULT_SPEED}
-                onStep={sim.tick}
+                cycle={state.cycle}
+                historyLength={history.length}
+                historyIndex={history.index}
+                isRunning={state.isRunning}
+                isViewingPast={history.isViewingPast}
+                speed={state.speed}
+                onStep={() => void actions.tick()}
                 onRun={() => {
                   markRunPulseSeen();
-                  sim.startAutoRun(sim.speed || DEFAULT_SPEED);
+                  void actions.run();
                 }}
-                onPause={() => sim.stopAutoRun()}
-                pulseRun={!runPulseSeen && !sim.isRunning}
-                onReset={sim.reset}
-                onStepBack={() => sim.stepBack()}
-                onStepForward={() => sim.stepForward()}
-                onSeek={(i) => sim.seek(i)}
-                onSpeedChange={(speed) => {
-                  sim.setSpeed(speed);
-                }}
-                showScrubber={sim.history.length > 1}
+                onPause={() => void actions.pause()}
+                pulseRun={!runPulseSeen && !state.isRunning}
+                onReset={() => void actions.reset()}
+                onStepBack={() => void actions.stepBack()}
+                onStepForward={() => void actions.stepForward()}
+                onSeek={(i) => void actions.seek(i)}
+                onSpeedChange={actions.setSpeed}
+                showScrubber={history.length > 1}
                 chromeless
               />
-              <div className="border-l border-border h-8" />
-              <SignalOutputPanel portValues={sim.portValues ?? undefined} />
             </div>
           )}
         </div>

@@ -8,9 +8,7 @@
 
 import { bit, circuit } from '@simten/core/circuit';
 import { And, Switch } from '@simten/core/std';
-import { SandboxClient, type SandboxTransport } from '@simten/sandbox';
-import { SessionHost } from '@simten/sandbox/host';
-import type { SandboxMessage, SessionRequest } from '@simten/sandbox/protocol';
+import type { SandboxClient } from '@simten/sandbox';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';
 import { type ReactNode, StrictMode } from 'react';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -21,6 +19,7 @@ import {
   type UseSimulationOptions,
   useSimulation,
 } from '../useSimulation';
+import { inProcessClient } from './in-process';
 
 const COUNTER = `
 const Counter = circuit('Counter', {
@@ -61,37 +60,6 @@ const SwitchBoard = circuit('SwitchBoard', {
   connect: ({ nodes: { s, g } }) => [s.out.to(g.a, g.b)],
 });
 
-/** A session host in-process, as the sandbox's worker. `slowFirstCompile` holds the first answer back 300ms. */
-function inProcess({ slowFirstCompile = false } = {}): SandboxTransport & {
-  sent: SessionRequest[];
-} {
-  let host: SessionHost | null = null;
-  const sent: SessionRequest[] = [];
-  let compiles = 0;
-  return {
-    sent,
-    connect(receive) {
-      host = new SessionHost({
-        post: (message) => {
-          if (message.type === 'progressed') return;
-          const copy = structuredClone(message) as SandboxMessage;
-          const slow = message.type === 'compiled' && compiles++ === 0 && slowFirstCompile;
-          setTimeout(() => receive(copy), slow ? 300 : 0);
-        },
-      });
-      setTimeout(() => receive({ type: 'ready' }), 0);
-    },
-    send(request) {
-      sent.push(request);
-      const copy = structuredClone(request);
-      setTimeout(() => host?.handle(copy), 0);
-    },
-    close() {
-      host = null;
-    },
-  };
-}
-
 const clients: SandboxClient[] = [];
 afterEach(() => {
   cleanup();
@@ -99,8 +67,7 @@ afterEach(() => {
 });
 
 function newClient(options?: { slowFirstCompile?: boolean }) {
-  const transport = inProcess(options);
-  const client = new SandboxClient({ transport });
+  const { client, transport } = inProcessClient(options);
   clients.push(client);
   return { client, transport };
 }
@@ -134,6 +101,8 @@ describe('useSimulation', () => {
     await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
     const { state } = hook.result.current;
     expect(state.circuit?.name).toBe('AndGateDemo');
+    // Export and the game's drilldown need the circuit, not its harness.
+    expect(state.circuitName).toBe('AndGate');
     expect(state.definitions?.resolveCircuit('Switch')).toBeDefined();
     expect(state.outputs).toEqual({ y: 0 });
 

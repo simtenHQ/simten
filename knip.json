@@ -3,7 +3,7 @@
   "ignoreBinaries": ["picocom", "wrangler"],
   "workspaces": {
     ".": {
-      "entry": ["scripts/*.ts", "bench/*.mts"]
+      "entry": ["scripts/*.ts", "bench/*.mts", "e2e/*.mts"]
     },
     "apps/game": {
       "entry": ["src/router.tsx", "src/routes/**/*.tsx", "src/game/solutions/*.ts"]

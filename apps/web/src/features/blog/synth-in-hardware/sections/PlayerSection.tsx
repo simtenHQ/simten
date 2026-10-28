@@ -29,7 +29,8 @@ export function PlayerSection() {
   const { resolvedTheme } = useTheme();
 
   const voice = useMemo(() => buildVoice(), []);
-  const { state, actions } = useSimulation(voice, OPTIONS);
+  const simulation = useSimulation(voice, OPTIONS);
+  const { state, actions } = simulation;
   const { playing, toggle, scope } = useLiveVoice(actions.sample, { wave, decay });
 
   return (
@@ -58,6 +59,7 @@ export function PlayerSection() {
             definitions={state.definitions ?? undefined}
             portValues={state.portValues}
             peripheralState={state.peripheralState}
+            simulation={simulation}
             draggable={false}
             autoLayout
             theme={resolvedTheme === 'dark' ? 'dark' : 'light'}

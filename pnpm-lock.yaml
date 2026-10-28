@@ -143,6 +143,9 @@ importers:
       '@simten/embed':
         specifier: workspace:*
         version: link:../../packages/embed
+      '@simten/sandbox':
+        specifier: workspace:*
+        version: link:../../packages/sandbox
       '@simten/ui':
         specifier: workspace:*
         version: link:../../packages/ui

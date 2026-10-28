@@ -1,35 +1,40 @@
 /**
- * CompositeInspectorDialog (Store-Free)
+ * CompositeInspectorDialog: a modal window onto the internals of a composite,
+ * nested as deep as the user double-clicks.
  *
- * Modal dialog that shows the internals of a composite component with its own
- * canvas and independent simulation engine. Supports nested drill-down — double-
- * clicking a composite inside the dialog pushes another level onto the stack.
+ * It's a view of the simulation the canvas is showing, not a copy. Structure
+ * comes from the component's definition; values come from the main session's
+ * port map by dotted path (the simulation is flattened, so an instance `ha1`
+ * already has `ha1.*` ports in it). So the inspector shows the same cycle as
+ * the canvas behind it and keeps moving while auto-run is on. Nothing in it
+ * writes to the circuit: boundary ports are indicators, not switches.
  *
- * This version is fully props-driven with no Zustand store dependencies,
- * so it can be used anywhere a CircuitCanvas renders (editor, embeds, blog, etc.).
+ * The one thing not in the main session is a primitive's gate-level reference
+ * build (`MADE_OF`). That runs as a second session in the same sandbox while
+ * its frame is on the stack; see `useReferenceSession`.
  */
 
 'use client';
 
-import type { BitValue, BusValue } from '@simten/core';
-import type { CircuitDefinitions, CircuitIR, SimulatorEngine } from '@simten/core/internal';
-import { createEngine, elaborate, getStdLibrary, isSequentialCircuit } from '@simten/core/internal';
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import type { CircuitDefinitions } from '@simten/core/internal';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import type { NodeData } from '../nodes';
-import { useSandboxContext } from '../sandbox/SandboxProvider';
-
+import type { UseSimulationResult } from '../sandbox/useSimulation';
 import { CircuitCanvas } from './CircuitCanvas';
 import { ClockControls } from './ClockControls';
-import { createDrillDownViewCircuit } from './drill-down-view';
+import { createDrillDownViewCircuit, scopePortValues } from './drill-down-view';
 import { resolveDrillTarget } from './drill-target';
 import { EDGE_TYPES, NODE_TYPES } from './node-types';
 import type { InspectorFrame } from './types';
+import { useReferenceSession } from './useReferenceSession';
 
 // ── Inner canvas for a single inspector level ──
 
 interface InspectorCanvasProps {
   frame: InspectorFrame;
   definitions: CircuitDefinitions;
+  /** The port map of the session this frame reads, or null before it has one. */
+  sessionPorts: ReadonlyMap<string, number> | null;
   onPushLevel: (frame: InspectorFrame) => void;
   theme?: 'light' | 'dark';
 }
@@ -37,13 +42,13 @@ interface InspectorCanvasProps {
 function InspectorCanvas({
   frame,
   definitions: pageDefinitions,
+  sessionPorts,
   onPushLevel,
   theme = 'dark',
 }: InspectorCanvasProps) {
   // A reference build brings its own circuits; the page's definitions have
-  // never heard of them. Everything below — simulation, projection, nested
-  // drilling — must resolve against the frame's definitions, or internal nodes
-  // vanish.
+  // never heard of them. Projection and nested drilling must resolve against
+  // the frame's definitions, or internal nodes vanish.
   const definitions = frame.definitions ?? pageDefinitions;
 
   const viewCircuit = useMemo(
@@ -51,254 +56,60 @@ function InspectorCanvas({
     [frame.componentDef],
   );
 
-  const isSequential = useMemo(
-    () => isSequentialCircuit(viewCircuit, definitions.resolveCircuit),
-    [viewCircuit, definitions],
+  const portValues = useMemo(
+    () =>
+      sessionPorts ? scopePortValues(sessionPorts, frame.path, viewCircuit, definitions) : null,
+    [sessionPorts, frame.path, viewCircuit, definitions],
   );
 
   const handleNodeDoubleClick = useCallback(
     (nodeData: NodeData) => {
       if (!nodeData.isComposite && !nodeData.hasReference) return;
-      const next = resolveDrillTarget(nodeData, definitions);
+      const next = resolveDrillTarget(nodeData, definitions, frame.path);
       if (next) onPushLevel(next);
     },
-    [definitions, onPushLevel],
+    [definitions, frame.path, onPushLevel],
   );
 
-  // ── Simulation: prefer sandbox, fall back to local simulator ──
-  const sandbox = useSandboxContext();
-  const [portValues, setPortValues] = useState<Map<string, BitValue | BusValue>>(new Map());
-  const [useSandbox, setUseSandbox] = useState(false);
-  const localEngineRef = useRef<SimulatorEngine | null>(null);
-  // Clock-control state — minimal time-travel via sandbox snapshots, scoped
-  // to this drill-down's slot.
-  const [cycle, setCycle] = useState(0);
-  const [isRunning, setIsRunning] = useState(false);
-  const historyRef = useRef<{ snapshotId: number; cycle: number }[]>([]);
-  const [historyLen, setHistoryLen] = useState(0);
-  const [historyIndex, setHistoryIndex] = useState(-1);
-
-  // Unique slot ID per drill-down instance (supports nested drill-downs)
-  const slotIdRef = useRef<string>('');
-  if (!slotIdRef.current) {
-    slotIdRef.current = `drill-${typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2)}`;
-  }
-  const slotId = slotIdRef.current;
-
-  // Cleanup slot on unmount
-  useEffect(() => {
-    return () => {
-      if (useSandbox) sandbox.dispose(slotId).catch(() => {});
-    };
-  }, [sandbox, slotId, useSandbox]);
-
-  useEffect(() => {
-    // Send the drill-down view circuit to the sandbox for simulation.
-    // The sandbox already has eval functions from the source compile.
-    // Include every circuit the view references (primitives AND composites,
-    // recursively) — without composite defs, the sandbox can't simulate
-    // composite children and their outputs stay stuck.
-    const allLib: CircuitIR[] = [];
-    const seen = new Set<string>();
-    for (const name of definitions.getAllPrimitiveNames()) {
-      const c = definitions.resolveCircuit(name);
-      if (c && !seen.has(name)) {
-        seen.add(name);
-        allLib.push(c);
-      }
-    }
-    const walk = (c: CircuitIR) => {
-      for (const node of c.nodes) {
-        if (seen.has(node.componentRef)) continue;
-        const resolved = definitions.resolveCircuit(node.componentRef);
-        if (!resolved) continue;
-        seen.add(node.componentRef);
-        allLib.push(resolved);
-        if (resolved.implementation.kind === 'composite') walk(resolved);
-      }
-    };
-    walk(viewCircuit);
-
-    sandbox.compileIR(viewCircuit, allLib, slotId, { snapshot: isSequential }).then((result) => {
-      if ('error' in result) {
-        // Fall back to local simulator (for embed contexts where no source was compiled)
-        try {
-          // The page runs no user code, so this local engine has only std's
-          // behavior: enough for a circuit built from std components.
-          const engine = createEngine(elaborate(viewCircuit, definitions), {
-            library: { definitions, behaviors: getStdLibrary().behaviors },
-          });
-          engine.runCombinational();
-          localEngineRef.current = engine;
-          setUseSandbox(false);
-          const pvMap = new Map<string, BitValue | BusValue>();
-          for (const [k, v] of engine.getPortValues()) {
-            pvMap.set(k, v);
-          }
-          setPortValues(pvMap);
-        } catch (e) {
-          console.warn('[InspectorCanvas] Both sandbox and local failed:', e);
-        }
-        return;
-      }
-      setUseSandbox(true);
-      const pvMap = new Map<string, BitValue | BusValue>();
-      for (const [k, v] of Object.entries(result.portValues)) {
-        pvMap.set(k, v);
-      }
-      setPortValues(pvMap);
-      // Seed history with the initial snapshot (sequential circuits only).
-      historyRef.current =
-        result.snapshotId !== undefined ? [{ snapshotId: result.snapshotId, cycle: 0 }] : [];
-      setHistoryLen(historyRef.current.length);
-      setHistoryIndex(historyRef.current.length === 0 ? -1 : 0);
-      setCycle(0);
-    });
-  }, [viewCircuit, definitions, sandbox, slotId, isSequential]);
-
-  const handleToggle = useCallback(
-    (nodeId: string) => {
-      const outKey = `${nodeId}.out`;
-      const currentValue = portValues.get(outKey);
-      // Port values are numeric; toggling is arithmetic. Preserves the old
-      // `!currentValue` semantics, including undefined → 1.
-      sandbox.setNode(nodeId, currentValue ? 0 : 1, slotId).then((result) => {
-        if ('error' in result) return;
-        const pvMap = new Map<string, BitValue | BusValue>();
-        for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
-        setPortValues(pvMap);
-      });
-    },
-    [sandbox, portValues],
-  );
-
-  const handleNumericChange = useCallback(
-    (nodeId: string, newValue: number) => {
-      sandbox.setNode(nodeId, newValue, slotId).then((result) => {
-        if ('error' in result) return;
-        const pvMap = new Map<string, BitValue | BusValue>();
-        for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
-        setPortValues(pvMap);
-      });
-    },
-    [sandbox],
-  );
-
-  // ── Clock controls ─────────────────────────────────────────────────────
-  // Tick the sandbox slot, capture a snapshot, and record it in history.
-  // If we're currently viewing the past, ticking truncates future entries
-  // (mirrors the embed's history semantics).
-  const handleTick = useCallback(() => {
-    sandbox.tick(undefined, slotId, { snapshot: isSequential }).then((result) => {
-      if ('error' in result) return;
-      const pvMap = new Map<string, BitValue | BusValue>();
-      for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
-      setPortValues(pvMap);
-      setCycle(result.cycle);
-      if (result.snapshotId !== undefined) {
-        const truncated = historyRef.current.slice(0, historyIndex + 1);
-        truncated.push({ snapshotId: result.snapshotId, cycle: result.cycle });
-        historyRef.current = truncated;
-        setHistoryLen(truncated.length);
-        setHistoryIndex(truncated.length - 1);
-      }
-    });
-  }, [sandbox, slotId, isSequential, historyIndex]);
-
-  const handleReset = useCallback(() => {
-    setIsRunning(false);
-    sandbox.reset(slotId).then((result) => {
-      if ('error' in result) return;
-      const pvMap = new Map<string, BitValue | BusValue>();
-      for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
-      setPortValues(pvMap);
-      setCycle(0);
-      // Reset clears all history; if the slot is sequential, take a fresh
-      // snapshot of the post-reset state to seed history again.
-      historyRef.current = [];
-      setHistoryLen(0);
-      setHistoryIndex(-1);
-      if (isSequential) {
-        sandbox.snapshot(slotId).then((snap) => {
-          if ('error' in snap || snap.snapshotId === undefined) return;
-          historyRef.current = [{ snapshotId: snap.snapshotId, cycle: 0 }];
-          setHistoryLen(1);
-          setHistoryIndex(0);
-        });
-      }
-    });
-  }, [sandbox, slotId, isSequential]);
-
-  const restoreTo = useCallback(
-    (index: number) => {
-      const entry = historyRef.current[index];
-      if (!entry) return;
-      sandbox.restore(entry.snapshotId, slotId).then((result) => {
-        if ('error' in result) return;
-        const pvMap = new Map<string, BitValue | BusValue>();
-        for (const [k, v] of Object.entries(result.portValues)) pvMap.set(k, v);
-        setPortValues(pvMap);
-        setCycle(entry.cycle);
-        setHistoryIndex(index);
-      });
-    },
-    [sandbox, slotId],
-  );
-
-  const handleStepBack = useCallback(() => {
-    setIsRunning(false);
-    if (historyIndex > 0) restoreTo(historyIndex - 1);
-  }, [historyIndex, restoreTo]);
-
-  const handleStepForward = useCallback(() => {
-    if (historyIndex < historyLen - 1) restoreTo(historyIndex + 1);
-    else handleTick();
-  }, [historyIndex, historyLen, restoreTo, handleTick]);
-
-  // Auto-run loop while isRunning.
-  useEffect(() => {
-    if (!isRunning) return;
-    const id = window.setInterval(() => {
-      handleTick();
-    }, 200);
-    return () => window.clearInterval(id);
-  }, [isRunning, handleTick]);
-
+  // No onToggleNode or onSetNodeValue: the boundary switches and inputs render
+  // as indicators, and nothing here writes to the circuit.
   return (
-    <div className="relative h-full w-full">
-      {isSequential && (
-        <ClockControls
-          floating
-          cycle={cycle}
-          historyLength={historyLen}
-          historyIndex={historyIndex}
-          isRunning={isRunning}
-          isViewingPast={historyIndex >= 0 && historyIndex < historyLen - 1}
-          onStep={handleTick}
-          onRun={() => setIsRunning(true)}
-          onPause={() => setIsRunning(false)}
-          onReset={handleReset}
-          onStepBack={handleStepBack}
-          onStepForward={handleStepForward}
-        />
-      )}
+    <CircuitCanvas
+      circuit={viewCircuit}
+      definitions={definitions}
+      portValues={portValues}
+      peripheralState={null}
+      onNodeDoubleClick={handleNodeDoubleClick}
+      nodeTypes={NODE_TYPES}
+      edgeTypes={EDGE_TYPES}
+      theme={theme}
+      showControls
+      height="100%"
+      panOnMobile
+    />
+  );
+}
 
-      <CircuitCanvas
-        circuit={viewCircuit}
-        definitions={definitions}
-        portValues={portValues}
-        peripheralState={null}
-        onToggleNode={handleToggle}
-        onSetNodeValue={handleNumericChange}
-        onNodeDoubleClick={handleNodeDoubleClick}
-        nodeTypes={NODE_TYPES}
-        edgeTypes={EDGE_TYPES}
-        theme={theme}
-        showControls
-        height="100%"
-        panOnMobile
-      />
-    </div>
+/** The main session's clock, since the modal covers the canvas's own controls. */
+function MainClock({ simulation }: { simulation: UseSimulationResult }) {
+  const { state, history, actions } = simulation;
+  return (
+    <ClockControls
+      floating
+      cycle={state.cycle}
+      historyLength={history.length}
+      historyIndex={history.index}
+      isRunning={state.isRunning}
+      isViewingPast={history.isViewingPast}
+      onStep={() => void actions.tick()}
+      onRun={() => void actions.run()}
+      onPause={() => void actions.pause()}
+      onReset={() => void actions.reset()}
+      onStepBack={() => void actions.stepBack()}
+      onStepForward={() => void actions.stepForward()}
+      onSeek={(index) => void actions.seek(index)}
+      showScrubber={history.length > 1}
+    />
   );
 }
 
@@ -355,6 +166,8 @@ function InspectorBreadcrumb({ stack, onNavigate, theme = 'dark' }: BreadcrumbPr
 export interface CompositeInspectorDialogProps {
   stack: InspectorFrame[];
   definitions: CircuitDefinitions;
+  /** The simulation the canvas is showing. Null draws structure with no values. */
+  simulation: UseSimulationResult | null;
   theme?: 'light' | 'dark';
   onClose: () => void;
   onPopLevel: () => void;
@@ -365,6 +178,7 @@ export interface CompositeInspectorDialogProps {
 export function CompositeInspectorDialog({
   stack,
   definitions,
+  simulation,
   theme = 'dark',
   onClose,
   onPopLevel,
@@ -404,6 +218,14 @@ export function CompositeInspectorDialog({
   }, [isOpen, stack.length, onPopLevel, onClose]);
 
   const topFrame = isOpen ? stack[stack.length - 1] : null;
+
+  // A stack holds at most one reference build: the builds are made of gates
+  // and FullAdders, never of another primitive with a build (made-of.test.ts).
+  // Every frame from it up reads its session; the frames below read the main one.
+  const referenceFrame = stack.find((frame) => frame.reference) ?? null;
+  const mainPorts = simulation?.state.portValues ?? null;
+  const reference = useReferenceSession(referenceFrame, mainPorts);
+  const sessionPorts = referenceFrame ? reference.ports : mainPorts;
 
   if (!isOpen || !topFrame) return null;
 
@@ -470,10 +292,17 @@ export function CompositeInspectorDialog({
               <InspectorCanvas
                 frame={topFrame}
                 definitions={definitions}
+                sessionPorts={sessionPorts}
                 onPushLevel={onPushLevel}
                 theme={theme}
               />
             </div>
+            {simulation?.state.isSequential && <MainClock simulation={simulation} />}
+            {reference.error && (
+              <div className="absolute inset-x-0 bottom-3 mx-auto w-fit rounded bg-red-950/80 px-3 py-1.5 text-xs text-red-200">
+                The reference build didn't run: {reference.error}
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -15,6 +15,8 @@ export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
   // and `1 << 32` wraps to 1 — clamping every wide input to 0. Cap at 32-bit.
   const maxValue = 2 ** Math.min(width, 32) - 1;
 
+  // Nothing to write to (the inspector's boundary ports): a reading, not a field.
+  const editable = data.onValueChange !== undefined;
   const [isEditingValue, setIsEditingValue] = useState(false);
   const [editValue, setEditValue] = useState(value.toString());
   const [displayMode, setDisplayMode] = useState<'dec' | 'hex'>('dec');
@@ -96,9 +98,9 @@ export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
             />
           ) : (
             <div
-              onClick={handleValueClick}
-              className="px-3 py-1 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded cursor-pointer hover:shadow-md transition-all font-mono text-sm"
-              title="Click to edit value"
+              onClick={editable ? handleValueClick : undefined}
+              className={`px-3 py-1 bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded font-mono text-sm${editable ? ' cursor-pointer hover:shadow-md transition-all' : ''}`}
+              title={editable ? 'Click to edit value' : undefined}
             >
               {displayValue}
             </div>

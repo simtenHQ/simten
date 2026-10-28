@@ -12,6 +12,7 @@ import { type ChildProcess, spawn } from 'node:child_process';
 import { createServer } from 'node:http';
 import { join } from 'node:path';
 import { chromium } from '@playwright/test';
+import { EXAMPLES } from '@simten/core/examples';
 
 const APP = join(import.meta.dirname, '..');
 const SANDBOX = 'http://localhost:4310';
@@ -123,7 +124,7 @@ type Response = {
   sessions?: string[];
   dropped?: string[];
   state?: { cycle: number; isRunning: boolean; ports: Record<string, number> };
-  result?: { verilog: string };
+  result?: { verilog: string; unsupported?: Record<string, string[]> };
 };
 
 // Counts up once a cycle, and hangs in its eval once the count reaches 50:
@@ -358,6 +359,19 @@ try {
     exported.type === 'exported' && /module Fibonacci/.test(exported.result?.verilog ?? ''),
     exported.error ?? exported.type,
   );
+  // #502: std's 6502 parts export by translating their eval's source, so the
+  // production worker must keep that source readable (apps/sandbox/vite.config.ts).
+  const example6502 = EXAMPLES.find((e) => e.id === '6502-computer')?.code ?? '';
+  await send({ type: 'compile', compile: 'c6502', source: example6502 });
+  const export6502 = await send({ type: 'export', compile: 'c6502', circuit: 'Computer6502' });
+  check(
+    'the 6502 example exports with nothing unsupported (#502)',
+    export6502.type === 'exported' &&
+      Object.keys(export6502.result?.unsupported ?? {}).length === 0 &&
+      /module Computer6502/.test(export6502.result?.verilog ?? ''),
+    export6502.error ?? JSON.stringify(export6502.result?.unsupported ?? {}),
+  );
+  await send({ type: 'release', compile: 'c6502' });
   const probeStart = Date.now();
   await send({ type: 'tick', session: 'slow-1', count: 2000 });
   const msPerCycle = (Date.now() - probeStart) / 2000;
