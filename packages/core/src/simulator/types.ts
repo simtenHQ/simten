@@ -220,11 +220,14 @@ export interface SimulatorEngine {
   // Initialization
   initialize(circuit: FlatCircuit, options: InitOptions): void;
 
-  // Node value control
-  /** Set any node's value. The engine dispatches based on node type:
+  // Driving the circuit
+  /** Drive a top-level input port by name. Unknown names throw. */
+  setInput(name: string, value: BitValue | BusValue): void;
+  /** Write a node by exact dotted path. The engine dispatches on the node's type:
    *  - Input/Switch → sets arguments.value (combinational)
-   *  - ROM/RAM/Register/DFlipFlop → sets sequential state */
-  setNode(name: string, value: PrimitiveState): void;
+   *  - ROM/RAM/Register/DFlipFlop → sets sequential state
+   *  Unknown paths throw; a top-level input name is not a path. */
+  setNode(path: string, value: PrimitiveState): void;
 
   // Simulation
   tick(): TickResult;

@@ -30,7 +30,7 @@ function run(result: ExecuteResult, inputs: Record<string, number>): Record<stri
   const engine = createEngine(elaborate(top, result.library.definitions), {
     library: result.library,
   });
-  for (const [name, value] of Object.entries(inputs)) engine.setNode(name, value);
+  for (const [name, value] of Object.entries(inputs)) engine.setInput(name, value);
   engine.runCombinational();
   const out: Record<string, number> = {};
   for (const p of top.outputs)

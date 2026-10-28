@@ -1,0 +1,14 @@
+// Typecheck-only config: the same sources as the build, plus the tests.
+//
+// `composite`/`declaration` are off because they are incompatible with --noEmit.
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "declarationMap": false,
+    "noEmit": true
+  },
+  "include": ["src/**/*.ts"],
+  "exclude": ["node_modules", "dist"]
+}

@@ -136,6 +136,7 @@
     "@dagrejs/dagre": "^3.0.0",
     "@radix-ui/react-dialog": "^1.1.15",
     "@simten/core": "workspace:^",
+    "@simten/sandbox": "workspace:^",
     "@typescript/ata": "^0.9.8",
     "@xyflow/react": "^12.10.0",
     "class-variance-authority": "^0.7.1",

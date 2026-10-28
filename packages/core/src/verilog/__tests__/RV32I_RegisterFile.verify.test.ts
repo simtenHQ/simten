@@ -103,12 +103,12 @@ function runSimulator(steps: Step[]): SampleOut[] {
   });
   const outputs: SampleOut[] = [];
   for (const step of steps) {
-    sim.setNode('rs1', step.rs1);
-    sim.setNode('rs2', step.rs2);
-    sim.setNode('rd', step.rd);
-    sim.setNode('write_data', step.write_data);
-    sim.setNode('we', step.we);
-    sim.setNode('debug_rs', step.debug_rs);
+    sim.setInput('rs1', step.rs1);
+    sim.setInput('rs2', step.rs2);
+    sim.setInput('rd', step.rd);
+    sim.setInput('write_data', step.write_data);
+    sim.setInput('we', step.we);
+    sim.setInput('debug_rs', step.debug_rs);
     sim.tick();
     const pv = sim.getPortValues();
     const pick = (name: string) => {

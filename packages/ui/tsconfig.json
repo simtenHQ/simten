@@ -19,7 +19,7 @@
     "resolveJsonModule": true,
     "types": ["node"]
   },
-  "references": [{ "path": "../core" }],
+  "references": [{ "path": "../core" }, { "path": "../sandbox" }],
   "include": ["src/**/*.ts", "src/**/*.tsx"],
   // Tests are excluded from the BUILD surface only — `tsc -b` would otherwise
   // emit them into dist. They are NOT unchecked: `tsconfig.check.json` includes

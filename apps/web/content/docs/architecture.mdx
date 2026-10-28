@@ -187,14 +187,16 @@ Internal nodes are reached through `nodesOf(sim)` in `@simten/core/internal`: `s
 
 The browser's auto-run lives in `useCircuitSimulator` today: the page sends batches of ticks to the sandbox at the display rate. The RISC-V CPU can run at ~20,000 ticks/sec while the UI updates at 30fps, so the engine does ~667 ticks per display frame. `simulate()` has no auto-run; in Node, call `tick` in a loop.
 
-### setNode
+### setInput and setNode
 
-`engine.setNode(name, value)` is the unified API for setting any node's value. `name` is a top-level input or an exact node path (`cpu.imem`, not `imem`); any other name throws. The engine dispatches based on node type:
+The engine takes top-level inputs and nodes separately. `engine.setInput(name, value)` drives a top-level input by its name. `engine.setNode(path, value)` writes a node by its exact path (`cpu.imem`, not `imem`) and dispatches on the node's type:
 
 - **Switch/Input/Button** → sets `arguments.value` (combinational)
 - **ROM/RAM/Register** → sets sequential state directly
 
-This means loading a binary into ROM works the same as flipping a switch: one API call, no session reset. ROM data persists across reset (like real hardware, where flash survives a power cycle).
+A name that isn't one of the two throws, and an input name isn't a node path. `Simulation.set` drives inputs; `nodesOf(sim).set` writes nodes. ROM data written with `setNode` persists across reset (like real hardware, where flash survives a power cycle).
+
+In the browser, the page can only set Switch and Input nodes (`SimulationClient.setInput`). A program goes into memory when its session opens (`memory` in `open`'s options).
 
 ## Packages
 
@@ -209,6 +211,7 @@ This means loading a binary into ROM works the same as flipping a switch: one AP
 | Package | Description |
 |---------|-------------|
 | `@simten/core` | TypeScript builder, compiler, validator, simulator engine, `Simulation`, environmental state, Verilog export. No UI dependencies. |
+| `@simten/sandbox` | The sandbox without React: `SandboxClient` and `SimulationClient` for pages, the message protocol, and the worker's session host and the iframe's relay. Depends on core. |
 | `@simten/ui` | React components: canonical node renderers, shared canvas, ELK layout, sandbox context (`useSandbox`), `ClockControls`, editor UI. |
 | `@simten/embed` | `CircuitViewer` (simulation + canvas), `CircuitEmbed` (viewer + auto-harness + info bar), `<circuit-embed>` web component. Depends on core + ui. |
 | `@simten/mcp` | MCP server for Claude Code integration |

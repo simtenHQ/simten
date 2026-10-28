@@ -110,7 +110,7 @@ export function traceCompiled(
           error: `inputs: "${name}" is not an input of circuit "${target.name}". Inputs: ${ports.join(', ') || '(none)'}`,
         };
       }
-      simulator.setNode(name, value);
+      simulator.setInput(name, value);
     }
   }
 
