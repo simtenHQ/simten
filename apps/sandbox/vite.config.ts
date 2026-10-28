@@ -69,6 +69,8 @@ export default defineConfig({
   // sequences the exporter doesn't translate, so they exported as unsupported
   // (#502). Renaming is off too, so the exported Verilog keeps the source's
   // names. Cost: the worker is about 112 KB gzipped instead of 90 KB.
+  // e2e/watchdog.mts ("the 6502 example exports with nothing unsupported")
+  // builds the worker this way and fails if this regresses.
   worker: {
     format: 'es',
     rolldownOptions: {
