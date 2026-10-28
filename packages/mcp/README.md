@@ -27,6 +27,8 @@ That's it. `--scope user` makes simten available across every project; drop the 
 
 Designing and simulating need nothing else. `verify_circuit` runs the testbench on the host via `tsx`, so it needs `@simten/core` + `fast-check` + `tsx` installed in the project — Claude runs `setup_project` automatically on first use to write a `package.json` and install them (or run it yourself; it's idempotent). Existing projects with those deps already work as-is.
 
+`check_circuit` and `simulate_circuit` load circuit files with the MCP's own copy of `@simten/core`, while `verify_circuit` uses the copy installed in the project, so a project that pins a different core version can see the tools disagree.
+
 (If you prefer global installs over `npx`: `npm install -g @simten/mcp`, then `claude mcp add --scope user simten simten-mcp`.)
 
 ### Port
