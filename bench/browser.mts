@@ -13,7 +13,6 @@
  * --sandbox-only.
  */
 
-import { type ChildProcess, execSync, spawn } from 'node:child_process';
 import { readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { cpus } from 'node:os';
@@ -21,8 +20,8 @@ import { join } from 'node:path';
 import { type Browser, chromium, type Page } from '@playwright/test';
 // The root package doesn't depend on core; the catalog is data only, so import it by path.
 import { EXAMPLES } from '../packages/core/src/examples/catalog.ts';
+import { buildApps, serveApp, siteEnv, stopAll, waitForUrl } from '../scripts/local-site.mts';
 
-const ROOT = join(import.meta.dirname, '..');
 const BASELINE = join(import.meta.dirname, 'browser-baseline.json');
 const RUNS = 5;
 const SANDBOX = 'http://localhost:4300';
@@ -34,43 +33,7 @@ const PARENT = 'http://localhost:4303';
 const args = new Set(process.argv.slice(2));
 const sandboxOnly = args.has('--sandbox-only');
 // The web preview needs the same Cloudflare credentials as the web build.
-const dotenv = sandboxOnly
-  ? {}
-  : Object.fromEntries(
-      readFileSync(join(ROOT, '.env'), 'utf8')
-        .split('\n')
-        .map((line) => line.match(/^\s*([A-Z_][A-Z0-9_]*)=(.*)$/))
-        .filter((m) => m !== null)
-        .map((m) => [m[1], m[2].replace(/^['"]|['"]$/g, '')]),
-    );
-const env = { ...dotenv, ...process.env, VITE_SANDBOX_ORIGIN: SANDBOX };
-const APPS = sandboxOnly ? ['sandbox'] : ['sandbox', 'game', 'web'];
-
-function build() {
-  for (const app of APPS) {
-    console.log(`building ${app}…`);
-    execSync('pnpm build', { cwd: join(ROOT, 'apps', app), env, stdio: 'ignore' });
-  }
-}
-
-function serve(app: string, port: number): ChildProcess {
-  return spawn('pnpm', ['exec', 'vite', 'preview', '--port', String(port), '--strictPort'], {
-    cwd: join(ROOT, 'apps', app),
-    env,
-    stdio: 'ignore',
-    detached: true,
-  });
-}
-
-async function waitFor(url: string) {
-  for (let i = 0; i < 120; i++) {
-    try {
-      if ((await fetch(url)).ok) return;
-    } catch {}
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  throw new Error(`${url} didn't start`);
-}
+const env = siteEnv(SANDBOX, { dotenv: !sandboxOnly });
 
 const median = (xs: number[]) => [...xs].sort((a, b) => a - b)[Math.floor(xs.length / 2)];
 
@@ -307,27 +270,23 @@ function readBaseline(): Baseline | undefined {
   }
 }
 
-if (!args.has('--no-build')) build();
+if (!args.has('--no-build')) buildApps(sandboxOnly ? ['sandbox'] : ['sandbox', 'game', 'web'], env);
 const servers = sandboxOnly
-  ? [serve('sandbox', 4300)]
-  : [serve('sandbox', 4300), serve('web', 4301), serve('game', 4302)];
+  ? [serveApp('sandbox', 4300, env)]
+  : [serveApp('sandbox', 4300, env), serveApp('web', 4301, env), serveApp('game', 4302, env)];
 const parentServer = createServer((_req, res) => {
   res.writeHead(200, { 'content-type': 'text/html' });
   res.end(PARENT_HTML);
 }).listen(4303);
 const stop = () => {
   parentServer.close();
-  for (const s of servers) {
-    try {
-      if (s.pid) process.kill(-s.pid);
-    } catch {}
-  }
+  stopAll(servers);
 };
 process.on('exit', stop);
 
 try {
   await Promise.all(
-    sandboxOnly ? [waitFor(SANDBOX)] : [waitFor(SANDBOX), waitFor(WEB), waitFor(GAME)],
+    sandboxOnly ? [waitForUrl(SANDBOX)] : [waitForUrl(SANDBOX), waitForUrl(WEB), waitForUrl(GAME)],
   );
   const browser = await chromium.launch();
   const baseline = readBaseline();
