@@ -143,8 +143,7 @@ function inProcess(sent: SessionRequest[] = []): SandboxTransport {
 
 describe('sandboxRuntime', () => {
   // The browser grades through the sandbox; levels.test.ts proves every level
-  // on the local runtime. This ties the two together, with one known
-  // difference below.
+  // on the local runtime. This ties the two together.
   it('grades every level the same as the local runtime', { timeout: 60_000 }, async () => {
     const sandbox = new SandboxClient({ transport: inProcess() });
     try {
@@ -152,7 +151,6 @@ describe('sandboxRuntime', () => {
         for (const source of [SOLUTIONS[level.id], level.stub]) {
           const local = await grade(localRuntime(), level, source);
           const remote = await grade(sandboxRuntime(sandbox), level, source);
-          if (level.id === 'd-latch' && source === SOLUTIONS[level.id]) continue;
           expect(remote, level.id).toEqual(local);
         }
       }
@@ -161,25 +159,19 @@ describe('sandboxRuntime', () => {
     }
   });
 
-  // A bug in the browser grader, on main before #417 PR 7 and after it. The
-  // sandbox settles after each `setInput`, so a vector's switches change one
-  // at a time: row 2 sets d = 0 while en is still 1, the latch follows d, and
-  // en = 0 then holds the 0. The local runtime writes both before settling.
-  // Fixing it needs a request that writes several inputs at once. When this
-  // test fails, the bug is fixed: drop the exception above and this test.
-  it('fails the d-latch reference solution in the browser, as on main', async () => {
-    const sandbox = new SandboxClient({ transport: inProcess() });
+  // #521: the sandbox settles after each request, so writing a vector's
+  // switches one request at a time let d = 0 land while en was still 1, and
+  // the latch followed it. The grader now writes them in one request.
+  it('passes the d-latch reference solution, whose vectors change two switches at once', async () => {
+    const sent: SessionRequest[] = [];
+    const sandbox = new SandboxClient({ transport: inProcess(sent) });
     try {
       const level = LEVELS.find((l) => l.id === 'd-latch');
       if (!level) throw new Error('no d-latch level');
       const remote = await grade(sandboxRuntime(sandbox), level, SOLUTIONS[level.id]);
-      expect(remote).toMatchObject({
-        status: 'fail',
-        failure: { kind: 'vector', index: 1, actual: { q: 0 } },
-      });
-      expect(await grade(localRuntime(), level, SOLUTIONS[level.id])).toMatchObject({
-        status: 'pass',
-      });
+      expect(remote.status).toBe('pass');
+      const writes = sent.filter((r) => r.type === 'set-input');
+      expect(writes).toHaveLength(level.vectors.length);
     } finally {
       sandbox.dispose();
     }

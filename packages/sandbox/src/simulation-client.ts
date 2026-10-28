@@ -140,7 +140,15 @@ export class SimulationClient {
 
   /** Write an Input, Switch or keyboard node by dotted path. Rejects for any other node. */
   async setInput(path: string, value: number): Promise<void> {
-    await this.update({ type: 'set-input', path, value });
+    await this.setInputs({ [path]: value });
+  }
+
+  /**
+   * Write several Input, Switch or keyboard nodes, by dotted path, before the
+   * circuit settles. If any path isn't one of those, none are written.
+   */
+  async setInputs(values: Record<string, number>): Promise<void> {
+    await this.update({ type: 'set-input', values });
   }
 
   /** Advance `count` rising clock edges (default 1), recorded as one history step. */
