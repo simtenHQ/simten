@@ -199,6 +199,7 @@ export function SimulationView({
           definitions={state.definitions ?? undefined}
           portValues={state.portValues}
           peripheralState={state.peripheralState}
+          simulation={simulation}
           onToggleNode={actions.toggleNode}
           onSetNodeValue={actions.setInput}
           height={canvasHeight}

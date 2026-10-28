@@ -127,6 +127,21 @@ describe('MADE_OF table', () => {
     }
   });
 
+  it('builds from nothing that has a reference build of its own', () => {
+    // The inspector relies on this: a drill-down stack holds at most one
+    // reference build, fed from the main simulation. A build containing an
+    // Adder would need a reference session fed from another reference session.
+    for (const name of MADE_OF_NAMES) {
+      const { ir, dependencies } = internalsOf(build(name, { width: 4 }));
+      const parts = [ir, ...[...dependencies.values()].map((d) => internalsOf(d).ir)];
+      for (const part of parts) {
+        for (const node of part.nodes) {
+          expect(hasMadeOf(node.componentRef), `${name} contains ${node.componentRef}`).toBe(false);
+        }
+      }
+    }
+  });
+
   it('falls back to the default width on a malformed argument', () => {
     for (const bad of [undefined, 0, -4, 2.5, 'wide']) {
       expect(build('Adder', { width: bad } as never).name).toBe('Adder8_madeOf');

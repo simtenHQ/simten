@@ -4,7 +4,9 @@
  * Double-clicking the badge on a level opens its circuit in
  * `CompositeInspectorDialog`, the same inspector the canvas opens when you
  * double-click a composite component, so it arrives with a full-size canvas,
- * its own simulation engine, breadcrumbs and nested drill-down already working.
+ * breadcrumbs and nested drill-down already working. It's a view of a
+ * simulation of the circuit, harnessed as on the level page, with its inputs
+ * at 0: the inspector shows values but has no switches.
  *
  * The component renders nothing until then. It is mounted on hover rather than
  * on open purely to warm the compile: you have to hover a badge before you can
@@ -20,8 +22,9 @@
  * shows what the shape of an answer looks like.
  */
 
-import { useCompiledCircuit } from '@simten/embed';
+import type { CircuitIR } from '@simten/core/internal';
 import { CompositeInspectorDialog, type InspectorFrame, useDetectTheme } from '@simten/ui/canvas';
+import { useSimulation } from '@simten/ui/sandbox';
 import { useCallback, useEffect, useState } from 'react';
 import { SOLUTIONS } from '../game/solutions';
 import type { Level } from '../game/types';
@@ -42,16 +45,14 @@ export function LevelDrilldown({ level, draft, expanded, onCloseExpanded }: Leve
   // `select` is a picker over the compiled circuits, not a name; the default
   // takes the last circuit defined. Same shape the level page uses.
   const select = useCallback(
-    (circuits: { name: string }[]) =>
+    (circuits: CircuitIR[]) =>
       circuits.find((c) => c.name === level.target) ?? circuits[circuits.length - 1],
     [level.target],
   );
 
-  const preview = useCompiledCircuit(source, {
-    slot: `map:${level.id}`,
-    select: select as never,
-    autoHarness: true,
-  });
+  const preview = useSimulation({ source, circuit: select }, { harness: true });
+  const { state } = preview;
+  const compileError = preview.compileError?.message ?? state.error;
 
   /**
    * The inspector's drill-down stack. Seeded with this level's circuit when
@@ -60,19 +61,27 @@ export function LevelDrilldown({ level, draft, expanded, onCloseExpanded }: Leve
    */
   const [stack, setStack] = useState<InspectorFrame[]>([]);
 
+  // The harness wraps a circuit with ports as node `dut`, so that's the frame's
+  // path in the session. A self-contained circuit (no ports) isn't wrapped:
+  // it is the session's top level, path ''.
+  const target = state.circuitName
+    ? (state.definitions?.resolveCircuit(state.circuitName) ?? null)
+    : null;
+  const harnessed = state.circuit !== null && state.circuit.name !== state.circuitName;
   useEffect(() => {
-    if (expanded && preview.circuit) {
+    if (expanded && target) {
       setStack([
         {
-          componentName: preview.circuit.name,
-          componentDef: preview.circuit,
+          componentName: target.name,
+          componentDef: target,
           nodeLabel: level.title,
+          path: harnessed ? 'dut' : '',
         },
       ]);
     } else {
       setStack([]);
     }
-  }, [expanded, preview.circuit, level.title]);
+  }, [expanded, target, harnessed, level.title]);
 
   const onPushLevel = useCallback((frame: InspectorFrame) => {
     setStack((s) => [...s, frame]);
@@ -90,20 +99,21 @@ export function LevelDrilldown({ level, draft, expanded, onCloseExpanded }: Leve
   // compile, and inspecting it is a perfectly reasonable thing to do. Says so
   // rather than opening to nothing, which is indistinguishable from a broken
   // double-click.
-  if (expanded && preview.compileError) {
+  if (expanded && compileError) {
     return (
       <div className="fixed inset-x-0 bottom-6 mx-auto w-fit rounded-lg border border-border bg-card px-4 py-2 text-sm text-muted-foreground">
-        {level.title} did not compile: {preview.compileError}
+        {level.title} did not compile: {compileError}
       </div>
     );
   }
 
-  if (!preview.definitions) return null;
+  if (!state.definitions) return null;
 
   return (
     <CompositeInspectorDialog
       stack={stack}
-      definitions={preview.definitions}
+      definitions={state.definitions}
+      simulation={preview}
       theme={theme}
       onClose={onClose}
       onPopLevel={onPopLevel}
