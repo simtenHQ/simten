@@ -1,14 +1,14 @@
 /**
  * The surface the grader needs from a simulator, and the sandbox adapter for it.
  *
- * The grader is written against this rather than `SandboxHandle` directly so it
+ * The grader is written against this rather than `SandboxClient` directly so it
  * can be run host-side in tests, which is what proves a level is solvable
  * before anyone is asked to solve it. The browser passes `sandboxRuntime`; the
  * test suite passes a local one built on `executeCircuitCode`.
  */
 
 import type { CircuitIR } from '@simten/core/internal';
-import type { SandboxHandle, SimSlot } from '@simten/ui/sandbox';
+import type { Compiled, SandboxClient, SimulationClient } from '@simten/sandbox';
 
 interface CompiledSource {
   /** Circuits the source defines. */
@@ -20,13 +20,10 @@ interface CompiledSource {
 export interface GradeRuntime {
   compile(source: string): Promise<CompiledSource>;
   /**
-   * Point the simulator at one specific circuit.
-   *
-   * Not merely convenience: the sandbox's `compile` builds its simulator on the
-   * LAST circuit in the source, so a player who defines a helper below their
-   * answer would otherwise be graded on the helper.
+   * Point the simulator at one specific circuit of the last compile, by name,
+   * so a player who defines a helper below their answer is graded on the answer.
    */
-  select(target: CircuitIR, library: CircuitIR[]): Promise<void>;
+  select(target: CircuitIR): Promise<void>;
   /**
    * Drive the named input signals, advance one clock cycle, then read the named
    * output signals.
@@ -47,6 +44,8 @@ export interface GradeRuntime {
    * `resolveOutput`.
    */
   evaluate(inputs: Record<string, number>, outputs: string[]): Promise<Record<string, number>>;
+  /** Free what the grading held. `grade` calls it when it's done, pass or fail. */
+  close(): Promise<void>;
 }
 
 /** How the sandbox namespaces a top-level port. Mirrors core's TOP_LEVEL_NODE. */
@@ -110,37 +109,41 @@ export function readOutputs(
 /** Thrown for anything that is not a verdict on the player's design. */
 export class RuntimeFailure extends Error {}
 
-function isSandboxError(v: unknown): v is { type: 'error'; error: string } {
-  return typeof v === 'object' && v !== null && (v as { type?: string }).type === 'error';
-}
-
-function unwrap<T>(v: T | { type: 'error'; error: string }): T {
-  if (isSandboxError(v)) throw new RuntimeFailure(v.error);
-  return v;
-}
-
-/** Grade against the sandbox iframe. Player source never runs in this frame. */
-export function sandboxRuntime(sandbox: SandboxHandle, slot: SimSlot = 'grade'): GradeRuntime {
+/**
+ * Grade in the sandbox. Player source never runs in this frame. Each grading
+ * gets its own compile and session, freed by `close`.
+ */
+export function sandboxRuntime(sandbox: SandboxClient): GradeRuntime {
+  let compiled: Compiled | null = null;
+  let session: SimulationClient | null = null;
   let selected: CircuitIR | null = null;
   return {
     async compile(source) {
-      const res = unwrap(await sandbox.compile(source, slot));
-      return { circuits: res.circuits, libraryCircuits: res.libraryCircuits };
+      compiled = await sandbox.compile(source);
+      return { circuits: compiled.circuits, libraryCircuits: compiled.libraryCircuits };
     },
-    async select(target, library) {
-      // Same slot as the compile above, so the evals registered there are
-      // inherited and do not need transferring again.
-      unwrap(await sandbox.compileIR(target, library, slot));
+    async select(target) {
+      if (!compiled) throw new RuntimeFailure('compile() was not called before select()');
+      // By name, so a helper defined after the target is never what's graded.
+      session = await sandbox.open({ compiled, circuit: target.name }, { history: 0 });
       selected = target;
     },
     async evaluate(inputs, outputs) {
-      if (!selected) throw new RuntimeFailure('select() was not called before evaluate()');
-      const { ports, nodes } = splitInputs(selected, inputs);
-      for (const [id, value] of Object.entries(nodes)) {
-        unwrap(await sandbox.setNode(id, value, slot));
+      if (!session || !selected) {
+        throw new RuntimeFailure('select() was not called before evaluate()');
       }
-      const res = unwrap(await sandbox.tick(ports, slot));
-      return readOutputs(res.portValues, outputs);
+      const { ports, nodes } = splitInputs(selected, inputs);
+      for (const [path, value] of Object.entries(nodes)) await session.setInput(path, value);
+      if (Object.keys(ports).length > 0) await session.set(ports);
+      await session.tick();
+      return readOutputs(Object.fromEntries(session.getState().ports), outputs);
+    },
+    async close() {
+      const open = session;
+      session = null;
+      if (compiled) sandbox.release(compiled);
+      compiled = null;
+      await open?.close();
     },
   };
 }

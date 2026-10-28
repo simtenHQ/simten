@@ -2,10 +2,10 @@
  * A level: brief, code and circuit side by side, laid out like simten.dev/circuit.
  */
 
-import { elaborate } from '@simten/core/internal';
-import { ErrorDisplay, useCompiledCircuit } from '@simten/embed';
+import { type CircuitIR, elaborate } from '@simten/core/internal';
+import { ErrorDisplay } from '@simten/embed';
 import { CircuitCanvas } from '@simten/ui/canvas';
-import { ClockControls, DEFAULT_SPEED } from '@simten/ui/editor/components';
+import { ClockControls } from '@simten/ui/editor/components';
 import {
   buildGlobalsFor,
   preloadMonaco,
@@ -19,7 +19,7 @@ import {
   ResizablePanelGroup,
   usePanelRef,
 } from '@simten/ui/primitives/resizable';
-import { useSandboxContext } from '@simten/ui/sandbox';
+import { useSandboxClient, useSimulation } from '@simten/ui/sandbox';
 import { createFileRoute, Link, notFound } from '@tanstack/react-router';
 import { Network, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -185,7 +185,8 @@ function LevelError() {
 }
 
 function PlayLevel({ level }: { level: Level }) {
-  const sandbox = useSandboxContext();
+  // The grader compiles and opens its own sessions; it doesn't simulate the preview.
+  const sandbox = useSandboxClient();
 
   // Safe to read storage during render: Monaco never server-renders `source`.
   const [source, setSource] = useState(() => readDrafts()[level.id] ?? level.stub);
@@ -270,56 +271,57 @@ function PlayLevel({ level }: { level: Level }) {
   // Preview the level's target circuit, not a helper defined after it. Falls
   // back to the last circuit so a misnamed target still draws.
   const select = useCallback(
-    (circuits: { name: string }[]) =>
+    (circuits: CircuitIR[]) =>
       circuits.find((c) => c.name === level.target) ?? circuits[circuits.length - 1],
     [level.target],
   );
 
-  // autoHarness adds clickable switches and LEDs for the circuit's ports.
-  const preview = useCompiledCircuit(source, {
-    slot: 'preview',
-    select: select as never,
-    autoHarness: true,
-  });
+  // The harness adds clickable switches and LEDs for the circuit's ports.
+  const preview = useSimulation({ source, circuit: select }, { harness: true });
+  const { state, history, actions } = preview;
+  // A compile error, or the session failing to open.
+  const previewError = preview.compileError?.message ?? state.error;
 
   // A compile error counts as finished too.
-  const simulated = (preview.portValues?.size ?? 0) > 0 || preview.compileError !== null;
+  const simulated = (state.portValues?.size ?? 0) > 0 || previewError !== null;
   useEffect(() => {
     if (simulated) setCanvasReady(true);
   }, [simulated]);
 
-  const victory = useVictoryRun(level.vectors, preview.setNodeValue, preview.tick);
+  const victory = useVictoryRun(level.vectors, actions.setInput, actions.tick);
 
   // The sandbox runs banned gates anyway, so the canvas keeps showing the last
   // circuit without one. Same check as the grader, so the two never disagree.
   const lastPermitted = useRef<{
-    circuit: typeof preview.circuit;
-    definitions: typeof preview.definitions;
+    circuit: CircuitIR | null;
+    definitions: typeof state.definitions;
   } | null>(null);
 
   const forbidden = useMemo(() => {
-    if (!preview.circuit || !preview.definitions) return [];
+    if (!state.circuit || !state.definitions) return [];
     try {
-      return forbiddenPrimitives(elaborate(preview.circuit, preview.definitions), level.allowed);
+      return forbiddenPrimitives(elaborate(state.circuit, state.definitions), level.allowed);
     } catch {
       // Half-typed netlists often fail to elaborate; the compile error covers it.
       return [];
     }
-  }, [preview.circuit, preview.definitions, level.allowed]);
+  }, [state.circuit, state.definitions, level.allowed]);
 
-  if (forbidden.length === 0 && preview.circuit) {
-    lastPermitted.current = { circuit: preview.circuit, definitions: preview.definitions };
+  if (forbidden.length === 0 && state.circuit) {
+    lastPermitted.current = { circuit: state.circuit, definitions: state.definitions };
   }
   // With no earlier good circuit, show nothing rather than the banned gate.
   const shown = forbidden.length > 0 ? lastPermitted.current : null;
-  const canvasCircuit = shown ? shown.circuit : forbidden.length > 0 ? null : preview.circuit;
+  const canvasCircuit = shown ? shown.circuit : forbidden.length > 0 ? null : state.circuit;
   const canvasDefinitions = shown
     ? shown.definitions
     : forbidden.length > 0
       ? null
-      : preview.definitions;
+      : state.definitions;
 
   const onSubmit = useCallback(async () => {
+    // Null only before the sandbox has mounted.
+    if (!sandbox) return;
     setSubmitting(true);
     try {
       const verdict = await grade(sandboxRuntime(sandbox), level, source);
@@ -486,7 +488,7 @@ function PlayLevel({ level }: { level: Level }) {
                   />
                 </div>
                 {/* Errors go here, not over the canvas, so the diagram survives typos. */}
-                {preview.compileError && <ErrorDisplay error={preview.compileError} />}
+                {previewError && <ErrorDisplay error={previewError} />}
               </ResizablePanel>
 
               <ResizableHandle withHandle />
@@ -496,12 +498,13 @@ function PlayLevel({ level }: { level: Level }) {
                   <CircuitCanvas
                     circuit={canvasCircuit}
                     definitions={canvasDefinitions ?? undefined}
-                    portValues={preview.portValues}
+                    portValues={state.portValues}
+                    simulation={preview}
                     showControls
                     // The default only re-lays out when nodes change, not wires.
                     autoLayout
-                    onToggleNode={preview.toggleNode}
-                    onSetNodeValue={preview.setNodeValue}
+                    onToggleNode={actions.toggleNode}
+                    onSetNodeValue={actions.setInput}
                     renderEmptyState={() => (
                       <div className="grid h-full place-items-center text-sm text-muted-foreground">
                         Your circuit appears here as you write it.
@@ -541,27 +544,27 @@ function PlayLevel({ level }: { level: Level }) {
 
       {/* Keyed off the circuit on screen, not the level, so an early flip-flop
           gets controls and a blank sequential stub doesn't. */}
-      {preview.isSequential && (
+      {state.isSequential && (
         <div
           className="flex shrink-0 items-center border-t border-border bg-card/95 px-3"
           style={{ height: CLOCK_BAR_PX }}
         >
           <ClockControls
-            cycle={preview.cycleCount}
-            historyLength={preview.history.length}
-            historyIndex={preview.historyIndex}
-            isRunning={preview.isRunning}
-            isViewingPast={preview.isViewingPast}
-            speed={preview.speed || DEFAULT_SPEED}
-            onStep={preview.tick}
-            onRun={() => preview.startAutoRun(preview.speed || DEFAULT_SPEED)}
-            onPause={() => preview.stopAutoRun()}
-            onReset={preview.reset}
-            onStepBack={() => preview.stepBack()}
-            onStepForward={() => preview.stepForward()}
-            onSeek={(i) => preview.seek(i)}
-            onSpeedChange={(speed) => preview.setSpeed(speed)}
-            showScrubber={preview.history.length > 1}
+            cycle={state.cycle}
+            historyLength={history.length}
+            historyIndex={history.index}
+            isRunning={state.isRunning}
+            isViewingPast={history.isViewingPast}
+            speed={state.speed}
+            onStep={() => void actions.tick()}
+            onRun={() => void actions.run()}
+            onPause={() => void actions.pause()}
+            onReset={() => void actions.reset()}
+            onStepBack={() => void actions.stepBack()}
+            onStepForward={() => void actions.stepForward()}
+            onSeek={(i) => void actions.seek(i)}
+            onSpeedChange={actions.setSpeed}
+            showScrubber={history.length > 1}
             chromeless
           />
         </div>
