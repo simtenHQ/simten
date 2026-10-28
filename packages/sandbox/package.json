@@ -1,0 +1,66 @@
+{
+  "name": "@simten/sandbox",
+  "version": "0.0.0",
+  "description": "Run Simten circuits in a cross-origin sandbox: the page-side clients, the protocol, and the worker-side session host. No React.",
+  "license": "Apache-2.0",
+  "author": "Charles Harris",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simtenHQ/simten.git",
+    "directory": "packages/sandbox"
+  },
+  "keywords": [
+    "circuit-simulator",
+    "hardware",
+    "sandbox",
+    "iframe",
+    "web-worker",
+    "digital-logic"
+  ],
+  "type": "module",
+  "sideEffects": false,
+  "exports": {
+    ".": "./src/index.ts",
+    "./protocol": "./src/protocol.ts",
+    "./host": "./src/host.ts",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      ".": {
+        "types": "./dist/index.d.ts",
+        "import": "./dist/index.js"
+      },
+      "./protocol": {
+        "types": "./dist/protocol.d.ts",
+        "import": "./dist/protocol.js"
+      },
+      "./host": {
+        "types": "./dist/host.d.ts",
+        "import": "./dist/host.js"
+      },
+      "./package.json": "./package.json"
+    },
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rm -rf dist *.tsbuildinfo && tsc -b",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck:tests": "tsc --noEmit -p tsconfig.check.json"
+  },
+  "dependencies": {
+    "@simten/core": "workspace:^"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "typescript": "^5",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

@@ -78,6 +78,9 @@
         "scripts/*.mjs"
       ]
     },
+    "packages/sandbox": {
+      "entry": ["src/index.ts", "src/protocol.ts", "src/host.ts"]
+    },
     "packages/ui": {
       "entry": [
         "src/index.ts",
