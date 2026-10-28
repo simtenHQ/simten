@@ -70,7 +70,13 @@
       "ignoreDependencies": ["serve"]
     },
     "packages/mcp": {
-      "entry": ["src/index.ts", "src/schemas/index.ts", "bin/simten-mcp.js", "scripts/*.mjs"]
+      "entry": [
+        "src/index.ts",
+        "src/schemas/index.ts",
+        "src/lib/file-runner.ts",
+        "bin/simten-mcp.js",
+        "scripts/*.mjs"
+      ]
     },
     "packages/ui": {
       "entry": [

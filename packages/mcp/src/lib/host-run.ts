@@ -51,15 +51,34 @@ export function runTsx(
 ): Promise<HostRunResult> {
   const root = opts.cwd ?? findRepoRoot();
   const tsx = resolveTsx(root);
+  if (!tsx) {
+    return Promise.resolve({
+      stdout: '',
+      stderr: '',
+      exitCode: -1,
+      timedOut: false,
+      spawnError: 'tsx not found',
+    });
+  }
+  return runProcess(tsx, [scriptPath], { ...opts, cwd: root });
+}
+
+/** Run `command` in `cwd`, writing `input` to its stdin, killed after `timeoutMs`. */
+export function runProcess(
+  command: string,
+  args: string[],
+  opts: {
+    cwd: string;
+    env?: Record<string, string | undefined>;
+    timeoutMs?: number;
+    input?: string;
+  },
+): Promise<HostRunResult> {
   const timeoutMs = opts.timeoutMs ?? 30_000;
 
   return new Promise((res) => {
-    if (!tsx) {
-      res({ stdout: '', stderr: '', exitCode: -1, timedOut: false, spawnError: 'tsx not found' });
-      return;
-    }
-    const proc = spawn(tsx, [scriptPath], {
-      cwd: root,
+    const proc = spawn(command, args, {
+      cwd: opts.cwd,
       env: { ...process.env, ...opts.env },
     });
     let stdout = '';
@@ -80,6 +99,9 @@ export function runTsx(
       clearTimeout(timer);
       res({ stdout, stderr, exitCode: -1, timedOut, spawnError: e.message });
     });
+    // A child that exits before reading all of stdin closes the pipe early.
+    proc.stdin.on('error', () => {});
+    proc.stdin.end(opts.input ?? '');
   });
 }
 
