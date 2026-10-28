@@ -190,7 +190,6 @@ const expected = [11, 42, 7, 0];
 verify.exhaustive('table', [4], (addr) => {
   const s = simulate(Lookup);
   s.set({ addr });
-  s.tick();
   return s.get('data') === expected[addr];
 });
 verify.run();
