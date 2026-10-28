@@ -8,9 +8,10 @@ import { tanstackStart } from '@tanstack/react-start/plugin/vite';
 import viteReact from '@vitejs/plugin-react';
 import fumadocsMdx from 'fumadocs-mdx/vite';
 import { visualizer } from 'rollup-plugin-visualizer';
-import { defineConfig } from 'vite';
+import { defineConfig, type Plugin } from 'vite';
 import tsconfigPaths from 'vite-tsconfig-paths';
 import * as MdxConfig from './source.config';
+import { headersFile } from './src/api/headers.ts';
 
 const isAnalyze = process.env.ANALYZE === 'true';
 
@@ -36,6 +37,24 @@ const blogPages = readdirSync(resolve(__dirname, 'src/routes/blog'))
 const blogMdxPages = readdirSync(resolve(__dirname, 'content/blog'))
   .filter((f) => (f.endsWith('.mdx') || f.endsWith('.md')) && f !== 'index.mdx')
   .map((f) => ({ path: `/blog/${f.replace(/\.(mdx|md)$/, '')}` }));
+
+/**
+ * Writes `_headers` (the site's CSP) into the client build, framing the sandbox
+ * this build points at. The worker applies the same headers; see src/api/headers.ts.
+ */
+function siteHeadersFile(): Plugin {
+  return {
+    name: 'web-headers',
+    applyToEnvironment: (environment) => environment.name === 'client',
+    generateBundle() {
+      this.emitFile({
+        type: 'asset',
+        fileName: '_headers',
+        source: headersFile(process.env.VITE_SANDBOX_ORIGIN),
+      });
+    },
+  };
+}
 
 const config = defineConfig(({ command }) => ({
   plugins: [
@@ -101,6 +120,7 @@ const config = defineConfig(({ command }) => ({
       ],
     }),
     viteReact(),
+    siteHeadersFile(),
     ...(isAnalyze
       ? [
           visualizer({

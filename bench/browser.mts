@@ -78,13 +78,31 @@ async function fresh<T>(browser: Browser, url: string, fn: (page: Page) => Promi
 // The cycle number in the editor's clock controls.
 const CYCLE = `Array.from(document.querySelectorAll('span.font-mono')).find((s) => s.parentElement?.textContent?.startsWith('Cycle'))`;
 
+/**
+ * Runs `fn` in the page until it returns something truthy, and returns that.
+ * Polls from Node with a function rather than `waitForFunction('<string>')`,
+ * which compiles the string in the page and so is blocked by the site's CSP
+ * (no 'unsafe-eval'). Playwright sends a function over the DevTools protocol.
+ */
+async function poll<T>(page: Page, fn: () => T, timeout = 30_000): Promise<T> {
+  const end = Date.now() + timeout;
+  for (;;) {
+    const value = await page.evaluate(fn);
+    if (value) return value;
+    if (Date.now() > end) throw new Error(`still waiting after ${timeout} ms`);
+    await new Promise((r) => setTimeout(r, 10));
+  }
+}
+
 async function readyEditor(page: Page): Promise<number> {
-  const handle = await page.waitForFunction(
-    `document.querySelector('.react-flow__node') && ${CYCLE} ? performance.now() : 0`,
-    undefined,
-    { timeout: 30_000 },
-  );
-  return (await handle.jsonValue()) as number;
+  // The function runs in the page, so it finds the cycle counter itself
+  // rather than using CYCLE.
+  return poll(page, () => {
+    const cycle = Array.from(document.querySelectorAll('span.font-mono')).find((s) =>
+      s.parentElement?.textContent?.startsWith('Cycle'),
+    );
+    return document.querySelector('.react-flow__node') && cycle ? performance.now() : 0;
+  });
 }
 
 async function stepMs(page: Page): Promise<number> {
@@ -138,12 +156,13 @@ async function autoRun(page: Page): Promise<{ ticks: number; fps: number }> {
 }
 
 async function levelLoadMs(page: Page): Promise<number> {
-  const handle = await page.waitForFunction(
-    `['editor', 'canvas'].every((t) => document.querySelector('[data-tour="' + t + '"]')?.classList.contains('opacity-100')) ? performance.now() : 0`,
-    undefined,
-    { timeout: 30_000 },
+  return poll(page, () =>
+    ['editor', 'canvas'].every((t) =>
+      document.querySelector(`[data-tour="${t}"]`)?.classList.contains('opacity-100'),
+    )
+      ? performance.now()
+      : 0,
   );
-  return (await handle.jsonValue()) as number;
 }
 
 const EDITOR_6502 = `${WEB}/circuit?example=6502-computer`;
