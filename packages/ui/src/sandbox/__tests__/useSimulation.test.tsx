@@ -241,6 +241,22 @@ describe('useSimulation', () => {
     expect(hook.result.current.state.outputs).toEqual({ y: 0 });
   });
 
+  it('forgets a rejected setInputs, so a toggle flips from the real value', async () => {
+    const { hook } = render(AndGate, { harness: true });
+    await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
+    const { actions } = hook.result.current;
+    await act(async () => {
+      await actions.setInput('a', 1);
+      // `dut.g` is the And gate inside the harness: the whole record is rejected and a stays 1.
+      await actions.setInputs({ a: 0, 'dut.g': 1 });
+    });
+    expect(hook.result.current.state.error).toMatch(/'dut.g' is a And, not an input/);
+    await act(async () => {
+      await actions.toggleNode('a');
+    });
+    expect(hook.result.current.state.portValues?.get('a.out')).toBe(0);
+  });
+
   it('drops a compile that finishes after a newer one started', async () => {
     const { hook, transport } = render(
       { source: COUNTER },

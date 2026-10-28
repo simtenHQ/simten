@@ -504,10 +504,26 @@ export function useSimulation(
       setActionError(message);
     }
 
-    /** Remember each value before sending it, for `toggleNode`; see `written`. */
+    /**
+     * Remember each value before sending it, for `toggleNode`; see `written`.
+     * A rejected write changed nothing in the sandbox, so put back what was
+     * remembered before it.
+     */
     function setInputs(values: Record<string, number>): Promise<void> {
-      for (const [path, value] of Object.entries(values)) written.current.set(path, value);
-      return withSession(undefined, (s) => s.setInputs(values));
+      return withSession(undefined, async (s) => {
+        const paths = Object.keys(values);
+        const before = new Map(paths.map((path) => [path, written.current.get(path)]));
+        for (const path of paths) written.current.set(path, values[path]);
+        try {
+          await s.setInputs(values);
+        } catch (e) {
+          for (const [path, value] of before) {
+            if (value === undefined) written.current.delete(path);
+            else written.current.set(path, value);
+          }
+          throw e;
+        }
+      });
     }
 
     return {
