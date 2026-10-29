@@ -72,8 +72,6 @@ Not using React? See [Using Simten without React](/docs/without-react).
 Drop an interactive circuit into any React app:
 
 ```tsx
-import '@simten/react/styles.css';
-import { CircuitCanvas, ClockControls, useSimulation } from '@simten/react';
 import { circuit, bit } from '@simten/core/circuit';
 import { Xor, And } from '@simten/core/std';
 
@@ -88,6 +86,11 @@ const HalfAdder = circuit('HalfAdder', {
     and1.out.to(outputs.carry),
   ],
 });
+```
+
+```tsx
+import '@simten/react/styles.css';
+import { CircuitCanvas, ClockControls, useSimulation } from '@simten/react';
 
 function HalfAdderDemo() {
   const sim = useSimulation(HalfAdder);

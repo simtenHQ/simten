@@ -65,34 +65,35 @@ function signalsOf(circuit: CircuitIR): { key: string; name: string; isInput: bo
 }
 
 /** Values by cycle, recorded from the simulation's updates while mounted. */
-function useTrace(simulation: UseSimulationResult): {
-  trace: Map<number, ReadonlyMap<string, number>>;
-  version: number;
-} {
+function useTrace(
+  simulation: UseSimulationResult,
+): ReadonlyMap<number, ReadonlyMap<string, number>> {
   const { circuit, portValues, cycle, history } = simulation.state;
   const viewingPast = history.isViewingPast;
-  const trace = useRef(new Map<number, ReadonlyMap<string, number>>());
+  const [trace, setTrace] = useState<ReadonlyMap<number, ReadonlyMap<string, number>>>(
+    () => new Map(),
+  );
   const last = useRef<{ circuit: CircuitIR | null; cycle: number }>({ circuit: null, cycle: -1 });
-  const [version, setVersion] = useState(0);
 
   useEffect(() => {
     if (!circuit || !portValues) return;
     const before = last.current;
+    last.current = { circuit, cycle };
     // A new session, or a reset, starts the trace again. Going back through
     // history keeps it: the cursor moves instead.
-    if (circuit !== before.circuit || (cycle < before.cycle && !viewingPast)) {
-      trace.current = new Map();
-    }
-    last.current = { circuit, cycle };
-    if (viewingPast) return;
-    trace.current.set(cycle, portValues);
-    for (const recorded of trace.current.keys()) {
-      if (recorded <= cycle - WINDOW) trace.current.delete(recorded);
-    }
-    setVersion((v) => v + 1);
+    const restart = circuit !== before.circuit || (cycle < before.cycle && !viewingPast);
+    if (viewingPast && !restart) return;
+    setTrace((previous) => {
+      const next = new Map(restart ? [] : previous);
+      if (!viewingPast) next.set(cycle, portValues);
+      for (const recorded of next.keys()) {
+        if (recorded <= cycle - WINDOW) next.delete(recorded);
+      }
+      return next;
+    });
   }, [circuit, portValues, cycle, viewingPast]);
 
-  return { trace: trace.current, version };
+  return trace;
 }
 
 // ============================================================================
@@ -208,11 +209,10 @@ function BusWaveform({ values, color, width }: { values: number[]; color: string
 
 export function WaveformViewer({ simulation, onClose }: WaveformViewerProps): ReactElement {
   const { state } = simulation;
-  const { trace, version } = useTrace(simulation);
+  const trace = useTrace(simulation);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const circuit = state.circuit;
-  // `version` changes when the trace does; the Map itself is mutated in place.
   const { first, ticks, signals } = useMemo(() => {
     const cycles = [...trace.keys()];
     if (!circuit || cycles.length === 0) return { first: 0, ticks: 0, signals: [] as Signal[] };
@@ -226,13 +226,14 @@ export function WaveformViewer({ simulation, onClose }: WaveformViewerProps): Re
       for (const row of rows) row.values[i] = held?.get(row.key) ?? 0;
     }
     return { first: firstCycle, ticks: count, signals: rows };
-  }, [trace, version, circuit]);
+  }, [trace, circuit]);
 
-  // Keep the newest cycle in view.
+  // Keep the newest cycle in view as the trace grows.
+  const viewingPast = state.history.isViewingPast;
   useEffect(() => {
     const el = scrollRef.current;
-    if (el && !state.history.isViewingPast) el.scrollLeft = el.scrollWidth;
-  }, [ticks, state.history.isViewingPast]);
+    if (el && ticks > 0 && !viewingPast) el.scrollLeft = el.scrollWidth;
+  }, [ticks, viewingPast]);
 
   const waveWidth = Math.max(ticks * CYCLE_WIDTH, 100);
   const cursor = state.cycle - first;
