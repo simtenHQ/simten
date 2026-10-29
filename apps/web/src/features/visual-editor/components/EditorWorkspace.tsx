@@ -194,8 +194,8 @@ export function EditorWorkspace({
   // resulting session opens or the compile fails (see the effects below).
   const pendingRenderRef = useRef<string | null>(null);
 
-  // Export to Verilog, in the sandbox, with the compile's own behavior. The
-  // sandbox exports the circuit the session was opened on, not its harness.
+  // Export to Verilog, in the sandbox, with the compile's own behavior: the
+  // circuit the session was opened on.
   const circuitName = state.circuitName;
   const handleExportVerilog = useCallback(async () => {
     if (!circuitName) return;

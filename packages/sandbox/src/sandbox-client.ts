@@ -59,8 +59,7 @@ export type SessionSource =
   | { circuit: Circuit };
 
 export interface OpenOptions {
-  /** Wrap the circuit in Switch/Input and Led/HexDisplay nodes. */
-  harness?: boolean;
+  /** Where the inputs sit when the session opens, by the keys `set` takes. */
   initialInputs?: Record<string, number>;
   /** Cycles of history. Default 200. */
   history?: number;
@@ -267,7 +266,6 @@ export class SandboxClient {
         session,
         compile: compiled.id,
         circuit: name,
-        harness: options.harness,
         initialInputs: options.initialInputs,
         history: options.history ?? DEFAULT_HISTORY,
         memory: options.memory,

@@ -23,7 +23,7 @@ const HalfAdder = circuit('HalfAdder', {
   ],
 });
 
-// No ports, so no harness: a switch and a lamp.
+// No ports, so it is drawn as it is: a switch and a lamp.
 const Simple = circuit('Simple', {
   nodes: { a: Switch, light: Led },
   connect: ({ nodes: { a, light } }) => [a.out.to(light.in)],

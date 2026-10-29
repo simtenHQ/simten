@@ -9,8 +9,8 @@ export function useCORDICSimulator() {
   // One iteration every 100ms until the slider says otherwise.
   const run = useAutoRun(sim, 100);
 
-  // The Done lamp. It holds once the iterations run out.
-  const isDone = state.portValues?.get('doneLed.in') === 1;
+  // The circuit's `done` output. It holds once the iterations run out.
+  const isDone = state.outputs.done === 1;
 
   // Stop the clock at Done. The worker may run a cycle or two past it before
   // the pause lands; the result registers hold, so nothing visible moves.

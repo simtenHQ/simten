@@ -20,8 +20,8 @@ export function useSystolicSimulator() {
     return null;
   }, [state.circuit]);
 
-  // The Done lamp. It holds once the array has drained.
-  const isDone = state.portValues?.get('done_led.in') === 1;
+  // The circuit's `done` output. It holds once the array has drained.
+  const isDone = state.outputs.done === 1;
 
   // Stop the clock at Done. The worker may run a cycle past it before the
   // pause lands; the accumulators hold, so nothing visible moves.

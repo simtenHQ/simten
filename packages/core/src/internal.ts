@@ -4,7 +4,6 @@
  * anything here can change in any release.
  */
 
-export { autoHarness } from './circuit/auto-harness.js';
 export {
   addToLibrary,
   type Behavior,

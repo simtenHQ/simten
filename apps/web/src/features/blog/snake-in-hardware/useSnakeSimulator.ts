@@ -17,7 +17,7 @@ export function useSnakeSimulator() {
   useEffect(() => {
     if (!state.ready) return;
     let cancelled = false;
-    void actions.scan('scan_addr', 'pixel_out.in', 64).then((result) => {
+    void actions.scan('scan_addr', '__top__.pixel_out', 64).then((result) => {
       if (!cancelled && result.length > 0) setPixels(result);
     });
     return () => {

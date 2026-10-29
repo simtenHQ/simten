@@ -20,8 +20,8 @@ export interface InspectorFrame {
   definitions?: CircuitDefinitions;
   /**
    * Dotted instance path of this component in the session the frame reads,
-   * such as `dut.ha1`. Empty for a session's top level: a reference build's
-   * root, or a circuit with no harness around it.
+   * such as `dut.ha1` inside a circuit drawn with its ports. Empty for the
+   * top level: a reference build's root, or a circuit without ports.
    */
   path: string;
   /**

@@ -119,9 +119,12 @@ export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
     >
       <div className="relative flex flex-col items-center gap-1">
         {(data.isComposite || data.hasReference) && <CompositeBadge />}
-        <div className="text-xs font-medium text-[var(--embed-text-secondary)]">
-          {data.label || data.componentRef}
-        </div>
+        {/* A node named after its component, like a circuit drawn with its ports, says it once. */}
+        {data.label !== data.componentRef && (
+          <div className="text-xs font-medium text-[var(--embed-text-secondary)]">
+            {data.label || data.componentRef}
+          </div>
+        )}
         <div className="flex items-center justify-center">{renderGateSymbol()}</div>
         {(data.isComposite || data.hasReference) && (
           <div className="text-[9px] text-[var(--embed-text-muted)] italic">

@@ -3,48 +3,6 @@ import { TooltipProvider } from '@simten/shared/primitives/tooltip';
 import { useMemo } from 'react';
 import { useSystolicSimulator } from './useSystolicSimulator';
 
-/**
- * Custom layout for the TestSystolic3x3 circuit.
- * Arranges nodes logically: A inputs top-left, B inputs bottom-left,
- * systolic array center, result displays right, controls at bottom.
- */
-const SYSTOLIC_LAYOUT: Record<string, { x: number; y: number }> = {
-  // Matrix A inputs (top-left, 3×3)
-  a00: { x: 30, y: 30 },
-  a01: { x: 170, y: 30 },
-  a02: { x: 310, y: 30 },
-  a10: { x: 30, y: 130 },
-  a11: { x: 170, y: 130 },
-  a12: { x: 310, y: 130 },
-  a20: { x: 30, y: 230 },
-  a21: { x: 170, y: 230 },
-  a22: { x: 310, y: 230 },
-  // Matrix B inputs (below A, 3×3)
-  b00: { x: 30, y: 350 },
-  b01: { x: 170, y: 350 },
-  b02: { x: 310, y: 350 },
-  b10: { x: 30, y: 450 },
-  b11: { x: 170, y: 450 },
-  b12: { x: 310, y: 450 },
-  b20: { x: 30, y: 550 },
-  b21: { x: 170, y: 550 },
-  b22: { x: 310, y: 550 },
-  // Systolic array composite (center)
-  sys: { x: 520, y: 260 },
-  // Result displays (right, 3×3)
-  display_c00: { x: 780, y: 30 },
-  display_c01: { x: 910, y: 30 },
-  display_c02: { x: 1040, y: 30 },
-  display_c10: { x: 780, y: 165 },
-  display_c11: { x: 910, y: 165 },
-  display_c12: { x: 1040, y: 165 },
-  display_c20: { x: 780, y: 300 },
-  display_c21: { x: 910, y: 300 },
-  display_c22: { x: 1040, y: 300 },
-  // Done LED (bottom); start switch is hidden, controlled by UI button
-  done_led: { x: 780, y: 560 },
-};
-
 export function SystolicDemo() {
   const {
     sim,
@@ -213,7 +171,7 @@ export function SystolicDemo() {
         </div>
 
         {/* Circuit canvas */}
-        <CircuitCanvas simulation={sim} height={480} layout={SYSTOLIC_LAYOUT} />
+        <CircuitCanvas simulation={sim} height={480} />
 
         {/* Controls bar */}
         <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-100 dark:bg-gray-900/90">

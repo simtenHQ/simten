@@ -385,6 +385,7 @@ const CORDICStep = circuit('CORDICStep', {
  * full iteration math (shifters, signed adders, angle ROM, mux tree).
  */
 export const CORDICCircuit = circuit('CORDICIteration', {
+  outputs: { done: bit },
   nodes: {
     x: Register({ value: 80 }),
     y: Register({ value: 0 }),
@@ -398,6 +399,7 @@ export const CORDICCircuit = circuit('CORDICIteration', {
     doneLed: Led,
   },
   connect: ({
+    outputs,
     nodes: { x, y, z, iteration, step, xDisplay, yDisplay, zDisplay, iterDisplay, doneLed },
   }) => [
     x.q.to(step.x_in, xDisplay.in),
@@ -409,6 +411,6 @@ export const CORDICCircuit = circuit('CORDICIteration', {
     step.z_next.to(z.data),
     step.iter_next.to(iteration.data),
     step.write_enable.to(x.we, y.we, z.we, iteration.we),
-    step.done.to(doneLed.in),
+    step.done.to(doneLed.in, outputs.done),
   ],
 });

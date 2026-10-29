@@ -21,7 +21,7 @@ export interface NodeData extends Record<string, unknown> {
    * Deliberately separate from `isComposite`, which selects the node type.
    */
   hasReference?: boolean;
-  /** Switch or led the harness added, not a node the author wrote. */
+  /** A port's switch or lamp the canvas added, not a node the author wrote. */
   harness?: boolean;
   arguments?: Record<string, unknown>;
   __pixels?: number[];
