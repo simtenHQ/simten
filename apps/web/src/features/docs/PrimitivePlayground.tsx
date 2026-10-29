@@ -2,8 +2,8 @@ import type { Circuit } from '@simten/core/circuit';
 import type { PortDescriptor } from '@simten/core/internal';
 import { internalsOf } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
-import { CircuitEmbed } from '@simten/react/embed';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { CircuitCard } from '@/components/CircuitCard';
 
 // All stdlib Circuit objects (singletons + materialized factory defaults).
 const ALL_STD: readonly Circuit[] = STDLIB_CIRCUITS;
@@ -245,7 +245,7 @@ export function PrimitiveExplorer() {
           </div>
 
           {/* Live demo */}
-          <CircuitEmbed circuit={selected} height={280} showControls />
+          <CircuitCard circuit={selected} height={280} showControls />
         </div>
       ) : (
         <div className="rounded-xl border border-border bg-card/50 flex items-center justify-center h-48 text-muted-foreground text-sm">

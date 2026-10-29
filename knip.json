@@ -5,8 +5,14 @@
     ".": {
       "entry": ["scripts/*.ts", "bench/*.mts", "e2e/*.mts"]
     },
+    "apps/embed-page": {
+      "entry": ["e2e/*.mts"]
+    },
     "apps/game": {
       "entry": ["src/router.tsx", "src/routes/**/*.tsx", "src/game/solutions/*.ts"]
+    },
+    "apps/sandbox": {
+      "entry": ["e2e/*.mts"]
     },
     "apps/web": {
       "entry": [
@@ -22,12 +28,6 @@
       "ignore": [".source/**", "public/blog-assets/wasm/**"],
       "ignoreDependencies": ["cloudflare"]
     },
-    "apps/embed-page": {
-      "entry": ["e2e/*.mts"]
-    },
-    "apps/sandbox": {
-      "entry": ["e2e/*.mts"]
-    },
     "demos": {
       "entry": ["cli/*.ts"]
     },
@@ -40,6 +40,15 @@
         "projects/cpu/archtest/{run-suite,run-dut,fault-check}.ts",
         "projects/**/*.verify.ts",
         "projects/snake/{parity-check,playable-check,fault-check}.ts"
+      ]
+    },
+    "packages/shared": {
+      "entry": [
+        "src/primitives/*.tsx",
+        "src/share/index.ts",
+        "src/fork/index.ts",
+        "src/ErrorDisplay.tsx",
+        "src/CompositeBadge.tsx"
       ]
     },
     "packages/core": {
@@ -70,17 +79,7 @@
       ]
     },
     "packages/react": {
-      "entry": [
-        "src/canvas/index.ts",
-        "src/embed/index.ts",
-        "src/monaco/index.ts",
-        "src/nodes/index.ts",
-        "src/sandbox/index.ts",
-        "src/share/index.ts",
-        "src/waveform/WaveformViewer.tsx",
-        "src/primitives/{tooltip,resizable,sheet,dialog,button}.tsx",
-        "scripts/*.mjs"
-      ]
+      "entry": ["src/index.ts", "src/code-editor/index.ts", "scripts/*.mjs"]
     },
     "packages/sandbox": {
       "entry": ["src/index.ts", "src/protocol.ts", "src/host.ts"]

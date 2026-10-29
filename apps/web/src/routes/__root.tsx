@@ -1,5 +1,4 @@
-import { ShareCircuitProvider } from '@simten/react/embed';
-import { SandboxProvider } from '@simten/react/sandbox';
+import { ShareCircuitProvider } from '@simten/shared/fork';
 import {
   createRootRoute,
   HeadContent,
@@ -17,7 +16,7 @@ import { ThemeProvider } from '../components/ThemeProvider';
 
 import appCss from '../styles.css?url';
 
-// Bridge the TanStack Start server fn to the CircuitEmbed Fork button via
+// Bridge the TanStack Start server fn to the circuit cards' Fork button via
 // context. Every Fork click goes through KV → short `/circuit/s/<hash>` URLs.
 const shareCircuitFn = (source: string) => shareCircuit({ data: { source } });
 
@@ -114,15 +113,12 @@ function RootComponent() {
       <body className="bg-background antialiased">
         <RootProvider search={{ preload: false }}>
           <ThemeProvider defaultTheme="dark">
-            <SandboxProvider>
-              <ShareCircuitProvider value={shareCircuitFn}>
-                {!skipDefaultChrome && (
-                  <SiteHeader contained={isLanding} right={<SiteNavLinks />} />
-                )}
-                <Outlet />
-                {!skipDefaultChrome && <SiteFooter />}
-              </ShareCircuitProvider>
-            </SandboxProvider>
+            {/* Circuits share the page-wide sandbox @simten/react makes for the first one. */}
+            <ShareCircuitProvider value={shareCircuitFn}>
+              {!skipDefaultChrome && <SiteHeader contained={isLanding} right={<SiteNavLinks />} />}
+              <Outlet />
+              {!skipDefaultChrome && <SiteFooter />}
+            </ShareCircuitProvider>
           </ThemeProvider>
         </RootProvider>
         <Scripts />

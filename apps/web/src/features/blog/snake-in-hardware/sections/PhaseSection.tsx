@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { SNAKE_CIRCUITS } from '../circuits';
 
 export function PhaseSection() {
@@ -27,11 +27,10 @@ export function PhaseSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={SNAKE_CIRCUITS.phaseDemo.circuit}
           layout={SNAKE_CIRCUITS.phaseDemo.layout}
           showControls
-          autoRunSpeed={400}
           title="4-Phase Counter"
           description="Toggle enable and tick to see the phase cycle through 0-1-2-3"
         />

@@ -3,22 +3,22 @@ title: Code Editor
 description: Drop a Monaco editor with full IntelliSense for circuit source into your own app, and turn that source into a live simulation.
 ---
 
-`@simten/react/monaco` is the Monaco editor that powers `simten.dev/circuit`, packaged for your own apps. It gives circuit source typed completions and hovers for the Simten stdlib, plus automatic type acquisition so third-party imports (`react`, `zod`, …) resolve to real types instead of `any`.
+`@simten/react/code-editor` is the Monaco editor that powers `simten.dev/circuit`, packaged for your own apps. It gives circuit source typed completions and hovers for the Simten stdlib, plus automatic type acquisition so third-party imports (`react`, `zod`, …) resolve to real types instead of `any`.
 
-Pair it with `useSimulation` from `@simten/react/sandbox` and you have the whole "editor with a live circuit next to it" experience.
+It knows nothing about simulations. Pair it with `useSimulation` from `@simten/react` and you have the whole "editor with a live circuit next to it" experience.
 
 ```bash
 pnpm add @simten/react @monaco-editor/react
 ```
 
-`@monaco-editor/react` and `monaco-editor` are **optional** peers: only this subpath needs them, so every other `@simten/react` import stays Monaco-free. pnpm (v8+) and npm (v7+) install peers automatically, so that one command is usually enough. Monaco itself is loaded from a CDN at runtime, not bundled.
+`@monaco-editor/react` and `monaco-editor` are **optional** peers: only this entry needs them, so `@simten/react` itself stays Monaco-free. pnpm (v8+) and npm (v7+) install peers automatically, so that one command is usually enough. Monaco itself is loaded from a CDN at runtime, not bundled.
 
 ## Quick start
 
 ```tsx
-import { SimtenCodeEditor } from '@simten/react/monaco';
+import { CodeEditor } from '@simten/react/code-editor';
 
-<SimtenCodeEditor value={source} onChange={setSource} />;
+<CodeEditor value={source} onChange={setSource} />;
 ```
 
 That's the whole setup. Compiler options, the virtual `node_modules` tree, the `file:///` model URI, diagnostics, and type acquisition are all configured for you.
@@ -32,14 +32,14 @@ That's the whole setup. Compiler options, the virtual `node_modules` tree, the `
 | Error squiggles | The `diagnostics` prop (see below) |
 | Simten editor themes | `registerSimtenThemes` + the `SIMTEN_DARK` / `SIMTEN_LIGHT` constants |
 
-`SimtenCodeEditor` accepts every [`@monaco-editor/react`](https://www.npmjs.com/package/@monaco-editor/react) prop (`value`, `defaultValue`, `onChange`, `onMount`, `options`, …) plus the Simten-specific ones below.
+`CodeEditor` accepts every [`@monaco-editor/react`](https://www.npmjs.com/package/@monaco-editor/react) prop (`value`, `defaultValue`, `onChange`, `onMount`, `options`, …) plus the Simten-specific ones below.
 
 ### Diagnostics
 
 Pass a monaco-free list of diagnostics; the editor renders them as squiggles. You never import `monaco-editor` to show an error.
 
 ```tsx
-<SimtenCodeEditor
+<CodeEditor
   value={source}
   onChange={setSource}
   diagnostics={[{ message: 'Cannot find name "foo"', line: 3, column: 12 }]}
@@ -51,9 +51,9 @@ A diagnostic with `line < 1` (a whole-file error) still carries a message for yo
 ### Themes
 
 ```tsx
-import { SimtenCodeEditor, registerSimtenThemes, SIMTEN_DARK, SIMTEN_LIGHT } from '@simten/react/monaco';
+import { CodeEditor, registerSimtenThemes, SIMTEN_DARK, SIMTEN_LIGHT } from '@simten/react/code-editor';
 
-<SimtenCodeEditor
+<CodeEditor
   value={source}
   onChange={setSource}
   theme={dark ? SIMTEN_DARK : SIMTEN_LIGHT}
@@ -68,51 +68,43 @@ Register from `beforeMount` so the theme exists at first paint. Pass `{ lightBac
 The `ref` exposes `getEditor()`, `getMonaco()`, `getValue()`, and `setValue()`, useful for loading an example or reading the source for a share link.
 
 ```tsx
-const editor = useRef<SimtenCodeEditorHandle>(null);
+const editor = useRef<CodeEditorHandle>(null);
 // …
 editor.current?.setValue(example.code);
 ```
 
 ## Source → live circuit
 
-The editor produces a string. To turn that string into a running simulation, use `useSimulation` from `@simten/react/sandbox`. User code compiles and runs in the sandbox iframe, never the main frame. Put a [`SandboxProvider`](/docs/security) high up so every simulation on the page shares one sandbox; without one, each `useSimulation` makes its own.
+The editor produces a string. To turn that string into a running simulation, use `useSimulation` from `@simten/react`. User code compiles and runs in the sandbox iframe, never the main frame. Every simulation on the page shares one sandbox, created when the first one needs it.
 
 ### useSimulation
 
-Source in, a running simulation out.
+Source in, a running simulation out. Wiring the editor to it is the `diagnostics` line.
 
 ```tsx
-import { CircuitCanvas } from '@simten/react/canvas';
-import { SandboxProvider, useSimulation } from '@simten/react/sandbox';
+import { CircuitCanvas, ClockControls, useSimulation } from '@simten/react';
+import { CodeEditor } from '@simten/react/code-editor';
 
 function Playground() {
   const [source, setSource] = useState(SEED);
-  const { compileError, state, actions } = useSimulation({ source }, { harness: true });
+  const sim = useSimulation({ source });
+  const { compileError } = sim.state;
 
   return (
     <div className="split">
-      <SimtenCodeEditor
+      <CodeEditor
         value={source}
         onChange={setSource}
         diagnostics={compileError ? [compileError] : []}
       />
-      <CircuitCanvas
-        circuit={state.circuit}
-        definitions={state.definitions ?? undefined}
-        portValues={state.portValues}
-        peripheralState={state.peripheralState}
-        onToggleNode={actions.toggleNode}
-        onSetNodeValue={actions.setInput}
-      />
+      <CircuitCanvas simulation={sim} />
+      <ClockControls simulation={sim} />
     </div>
   );
 }
-
-// Wrap once, high up:
-<SandboxProvider><Playground /></SandboxProvider>;
 ```
 
-It debounces edits (`debounceMs`, 300 by default), keeps the last good circuit running when a compile fails, and simulates the last circuit the source builds. Pass `circuit` to choose another, by name or with a function over the compiled circuits:
+It recompiles 50 ms after the source stops changing (the first compile goes at once), keeps the last good circuit running when a compile fails, and simulates the last circuit the source builds. Pass `circuit` to choose another, by name or with a function over the compiled circuits:
 
 ```tsx
 useSimulation({ source, circuit: 'FullAdder' });
@@ -120,19 +112,17 @@ useSimulation({ source, circuit: 'FullAdder' });
 
 | Returns | |
 |---|---|
-| `compileError` | The last compile's error, with `line` and `column` when it has a location; pass it to `SimtenCodeEditor`'s `diagnostics` prop |
-| `state` | `ready`, `error`, `circuit`, `definitions`, `circuits` (every circuit the compile built), `cycle`, `portValues`, `outputs`, `peripheralState`, `isRunning` |
-| `history` | `length`, `index` and `isViewingPast`, for clock controls |
-| `actions` | `set`, `setInput`, `setInputs`, `toggleNode`, `tick`, `reset`, `stepBack`, `stepForward`, `seek`, `run`, `pause`, `setSpeed`, `sample`, `scan`, `recompile`, `exportVerilog` |
+| `state` | `ready`, `error`, `compileError` (the last compile's error, with `line` and `column` when it has a location; pass it to `CodeEditor`'s `diagnostics`), `outputs`, `cycle`, `portValues`, `isRunning`, `speed`, `history`, and `circuits` (every circuit the compile built) |
+| `actions` | `set`, `toggle`, `tick`, `run`, `pause`, `reset`, `stepBack`, `stepForward`, `seek`, `scan`, `sample`, `exportVerilog`, `recompile` |
 
-`actions` keeps one identity for the life of the component, so it's safe in dependency arrays. `recompile()` compiles now, skipping the debounce.
+`actions` keeps one identity for the life of the component, so it's safe in dependency arrays. `recompile()` compiles now, skipping the debounce. With source text, the keys `set` takes are checked when the call reaches the sandbox, as there's no circuit to type them from until it compiles.
 
 ### Compiling without simulating
 
 To compile once and read the result, ask the sandbox client directly:
 
 ```tsx
-import { useSandboxClient } from '@simten/react/sandbox';
+import { useSandboxClient } from '@simten/react';
 
 const sandbox = useSandboxClient();
 useEffect(() => {
@@ -151,7 +141,7 @@ Outside React, `SandboxClient` from `@simten/sandbox` does the same.
 If you already have a Monaco instance (a collaborative editor with a [Yjs](https://github.com/yjs/yjs) binding, say, whose source of truth is a `Y.Text` rather than a `value`/`onChange`), use the headless primitives and keep your own `<Editor>`:
 
 ```tsx
-import { setupSimtenIntellisense, useTypeAcquisition } from '@simten/react/monaco';
+import { setupSimtenIntellisense, useTypeAcquisition } from '@simten/react/code-editor';
 
 useTypeAcquisition(source, monaco); // resolves third-party imports
 
@@ -162,12 +152,12 @@ useTypeAcquisition(source, monaco); // resolves third-party imports
 />;
 ```
 
-`SimtenCodeEditor` is a thin wrapper over exactly these two.
+`CodeEditor` is a thin wrapper over exactly these two.
 
-The model **must** have a real `file:///` URI. TypeScript resolves modules by walking up from the containing file looking for `node_modules`, and Monaco's default `inmemory://` scheme has nothing to walk. Get this wrong and every import silently resolves to `any`. `SimtenCodeEditor` sets `file:///circuit.ts` for you.
+The model **must** have a real `file:///` URI. TypeScript resolves modules by walking up from the containing file looking for `node_modules`, and Monaco's default `inmemory://` scheme has nothing to walk. Get this wrong and every import silently resolves to `any`. `CodeEditor` sets `file:///circuit.ts` for you.
 
 ## Types vs execution
 
-This subpath handles **types only**. Circuit source *executes* in the [sandbox iframe](/docs/security), which resolves imports independently. The two halves never talk: code can run while its types are still loading, and an import with no published types still runs. That's why module-not-found diagnostics are suppressed while semantic validation stays on: a red squiggle on a line that works is worse than a missing completion.
+This entry handles **types only**. Circuit source *executes* in the [sandbox iframe](/docs/security), which resolves imports independently. The two halves never talk: code can run while its types are still loading, and an import with no published types still runs. That's why module-not-found diagnostics are suppressed while semantic validation stays on: a red squiggle on a line that works is worse than a missing completion.
 
 Type acquisition fetches from jsDelivr at runtime. Pass `typeAcquisition={{ enabled: false }}` to opt out, or `{ typescriptCdn }` to self-host; every failure degrades to "no completions", never a broken editor.

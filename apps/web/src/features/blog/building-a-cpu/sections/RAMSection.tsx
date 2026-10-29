@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { BLOG_CIRCUITS } from '../circuits';
 
 export function RAMSection() {
@@ -29,7 +29,7 @@ export function RAMSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={BLOG_CIRCUITS.ram.circuit}
           showControls
           title="256×8 RAM"

@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { TPU_CIRCUITS } from '../circuits';
 
 export function MACSection() {
@@ -31,7 +31,7 @@ export function MACSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={TPU_CIRCUITS.multiplyAdd.circuit}
           layout={TPU_CIRCUITS.multiplyAdd.layout}
           showControls

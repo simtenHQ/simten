@@ -1,5 +1,5 @@
-import { CircuitEmbed } from '@simten/react/embed';
 import { Link } from '@tanstack/react-router';
+import { CircuitCard } from '@/components/CircuitCard';
 import { RV32I_Board } from '../rv32i-board.circuit';
 
 export function RunningCodeSection() {
@@ -30,7 +30,7 @@ export function RunningCodeSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={RV32I_Board}
           showControls
           title="RV32I CPU Board"

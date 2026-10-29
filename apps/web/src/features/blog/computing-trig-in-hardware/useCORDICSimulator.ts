@@ -1,18 +1,16 @@
-import { useSimulation } from '@simten/react/sandbox';
+import { useSimulation } from '@simten/react';
 import { useCallback, useEffect } from 'react';
-import { cyclesPerSecond, useAutoRun } from '@/lib/auto-run';
+import { useAutoRun } from '@/lib/auto-run';
 import { CORDICCircuit } from './circuits';
 
-/** One iteration every 100ms until the slider says otherwise. */
-const OPTIONS = { speed: cyclesPerSecond(100) };
-
 export function useCORDICSimulator() {
-  const sim = useSimulation(CORDICCircuit, OPTIONS);
+  const sim = useSimulation(CORDICCircuit);
   const { state, actions } = sim;
-  const run = useAutoRun(sim);
+  // One iteration every 100ms until the slider says otherwise.
+  const run = useAutoRun(sim, 100);
 
-  // The circuit's `done` output. It holds once the iterations run out.
-  const isDone = state.portValues?.get('__top__.done') === 1;
+  // The Done lamp. It holds once the iterations run out.
+  const isDone = state.portValues?.get('doneLed.in') === 1;
 
   // Stop the clock at Done. The worker may run a cycle or two past it before
   // the pause lands; the result registers hold, so nothing visible moves.

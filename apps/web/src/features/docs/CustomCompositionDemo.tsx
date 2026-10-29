@@ -1,18 +1,17 @@
 /**
  * Live interactive demo used by /docs/building-custom-uis to illustrate
- * tier 2 (CircuitEmbed + onPortValuesChange) and tier 4 (full composition
- * via useSimulation + your own UI).
+ * tier 2 (a card around one `useSimulation`, read by a sibling) and tier 4
+ * (full composition via useSimulation + your own UI).
  *
  * Self-contained: defines its own HalfAdder, doesn't rely on any
  * /learn-page modules. Keeps the docs page reproducible in isolation.
  */
 
 import { bit, circuit } from '@simten/core/circuit';
-import type { FlatPortValueMap } from '@simten/core/internal';
+import { circuitToSource } from '@simten/core/internal';
 import { And, Xor } from '@simten/core/std';
-import { CircuitEmbed } from '@simten/react/embed';
-import { useSimulation } from '@simten/react/sandbox';
-import { useState } from 'react';
+import { useSimulation } from '@simten/react';
+import { SimulationCard } from '@/components/CircuitCard';
 import { computeActiveRow, TruthTable } from '@/components/TruthTable';
 import { readPortBit } from '@/lib/port-values';
 
@@ -27,9 +26,6 @@ const HalfAdder = circuit('HalfAdderDocsDemo', {
     andGate.out.to(outputs.carry),
   ],
 });
-
-/** A switch per input and a lamp per output, so the buttons below are Switch nodes. */
-const HARNESSED = { harness: true };
 
 const HA_COLUMNS = [
   { name: 'a', group: 'input' as const },
@@ -46,22 +42,22 @@ const HA_ROWS: Array<Array<number | string>> = [
 ];
 
 /**
- * Tier 2 demo: <CircuitEmbed> with the onPortValuesChange callback
- * driving a sibling TruthTable. The embed keeps its canned chrome; the
- * table follows live switch state via the callback.
+ * Tier 2 demo: the site's card around a simulation that a sibling
+ * TruthTable reads too. The card keeps its chrome; the table follows live
+ * switch state from the same `state`.
  */
-export function Tier2EmbedWithCallback() {
-  const [portValues, setPortValues] = useState<FlatPortValueMap | null>(null);
-  const activeRow = computeActiveRow(portValues, HA_COLUMNS, HA_ROWS);
+export function Tier2SharedState() {
+  const simulation = useSimulation(HalfAdder);
+  const activeRow = computeActiveRow(simulation.state.portValues, HA_COLUMNS, HA_ROWS);
 
   return (
     <div className="my-6 flex flex-col lg:flex-row lg:items-center gap-4">
       <div className="flex-1 min-w-0">
-        <CircuitEmbed
-          circuit={HalfAdder}
+        <SimulationCard
+          simulation={simulation}
           title="Half adder"
           description="Toggle the switches, and the truth table row follows."
-          onPortValuesChange={setPortValues}
+          forkSource={() => circuitToSource(HalfAdder)}
         />
       </div>
       <div className="shrink-0">
@@ -87,7 +83,7 @@ export function Tier2EmbedWithCallback() {
  * frontend.
  */
 export function Tier4FullComposition() {
-  const { state, actions } = useSimulation(HalfAdder, HARNESSED);
+  const { state, actions } = useSimulation(HalfAdder);
   const a = readPortBit(state.portValues, 'a');
   const b = readPortBit(state.portValues, 'b');
   const sum = readPortBit(state.portValues, 'sum');
@@ -99,16 +95,8 @@ export function Tier4FullComposition() {
       <div className="flex-1 min-w-0">
         <div className="rounded-xl border border-[var(--embed-border)] bg-[var(--embed-bg-secondary)] p-6">
           <div className="flex flex-wrap items-end justify-around gap-6">
-            <ToggleControl
-              label="a"
-              value={a ?? 0}
-              onToggle={() => void actions.setInput('a', a ? 0 : 1)}
-            />
-            <ToggleControl
-              label="b"
-              value={b ?? 0}
-              onToggle={() => void actions.setInput('b', b ? 0 : 1)}
-            />
+            <ToggleControl label="a" value={a ?? 0} onToggle={() => void actions.toggle('a')} />
+            <ToggleControl label="b" value={b ?? 0} onToggle={() => void actions.toggle('b')} />
             <LedReadout label="sum" lit={sum === 1} />
             <LedReadout label="carry" lit={carry === 1} />
           </div>

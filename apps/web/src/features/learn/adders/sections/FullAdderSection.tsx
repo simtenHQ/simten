@@ -1,6 +1,6 @@
-import type { FlatPortValueMap } from '@simten/core/internal';
-import { CircuitEmbed } from '@simten/react/embed';
-import { useState } from 'react';
+import { circuitToSource } from '@simten/core/internal';
+import { useSimulation } from '@simten/react';
+import { SimulationCard } from '@/components/CircuitCard';
 import { computeActiveRow, TruthTable } from '@/components/TruthTable';
 import { FullAdder } from '../circuits';
 
@@ -24,7 +24,9 @@ const FA_ROWS: Array<Array<number | string>> = [
 ];
 
 export function FullAdderSection() {
-  const [portValues, setPortValues] = useState<FlatPortValueMap | null>(null);
+  // One simulation for the card and the table.
+  const simulation = useSimulation(FullAdder);
+  const portValues = simulation.state.portValues;
 
   const activeRow = computeActiveRow(portValues, FA_COLUMNS, FA_ROWS);
 
@@ -53,11 +55,11 @@ export function FullAdderSection() {
 
       <div className="mt-8 flex flex-col lg:flex-row lg:items-center gap-4">
         <div className="flex-1 min-w-0">
-          <CircuitEmbed
-            circuit={FullAdder}
+          <SimulationCard
+            simulation={simulation}
             title="Full adder"
             description="Adds three bits (a, b, and carry-in) to one sum bit and one carry-out."
-            onPortValuesChange={setPortValues}
+            forkSource={() => circuitToSource(FullAdder)}
           />
         </div>
         <div className="shrink-0">

@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { ADDER_CIRCUITS } from '../circuits';
 
 export function CarryLookaheadSection() {
@@ -39,7 +39,7 @@ export function CarryLookaheadSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={entry.circuit}
           showControls={false}
           title={entry.name}

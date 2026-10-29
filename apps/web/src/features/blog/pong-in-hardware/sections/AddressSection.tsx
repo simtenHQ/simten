@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { PONG_CIRCUITS } from '../circuits';
 
 export function AddressSection() {
@@ -26,7 +26,7 @@ export function AddressSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={entry.circuit}
           showControls={false}
           layout={entry.layout}

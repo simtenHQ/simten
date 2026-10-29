@@ -19,6 +19,7 @@
   "dependencies": {
     "@cloudflare/vite-plugin": "^1.13.8",
     "@monaco-editor/react": "^4.7.0",
+    "@simten/shared": "workspace:*",
     "@simten/core": "workspace:*",
     "@simten/react": "workspace:*",
     "@tailwindcss/vite": "^4.1.18",

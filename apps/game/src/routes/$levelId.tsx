@@ -3,22 +3,21 @@
  */
 
 import { type CircuitIR, elaborate } from '@simten/core/internal';
-import { CircuitCanvas, ClockControls } from '@simten/react/canvas';
-import { ErrorDisplay } from '@simten/react/embed';
+import { CircuitCanvas, ClockControls, useSandboxClient, useSimulation } from '@simten/react';
 import {
   buildGlobalsFor,
+  CodeEditor,
   preloadMonaco,
   registerSimtenThemes,
   SIMTEN_DARK,
-  SimtenCodeEditor,
-} from '@simten/react/monaco';
+} from '@simten/react/code-editor';
+import { ErrorDisplay } from '@simten/shared/error-display';
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
   usePanelRef,
-} from '@simten/react/primitives/resizable';
-import { useSandboxClient, useSimulation } from '@simten/react/sandbox';
+} from '@simten/shared/primitives/resizable';
 import { createFileRoute, Link, notFound } from '@tanstack/react-router';
 import { Network, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -275,11 +274,11 @@ function PlayLevel({ level }: { level: Level }) {
     [level.target],
   );
 
-  // The harness adds clickable switches and LEDs for the circuit's ports.
-  const preview = useSimulation({ source, circuit: select }, { harness: true });
-  const { state, history, actions } = preview;
+  // The canvas draws clickable switches and LEDs for the circuit's ports.
+  const preview = useSimulation({ source, circuit: select });
+  const { state, actions } = preview;
   // A compile error, or the session failing to open.
-  const previewError = preview.compileError?.message ?? state.error;
+  const previewError = state.compileError?.message ?? state.error;
 
   // A compile error counts as finished too.
   const simulated = (state.portValues?.size ?? 0) > 0 || previewError !== null;
@@ -287,7 +286,7 @@ function PlayLevel({ level }: { level: Level }) {
     if (simulated) setCanvasReady(true);
   }, [simulated]);
 
-  const victory = useVictoryRun(level.vectors, actions.setInput, actions.tick);
+  const victory = useVictoryRun(level.vectors, actions.set, actions.tick);
 
   // The sandbox runs banned gates anyway, so the canvas keeps showing the last
   // circuit without one. Same check as the grader, so the two never disagree.
@@ -317,6 +316,21 @@ function PlayLevel({ level }: { level: Level }) {
     : forbidden.length > 0
       ? null
       : state.definitions;
+  // The canvas draws the simulation it's given. This one shows the last
+  // permitted circuit, and no error: errors go under the editor, so the
+  // diagram survives typos.
+  const canvasSimulation = useMemo(
+    () => ({
+      ...preview,
+      state: {
+        ...preview.state,
+        circuit: canvasCircuit,
+        definitions: canvasDefinitions,
+        error: null,
+      },
+    }),
+    [preview, canvasCircuit, canvasDefinitions],
+  );
 
   const onSubmit = useCallback(async () => {
     // Null only before the sandbox has mounted.
@@ -442,7 +456,7 @@ function PlayLevel({ level }: { level: Level }) {
             <ResizablePanelGroup>
               <ResizablePanel defaultSize={45} minSize={20} className="flex flex-col" style={CLIP}>
                 <div data-tour="editor" className={`min-h-0 flex-1 ${fadeIn(editorShown)}`}>
-                  <SimtenCodeEditor
+                  <CodeEditor
                     value={source}
                     onChange={(v) => {
                       const next = v ?? '';
@@ -494,22 +508,17 @@ function PlayLevel({ level }: { level: Level }) {
 
               <ResizablePanel defaultSize={55} minSize={20} style={CLIP}>
                 <div data-tour="canvas" className={`h-full ${fadeIn(canvasShown)}`}>
-                  <CircuitCanvas
-                    circuit={canvasCircuit}
-                    definitions={canvasDefinitions ?? undefined}
-                    portValues={state.portValues}
-                    simulation={preview}
-                    showControls
-                    // The default only re-lays out when nodes change, not wires.
-                    autoLayout
-                    onToggleNode={actions.toggleNode}
-                    onSetNodeValue={actions.setInput}
-                    renderEmptyState={() => (
-                      <div className="grid h-full place-items-center text-sm text-muted-foreground">
-                        Your circuit appears here as you write it.
-                      </div>
-                    )}
-                  />
+                  {canvasCircuit ? (
+                    <CircuitCanvas
+                      simulation={canvasSimulation}
+                      // The default only re-lays out when nodes change, not wires.
+                      autoLayout
+                    />
+                  ) : (
+                    <div className="grid h-full place-items-center text-sm text-muted-foreground">
+                      Your circuit appears here as you write it.
+                    </div>
+                  )}
                 </div>
               </ResizablePanel>
             </ResizablePanelGroup>
@@ -548,24 +557,7 @@ function PlayLevel({ level }: { level: Level }) {
           className="flex shrink-0 items-center border-t border-border bg-card/95 px-3"
           style={{ height: CLOCK_BAR_PX }}
         >
-          <ClockControls
-            cycle={state.cycle}
-            historyLength={history.length}
-            historyIndex={history.index}
-            isRunning={state.isRunning}
-            isViewingPast={history.isViewingPast}
-            speed={state.speed}
-            onStep={() => void actions.tick()}
-            onRun={() => void actions.run()}
-            onPause={() => void actions.pause()}
-            onReset={() => void actions.reset()}
-            onStepBack={() => void actions.stepBack()}
-            onStepForward={() => void actions.stepForward()}
-            onSeek={(i) => void actions.seek(i)}
-            onSpeedChange={actions.setSpeed}
-            showScrubber={history.length > 1}
-            chromeless
-          />
+          <ClockControls simulation={preview} showSpeed showScrubber chromeless />
         </div>
       )}
 

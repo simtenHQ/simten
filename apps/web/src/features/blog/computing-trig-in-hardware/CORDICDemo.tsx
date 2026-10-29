@@ -1,5 +1,5 @@
-import { CircuitCanvas } from '@simten/react/canvas';
-import { TooltipProvider } from '@simten/react/primitives/tooltip';
+import { CircuitCanvas } from '@simten/react';
+import { TooltipProvider } from '@simten/shared/primitives/tooltip';
 import { useCORDICSimulator } from './useCORDICSimulator';
 
 const CORDIC_LAYOUT: Record<string, { x: number; y: number }> = {
@@ -89,17 +89,7 @@ export function CORDICDemo() {
         </div>
 
         {/* Circuit canvas */}
-        <CircuitCanvas
-          circuit={sim.state.circuit}
-          definitions={sim.state.definitions ?? undefined}
-          portValues={sim.state.portValues}
-          peripheralState={sim.state.peripheralState}
-          simulation={sim}
-          onToggleNode={sim.actions.toggleNode}
-          onSetNodeValue={sim.actions.setInput}
-          height={400}
-          layout={CORDIC_LAYOUT}
-        />
+        <CircuitCanvas simulation={sim} height={400} layout={CORDIC_LAYOUT} />
 
         {/* Controls bar */}
         <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-100 dark:bg-gray-900/90">

@@ -2,7 +2,7 @@
  * Presentational truth-table component for /learn pages.
  *
  * Takes column metadata and a positional row matrix; renders a styled,
- * accessible <table> in a card that matches the CircuitEmbed aesthetic
+ * accessible <table> in a card that matches the circuit cards' look
  * (theme tokens from packages/react/src/styles/embed.css). No simulator
  * coupling; data is hand-coded at the call site.
  *

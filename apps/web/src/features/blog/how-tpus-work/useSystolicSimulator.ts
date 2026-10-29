@@ -1,15 +1,14 @@
-import { useSimulation } from '@simten/react/sandbox';
+import { useSimulation } from '@simten/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { cyclesPerSecond, useAutoRun } from '@/lib/auto-run';
+import { useAutoRun } from '@/lib/auto-run';
 import { TestSystolic3x3 } from './circuits';
 
-/** One cycle every 100ms until the slider says otherwise. */
-const OPTIONS = { speed: cyclesPerSecond(100) };
-
 export function useSystolicSimulator() {
-  const sim = useSimulation(TestSystolic3x3, OPTIONS);
+  const sim = useSimulation(TestSystolic3x3);
   const { state, actions } = sim;
-  const run = useAutoRun(sim);
+  // One cycle every 100ms until the slider says otherwise.
+  const run = useAutoRun(sim, 100);
+  const { setIsRunning } = run;
   const [hasStarted, setHasStarted] = useState(false);
 
   // Find the actual mangled node ID for "start" from the compiled circuit.
@@ -21,8 +20,8 @@ export function useSystolicSimulator() {
     return null;
   }, [state.circuit]);
 
-  // The circuit's `done` output. It holds once the array has drained.
-  const isDone = state.portValues?.get('__top__.done') === 1;
+  // The Done lamp. It holds once the array has drained.
+  const isDone = state.portValues?.get('done_led.in') === 1;
 
   // Stop the clock at Done. The worker may run a cycle past it before the
   // pause lands; the accumulators hold, so nothing visible moves.
@@ -31,14 +30,14 @@ export function useSystolicSimulator() {
   }, [isDone, state.isRunning, actions]);
 
   const handleStart = useCallback(() => {
-    if (startNodeId) void actions.setInput(startNodeId, 1);
+    if (startNodeId) void actions.set({ [startNodeId]: 1 });
     setHasStarted(true);
-    void actions.run();
-  }, [startNodeId, actions]);
+    setIsRunning(true);
+  }, [startNodeId, actions, setIsRunning]);
 
   const handleStep = useCallback(() => {
     if (!hasStarted && startNodeId) {
-      void actions.setInput(startNodeId, 1);
+      void actions.set({ [startNodeId]: 1 });
       setHasStarted(true);
     }
     void actions.tick();

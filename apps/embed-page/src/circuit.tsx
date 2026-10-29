@@ -1,12 +1,11 @@
 /**
  * The circuit itself: the share's source text, compiled and simulated in the
- * sandbox iframe by `useSimulation`, drawn by `SimulationView`. Loaded as its
- * own chunk, in parallel with the share.
+ * sandbox iframe by `useSimulation`, drawn by `CircuitCanvas` with
+ * `ClockControls` under it. Loaded as its own chunk, in parallel with the share.
  */
 
 import '@simten/react/styles.css';
-import { SimulationView } from '@simten/react/embed';
-import { useSimulation } from '@simten/react/sandbox';
+import { CircuitCanvas, ClockControls, useSimulation } from '@simten/react';
 import { useMemo } from 'react';
 import { createRoot } from 'react-dom/client';
 
@@ -22,10 +21,21 @@ function Circuit({ source, theme, controls }: CircuitOptions) {
   // The source text itself is simulated, so the behavior of anything it
   // defines runs exactly as written. The last circuit it builds is the one shown.
   const input = useMemo(() => ({ source }), [source]);
-  const simulation = useSimulation(input, { harness: true, debounceMs: 0 });
+  const simulation = useSimulation(input);
+  const { ready } = simulation.state;
   return (
     <div data-embed-theme={theme} style={{ height: '100%' }}>
-      <SimulationView simulation={simulation} height="100%" showControls={controls} theme={theme} />
+      {ready ? (
+        <div style={{ height: '100%' }} className="flex flex-col" data-embed-theme={theme}>
+          <div className="flex-1 min-h-0">
+            <CircuitCanvas simulation={simulation} theme={theme} />
+          </div>
+          {controls && <ClockControls simulation={simulation} />}
+        </div>
+      ) : (
+        // Its own loading and error states.
+        <CircuitCanvas simulation={simulation} />
+      )}
     </div>
   );
 }

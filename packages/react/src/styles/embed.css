@@ -9,7 +9,7 @@
  * There is no Shadow DOM to hide behind (React Flow needs direct DOM access),
  * so isolation has to come from the CSS. The theme and utility layers are
  * imported directly and Preflight's resets are re-applied below, scoped to
- * [data-embed-theme]: the root element SimulationView renders. */
+ * [data-embed-theme]: the root element the canvas renders. */
 @layer theme, base, components, utilities;
 @import "tailwindcss/theme.css" layer(theme);
 @import "tailwindcss/utilities.css" layer(utilities);
@@ -36,7 +36,7 @@
 
 /* Bespoke embed tokens — consumed directly by the embed's own components
    (canvas chrome, switch/LED rendering, React Flow node styling). Fire
-   under either trigger: the data attribute set by CircuitViewer's root
+   under either trigger: the data attribute set by the canvas's root
    <div>, or a host app's html.dark class. Safe to set under both because
    no host app defines --embed-* tokens. */
 [data-embed-theme="dark"], .dark {
@@ -58,7 +58,7 @@
    the data-embed-theme attribute only (NOT html.dark) so host apps that
    toggle html.dark keep their own --background/--card/--border tokens —
    the embed inherits the page palette via the cascade instead of being
-   forced to its own values. SimulationView sets data-embed-theme on its
+   forced to its own values. CircuitCanvas sets data-embed-theme on its
    root element when it mounts, so standalone usage still gets these tokens. */
 [data-embed-theme="dark"] {
   --background: #141418;

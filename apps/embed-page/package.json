@@ -13,6 +13,7 @@
     "typecheck:worker": "tsc --noEmit -p worker/tsconfig.json"
   },
   "dependencies": {
+    "@simten/shared": "workspace:*",
     "@simten/react": "workspace:*",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { ABSTRACTION_CIRCUITS } from '../circuits';
 
 export function ScalingSection() {
@@ -29,7 +29,7 @@ export function ScalingSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={entry.circuit}
           showControls={false}
           title={entry.name}

@@ -1,5 +1,5 @@
 @import "tailwindcss";
-@import "@simten/react/styles/theme.css";
+@import "@simten/shared/theme.css";
 @import "tw-animate-css";
 @import "fumadocs-ui/css/neutral.css";
 @import "fumadocs-ui/css/preset.css";
@@ -31,6 +31,7 @@
 }
 
 @source "../../../packages/react/src/**/*.tsx";
+@source "../../../packages/shared/src/**/*.tsx";
 /* Explicit so the standalone viewer build (vite.viewer.config.ts, root: viewer)
    scans the app's own components too; its content auto-detection is rooted at
    viewer/, not apps/web/src, so app-only classes (h-screen, w-screen, …) would

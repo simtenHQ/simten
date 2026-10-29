@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { SNAKE_CIRCUITS } from '../circuits';
 
 export function DirectionSection() {
@@ -29,7 +29,7 @@ export function DirectionSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={SNAKE_CIRCUITS.directionDecoder.circuit}
           layout={SNAKE_CIRCUITS.directionDecoder.layout}
           showControls

@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { BLOG_CIRCUITS } from '../circuits';
 
 export function CounterSection() {
@@ -24,10 +24,9 @@ export function CounterSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={BLOG_CIRCUITS.counter4bit.circuit}
           showControls
-          autoRunSpeed={400}
           title="4-Bit Counter"
           description="Click Tick or Auto to watch it count in binary"
         />

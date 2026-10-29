@@ -1,17 +1,15 @@
-import { useSimulation } from '@simten/react/sandbox';
+import { useSimulation } from '@simten/react';
 import { useCallback, useEffect, useState } from 'react';
-import { cyclesPerSecond, useAutoRun } from '@/lib/auto-run';
+import { useAutoRun } from '@/lib/auto-run';
 import { Snake } from './circuits';
 
-// Harnessed, so `dir` and `scan_addr` are Input nodes the page can drive, as
-// a person at the board would, and `pixel_out` is read off its display. One
-// game step every 60ms until the slider says otherwise.
-const OPTIONS = { harness: true, speed: cyclesPerSecond(60) };
-
 export function useSnakeSimulator() {
-  const sim = useSimulation(Snake, OPTIONS);
+  // `dir` and `scan_addr` are input ports the page sets by name, as a person at
+  // the board would. The canvas draws `pixel_out` as a display, which `scan`
+  // reads. One game step every 60ms until the slider says otherwise.
+  const sim = useSimulation(Snake);
   const { state, actions } = sim;
-  const { isRunning, setIsRunning, speed, setSpeed } = useAutoRun(sim);
+  const { isRunning, setIsRunning, speed, setSpeed } = useAutoRun(sim, 60);
   const [pixels, setPixels] = useState<number[]>(new Array(64).fill(0));
 
   // Refresh framebuffer after every tick by scanning scan_addr 0–63
@@ -29,12 +27,12 @@ export function useSnakeSimulator() {
 
   const sendDirection = useCallback(
     (code: number) => {
-      void actions.setInput('dir', code);
+      void actions.set({ dir: code });
     },
     [actions],
   );
 
-  // Keyboard handling: one setInput per key, applied before the next tick
+  // Keyboard handling: one set per key, applied before the next tick
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       // 2-bit direction encoding: 0=up, 1=right, 2=down, 3=left

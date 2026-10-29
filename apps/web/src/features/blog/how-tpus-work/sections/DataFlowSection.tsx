@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { TPU_CIRCUITS } from '../circuits';
 
 export function DataFlowSection() {
@@ -35,11 +35,10 @@ export function DataFlowSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={TPU_CIRCUITS.twoPERow.circuit}
           layout={TPU_CIRCUITS.twoPERow.layout}
           showControls
-          autoRunSpeed={400}
           title="Two-PE Row"
           description="Data flows left to right with a one-cycle delay. Each PE multiplies by its own weight."
         />

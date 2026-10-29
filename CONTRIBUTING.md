@@ -69,7 +69,8 @@ apps/
 packages/
   core/              ← circuit IR, simulator, stdlib, Verilog exporter
   sandbox/           ← runs circuits in the sandbox iframe from any page, no framework
-  react/             ← React components and hooks (CircuitEmbed, useSimulation, canvas, code editor)
+  react/             ← React components and hooks (useSimulation, canvas, clock controls, code editor)
+  shared/            ← private: what the apps share (UI primitives, share links, Fork, theme)
   mcp/               ← MCP server for Claude Code integration
 hardware/ulx3s/      ← FPGA bitstream build pipeline
 
@@ -139,7 +140,7 @@ The subject should describe the *outcome*, not the change. "Fix bug" is bad. "Dr
 
 ## The sandbox
 
-Circuit code is arbitrary TypeScript, so neither the web app nor the game ever runs it directly. Every surface that runs user code (the editor, the game, embed pages, `<CircuitEmbed>`) sends it to `apps/sandbox`, a hidden iframe on its own origin, which runs it in a Web Worker and sends back plain JSON. Because it's a different origin, user code can't read the main site's cookies, storage or DOM.
+Circuit code is arbitrary TypeScript, so neither the web app nor the game ever runs it directly. Every surface that runs user code (the editor, the game, embed pages, `useSimulation`) sends it to `apps/sandbox`, a hidden iframe on its own origin, which runs it in a Web Worker and sends back plain JSON. Because it's a different origin, user code can't read the main site's cookies, storage or DOM.
 
 - **Where it runs:** `localhost:3002` in dev, `sandbox.simtenusercontent.dev` in production. Set `VITE_SANDBOX_ORIGIN` at build time to point at a different one, e.g. a staging sandbox; the web and game CSPs follow it, so their `frame-src` allows that origin instead.
 - **If it isn't running:** nothing compiles or grades. The app waits about 10 seconds for the iframe to say it's ready, then gives up. If circuits silently never simulate, check that `pnpm dev:sandbox` (or `pnpm dev:all`) is up.

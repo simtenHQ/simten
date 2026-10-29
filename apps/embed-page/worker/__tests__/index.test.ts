@@ -1,4 +1,4 @@
-import type { ShareKV } from '@simten/react/share';
+import type { ShareKV } from '@simten/shared/share';
 import { describe, expect, it } from 'vitest';
 import { type Env, handleRequest } from '../index';
 

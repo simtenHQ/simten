@@ -18,7 +18,7 @@ run('pnpm', ['exec', 'vite', 'build'], { VITE_SANDBOX_ORIGIN: SANDBOX });
 
 rmSync(STATE_DIR, { recursive: true, force: true });
 mkdirSync(STATE_DIR, { recursive: true });
-// hashSource from @simten/react/share, which Node can't import directly (lz-string is CommonJS).
+// hashSource from @simten/shared/share, which Node can't import directly (lz-string is CommonJS).
 const id = createHash('sha256').update(SOURCE).digest('hex').slice(0, 20);
 const sourceFile = `${STATE_DIR}/source.ts`;
 writeFileSync(sourceFile, SOURCE);

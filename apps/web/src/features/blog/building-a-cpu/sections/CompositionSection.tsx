@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { GATE_CIRCUITS } from '../circuits';
 
 export function CompositionSection() {
@@ -20,7 +20,7 @@ export function CompositionSection() {
             Adds two bits. The <strong>sum</strong> is their XOR and the <strong>carry</strong> is
             their AND. Set both to 1: 1 + 1 is 10 in binary, so sum shows 0 and carry shows 1.
           </p>
-          <CircuitEmbed
+          <CircuitCard
             circuit={GATE_CIRCUITS.halfAdder.circuit}
             title="Half Adder"
             description="Adds two bits: produces sum and carry"
@@ -35,7 +35,7 @@ export function CompositionSection() {
             from the column to its right. With that input you can chain them, one per bit, so eight
             of them add two bytes.
           </p>
-          <CircuitEmbed
+          <CircuitCard
             circuit={GATE_CIRCUITS.fullAdder.circuit}
             title="Full Adder"
             description="Adds three bits: a, b, and carry-in"
@@ -49,7 +49,7 @@ export function CompositionSection() {
             The <strong>sel</strong> switch picks which input, A or B, reaches the output. A CPU
             uses these all over the place to choose where each value comes from.
           </p>
-          <CircuitEmbed
+          <CircuitCard
             circuit={GATE_CIRCUITS.mux.circuit}
             title="2:1 Multiplexer"
             description="sel=OFF picks A, sel=ON picks B"

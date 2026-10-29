@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { BLOG_CIRCUITS } from '../circuits';
 
 export function MemorySection() {
@@ -29,7 +29,7 @@ export function MemorySection() {
             and the output <em>stays</em> at 1. Turn <strong>R</strong> (reset) on and off and it
             goes back to 0.
           </p>
-          <CircuitEmbed
+          <CircuitCard
             circuit={BLOG_CIRCUITS.srLatch.circuit}
             title="SR Latch"
             description="Set stores a 1, Reset clears to 0"
@@ -44,7 +44,7 @@ export function MemorySection() {
             until the next tick, whatever D does in between. Set the switch, then click{' '}
             <strong>Tick</strong>.
           </p>
-          <CircuitEmbed
+          <CircuitCard
             circuit={BLOG_CIRCUITS.dFlipFlop.circuit}
             showControls
             title="D Flip-Flop"
@@ -62,7 +62,7 @@ export function MemorySection() {
             <strong>Tick</strong>, and all four bits are stored at once. A CPU&rsquo;s registers are
             the same thing, only wider: the 6502&rsquo;s are 8&nbsp;bits.
           </p>
-          <CircuitEmbed
+          <CircuitCard
             circuit={BLOG_CIRCUITS.register4bit.circuit}
             showControls
             title="4-Bit Register"

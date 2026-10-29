@@ -57,10 +57,10 @@ const HalfAdder = circuit('HalfAdder', {
 - `connect`: the wires, written `source.to(destination)`. It's typed from everything above,
   so pins autocomplete and a typo like `xor1.c` is a type error
 
-To show it on a web page, render `<CircuitEmbed circuit={HalfAdder} />` from
-`@simten/react/embed` in a React app. It draws the circuit with a clickable switch for each
-input and a light for each output, so visitors can try it. On a page that isn't React, open
-the circuit on simten.dev and use Share > Embed for an iframe.
+To show it on a web page, in a React app, run it with `useSimulation(HalfAdder)` from
+`@simten/react` and render `<CircuitCanvas simulation={sim} />`. It draws the circuit with a
+clickable switch for each input and a light for each output, so visitors can try it. On a
+page that isn't React, open the circuit on simten.dev and use Share > Embed for an iframe.
 
 ## AI assist (optional)
 
@@ -93,7 +93,7 @@ the build/flash workflow are in the [hardware docs](https://simten.dev/docs/hard
 packages/
 ├── core/        simulator, circuit() builder, stdlib, Verilog exporter
 ├── sandbox/     runs circuits in the sandbox iframe from any page, no framework
-├── react/       <CircuitEmbed />, useSimulation, canvas, Monaco editor setup
+├── react/       useSimulation, CircuitCanvas, ClockControls, code editor
 └── mcp/         MCP server
 
 apps/

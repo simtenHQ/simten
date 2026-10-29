@@ -3,7 +3,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@simten/react/primitives/tooltip';
+} from '@simten/shared/primitives/tooltip';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { StageStatus } from '@/lib/cc65-compiler';
 import { CCodeEditor } from './CCodeEditor';

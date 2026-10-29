@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { GATE_CIRCUITS } from '../circuits';
 
 export function GatesSection() {
@@ -29,7 +29,7 @@ export function GatesSection() {
             Tie both NAND inputs together. A 1 going in means both inputs are 1, so a 0 comes out,
             and a 0 going in gives a 1.
           </p>
-          <CircuitEmbed
+          <CircuitCard
             circuit={GATE_CIRCUITS.inverter.circuit}
             title="NOT Gate"
             description="Toggle the switch to see the output invert"
@@ -43,7 +43,7 @@ export function GatesSection() {
             A NAND followed by a NOT. Inverting the output again leaves a gate that gives 1 only
             when both inputs are 1.
           </p>
-          <CircuitEmbed
+          <CircuitCard
             circuit={GATE_CIRCUITS.and.circuit}
             title="AND Gate"
             description="Output is ON only when both inputs are ON"
@@ -57,7 +57,7 @@ export function GatesSection() {
             Invert each input, then NAND them together (De Morgan&rsquo;s law). The output is 1 when{' '}
             <em>either</em> input is 1.
           </p>
-          <CircuitEmbed
+          <CircuitCard
             circuit={GATE_CIRCUITS.or.circuit}
             title="OR Gate"
             description="Output is ON when either input is ON"
@@ -71,7 +71,7 @@ export function GatesSection() {
             Outputs 1 when the inputs are <em>different</em>. It takes four NANDs, and it does most
             of the work in the adders below.
           </p>
-          <CircuitEmbed
+          <CircuitCard
             circuit={GATE_CIRCUITS.xor.circuit}
             title="XOR Gate"
             description="Output is ON when inputs differ"

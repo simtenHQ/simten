@@ -1,13 +1,13 @@
 import { compressToEncodedURIComponent, decompressFromEncodedURIComponent } from 'lz-string';
 
-/** For `CircuitEmbed`'s Fork on other sites, which opens `/circuit/<encoded>` rather than create a share. */
+/** For Fork on other sites, which opens `/circuit/<encoded>` rather than create a share. */
 export function encodeSourceForUrl(source: string): string {
   return compressToEncodedURIComponent(source);
 }
 
 /**
  * Decodes the source from a `/circuit/<encoded>` link: links shared before
- * short links (#368), and Fork from `CircuitEmbed` on other sites.
+ * short links (#368), and Fork from a page that isn't simten.dev.
  */
 export function decodeSourceFromUrl(encoded: string): string | null {
   try {

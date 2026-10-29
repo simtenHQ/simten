@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { CRC32_CIRCUITS } from '../circuits';
 
 export function LFSRSection() {
@@ -30,7 +30,7 @@ export function LFSRSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={entry.circuit}
           showControls={true}
           title={entry.name}

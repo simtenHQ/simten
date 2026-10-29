@@ -3,7 +3,7 @@ title: Examples
 description: Interactive circuit examples from half adder to Fibonacci generator
 ---
 
-import { CircuitEmbed } from '@simten/react/embed'
+import { CircuitCard } from '../../src/components/CircuitCard'
 import { circuit, bit, bus } from '@simten/core/circuit'
 import { Xor, And, Or, Register, Adder, Constant, HexDisplay, DFlipFlop } from '@simten/core/std'
 
@@ -23,7 +23,7 @@ export const HalfAdder = circuit('HalfAdder', {
   ],
 })
 
-<CircuitEmbed
+<CircuitCard
   circuit={HalfAdder}
   showControls
   title="Half Adder"
@@ -46,7 +46,7 @@ export const FullAdder = circuit('FullAdder', {
   ],
 })
 
-<CircuitEmbed
+<CircuitCard
   circuit={FullAdder}
   showControls
   title="Full Adder"
@@ -67,7 +67,7 @@ export const Counter = circuit('Counter', {
   ],
 })
 
-<CircuitEmbed
+<CircuitCard
   circuit={Counter}
   showControls
   title="8-Bit Counter"
@@ -91,7 +91,7 @@ export const Fibonacci = circuit('Fibonacci', {
   ],
 })
 
-<CircuitEmbed
+<CircuitCard
   circuit={Fibonacci}
   showControls
   title="Fibonacci Generator"

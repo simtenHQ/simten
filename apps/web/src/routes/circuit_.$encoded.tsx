@@ -1,4 +1,4 @@
-import { decodeSourceFromUrl } from '@simten/react/share';
+import { decodeSourceFromUrl } from '@simten/shared/share';
 import { createFileRoute } from '@tanstack/react-router';
 import EditorShell from '@/components/EditorShell';
 import { extractCircuitName } from '@/lib/extract-circuit-name';

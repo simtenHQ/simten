@@ -3,8 +3,8 @@ import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
 
 /**
- * The page the Playwright suite drives: a few `<CircuitEmbed>`s and a
- * `SimulationView`, built against the sandbox in VITE_SANDBOX_ORIGIN (the
+ * The page the Playwright suite drives: canvases and clock controls with no
+ * `SandboxProvider`, built against the sandbox in VITE_SANDBOX_ORIGIN (the
  * `test:e2e` script points it at this checkout's sandbox on :4174).
  */
 export default defineConfig({
