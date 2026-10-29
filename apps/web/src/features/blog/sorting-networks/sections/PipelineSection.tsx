@@ -1,5 +1,5 @@
-import { CircuitCanvas } from '@simten/ui/canvas';
-import { useSimulation } from '@simten/ui/sandbox';
+import { CircuitCanvas } from '@simten/react/canvas';
+import { useSimulation } from '@simten/react/sandbox';
 import { PipelinedSortDemo } from '../circuits';
 
 export function PipelineSection() {

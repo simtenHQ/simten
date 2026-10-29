@@ -68,8 +68,8 @@ apps/
   verifier/          ← Cloudflare Container: iverilog cross-validation
 packages/
   core/              ← circuit IR, simulator, stdlib, Verilog exporter
-  ui/                ← React components (canvas, editor, waveform)
-  embed/             ← embeddable React Flow viewer
+  sandbox/           ← runs circuits in the sandbox iframe from any page, no framework
+  react/             ← React components and hooks (CircuitEmbed, useSimulation, canvas, code editor)
   mcp/               ← MCP server for Claude Code integration
 hardware/ulx3s/      ← FPGA bitstream build pipeline
 
@@ -139,7 +139,7 @@ The subject should describe the *outcome*, not the change. "Fix bug" is bad. "Dr
 
 ## The sandbox
 
-Circuit code is arbitrary TypeScript, so neither the web app nor the game ever runs it directly. Every surface that runs user code (the editor, the game, embed pages, `<circuit-embed>`) sends it to `apps/sandbox`, a hidden iframe on its own origin, which runs it in a Web Worker and sends back plain JSON. Because it's a different origin, user code can't read the main site's cookies, storage or DOM.
+Circuit code is arbitrary TypeScript, so neither the web app nor the game ever runs it directly. Every surface that runs user code (the editor, the game, embed pages, `<CircuitEmbed>`) sends it to `apps/sandbox`, a hidden iframe on its own origin, which runs it in a Web Worker and sends back plain JSON. Because it's a different origin, user code can't read the main site's cookies, storage or DOM.
 
 - **Where it runs:** `localhost:3002` in dev, `sandbox.simtenusercontent.dev` in production. Set `VITE_SANDBOX_ORIGIN` at build time to point at a different one, e.g. a staging sandbox; the web and game CSPs follow it, so their `frame-src` allows that origin instead.
 - **If it isn't running:** nothing compiles or grades. The app waits about 10 seconds for the iframe to say it's ready, then gives up. If circuits silently never simulate, check that `pnpm dev:sandbox` (or `pnpm dev:all`) is up.
@@ -182,7 +182,7 @@ Apache 2.0 (see [LICENSE](./LICENSE)). By contributing, you agree your contribut
 
 ## Publishing
 
-Packages are released with [Changesets](https://github.com/changesets/changesets). Record one on any PR that touches `@simten/core`, `@simten/ui`, `@simten/embed` or `@simten/mcp`; apps are in the ignore list.
+Packages are released with [Changesets](https://github.com/changesets/changesets). Record one on any PR that touches `@simten/core`, `@simten/sandbox`, `@simten/react` or `@simten/mcp`; apps are in the ignore list.
 
 ```bash
 pnpm changeset    # record a changeset for your PR
@@ -229,7 +229,7 @@ tar -tzf /tmp/simten-core-*.tgz                    # dist/, never src/
 tar -xzf /tmp/simten-core-*.tgz -O package/package.json | jq .exports
 ```
 
-`@simten/embed` is the one package with a non-trivial build: `tsc -b` for the React surface (`.`, `./nodes`, `./canvas`), then a Vite IIFE pass for the web-component drop-in (`./webcomponent` → `dist/circuit-embed.js`, `./styles.css` → `dist/styles.css`). The Vite step sets `emptyOutDir: false` so it does not wipe the tsc output.
+`@simten/react` builds in three steps: `tsc -b` for the components, a copy of `styles/theme.css` for apps that use Tailwind, and the Tailwind CLI for `./styles.css` (`dist/styles.css`), the compiled stylesheet for apps that don't.
 
 ## Notes for maintainers
 

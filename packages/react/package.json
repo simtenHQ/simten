@@ -1,0 +1,160 @@
+{
+  "name": "@simten/react",
+  "version": "0.15.6",
+  "description": "React components and hooks for Simten: CircuitEmbed, useSimulation, the circuit canvas, the code editor and the waveform viewer.",
+  "license": "Apache-2.0",
+  "author": "Charles Harris",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/simtenHQ/simten.git",
+    "directory": "packages/react"
+  },
+  "keywords": [
+    "circuit-simulator",
+    "hardware",
+    "react",
+    "react-flow",
+    "circuit",
+    "digital-logic",
+    "embed",
+    "canvas",
+    "waveform"
+  ],
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "exports": {
+    "./canvas": "./src/canvas/index.ts",
+    "./embed": "./src/embed/index.ts",
+    "./monaco": "./src/monaco/index.ts",
+    "./nodes": "./src/nodes/index.ts",
+    "./sandbox": "./src/sandbox/index.ts",
+    "./share": "./src/share/index.ts",
+    "./waveform": "./src/waveform/WaveformViewer.tsx",
+    "./primitives/button": "./src/primitives/button.tsx",
+    "./primitives/dialog": "./src/primitives/dialog.tsx",
+    "./primitives/resizable": "./src/primitives/resizable.tsx",
+    "./primitives/sheet": "./src/primitives/sheet.tsx",
+    "./primitives/tooltip": "./src/primitives/tooltip.tsx",
+    "./styles.css": "./src/styles/embed.css",
+    "./styles/theme.css": "./src/styles/theme.css",
+    "./package.json": "./package.json"
+  },
+  "publishConfig": {
+    "exports": {
+      "./canvas": {
+        "types": "./dist/canvas/index.d.ts",
+        "import": "./dist/canvas/index.js"
+      },
+      "./embed": {
+        "types": "./dist/embed/index.d.ts",
+        "import": "./dist/embed/index.js"
+      },
+      "./monaco": {
+        "types": "./dist/monaco/index.d.ts",
+        "import": "./dist/monaco/index.js"
+      },
+      "./nodes": {
+        "types": "./dist/nodes/index.d.ts",
+        "import": "./dist/nodes/index.js"
+      },
+      "./sandbox": {
+        "types": "./dist/sandbox/index.d.ts",
+        "import": "./dist/sandbox/index.js"
+      },
+      "./share": {
+        "types": "./dist/share/index.d.ts",
+        "import": "./dist/share/index.js"
+      },
+      "./waveform": {
+        "types": "./dist/waveform/WaveformViewer.d.ts",
+        "import": "./dist/waveform/WaveformViewer.js"
+      },
+      "./primitives/button": {
+        "types": "./dist/primitives/button.d.ts",
+        "import": "./dist/primitives/button.js"
+      },
+      "./primitives/dialog": {
+        "types": "./dist/primitives/dialog.d.ts",
+        "import": "./dist/primitives/dialog.js"
+      },
+      "./primitives/resizable": {
+        "types": "./dist/primitives/resizable.d.ts",
+        "import": "./dist/primitives/resizable.js"
+      },
+      "./primitives/sheet": {
+        "types": "./dist/primitives/sheet.d.ts",
+        "import": "./dist/primitives/sheet.js"
+      },
+      "./primitives/tooltip": {
+        "types": "./dist/primitives/tooltip.d.ts",
+        "import": "./dist/primitives/tooltip.js"
+      },
+      "./styles.css": "./dist/styles.css",
+      "./styles/theme.css": "./dist/styles/theme.css",
+      "./package.json": "./package.json"
+    },
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "rm -rf dist *.tsbuildinfo && node scripts/build-core-types.mjs && tsc -b && mkdir -p dist/styles && cp src/styles/theme.css dist/styles/theme.css && tailwindcss -i src/styles/embed.css -o dist/styles.css --minify",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "pnpm --filter @simten/sandbox-app build && VITE_SANDBOX_ORIGIN=http://localhost:4174 vite build -c e2e/vite.config.ts && playwright test",
+    "lint": "tsc --noEmit",
+    "typecheck:tests": "tsc --noEmit -p tsconfig.check.json"
+  },
+  "dependencies": {
+    "@dagrejs/dagre": "^3.0.0",
+    "@radix-ui/react-dialog": "^1.1.15",
+    "@simten/core": "workspace:^",
+    "@simten/sandbox": "workspace:^",
+    "@typescript/ata": "^0.9.8",
+    "@xyflow/react": "^12.10.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.562.0",
+    "lz-string": "^1.5.0",
+    "radix-ui": "^1.4.3",
+    "react-resizable-panels": "^4.11.1",
+    "tailwind-merge": "^3.4.0"
+  },
+  "peerDependencies": {
+    "@monaco-editor/react": "^4.6.0",
+    "monaco-editor": ">=0.40.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "peerDependenciesMeta": {
+    "@monaco-editor/react": {
+      "optional": true
+    },
+    "monaco-editor": {
+      "optional": true
+    }
+  },
+  "devDependencies": {
+    "@monaco-editor/react": "^4.7.0",
+    "@playwright/test": "^1.58.2",
+    "@tailwindcss/cli": "^4.1.18",
+    "@tailwindcss/vite": "^4.1.18",
+    "@testing-library/react": "^16.2.0",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@vitejs/plugin-react": "^5.0.4",
+    "jsdom": "^27.0.0",
+    "monaco-editor": "^0.55.1",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5",
+    "vite": "^8.3.5",
+    "vitest": "^5.0.5"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

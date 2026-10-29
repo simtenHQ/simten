@@ -4,7 +4,7 @@
   "public_key": "pk_IIrDzDbR891CuN8qKeSbr",
   "projectTitle": "Simten",
   "description": "TypeScript HDL: design digital circuits with type-checked ports, simulate them in the browser or Node, verify them with property-based tests, and export Verilog for FPGAs.",
-  "folders": ["apps/web/content/docs", "packages/core", "packages/mcp", "packages/embed"],
+  "folders": ["apps/web/content/docs", "packages/core", "packages/mcp", "packages/react"],
   "excludeFolders": ["**/__tests__", "**/__fixtures__", "**/dist", "node_modules"],
   "excludeFiles": ["TERMS.md", "PRIVACY.md", "SECURITY.md", "CHANGELOG.md"],
   "rules": [

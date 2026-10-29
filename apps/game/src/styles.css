@@ -1,21 +1,20 @@
 /**
  * Tokens, fonts and Tailwind wiring.
  *
- * The palette lives in @simten/ui so this app and simten.dev cannot drift,
+ * The palette lives in @simten/react so this app and simten.dev cannot drift,
  * they are the same product and a divergent border colour reads as two
  * different sites. Only the things that genuinely belong to this app stay
  * here: the font files it serves, and the source globs Tailwind must scan.
  */
 
 @import 'tailwindcss';
-@import '@simten/ui/styles/theme.css';
+@import '@simten/react/styles/theme.css';
 @import 'tw-animate-css';
 
 /* Tailwind v4 does not scan linked workspace packages, so the utility classes
-   inside @simten/ui's canvas and node components would never be emitted and
+   inside @simten/react's canvas and node components would never be emitted and
    every node renders collapsed. */
-@source "../../../packages/ui/src/**/*.tsx";
-@source "../../../packages/embed/src/**/*.tsx";
+@source "../../../packages/react/src/**/*.tsx";
 @source "./**/*.{ts,tsx}";
 
 /* Served from this app's own public/; a separate origin needs its own copy. */
@@ -65,7 +64,7 @@
 .simten-tour .driver-popover-close-btn {
   @apply text-muted-foreground hover:text-popover-foreground focus:text-popover-foreground;
 }
-/* The buttons copy @simten/ui's Button: Back is its `outline` variant, Next its
+/* The buttons copy @simten/react's Button: Back is its `outline` variant, Next its
    `default`. Hover and focus are restated (focus as well, since driver.js
    paints both near-white, which hid the label in dark mode). */
 .simten-tour .driver-popover-footer-btn {

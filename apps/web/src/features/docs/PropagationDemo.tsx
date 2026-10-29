@@ -7,8 +7,8 @@ import {
   tracePropagation,
 } from '@simten/core/internal';
 import { And, Led, Switch, Xor } from '@simten/core/std';
-import { CircuitCanvas } from '@simten/ui/canvas';
-import { useSimulation } from '@simten/ui/sandbox';
+import { CircuitCanvas } from '@simten/react/canvas';
+import { useSimulation } from '@simten/react/sandbox';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const HalfAdder = circuit('HalfAdder', {

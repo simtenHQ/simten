@@ -58,8 +58,9 @@ const HalfAdder = circuit('HalfAdder', {
   so pins autocomplete and a typo like `xor1.c` is a type error
 
 To show it on a web page, render `<CircuitEmbed circuit={HalfAdder} />` from
-`@simten/embed` in a React app. It draws the circuit with a clickable switch for each
-input and a light for each output, so visitors can try it.
+`@simten/react/embed` in a React app. It draws the circuit with a clickable switch for each
+input and a light for each output, so visitors can try it. On a page that isn't React, open
+the circuit on simten.dev and use Share > Embed for an iframe.
 
 ## AI assist (optional)
 
@@ -91,8 +92,8 @@ the build/flash workflow are in the [hardware docs](https://simten.dev/docs/hard
 ```
 packages/
 ├── core/        simulator, circuit() builder, stdlib, Verilog exporter
-├── ui/          canvas, Monaco editor setup, shadcn primitives
-├── embed/       <CircuitEmbed /> and a web-component build
+├── sandbox/     runs circuits in the sandbox iframe from any page, no framework
+├── react/       <CircuitEmbed />, useSimulation, canvas, Monaco editor setup
 └── mcp/         MCP server
 
 apps/

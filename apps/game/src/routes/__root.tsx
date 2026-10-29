@@ -1,4 +1,4 @@
-import { SandboxProvider } from '@simten/ui/sandbox';
+import { SandboxProvider } from '@simten/react/sandbox';
 import { TanStackDevtools } from '@tanstack/react-devtools';
 import { createRootRoute, HeadContent, Scripts, useMatches } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';

@@ -17,7 +17,7 @@
  * nothing.
  */
 
-import type { SimulationActions } from '@simten/ui/sandbox';
+import type { SimulationActions } from '@simten/react/sandbox';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BEAT_SAMPLES, incFor, SAMPLE_RATE, SCORE } from './circuits';
 

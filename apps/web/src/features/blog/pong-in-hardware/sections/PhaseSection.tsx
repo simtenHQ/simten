@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/embed';
+import { CircuitEmbed } from '@simten/react/embed';
 import { PONG_CIRCUITS } from '../circuits';
 
 export function PhaseSection() {

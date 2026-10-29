@@ -20,7 +20,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@simten/ui/primitives/tooltip';
+} from '@simten/react/primitives/tooltip';
 import { useEffect, useRef, useState } from 'react';
 import { HighlightedCode } from '@/components/HighlightedCode';
 

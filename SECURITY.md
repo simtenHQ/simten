@@ -16,7 +16,7 @@ We aim to acknowledge new reports within a few days. Once a fix is ready, we pub
 
 Reports are in scope if they affect any of:
 
-- Published packages: `@simten/core`, `@simten/ui`, `@simten/embed`, `@simten/mcp`
+- Published packages: `@simten/core`, `@simten/sandbox`, `@simten/react`, `@simten/mcp`
 - The hosted apps at [simten.dev](https://simten.dev) and [play.simten.dev](https://play.simten.dev)
 - [sandbox.simtenusercontent.dev](https://sandbox.simtenusercontent.dev), the isolated origin that executes circuit code
 - The `apps/compiler`, `apps/verifier` and `apps/synth` Cloudflare Container services

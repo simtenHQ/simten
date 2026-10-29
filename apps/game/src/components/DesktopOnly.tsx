@@ -40,7 +40,7 @@ export function useIsDesktop(): boolean {
  * thing being gated is a code editor that will not load on the device anyway.
  *
  * Deliberately a copy of the web app's component rather than a shared one. It
- * is eight lines, the two apps deploy separately, and a `@simten/ui` export
+ * is eight lines, the two apps deploy separately, and a `@simten/react` export
  * would put a layout primitive in a package whose job is circuit UI.
  */
 export function DesktopOnly({ children, fallback }: { children: ReactNode; fallback: ReactNode }) {

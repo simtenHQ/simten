@@ -1,5 +1,5 @@
 import type { MemoryContents } from '@simten/core/internal';
-import { useSimulation } from '@simten/ui/sandbox';
+import { useSimulation } from '@simten/react/sandbox';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAutoRun } from '@/lib/auto-run';
 import { RV32I_CPU } from './rv32i-cpu.circuit';

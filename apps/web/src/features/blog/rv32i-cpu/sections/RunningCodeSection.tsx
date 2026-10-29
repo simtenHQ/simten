@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/embed';
+import { CircuitEmbed } from '@simten/react/embed';
 import { Link } from '@tanstack/react-router';
 import { RV32I_Board } from '../rv32i-board.circuit';
 

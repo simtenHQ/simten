@@ -1,5 +1,5 @@
 import { DFlipFlop } from '@simten/core/std';
-import { CircuitEmbed } from '@simten/embed';
+import { CircuitEmbed } from '@simten/react/embed';
 
 export function DFlipFlopSection() {
   return (
