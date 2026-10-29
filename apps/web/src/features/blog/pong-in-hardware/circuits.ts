@@ -6,7 +6,7 @@
  * the complete PongSimple circuit.
  */
 
-import { circuit } from '@simten/core/circuit';
+import { circuit } from '@simten/core';
 import {
   Adder,
   And,

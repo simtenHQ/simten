@@ -5,7 +5,7 @@
  * to MixColumns -- the operation so complex Intel built it into the CPU.
  */
 
-import { bus, circuit } from '@simten/core/circuit';
+import { bus, circuit } from '@simten/core';
 import {
   BusXor,
   Constant,

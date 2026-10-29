@@ -1,6 +1,6 @@
 /** Reference solution for `jump`. Proven by `__tests__/levels.test.ts`. */
 
-import { bit, bus, circuit } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core';
 import {
   And,
   Combiner,

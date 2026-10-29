@@ -6,8 +6,7 @@
  * Extracted so it can be relocated on the page and gated on scroll.
  */
 
-import type { Circuit } from '@simten/core/circuit';
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, type Circuit, circuit } from '@simten/core';
 import { And, DFlipFlop, Not, Or, Xor } from '@simten/core/std';
 import { useSimulation } from '@simten/react';
 import { Link } from '@tanstack/react-router';

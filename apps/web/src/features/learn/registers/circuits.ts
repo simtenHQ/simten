@@ -9,7 +9,7 @@
  * sequential circuit" idea.
  */
 
-import { bus, circuit } from '@simten/core/circuit';
+import { bus, circuit } from '@simten/core';
 import { Adder, Constant, Register } from '@simten/core/std';
 
 // ── Counter: Register + Adder loop ─────────────────────────────────────

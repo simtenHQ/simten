@@ -6,7 +6,7 @@
  * would. No iframe, no worker, no relay.
  */
 
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core';
 import { And, Switch } from '@simten/core/std';
 import type { SandboxClient } from '@simten/sandbox';
 import { act, cleanup, renderHook, waitFor } from '@testing-library/react';

@@ -12,7 +12,7 @@
  *   - Both partial sums and data are registered (1 cycle per PE in each direction)
  */
 
-import { bit, bus, circuit } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core';
 import {
   Adder,
   And,

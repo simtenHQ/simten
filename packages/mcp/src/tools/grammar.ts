@@ -6,7 +6,7 @@ export const GRAMMAR = `// Circuit API — write circuit files as standalone TS 
 // and EXPORT the top-level circuit so a testbench (.verify.ts) can import it.
 // Valid in your editor, runnable with tsx/vitest.
 
-import { circuit, bit, bus } from '@simten/core/circuit';
+import { circuit, bit, bus } from '@simten/core';
 import { Xor, And, Register, Adder, Constant } from '@simten/core/std';
 
 // Composite circuit — wire stdlib components together (export it):
@@ -75,5 +75,5 @@ const Adder8 = circuit('Adder8', {
 // Stdlib components import from '@simten/core/std':
 // And, Or, Not, Xor, Nand, Nor, Adder, Register, Mux, Decoder,
 // ROM, RAM, DFlipFlop, Switch, Led, Input, Output, Constant, ...
-// (circuit/bit/bus/reg/mem come from '@simten/core/circuit'.)
+// (circuit/bit/bus/reg/mem come from '@simten/core'.)
 `;

@@ -10,7 +10,7 @@
  * TODOs on each.
  */
 
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core';
 import { And, Concat, Constant, HexDisplay, Input, Led, Or, Slice, Xor } from '@simten/core/std';
 import type { BlogCircuit } from '@/features/blog/types';
 

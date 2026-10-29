@@ -349,6 +349,26 @@ async function openLatch() {
   return host;
 }
 
+describe('source saved before decision 0010', () => {
+  it('compiles and runs with the builder imported from @simten/core/circuit', async () => {
+    const { call } = startHost();
+    const compiled = await call({
+      type: 'compile',
+      compile: 'c1',
+      source: `import { circuit, bit } from '@simten/core/circuit';
+import { Not } from '@simten/core/std';
+export const Inv = circuit('Inv', {
+  inputs: { a: bit }, outputs: { y: bit }, nodes: { n: Not },
+  connect: ({ inputs, outputs, nodes: { n } }) => [inputs.a.to(n.in), n.out.to(outputs.y)],
+});`,
+    });
+    expectType(compiled, 'compiled');
+    await call({ type: 'open', session: 's1', compile: 'c1', circuit: 'Inv', history: 0 });
+    const res = expectType(await call({ type: 'set', session: 's1', values: { a: 1 } }), 'updated');
+    expect(res.state.ports.get('__top__.y')).toBe(0);
+  });
+});
+
 describe('set', () => {
   it('writes Switch paths before the circuit settles, as set-input did (#521)', async () => {
     const { call } = await openLatch();

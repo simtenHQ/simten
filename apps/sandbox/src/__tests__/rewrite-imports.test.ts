@@ -74,7 +74,7 @@ describe('extractAndRewriteImports', () => {
 
   it('drops @simten/* imports, whose names are already in scope', () => {
     const out = extractAndRewriteImports(
-      "import { circuit, bit } from '@simten/core/circuit';\nimport fc from 'fast-check';\ncircuit('A', {});",
+      "import { circuit, bit } from '@simten/core';\nimport fc from 'fast-check';\ncircuit('A', {});",
     );
     expect(out.localNames).toEqual(['fc']);
     expect(out.loaderModule).not.toContain('simten');

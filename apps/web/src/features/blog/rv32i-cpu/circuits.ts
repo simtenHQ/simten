@@ -4,7 +4,7 @@
  * Small, focused circuits that illustrate individual pipeline concepts.
  */
 
-import { bit, bus, circuit } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core';
 import {
   Adder,
   BitSlice,

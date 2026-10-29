@@ -67,7 +67,6 @@ npx tsx halfadder.mts
 | Subpath | What's in it |
 |---|---|
 | `@simten/core` | `circuit()`, `bit`, `bus`, `simulate()` and the `Circuit` type |
-| `@simten/core/circuit` | `circuit()`, `bit`, `bus` (the same names, kept for existing code) |
 | `@simten/core/std` | Standard library components (gates, registers, RAM, ROM, adders, ALU, …) |
 | `@simten/core/verify` | Testbench harness: `declareOracle()`, `verify.check()`, `verify.run()` |
 | `@simten/core/verilog` | Verilog exporter |

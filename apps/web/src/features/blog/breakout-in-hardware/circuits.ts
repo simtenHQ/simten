@@ -12,7 +12,7 @@
  * on the top-level `keyboard` bus.
  */
 
-import { bit, bus, circuit } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core';
 import {
   Adder,
   And,

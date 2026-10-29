@@ -6,7 +6,7 @@
  * and the complete iterative rotation engine.
  */
 
-import { bit, bus, circuit } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core';
 import {
   BitSlice,
   BusNot,

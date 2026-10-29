@@ -1,6 +1,6 @@
 /** Reference solution for `arithmetic-logic-unit`. Proven by `__tests__/levels.test.ts`. */
 
-import { bit, bus, circuit } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core';
 import { And, Combiner, HexDisplay, Input, Not, Or, Splitter, Switch, Xor } from '@simten/core/std';
 
 const Mux2 = circuit('Mux2', {

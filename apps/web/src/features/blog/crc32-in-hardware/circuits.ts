@@ -5,7 +5,7 @@
  * principle) to a full CRC-32 byte-at-a-time processing circuit.
  */
 
-import { bus, circuit } from '@simten/core/circuit';
+import { bus, circuit } from '@simten/core';
 import { Constant, DFlipFlop, HexDisplay, Input, Led, Register, Xor } from '@simten/core/std';
 import type { BlogCircuit } from '../types';
 

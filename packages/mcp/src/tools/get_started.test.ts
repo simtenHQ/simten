@@ -17,7 +17,7 @@ describe('materializeExample', () => {
       const source = materializeExample(ex);
 
       it('imports the builder API and stdlib', () => {
-        expect(source).toMatch(/^import \{ circuit.* \} from '@simten\/core\/circuit';$/m);
+        expect(source).toMatch(/^import \{ circuit.* \} from '@simten\/core';$/m);
         expect(source).toContain("} from '@simten/core/std';");
       });
 

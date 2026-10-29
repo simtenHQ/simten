@@ -5,7 +5,7 @@
  * (SR Latch, D Flip-Flop, Register, Counter) for the memory sections.
  */
 
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core';
 import {
   And,
   DFlipFlop,

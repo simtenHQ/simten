@@ -39,9 +39,21 @@ const ORACLE = {
 };
 
 const FILES: Record<string, string> = {
+  // Written before decision 0010 removed the builder's own entry.
+  'old-path.circuit.ts': `
+import { bit, circuit } from '@simten/core/circuit';
+import { Not } from '@simten/core/std';
+
+export const Inv = circuit('Inv', {
+  inputs: { a: bit },
+  outputs: { y: bit },
+  nodes: { n: Not },
+  connect: ({ inputs, outputs, nodes: { n } }) => [inputs.a.to(n.in), n.out.to(outputs.y)],
+});
+`,
   // A sub-circuit in its own file, used as a node by the top file.
   'half-adder.circuit.ts': `
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core';
 import { And, Xor } from '@simten/core/std';
 
 export const HalfAdder = circuit('HalfAdder', {
@@ -57,7 +69,7 @@ export const HalfAdder = circuit('HalfAdder', {
 });
 `,
   'top.circuit.ts': `
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core';
 import { HalfAdder } from './half-adder.circuit.js';
 
 export const Top = circuit('Top', {
@@ -96,7 +108,7 @@ export function tableRom() {
 }
 `,
   'lookup.circuit.ts': `
-import { bus, circuit } from '@simten/core/circuit';
+import { bus, circuit } from '@simten/core';
 import { tableRom } from './table.js';
 
 export const Lookup = circuit('Lookup', {
@@ -111,7 +123,7 @@ export const Lookup = circuit('Lookup', {
 `,
   // Not exported, and two of them: both are listed, the last is simulated.
   'pair.circuit.ts': `
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core';
 import { Not } from '@simten/core/std';
 
 const Inverter = circuit('Inverter', {
@@ -146,7 +158,7 @@ export const Buffer = circuit('Buffer', {
 });
 `,
   'syntax-error.circuit.ts': `
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core';
 
 export const Broken = circuit('Broken', {
   inputs: { a: bit },
@@ -155,7 +167,7 @@ export const Broken = circuit('Broken', {
 });
 `,
   'bad-port.circuit.ts': `
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core';
 import { Not } from '@simten/core/std';
 
 export const BadPort = circuit('BadPort', {
@@ -169,7 +181,7 @@ export const BadPort = circuit('BadPort', {
 });
 `,
   'uses-bad-port.circuit.ts': `
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core';
 import { BadPort } from './bad-port.circuit.js';
 
 export const UsesBadPort = circuit('UsesBadPort', {
@@ -277,6 +289,23 @@ describe('a circuit importing a sub-circuit from a sibling file', () => {
       expect(trace.circuit).toBe('Top');
       expect(trace.signals.sum).toEqual([{ value: 0, count: 1 }]);
       expect(trace.signals.carry).toEqual([{ value: 1, count: 1 }]);
+    },
+    TIMEOUT,
+  );
+});
+
+describe('a file that imports the builder from @simten/core/circuit', () => {
+  it(
+    'check_circuit and simulate_circuit still load it',
+    async () => {
+      const file = join(project, 'old-path.circuit.ts');
+      const report = JSON.parse((await check({ filePath: file })).content[0].text);
+      expect(report.valid).toBe(true);
+      const trace = JSON.parse(
+        (await simulate({ filePath: file, ticks: 1, inputs: { a: 1 }, show: false })).content[0]
+          .text,
+      );
+      expect(trace.signals.y).toEqual([{ value: 0, count: 1 }]);
     },
     TIMEOUT,
   );

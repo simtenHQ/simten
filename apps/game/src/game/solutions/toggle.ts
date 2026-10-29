@@ -1,6 +1,6 @@
 /** Reference solution for `toggle`. Proven by `__tests__/levels.test.ts`. */
 
-import { circuit } from '@simten/core/circuit';
+import { circuit } from '@simten/core';
 import { DFlipFlop, Led } from '@simten/core/std';
 
 export const Toggle1 = circuit('Toggle1', {

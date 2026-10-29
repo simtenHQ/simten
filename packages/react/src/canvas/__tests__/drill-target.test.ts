@@ -4,7 +4,7 @@
  * so this is where "can this node be opened, and into what" is decided.
  */
 
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core';
 import type { CircuitDefinitions, CircuitIR } from '@simten/core/internal';
 import { internalsOf } from '@simten/core/internal';
 import { And, Xor } from '@simten/core/std';

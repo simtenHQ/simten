@@ -1,6 +1,6 @@
 /** Reference solution for `load`. Proven by `__tests__/levels.test.ts`. */
 
-import { bit, bus, circuit } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core';
 import { And, Combiner, DFlipFlop, HexDisplay, Input, Nor, Splitter, Xor } from '@simten/core/std';
 
 const Mux2 = circuit('Mux2', {

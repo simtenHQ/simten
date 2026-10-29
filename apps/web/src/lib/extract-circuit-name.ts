@@ -4,7 +4,7 @@
  *
  * Brittle on template literals, escaped quotes and multi-line declarations,
  * that is intentional, and callers MUST have a generic fallback for the misses.
- * The scan itself lives in `@simten/core/circuit` so the editor, the game and
+ * The scan itself lives in `@simten/core` so the editor, the game and
  * this share the one implementation.
  */
 

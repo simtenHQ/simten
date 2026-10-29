@@ -1,4 +1,4 @@
-import type { Circuit } from '@simten/core/circuit';
+import type { Circuit } from '@simten/core';
 import type { PortDescriptor } from '@simten/core/internal';
 import { internalsOf } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';

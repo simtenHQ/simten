@@ -22,7 +22,7 @@
  * logic should be. This voice is meant to reach an FPGA unchanged.
  */
 
-import { bit, bus, circuit } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core';
 import {
   Adder,
   BitSlice,

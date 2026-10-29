@@ -1,4 +1,4 @@
-import type { Circuit } from '@simten/core/circuit';
+import type { Circuit } from '@simten/core';
 
 export interface BlogCircuit {
   name: string;

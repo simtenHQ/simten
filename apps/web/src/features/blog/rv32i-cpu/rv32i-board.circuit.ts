@@ -1,4 +1,4 @@
-import { circuit } from '@simten/core/circuit';
+import { circuit } from '@simten/core';
 import {
   Constant,
   DualPortROM,

@@ -72,7 +72,7 @@ jobs:
         # `dist/*.d.ts` to already exist. Locally these dists persist
         # between runs; on a fresh CI checkout they don't.
         #
-        # @simten/web also imports `@simten/core/circuit` and `@simten/react`
+        # @simten/web also imports `@simten/core` and `@simten/react`
         # via their `exports` map → `./dist/...`, so the web build needs
         # this too.
         #

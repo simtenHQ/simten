@@ -1,6 +1,6 @@
 /** Reference solution for `equality`. Proven by `__tests__/levels.test.ts`. */
 
-import { circuit } from '@simten/core/circuit';
+import { circuit } from '@simten/core';
 import { And, Input, Led, Splitter, Xnor } from '@simten/core/std';
 
 // XNOR says whether one pair of bits matches, and a four-wide AND needs all

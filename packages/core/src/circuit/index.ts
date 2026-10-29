@@ -1,9 +1,11 @@
 /**
- * `@simten/core/circuit`: the circuit() builder.
+ * The circuit() builder, exported from `@simten/core`:
  *
- *   import { circuit, bit, bus } from '@simten/core/circuit'
+ *   import { circuit, bit, bus } from '@simten/core'
  *
- * The same names are exported from `@simten/core`.
+ * It was also `@simten/core/circuit` until decision 0010 removed that entry.
+ * Source saved with the old path still runs (the sandbox strips imports) and
+ * still type-checks in the code editor, which keeps the path as an alias.
  */
 
 export type { ArgumentValue, MemoryContents } from '../ir/circuit-ir.js';
