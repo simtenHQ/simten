@@ -38,7 +38,7 @@ const CLIP = { overflow: 'hidden' } as const;
 
 /** The canvas's dot grid (React Flow's `Background`: 1px dots every 20px), behind the example picker. */
 const EMPTY_CANVAS_DOTS = {
-  backgroundImage: 'radial-gradient(circle, var(--embed-dot-color) 1px, transparent 1px)',
+  backgroundImage: 'radial-gradient(circle, var(--embed-dot-color) 0.5px, transparent 1px)',
   backgroundSize: '20px 20px',
 } as const;
 
