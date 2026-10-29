@@ -12,7 +12,7 @@
 
 import { type ReactElement, useCallback } from 'react';
 import type { UseSimulationResult } from '../sandbox/useSimulation';
-import { ErrorDisplay } from './ErrorDisplay';
+import { CanvasError } from './CanvasError';
 import { FlowCanvas } from './FlowCanvas';
 
 export interface CircuitCanvasProps {
@@ -70,7 +70,7 @@ export function CircuitCanvas({
   if (error) {
     return (
       <div style={{ height }} className="flex items-center justify-center p-4">
-        <ErrorDisplay error={error} />
+        <CanvasError error={error} />
       </div>
     );
   }

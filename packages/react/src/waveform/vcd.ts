@@ -4,7 +4,7 @@
  */
 
 /** One signal of the recording: its name, width, and value at each cycle from `first`. */
-export interface VcdSignal {
+interface VcdSignal {
   name: string;
   width: number;
   values: readonly number[];

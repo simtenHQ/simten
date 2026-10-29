@@ -23,7 +23,7 @@ import {
   SkipForward,
 } from 'lucide-react';
 import { type ComponentType, type ReactElement, type SVGProps, useState } from 'react';
-import { Button } from '../primitives/button';
+import { cn } from '../lib/utils';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../primitives/tooltip';
 import type { UseSimulationResult } from '../sandbox/useSimulation';
 
@@ -33,6 +33,10 @@ import type { UseSimulationResult } from '../sandbox/useSimulation';
  * and bakes in the Tooltip so each call site is a one-liner. The `label`
  * doubles as `aria-label` and visible tooltip content.
  */
+/** A small ghost icon button: shadcn's ghost/icon button, tightened for this bar. */
+const ICON_BUTTON =
+  'inline-flex items-center justify-center gap-2 cursor-pointer whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none [&_svg]:pointer-events-none [&_svg]:shrink-0 hover:bg-accent hover:text-accent-foreground h-7 w-7 text-muted-foreground disabled:opacity-40 [&_svg]:size-3.5';
+
 function IconBtn({
   label,
   icon: Icon,
@@ -50,20 +54,19 @@ function IconBtn({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
+        <button
+          type="button"
           onClick={onClick}
           disabled={disabled}
           aria-label={label}
-          className={`h-7 w-7 text-muted-foreground disabled:opacity-40 [&_svg]:size-3.5${
-            pulse
-              ? ' animate-pulse text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 ring-2 ring-blue-500/40'
-              : ''
-          }`}
+          className={cn(
+            ICON_BUTTON,
+            pulse &&
+              'animate-pulse text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-950/40 ring-2 ring-blue-500/40',
+          )}
         >
           <Icon />
-        </Button>
+        </button>
       </TooltipTrigger>
       <TooltipContent side="bottom">{label}</TooltipContent>
     </Tooltip>
