@@ -8,7 +8,7 @@ import { bit, bus, circuit, simulate } from '@simten/core';
 import { internalsOf, nodesOf } from '@simten/core/internal';
 import { And, Xor } from '@simten/core/std';
 import { describe, expect, it } from 'vitest';
-import { hasPorts, portsView, portsViewValues } from '../ports-view';
+import { hasPorts, layoutForPortsView, portsView, portsViewValues } from '../ports-view';
 
 const HalfAdder = circuit('ViewHalfAdder', {
   inputs: { a: bit, b: bit, unused: bus(4) },
@@ -39,6 +39,15 @@ describe('portsView', () => {
       ),
     ).toEqual(['a.out>dut.a', 'b.out>dut.b', 'dut.sum>sum.in', 'dut.carry>carry.in']);
     expect(hasPorts(IR)).toBe(true);
+  });
+
+  it('labels the box with the circuit name, and places it by the key `circuit`', () => {
+    const box = portsView(IR).nodes.find((n) => n.id === 'dut');
+    expect(box?.label).toBe('ViewHalfAdder');
+    expect(layoutForPortsView({ a: { x: 0, y: 0 }, circuit: { x: 5, y: 6 } })).toEqual({
+      a: { x: 0, y: 0 },
+      dut: { x: 5, y: 6 },
+    });
   });
 
   it('moves the session values onto the drawing', () => {

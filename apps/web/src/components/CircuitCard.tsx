@@ -25,12 +25,12 @@ type Position = { x: number; y: number };
 /**
  * Node positions. A circuit with ports is drawn with a switch on each input
  * port and a lamp on each output, named after the ports, around the circuit
- * itself as `dut`. A circuit without ports is drawn as it is, so its own nodes
- * are placed.
+ * itself as one box, placed by `circuit`. A circuit without ports is drawn as
+ * it is, so its own nodes are placed.
  */
 type CardLayout<C extends Circuit> =
   C extends Circuit<infer Ins, infer Outs, infer Ns>
-    ? Partial<Record<keyof Ins | keyof Outs | keyof Ns | 'dut', Position>>
+    ? Partial<Record<keyof Ins | keyof Outs | keyof Ns | 'circuit', Position>>
     : Record<string, Position>;
 
 interface CardChrome {

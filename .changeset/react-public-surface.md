@@ -35,6 +35,7 @@ How to migrate:
 | `actions.toggleNode('a')` | `actions.toggle('a')` |
 | `actions.setSpeed(n)`, `{ speed: n }` | `actions.run(n)` |
 | `{ harness: true }` | nothing: the canvas draws a circuit's ports itself |
+| `layout={{ dut: … }}` for a circuit with ports | `layout={{ circuit: … }}`: the box shows the circuit's name, not `dut` |
 | `portValues.get('sum.in')`, `'a.out'`, `'dut.ha1.x.out'` for a circuit with ports | `portValues.get('__top__.sum')`, `'__top__.a'`, `'ha1.x.out'`, or `state.outputs.sum` |
 | `{ debounceMs }` | nothing: 50 ms |
 | `result.compileError`, `result.history` | `result.state.compileError`, `result.state.history` |

@@ -5,9 +5,11 @@
  * and click, the canvas draws a control for each input port the circuit reads
  * (a Switch for a bit, a number Input for a bus) and an indicator for each
  * output it drives (a lamp, or a display for a bus), with the circuit between
- * them as one box, `dut`. Each control and indicator is named after its port,
- * so `set({ a: 1 })` and a click on `a` are the same write, and layouts keyed
- * by port names and `dut` place them. Double-clicking `dut` opens its insides.
+ * them as one box, the node `dut`, which shows only the circuit's name. Each
+ * control and indicator is named after its port, so `set({ a: 1 })` and a
+ * click on `a` are the same write. A layout places them by port name, and the
+ * box by the key `circuit` (`layoutForPortsView`). Double-clicking the box
+ * opens its insides.
  *
  * Only the drawing has these nodes. Their values come from the circuit's own
  * ports (`__top__.a`), and the circuit's insides are read under `dut.`.
@@ -24,8 +26,10 @@ import {
 } from '@simten/core/internal';
 import { HexDisplay, Input, Led, Switch } from '@simten/core/std';
 
-/** The node the circuit itself is drawn as. */
+/** The node the circuit itself is drawn as. Its id is internal: paths inside it read `dut.`. */
 const DUT = 'dut';
+/** The layout key for that node. */
+const CIRCUIT_KEY = 'circuit';
 const TOP = '__top__';
 
 const isCircuitPort = (nodeId: string) => nodeId === '' || nodeId === TOP_LEVEL_NODE;
@@ -52,6 +56,8 @@ export function portsView(circuit: CircuitIR): CircuitIR {
   const nodes: Node[] = [
     {
       id: DUT,
+      // The name alone: the node shows its title only when it differs from the component.
+      label: circuit.name,
       componentRef: circuit.name,
       arguments: {},
       inputs: circuit.inputs.map((p) => ({
@@ -148,6 +154,17 @@ export function portsViewValues(
     if (value !== undefined) view.set(`${p.name}.in`, value);
   }
   return view;
+}
+
+/**
+ * A layout in the drawing's terms: the box's position, given as `circuit`, moves
+ * to the box's node.
+ */
+export function layoutForPortsView(
+  layout: Readonly<Record<string, { x: number; y: number }>>,
+): Record<string, { x: number; y: number }> {
+  const { [CIRCUIT_KEY]: box, ...rest } = layout;
+  return box ? { ...rest, [DUT]: box } : rest;
 }
 
 /** The components the drawing adds, by name. */

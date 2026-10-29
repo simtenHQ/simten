@@ -16,7 +16,13 @@ import { type ReactElement, useCallback, useMemo } from 'react';
 import type { UseSimulationResult } from '../sandbox/useSimulation';
 import { CanvasError } from './CanvasError';
 import { FlowCanvas } from './FlowCanvas';
-import { hasPorts, portsView, portsViewValues, withPortParts } from './ports-view';
+import {
+  hasPorts,
+  layoutForPortsView,
+  portsView,
+  portsViewValues,
+  withPortParts,
+} from './ports-view';
 
 export interface CircuitCanvasProps {
   /** What `useSimulation` returned. */
@@ -28,7 +34,7 @@ export interface CircuitCanvasProps {
   /**
    * Node positions by label (or id), to skip the layout engine. A circuit with
    * ports is drawn with its ports' switches and lamps named after the ports,
-   * and the circuit itself as the node `dut`.
+   * around the circuit as one box, placed by the key `circuit`.
    */
   layout?: Record<string, { x: number; y: number }>;
   /** Dim every node but these, by label. */
@@ -77,7 +83,11 @@ export function CircuitCanvas({
     () => (definitions ? withPortParts(definitions) : undefined),
     [definitions],
   );
-  // The drill-down reads the drawing's values too, so `dut` opens on its insides.
+  const drawnLayout = useMemo(
+    () => (layout && circuit && hasPorts(circuit) ? layoutForPortsView(layout) : layout),
+    [layout, circuit],
+  );
+  // The drill-down reads the drawing's values too, so the box opens on its insides.
   const viewed = useMemo(
     () => ({ ...simulation, state: { ...state, portValues: drawnValues } }),
     [simulation, state, drawnValues],
@@ -125,7 +135,7 @@ export function CircuitCanvas({
       onLoadMemory={onLoadMemory}
       height={height}
       theme={theme}
-      layout={layout}
+      layout={drawnLayout}
       focus={focus}
       draggable={draggable}
       autoLayout={autoLayout}
