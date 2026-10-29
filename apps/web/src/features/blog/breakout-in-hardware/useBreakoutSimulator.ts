@@ -21,7 +21,7 @@ export function useBreakoutSimulator() {
   useEffect(() => {
     if (!state.ready) return;
     let cancelled = false;
-    void actions.scan('scan_addr', 'pixel_out.in', PIXELS).then((result) => {
+    void actions.scan('scan_addr', '__top__.pixel_out', PIXELS).then((result) => {
       if (!cancelled && result.length > 0) setPixels(result);
     });
     return () => {
@@ -65,7 +65,7 @@ export function useBreakoutSimulator() {
   // burst through its ~128 clocks in one request so the wall snaps back full
   // at once, as it does on the FPGA at MHz. It runs between auto-run frames,
   // in order with them. The effect fires once per rising edge.
-  const isFilling = state.portValues?.get('is_filling.in') === 1;
+  const isFilling = state.outputs.is_filling === 1;
   useEffect(() => {
     if (isRunning && isFilling) void actions.tick(140);
   }, [isRunning, isFilling, actions]);

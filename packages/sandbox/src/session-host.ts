@@ -19,7 +19,6 @@
 
 import type { Circuit, Simulation } from '@simten/core';
 import {
-  autoHarness,
   type Behavior,
   type BehaviorFn,
   type CircuitDefinitions,
@@ -34,6 +33,7 @@ import {
   nodesOf,
   type SimulationNodes,
 } from '@simten/core/internal';
+import { autoHarness as legacyHarness } from './legacy-harness.js';
 import type {
   BehaviorSource,
   CompileId,
@@ -332,8 +332,9 @@ function openSimulation(target: Openable, request: Request<'open'>): Opened {
     definitions,
     behaviors: new Map([...std.behaviors, ...target.library.behaviors]),
   };
-  // The harness's `dut` node is the target, by name.
-  const ir = request.harness ? autoHarness(target.ir, definitions) : target.ir;
+  // Pages deployed before #531 ask for a harness and draw it; removed at the
+  // release (#424). The harness's `dut` node is the target, by name.
+  const ir = request.harness ? legacyHarness(target.ir, definitions) : target.ir;
   // The memory is in place from cycle 0, and `reset` goes back to it.
   const simulation = createSimulation(ir, library, {
     history: request.history,

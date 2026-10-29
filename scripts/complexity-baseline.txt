@@ -8,7 +8,6 @@ hardware/ulx3s/projects/cpu/cycle-diff.ts main
 hardware/ulx3s/projects/cpu/sim.ts runSim
 hardware/ulx3s/projects/cpu/verify.ts runSuite
 hardware/ulx3s/run_on_fpga.ts main
-packages/core/src/circuit/auto-harness.ts autoHarness
 packages/core/src/import/import-netlist.ts moduleShapes
 packages/core/src/import/import-netlist.ts rtlSignalNames
 packages/core/src/import/import-netlist.ts translateModule
@@ -36,4 +35,5 @@ packages/mcp/src/server/ws-server.ts (anonymous)
 packages/mcp/src/tools/show.ts (anonymous)
 packages/react/src/canvas/FlowCanvas.tsx (anonymous)
 packages/react/src/canvas/circuit-to-flow.ts projectCircuitToNodes
+packages/sandbox/src/legacy-harness.ts autoHarness
 scripts/check-exports.ts checkPackage

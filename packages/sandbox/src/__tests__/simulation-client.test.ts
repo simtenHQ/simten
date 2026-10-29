@@ -151,12 +151,12 @@ describe('SimulationClient', () => {
   it('applies requests to one session in order without awaiting each', async () => {
     const { client } = startSandbox();
     const compiled = await client.compile(COUNTER);
-    const sim = await client.open({ compiled, circuit: 'Counter' }, { harness: true });
+    const sim = await client.open({ compiled, circuit: 'Counter' });
     void sim.set({ en: 1 });
     void sim.tick(3);
     void sim.set({ en: 0 });
     await sim.tick(3);
-    expect(sim.getState().ports.get('count.in')).toBe(3);
+    expect(sim.getState().ports.get('__top__.count')).toBe(3);
   });
 
   it('rejects set on a register with a SandboxError', async () => {

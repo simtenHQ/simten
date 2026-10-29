@@ -1,5 +1,8 @@
 /**
- * Auto-harness generator.
+ * Auto-harness generator, for pages deployed before #531. Those pages open
+ * sessions with `harness: true` and draw the harnessed circuit; pages since
+ * then open the circuit itself and the canvas draws its ports. Removed at the
+ * release, with the slot messages (#424).
  *
  * Takes a circuit with inputs/outputs and wraps it in a harness circuit
  * with Switch nodes for bit inputs, Input nodes for bus inputs,
@@ -16,8 +19,13 @@
  * No code execution — pure Circuit IR construction.
  */
 
-import type { ArgumentValue, CircuitIR, Connection, Node } from '../ir/circuit-ir.js';
-import { TOP_LEVEL_NODE } from '../ir/circuit-ir.js';
+import {
+  type ArgumentValue,
+  type CircuitIR,
+  type Connection,
+  type Node,
+  TOP_LEVEL_NODE,
+} from '@simten/core/internal';
 
 /** A port reference belongs to the circuit's own edge, not to a child node. */
 const isCircuitPort = (nodeId: string) => nodeId === '' || nodeId === TOP_LEVEL_NODE;

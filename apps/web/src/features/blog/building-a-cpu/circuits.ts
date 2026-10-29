@@ -40,7 +40,7 @@ const SRLatch = circuit('SRLatch', {
   ],
 });
 
-// D Flip-Flop is a primitive, so use it directly; auto-harness handles Switch/Led
+// D Flip-Flop is a primitive, so use it directly; the canvas draws its ports
 // For display, we just show the DFlipFlop itself
 
 const Reg4 = circuit('Reg4', {
@@ -144,7 +144,7 @@ const ALU1 = circuit('ALU1', {
   ],
 });
 
-// RAM demo is self-contained (no ports), so auto-harness skips it
+// RAM demo is self-contained (no ports), so it is drawn as it is
 const DemoRAM = circuit('DemoRAM', {
   nodes: {
     addr: Input(),

@@ -9,21 +9,16 @@
  * the output-side candidates, which broke when anyone tried to read
  * outputs through it).
  *
- * The map is keyed by `<nodeId>.<portName>`. For an auto-harnessed
- * circuit (`useSimulation(c, { harness: true })`):
- *   - Input port `a`  → Switch node `a`, output value at `a.out`
- *   - Output port `s` → Led/HexDisplay node `s`, equivalent values at
- *                       `dut.s` (the original circuit's output port)
- *                       and `s.in` (the Led's input port)
- * Non-harnessed top-level ports use `__top__.<name>`.
+ * The map is keyed by `<nodeId>.<portName>`. A circuit's own ports are under
+ * `__top__` (`__top__.a`). A circuit without ports is read off its own nodes:
+ * a Switch `a` at `a.out`, a lamp `s` at `s.in`.
  */
 
 export type PortValuesMap = ReadonlyMap<string, number | boolean | bigint>;
 
 /**
  * Pull a single-bit value for a named port out of the live port-values
- * map. Tries every shape the harness and the simulator produce, in the
- * order most-likely-to-hit-first. Returns null if no candidate matches
+ * map: the circuit's own port first, then a Switch or lamp of that name. Returns null if no candidate matches
  * (sim not yet ready, port name doesn't exist, etc.).
  */
 export function readPortBit(
@@ -32,10 +27,9 @@ export function readPortBit(
 ): number | null {
   if (!portValues) return null;
   const candidates = [
-    `${portName}.out`, // Switch node wrapping an input
-    `dut.${portName}`, // DUT's own output port (auto-harness)
-    `${portName}.in`, // Led/HexDisplay node consuming an output (auto-harness)
-    `__top__.${portName}`, // top-level port (non-harness)
+    `__top__.${portName}`, // the circuit's own port
+    `${portName}.out`, // a Switch node
+    `${portName}.in`, // a Led or display node
     portName, // bare last-resort
   ];
   for (const key of candidates) {

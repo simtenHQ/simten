@@ -1,5 +1,4 @@
-import { type CircuitIR, internalsOf } from '@simten/core/internal';
-import { CircuitCanvas, type UseSimulationResult, useSimulation } from '@simten/react';
+import { CircuitCanvas, useSimulation } from '@simten/react';
 import { useMemo, useState } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 import { buildVoice, DEFAULT_ENV_STEP, WAVES } from '../circuits';
@@ -18,22 +17,6 @@ const STEP_TICKS = 64;
 /** No time travel here, so no history: playback asks for a chunk of samples ~40 times a second. */
 const OPTIONS = { history: 0 };
 
-/**
- * The voice drawn from the inside. The session runs it in a harness, as node
- * `dut` with a switch or display on each port, which would draw it as one box;
- * this view draws the voice's own netlist with the session's values moved to
- * its paths. Goes when the canvas draws ports itself (#531).
- */
-function insideTheHarness(simulation: UseSimulationResult, voice: CircuitIR): UseSimulationResult {
-  const { portValues } = simulation.state;
-  if (!portValues) return { ...simulation, state: { ...simulation.state, circuit: voice } };
-  const own = new Map<string, number>();
-  for (const [key, value] of portValues) if (key.startsWith('dut.')) own.set(key.slice(4), value);
-  for (const p of voice.inputs) own.set(`__top__.${p.name}`, portValues.get(`${p.name}.out`) ?? 0);
-  for (const p of voice.outputs) own.set(`__top__.${p.name}`, portValues.get(`${p.name}.in`) ?? 0);
-  return { ...simulation, state: { ...simulation.state, circuit: voice, portValues: own } };
-}
-
 export function PlayerSection() {
   const [wave, setWave] = useState(3); // saw
   const [decay, setDecay] = useState(DEFAULT_ENV_STEP);
@@ -46,10 +29,6 @@ export function PlayerSection() {
   const voice = useMemo(() => buildVoice(), []);
   const simulation = useSimulation(voice, OPTIONS);
   const { state, actions } = simulation;
-  const shown = useMemo(
-    () => insideTheHarness(simulation, internalsOf(voice).ir),
-    [simulation, voice],
-  );
   const { playing, toggle, scope } = useLiveVoice(actions.sample, { wave, decay });
 
   return (
@@ -74,7 +53,7 @@ export function PlayerSection() {
       <div className="mt-8 rounded-lg border border-gray-200 dark:border-gray-800 overflow-hidden">
         <div className="h-[520px] bg-gray-50 dark:bg-gray-950">
           <CircuitCanvas
-            simulation={shown}
+            simulation={simulation}
             draggable={false}
             autoLayout
             theme={resolvedTheme === 'dark' ? 'dark' : 'light'}

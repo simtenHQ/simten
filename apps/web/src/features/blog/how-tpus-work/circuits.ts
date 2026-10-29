@@ -643,8 +643,10 @@ export const Systolic3x3 = circuit('Systolic3x3', {
 });
 
 export const TestSystolic3x3 = circuit('TestSystolic3x3', {
-  // No ports: a circuit with ports is drawn inside a harness, as one box. The
-  // page reads `done_led.in` by its exact path.
+  // Formal `done` output port, asserts when the systolic array finishes its
+  // compute pipeline. The page reads it from `state.outputs`; `done_led`
+  // shows it on the canvas.
+  outputs: { done: bit },
   nodes: {
     sys: Systolic3x3,
     a00: Input({ value: 1 }),
@@ -678,6 +680,7 @@ export const TestSystolic3x3 = circuit('TestSystolic3x3', {
     done_led: Led,
   },
   connect: ({
+    outputs,
     nodes: {
       sys,
       a00,
@@ -739,7 +742,7 @@ export const TestSystolic3x3 = circuit('TestSystolic3x3', {
     sys.c20.to(display_c20.in),
     sys.c21.to(display_c21.in),
     sys.c22.to(display_c22.in),
-    sys.done.to(done_led.in),
+    sys.done.to(done_led.in, outputs.done),
   ],
 });
 

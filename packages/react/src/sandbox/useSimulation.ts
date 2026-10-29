@@ -13,9 +13,8 @@
  * `initialInputs`, `memory` or `history` opens a new session at cycle 0.
  *
  * Inputs are named as a person at the board sees them: input ports by name,
- * Switch and Input nodes by path. The session wraps a circuit with ports in a
- * harness of switches and lamps for the canvas to draw; `harness-keys.ts` maps
- * the names onto it.
+ * Switch and Input nodes by path. The session runs the circuit itself; the
+ * canvas draws its ports.
  *
  * A failed compile sets `state.compileError` and leaves the last good session
  * running. Source text recompiles 50 ms after it stops changing; the first
@@ -31,8 +30,6 @@ import type {
   MemoryContents,
   PeripheralValue,
 } from '@simten/core/internal';
-import { internalsOf } from '@simten/core/internal';
-import { HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
 import type { ExportResult, VerilogExportOptions } from '@simten/core/verilog';
 import {
   type Compiled,
@@ -42,7 +39,6 @@ import {
   type SimulationClientState,
 } from '@simten/sandbox';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
-import { type HarnessKeys, harnessKeys, sessionInputs } from './harness-keys.js';
 import { useSandboxClient } from './SandboxProvider.js';
 
 /** Source text, with the circuit to simulate picked by name or by a function. */
@@ -89,10 +85,9 @@ export interface SimulationState<Outs extends string = string> {
   /** The circuit's outputs by name. */
   outputs: Record<Outs, number>;
   /**
-   * Every port value, keyed `nodePath.port`, for the canvas and tooling. Paths
-   * are the session's, so a circuit with ports appears inside its harness
-   * (`dut.…`) and an output `sum` as the lamp it drives (`sum.in`). Null until
-   * the first state.
+   * Every port value, keyed `nodePath.port`, for the canvas and tooling: the
+   * circuit's own ports under `__top__` (`__top__.sum`), its nodes by path
+   * (`ha1.x.out`). Null until the first state.
    */
   portValues: ReadonlyMap<string, number> | null;
   /** Screens, consoles, UARTs and the memories behind them, by session path. */
@@ -106,7 +101,7 @@ export interface SimulationState<Outs extends string = string> {
   /** Where the history cursor is. */
   history: { length: number; index: number; isViewingPast: boolean };
 
-  /** The circuit the session runs, for the canvas: harnessed when it has ports. */
+  /** The circuit the session runs, for the canvas and tooling. */
   circuit: CircuitIR | null;
   /** The simulated circuit's name, as given to `circuit(...)`. */
   circuitName: string | null;
@@ -169,25 +164,6 @@ const NO_CIRCUITS: CircuitIR[] = [];
 const NO_OUTPUTS: Record<string, number> = {};
 const ignore = () => {};
 
-/** The parts a harness adds, which the compile's own definitions may not have. */
-let harnessParts: Map<string, CircuitIR> | null = null;
-function harnessPart(name: string): CircuitIR | undefined {
-  harnessParts ??= new Map(
-    [Switch, Led, Input(), Output, HexDisplay()].map((c) => {
-      const { ir } = internalsOf(c);
-      return [ir.name, ir];
-    }),
-  );
-  return harnessParts.get(name);
-}
-
-function withHarnessParts(definitions: CircuitDefinitions): CircuitDefinitions {
-  return {
-    resolveCircuit: (name) => definitions.resolveCircuit(name) ?? harnessPart(name),
-    getAllPrimitiveNames: () => definitions.getAllPrimitiveNames(),
-  };
-}
-
 function isSourceText(source: SimulationSource): source is SourceText {
   return typeof (source as { source?: unknown }).source === 'string';
 }
@@ -213,19 +189,12 @@ function pickCircuit(compiled: Compiled, choice: SourceText['circuit']): Circuit
   return compiled.circuits.at(-1) ?? compiled.exported.at(-1);
 }
 
-/** Outputs by name: the circuit's own, or the harness's displays. */
+/** The circuit's outputs by name. */
 function outputsOf(circuit: CircuitIR, ports: ReadonlyMap<string, number>): Record<string, number> {
   const outputs: Record<string, number> = {};
   for (const port of circuit.outputs) {
     const value = ports.get(`${TOP}.${port.name}`);
     if (value !== undefined) outputs[port.name] = value;
-  }
-  for (const node of circuit.nodes) {
-    if (!node.harness || (node.componentRef !== 'Led' && node.componentRef !== 'HexDisplay')) {
-      continue;
-    }
-    const value = ports.get(`${node.id}.in`);
-    if (value !== undefined) outputs[node.id] = value;
   }
   return outputs;
 }
@@ -257,7 +226,8 @@ interface Live {
   session: SimulationClient;
   compiled: Compiled;
   name: string;
-  keys: HarnessKeys;
+  /** The circuit's input port names, which read back from `__top__`. */
+  ports: ReadonlySet<string>;
 }
 
 /**
@@ -407,22 +377,11 @@ export function useSimulation(
       return;
     }
     const name = target.name;
-    let opening: Promise<SimulationClient>;
-    try {
-      // The starting values and memory, in the harness's terms.
-      const before = harnessKeys(target, compiled.definitions);
-      const start = initialInputs ? sessionInputs(before, initialInputs) : undefined;
-      const contents = memory
-        ? Object.fromEntries(Object.entries(memory).map(([path, c]) => [before.node(path), c]))
-        : undefined;
-      opening = client.open(
-        { compiled, circuit: name },
-        { harness: true, initialInputs: start, history, memory: contents },
-      );
-    } catch (e) {
-      setActionError(e instanceof Error ? e.message : String(e));
-      return;
-    }
+    const start = initialInputs as Record<string, number> | undefined;
+    const opening = client.open(
+      { compiled, circuit: name },
+      { initialInputs: start, history, memory },
+    );
     let cancelled = false;
     opening.then(
       (session) => {
@@ -431,8 +390,8 @@ export function useSimulation(
           return;
         }
         const previous = liveRef.current;
-        const keys = harnessKeys(target, compiled.definitions, session.circuit);
-        const next = { session, compiled, name, keys };
+        const ports = new Set(target.inputs.map((p) => p.name));
+        const next = { session, compiled, name, ports };
         liveRef.current = next;
         written.current.clear();
         setLive(next);
@@ -494,10 +453,7 @@ export function useSimulation(
     return client.onStatusChange(check);
   }, [client]);
 
-  const definitions = useMemo(
-    () => (session ? withHarnessParts(session.definitions) : null),
-    [session],
-  );
+  const definitions = useMemo(() => session?.definitions ?? null, [session]);
   const ports = current?.ports ?? null;
   const beforeFirstState = useMemo(() => zeroOutputs(built), [built]);
   const outputs = useMemo(
@@ -581,16 +537,15 @@ export function useSimulation(
      * remembered before it, unless a later write has replaced the value since.
      */
     function set(values: Partial<Record<string, number>>): Promise<void> {
-      return withSession(undefined, async ({ session: s, keys }) => {
+      return withSession(undefined, async ({ session: s }) => {
         const given: Record<string, number> = {};
         for (const [key, value] of Object.entries(values)) {
           if (value !== undefined) given[key] = value;
         }
-        const raw = sessionInputs(keys, given);
         const before = new Map(Object.keys(given).map((key) => [key, written.current.get(key)]));
         for (const [key, value] of Object.entries(given)) written.current.set(key, value);
         try {
-          if (Object.keys(raw).length > 0) await s.set(raw);
+          await s.set(given);
         } catch (e) {
           restoreWritten(written.current, given, before);
           throw e;
@@ -605,16 +560,10 @@ export function useSimulation(
         if (!opened) return Promise.resolve();
         // A Switch only changes when the page writes it, so the last write is
         // its value; the pushed state may not have caught up yet.
-        let now = written.current.get(name);
-        if (now === undefined) {
-          try {
-            const path = opened.keys.input(name);
-            now = path === null ? 0 : opened.session.getState().ports.get(`${path}.out`);
-          } catch (e) {
-            report(e);
-            return Promise.resolve();
-          }
-        }
+        const ports = opened.session.getState().ports;
+        const now =
+          written.current.get(name) ??
+          (opened.ports.has(name) ? ports.get(`${TOP}.${name}`) : ports.get(`${name}.out`));
         return set({ [name]: now === 1 ? 0 : 1 });
       },
       tick: (count = 1) => withSession(undefined, ({ session: s }) => s.tick(count)),
@@ -636,15 +585,10 @@ export function useSimulation(
       stepBack: () => withSession(false, ({ session: s }) => moved(s.stepBack())),
       stepForward: () => withSession(false, ({ session: s }) => moved(s.stepForward())),
       seek: (index) => withSession(false, ({ session: s }) => moved(s.seek(index))),
-      scan: (input, port, count) =>
-        withSession([], ({ session: s, keys }) => {
-          const path = keys.input(input);
-          if (path === null) return Promise.resolve(new Array<number>(count).fill(0));
-          return s.scan(path, port, count);
-        }),
+      scan: (input, port, count) => withSession([], ({ session: s }) => s.scan(input, port, count)),
       sample: (port, count, inputs) =>
-        withSession([], ({ session: s, keys }) =>
-          s.sample(port, count, inputs ? sessionInputs(keys, inputs) : undefined),
+        withSession([], ({ session: s }) =>
+          s.sample(port, count, inputs as Record<string, number> | undefined),
         ),
       exportVerilog: async (exportOptions) => {
         const sandbox = clientRef.current;

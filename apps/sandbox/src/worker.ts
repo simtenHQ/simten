@@ -383,8 +383,8 @@ async function compile(source: string, slotId: string = DEFAULT_SLOT): Promise<S
 }
 
 /**
- * Compile from Circuit IR rather than source, e.g. the auto-harnessed circuit
- * built on the page. Reuses the definitions and behavior of any slot compiled
+ * Compile from Circuit IR rather than source, e.g. a circuit built on the
+ * page. Reuses the definitions and behavior of any slot compiled
  * from source, so it can reference that slot's components; std's behavior is
  * the base under both.
  */

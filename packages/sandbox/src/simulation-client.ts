@@ -79,7 +79,7 @@ function fromUpdate(
 
 export class SimulationClient {
   readonly id: SessionId;
-  /** The simulated circuit as IR, harnessed if asked for. Fixed for the session's life. */
+  /** The simulated circuit as IR. Fixed for the session's life. */
   readonly circuit: CircuitIR;
   readonly definitions: CircuitDefinitions;
   readonly isSequential: boolean;

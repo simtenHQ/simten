@@ -2,8 +2,8 @@
  * Circuit definitions for the "Registers" learn page.
  *
  * DFlipFlop and Register come straight from the stdlib; they're already
- * the primitives the page is teaching, so we use them directly via the
- * embed's auto-harness rather than wrapping them. The Counter circuit
+ * the primitives the page is teaching, so we use them directly; the canvas
+ * draws their ports. The Counter circuit
  * does need a definition because it's a feedback composition (Register
  * + Adder + Constant loop) that demonstrates the capstone "first useful
  * sequential circuit" idea.

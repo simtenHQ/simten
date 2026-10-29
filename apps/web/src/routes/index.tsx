@@ -692,7 +692,7 @@ function DemoGallery() {
                     a: { x: 10, y: 10 },
                     b: { x: 10, y: 110 },
                     cin: { x: 10, y: 210 },
-                    dut: { x: 200, y: 100 },
+                    circuit: { x: 200, y: 100 },
                     sum: { x: 400, y: 40 },
                     cout: { x: 400, y: 200 },
                   }}
@@ -713,7 +713,7 @@ function DemoGallery() {
                 initialInputs={{ din: 1 }}
                 layout={{
                   din: { x: 10, y: 140 },
-                  dut: { x: 160, y: 120 },
+                  circuit: { x: 160, y: 120 },
                   q0: { x: 310, y: 20 },
                   q1: { x: 310, y: 100 },
                   q2: { x: 310, y: 180 },

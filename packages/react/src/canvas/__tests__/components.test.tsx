@@ -94,7 +94,7 @@ describe('CircuitCanvas', () => {
       fireEvent.click(a);
       await new Promise((r) => setTimeout(r, 20));
     });
-    await waitFor(() => expect(sim?.state.portValues?.get('a.out')).toBe(1));
+    await waitFor(() => expect(sim?.state.portValues?.get('__top__.a')).toBe(1));
   });
 
   it('shows the compile error when there is nothing to draw', async () => {

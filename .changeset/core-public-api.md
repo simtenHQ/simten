@@ -20,6 +20,7 @@ Public entry points: `@simten/core` (`circuit`, `bit`, `bus`, `reg`, `mem`, `sim
 | `@simten/core/examples/catalog` | `@simten/core/examples` |
 | `@simten/core/rtl` | removed (Verilog-import cells, used internally) |
 | `@simten/core/util/test-name` (`slugify`) | `@simten/core/internal` |
-| `executeCircuitCode`, `buildFromIR`, `circuitToSource`, `autoHarness`, `isSequentialCircuit` and the other non-builder exports of `/circuit` | `@simten/core/internal` |
+| `executeCircuitCode`, `buildFromIR`, `circuitToSource`, `isSequentialCircuit` and the other non-builder exports of `/circuit` | `@simten/core/internal` |
+| `autoHarness` | removed: `@simten/react`'s canvas draws a circuit's ports itself (#531) |
 | `getGrammarHandler`, `getCircuitAPISummary` | removed; the text lives in the MCP `get_grammar` tool |
 | `CircuitShape`, `PortRef`, `StateFieldType` (`/circuit`) | removed; they appear in no public signature |

@@ -15,7 +15,7 @@
  * shapes throw rather than silently mis-lift. `$dff` CLK is dropped — every
  * register shares simten's single simulation clock (single-clock only).
  *
- * Follows auto-harness.ts: pure Circuit IR construction, no code execution.
+ * Pure Circuit IR construction, no code execution.
  */
 
 import type { Behavior } from '../circuit/behavior.js';
