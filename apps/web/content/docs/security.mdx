@@ -15,7 +15,7 @@ Circuit code is arbitrary TypeScript. When you share a circuit or ask Claude to 
 
 When you type circuit code in the editor, it compiles and simulates inside a hidden `<iframe>` served from a separate origin (`sandbox.simtenusercontent.dev` in production, `localhost:3002` in development). The main app (`simten.dev` / `localhost:3001`) never executes user code directly, not even via `eval` or `new Function()`.
 
-This applies to every code-execution surface: the editor, the live playground, embed pages on `embed.simten.dev`, and `<CircuitEmbed>` from `@simten/react`. All of them route through the same sandbox.
+This applies to every code-execution surface: the editor, the live playground, embed pages on `embed.simten.dev`, and `useSimulation` from `@simten/react`. All of them route through the same sandbox.
 
 ### Two levels of isolation
 
@@ -120,7 +120,7 @@ A pathological lambda (for instance `eval: () => { while(1); }`) blocks only the
 
 ### postMessage boundary
 
-All communication between the main app and the sandbox crosses a `postMessage` boundary using structured-clone-safe data, with message types shared by both sides (`@simten/sandbox/protocol`). Each side accepts messages only from the other's window and origin: the page checks that a message came from its sandbox iframe at the sandbox origin, and the sandbox checks that it came from its parent window, at the parent's origin. Inside the sandbox, the iframe's main thread passes these messages to the worker and back unchanged. The main app only ever receives data: the circuit IR, port values and peripheral state. It never receives or runs user code. One exception runs the other way: `<CircuitEmbed>` sends its own components' lambdas to the sandbox as **source strings** (`fn.toString()`), and the worker rebuilds them with `new Function()`, so closure variables don't survive the trip.
+All communication between the main app and the sandbox crosses a `postMessage` boundary using structured-clone-safe data, with message types shared by both sides (`packages/sandbox/src/protocol.ts`, internal to `@simten/sandbox`). Each side accepts messages only from the other's window and origin: the page checks that a message came from its sandbox iframe at the sandbox origin, and the sandbox checks that it came from its parent window, at the parent's origin. Inside the sandbox, the iframe's main thread passes these messages to the worker and back unchanged. The main app only ever receives data: the circuit IR, port values and peripheral state. It never receives or runs user code. One exception runs the other way: `useSimulation` given a circuit built on the page sends its components' lambdas to the sandbox as **source strings** (`fn.toString()`), and the worker rebuilds them with `new Function()`, so closure variables don't survive the trip.
 
 ### npm imports
 
@@ -213,7 +213,7 @@ The served content is just the public editor bundle (no secrets); path requests 
 
 ## Automated invariant tests
 
-To prevent accidental re-introduction of unsafe code execution patterns in the main frame, the test suite includes invariant checks that scan all source files in `apps/web/src`, `apps/game/src`, `apps/embed-page/src` and `packages/react/src`:
+To prevent accidental re-introduction of unsafe code execution patterns in the main frame, the test suite includes invariant checks that scan all source files in `apps/web/src`, `apps/game/src`, `apps/embed-page/src`, `packages/react/src` and `packages/app-kit/src`:
 
 - No `new Function(` calls: the underlying primitive behind all dynamic code execution
 - No imports of `executeCircuitCode` or `executeJsCode`: the core functions that call `new Function()`

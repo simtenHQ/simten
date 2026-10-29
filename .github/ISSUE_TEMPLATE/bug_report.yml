@@ -18,7 +18,7 @@ body:
         - Circuit IR / builder (@simten/core/circuit)
         - Standard library primitive (@simten/core/std)
         - Verilog exporter (@simten/core/verilog)
-        - <CircuitEmbed>, canvas or React hooks (@simten/react)
+        - Canvas, clock controls or React hooks (@simten/react)
         - Sandbox client (@simten/sandbox)
         - Embed page (embed.simten.dev)
         - MCP server (@simten/mcp)

@@ -46,7 +46,7 @@ const HA_ROWS: Array<Array<number | string>> = [
  * TruthTable reads too. The card keeps its chrome; the table follows live
  * switch state from the same `state`.
  */
-export function Tier2EmbedWithCallback() {
+export function Tier2SharedState() {
   const simulation = useSimulation(HalfAdder);
   const activeRow = computeActiveRow(simulation.state.portValues, HA_COLUMNS, HA_ROWS);
 

@@ -12,9 +12,11 @@ import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
 const APP_SRC = join(__dirname, '..');
-// packages/react holds the embed and the React hooks over the sandbox, so it
+// packages/react holds the canvas and the React hooks over the sandbox, so it
 // is the package most likely to grow a violation.
 const REACT_SRC = join(__dirname, '../../../../packages/react/src');
+// packages/app-kit is code every app runs in its own frame.
+const APP_KIT_SRC = join(__dirname, '../../../../packages/app-kit/src');
 // The embed page renders shared source text, through the same sandbox.
 const EMBED_PAGE_SRC = join(__dirname, '../../../embed-page/src');
 // The game runs player code too, through the same sandbox.
@@ -59,12 +61,13 @@ describe('sandbox invariants', () => {
   const files = [
     ...collectSourceFiles(APP_SRC),
     ...collectSourceFiles(REACT_SRC),
+    ...collectSourceFiles(APP_KIT_SRC),
     ...collectSourceFiles(EMBED_PAGE_SRC),
     ...collectSourceFiles(GAME_SRC),
   ];
 
   it('scans every app and package that hosts the sandbox', () => {
-    for (const dir of [APP_SRC, REACT_SRC, EMBED_PAGE_SRC, GAME_SRC]) {
+    for (const dir of [APP_SRC, REACT_SRC, APP_KIT_SRC, EMBED_PAGE_SRC, GAME_SRC]) {
       expect(files.some((f) => f.startsWith(dir))).toBe(true);
     }
   });

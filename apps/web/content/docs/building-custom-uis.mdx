@@ -1,24 +1,20 @@
 ---
 title: Building custom UIs
-description: Four tiers, from drop-in <CircuitEmbed /> to full composition with useSimulation + CircuitCanvas.
+description: One simulation from useSimulation, shown with CircuitCanvas or with your own components.
 ---
 
-import { Tier2EmbedWithCallback, Tier4FullComposition } from '../../src/features/docs/CustomCompositionDemo'
+import { Tier2SharedState, Tier4FullComposition } from '../../src/features/docs/CustomCompositionDemo'
 
-`<CircuitEmbed />` is the default for putting an interactive circuit
-on a page. When you need more (a sibling that reacts to switch
-toggles, a custom HUD, a debugger driving the sim), the same
-primitives are available; you compose them yourself.
+`useSimulation` runs a circuit in the sandbox and returns `{ state, actions }`.
+`state` is what the circuit is doing now; `actions` is what you can tell it
+to do. Everything on this page is a different way to show that one
+simulation, or to drive it, from your React UI. Pick the simplest one that
+gives you what you need.
 
-The simulator runs in pure JavaScript inside the sandbox iframe,
-independent of any rendering. Each tier below is a different way for
-your React UI to subscribe to its state and write inputs back. Pick
-the highest one that gives you what you need.
-
-These tiers all take a circuit you already have. If instead you want
-users to *edit source* and watch it simulate live, an editor beside a
-canvas, see [Code Editor](/docs/code-editor), which pairs
-`SimtenCodeEditor` with `useSimulation`.
+These all take a circuit you already have. If instead you want users to
+*edit source* and watch it simulate live, an editor beside a canvas, see
+[Code Editor](/docs/code-editor), which pairs `CodeEditor` with
+`useSimulation`.
 
 ## Embed a circuit
 
@@ -48,53 +44,50 @@ opens it in the editor in a new tab. Share links don't expire, so an
 embed keeps working. How the embed page is isolated is in
 [Security](/docs/security#embed-pages).
 
-## Tier 1: Drop-in `<CircuitEmbed />`
+## Tier 1: The canvas
 
-The default. One component, sensible defaults, identical look across
-every page on simten.dev. Use this unless you need something it
-doesn't give you.
+The default. `CircuitCanvas` draws the simulation, with a switch for each
+input and a light for each output, and shows its own loading and error
+states. `ClockControls` renders nothing for a circuit without a clock, so
+it's safe to put next to any canvas.
 
 ```tsx
-import { CircuitEmbed } from '@simten/react/embed'
+import '@simten/react/styles.css'
+import { CircuitCanvas, ClockControls, useSimulation } from '@simten/react'
 
-<CircuitEmbed
-  circuit={MyCircuit}
-  title="Half adder"
-  description="Two switches → XOR for the sum, AND for the carry."
-/>
+function HalfAdderDemo() {
+  const sim = useSimulation(HalfAdder)
+  return (
+    <>
+      <CircuitCanvas simulation={sim} height={300} />
+      <ClockControls simulation={sim} />
+    </>
+  )
+}
 ```
 
-No state out, no imperative control, just a self-contained
-interactive embed.
+Clicking a switch calls the simulation's actions, and double-clicking a
+component opens its insides. The cards around circuits on simten.dev are
+this, with a title bar and a Fork button that belong to the site.
 
-Every page in [Examples](/docs/examples) uses this pattern, as do
-most inline circuits across the `/blog/*` posts.
+## Tier 2: Siblings read the same state
 
-## Tier 2: Read sim state with `onPortValuesChange`
-
-When you want a sibling component to react to the embed's live state
-(e.g. a truth-table highlight that follows the user's switch toggles,
-or an external readout of a specific port value), pass an
-`onPortValuesChange` callback. The embed fires it once when the sim
-first settles, then again on every subsequent settled change.
+When another component should react to the circuit (a truth-table row
+that follows the switches, a readout of one output), give it the same
+`state`. There's one simulation, so the canvas and the table can't
+disagree.
 
 ```tsx
-import { useState } from 'react'
-import { CircuitEmbed } from '@simten/react/embed'
-import type { FlatPortValueMap } from '@simten/react/embed'
+import { CircuitCanvas, useSimulation } from '@simten/react'
 import { TruthTable, computeActiveRow } from '@/components/TruthTable'
 
 function HalfAdderWithLiveTable() {
-  const [portValues, setPortValues] = useState<FlatPortValueMap | null>(null)
-  const activeRow = computeActiveRow(portValues, COLUMNS, ROWS)
+  const sim = useSimulation(HalfAdder)
+  const activeRow = computeActiveRow(sim.state.portValues, COLUMNS, ROWS)
 
   return (
     <>
-      <CircuitEmbed
-        circuit={HalfAdder}
-        title="Half adder"
-        onPortValuesChange={setPortValues}
-      />
+      <CircuitCanvas simulation={sim} height={300} />
       <TruthTable columns={COLUMNS} rows={ROWS} highlightRow={activeRow} />
     </>
   )
@@ -103,182 +96,100 @@ function HalfAdderWithLiveTable() {
 
 **Live demo**: toggle the switches:
 
-<Tier2EmbedWithCallback />
+<Tier2SharedState />
 
-The callback is captured in a ref inside the embed, so inline
-functions like `onPortValuesChange={(pv) => setX(pv)}` are safe, since they
-won't cause spurious re-fires across parent renders.
-
-### Firing semantics
-
-A few things worth knowing about *when* the callback fires:
-
-- **First fire**: once the embed's internal simulator becomes ready
-  and port values have first settled. Before that, the callback
-  doesn't fire and your `useState<FlatPortValueMap | null>(null)`
-  stays at `null` for one paint. Plan for that initial frame in your
-  rendering (e.g. `computeActiveRow` returns `undefined` cleanly when
-  port values are absent).
-- **Subsequent fires**: only on settled (post-propagation) states.
-  The simulator never exposes intermediate propagation states, so
-  there's no risk of flicker from mid-propagation values.
-- **Reference identity**: the port-values `Map` is *not* guaranteed
-  to be a stable reference across no-op ticks. Sequential auto-run
-  loops can emit new `Map` instances with unchanged contents. If
-  you're doing expensive derived work, memoize on the actual values
-  you care about rather than on the `Map` reference itself.
+`state.outputs` has the circuit's outputs by name (`sim.state.outputs.sum`),
+typed from the circuit. `state` is a new object on every update and holds
+only settled values: the sandbox never reports a circuit halfway through
+propagating. Before the first update `state.ready` is false and
+`portValues` is null, so plan for that first frame.
 
 The [`/learn/adders`](/learn/adders) page uses this for its live truth
-tables: toggle switches on the half-adder or full-adder, watch the
-matching row in the table light up.
+tables.
 
-## Tier 3: Write into the sim with the imperative handle
+## Tier 3: Siblings drive it
 
-When a sibling needs to *drive* the embed (e.g. clicking a row in a
-truth table should set the canvas switches to that combination), use
-the existing `ref` handle. No new API required.
+When something outside the canvas should change the inputs (clicking a
+row in a truth table sets the switches to that combination), call the
+same `actions`:
 
 ```tsx
-import { useRef } from 'react'
-import { CircuitEmbed, type CircuitEmbedHandle } from '@simten/react/embed'
-
-function HalfAdderDrivenByTable() {
-  const embedRef = useRef<CircuitEmbedHandle>(null)
-
-  return (
-    <>
-      <CircuitEmbed ref={embedRef} circuit={HalfAdder} />
-      <TruthTable
-        ...
-        onRowClick={(row) => {
-          embedRef.current?.setNodeValue('a', row[0])
-          embedRef.current?.setNodeValue('b', row[1])
-        }}
-      />
-    </>
-  )
-}
+<TruthTable
+  ...
+  onRowClick={(row) => void sim.actions.set({ a: row[0], b: row[1] })}
+/>
 ```
 
-Pair tier 2 (read out) and tier 3 (write in) to get bidirectional
-binding between the embed and any sibling UI you write.
+`set` takes input port names and the paths of Switch and Input nodes, the
+things a person at the board could change, and writes them all before the
+circuit settles, so nothing sees them change one at a time. `toggle('a')`
+flips one 1-bit input. A key that names anything else, a register say, is
+an error, reported in `state.error`.
 
-No page on simten.dev currently needs tier 3, but the API is available
-but nothing's using it yet. The most likely first consumer would be a
-clickable truth table that drives the embed's switches from the table
-side.
+## Tier 4: No canvas at all
 
-## Tier 4: Full composition
-
-When you want to break out of the embed's chrome entirely and build
-your own frontend on top of the simulator, drop down to the underlying
-primitives. `useSimulation` from `@simten/react/sandbox` gives you the
-live state and the actions; render whatever React you want with them.
-The circuit becomes your engine, your component is the UI.
+When the schematic isn't what you want to show, leave `CircuitCanvas`
+out and render whatever React you want from `state` and `actions`. The
+circuit becomes your engine; your component is the UI.
 
 ```tsx
-import { useSimulation } from '@simten/react/sandbox'
-import { TruthTable, computeActiveRow } from '@/components/TruthTable'
+import { useSimulation } from '@simten/react'
 
 function HalfAdderWithCustomControls() {
-  const { state, actions } = useSimulation(HalfAdder, { harness: true })
-  const a = readPortBit(state.portValues, 'a')
-  const b = readPortBit(state.portValues, 'b')
-  const sum = readPortBit(state.portValues, 'sum')
-  const carry = readPortBit(state.portValues, 'carry')
+  const { state, actions } = useSimulation(HalfAdder)
+  const { sum, carry } = state.outputs
 
   return (
     <>
-      {/* Custom toggle buttons flip the harness's switches */}
-      <ToggleControl value={a} onToggle={() => actions.setInput('a', a ? 0 : 1)} />
-      <ToggleControl value={b} onToggle={() => actions.setInput('b', b ? 0 : 1)} />
-
-      {/* Styled LED readouts pull from state.portValues */}
+      <ToggleControl label="a" onToggle={() => actions.toggle('a')} />
+      <ToggleControl label="b" onToggle={() => actions.toggle('b')} />
       <LedReadout lit={sum === 1} label="sum" />
       <LedReadout lit={carry === 1} label="carry" />
-
-      <TruthTable
-        columns={COLUMNS}
-        rows={ROWS}
-        highlightRow={computeActiveRow(state.portValues, COLUMNS, ROWS)}
-      />
     </>
   )
 }
 ```
 
-`actions.setInput` writes switches and input nodes only, the things a
-person at the board could change. `actions.setInputs({ a: 1, b: 0 })`
-writes several before the circuit settles, so nothing sees them change
-one at a time. To drive a bare circuit's own inputs without a harness,
-use `actions.set({ a: 1 })`.
-
-**Live demo**: same `HalfAdder` circuit as tier 2, but rendered as
-custom toggle buttons and LED indicators instead of a schematic. No
-`CircuitCanvas` anywhere in this tree:
+**Live demo**: the same `HalfAdder` as tier 2, rendered as toggle buttons
+and LED indicators instead of a schematic:
 
 <Tier4FullComposition />
 
-The single `useSimulation(HalfAdder)` call opens one simulation in the
-sandbox. Custom UI reads from `state.portValues` and writes through
-`actions.setInput`; the truth table reads from the same map. One
-simulation, many consumers, all of them yours.
-
-The simulator is still doing real work: compiling, propagating,
-exposing port values through the sandbox iframe like every other
-tier. You could equally render nothing at all and use it purely as a
-background computation engine (a headless test harness, a checksum
-verifier, an audio-rate signal generator wired to WebAudio).
-
-Tier 4 is the right choice when:
-
-- The schematic isn't what you want to show. A game frontend, a
-  calculator UI, a hex memory editor, an animated state-machine
-  diagram, anything where the canvas would be the wrong artifact.
-- You want chrome that's meaningfully different from `CircuitEmbed`'s
-  card and you'd rather render `<CircuitCanvas>` directly with no
-  wrapping (it's also a public export, same composition, with the
-  canvas).
-- You're rendering multiple circuits in a single composed panel where
-  layout coordination matters.
-- You're building a debugger / IDE-like surface that wants to expose
-  sim actions to many sibling UIs.
-
-For most pages, tier 2 is enough.
+The simulator is still doing real work: compiling, propagating and
+reporting values through the sandbox iframe. You could equally render
+nothing at all and use it as a background engine (a checksum verifier,
+an audio-rate signal generator wired to WebAudio).
 
 Two examples of tier 4 on simten.dev itself:
 
 - [Snake](/blog/snake-in-hardware): the circuit *is* the game
   engine (`DualPortRAM` framebuffer, 4-phase pipeline, collision
   detection); the React component renders a custom 8×8 pixel grid +
-  D-pad + speed slider on top of the sim. No `CircuitCanvas` shown
-  at all, and the schematic is invisible to the player. Pure proof that
-  the simulator can drive any frontend.
+  D-pad + speed slider on top of the sim.
 - [RV32I CPU debugger](/cpu/rv32i): a 5-stage pipelined RISC-V
-  processor on the engine side, with a bespoke debugger UI on top:
-  register file, memory view, pipeline-stage indicators, instruction
-  stream. Compile C / Rust / asm in-browser and step through
-  execution cycle by cycle.
+  processor on the engine side, with a debugger UI on top: register
+  file, memory view, pipeline-stage indicators, instruction stream.
+
+## One sandbox per page
+
+Every `useSimulation` on a page shares one sandbox, created by the first
+one. Each circuit is a session in it, with its own state. A
+`SandboxProvider` with no client gives everything under it a sandbox of
+its own, which is worth it only for a heavy circuit that should run on
+its own core.
 
 ## Security
 
-Composing the primitives directly doesn't bypass anything;
-`useSimulation` routes every tier's simulation work through
-the same cross-origin sandbox iframe that `<CircuitEmbed />` uses
-internally. See [Security architecture](/docs/security) for the
-full picture (origin isolation, Web Worker thread isolation, CSP,
-postMessage boundary).
+Composing the pieces yourself doesn't bypass anything: `useSimulation`
+routes every simulation through the same cross-origin sandbox iframe.
+See [Security architecture](/docs/security) for the full picture (origin
+isolation, Web Worker thread isolation, CSP, postMessage boundary).
 
 ## Which tier do I pick?
 
 | Tier | Pick when | API |
 |---|---|---|
-| 1 | You just want a circuit on a page | `<CircuitEmbed circuit={X} />` |
-| 2 | A sibling reacts to switch toggles | `<CircuitEmbed onPortValuesChange={...} />` |
-| 3 | A sibling drives the switches | `ref={...}` + `setNodeValue` |
-| 4 | You want fully custom chrome / layout | `useSimulation` + `CircuitCanvas` |
-
-Most production simten.dev pages use tier 1. The `/learn/adders` half-
-and full-adder sections use tier 2 (live truth tables). Tier 3 isn't
-currently used in the public site but the API is there. Tier 4 is the
-escape hatch; keep it in mind for when you outgrow the canned embed.
+| 1 | You want a circuit on a page | `useSimulation` + `CircuitCanvas` + `ClockControls` |
+| 2 | A sibling reacts to the circuit | read `state` |
+| 3 | A sibling drives the circuit | call `actions.set` |
+| 4 | You want your own frontend | `state` and `actions`, no canvas |

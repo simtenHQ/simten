@@ -34,14 +34,6 @@ export interface InspectorFrame {
   reference?: { instance: string; circuit: Circuit };
 }
 
-/** Screen rect of the node that triggered the dialog (for animate-from-origin) */
-interface OriginRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 // --- Layout metadata types ---
 
 interface Position {
