@@ -36,6 +36,12 @@ import { VerilogImportSheet } from './VerilogImportSheet';
 /** Why the panels clip with an inline style: see the panel layout below. */
 const CLIP = { overflow: 'hidden' } as const;
 
+/** The canvas's dot grid (React Flow's `Background`: 1px dots every 20px), behind the example picker. */
+const EMPTY_CANVAS_DOTS = {
+  backgroundImage: 'radial-gradient(circle, var(--embed-dot-color) 1px, transparent 1px)',
+  backgroundSize: '20px 20px',
+} as const;
+
 /** No programs loaded. One object, so clearing twice doesn't reopen the session. */
 const NO_MEMORY: Record<string, MemoryContents> = {};
 
@@ -383,7 +389,7 @@ export function EditorWorkspace({
   // With no code there's nothing to compile, so the example picker stands in.
   const canvas =
     codeEmpty && !state.ready ? (
-      <div className="relative h-full bg-[var(--embed-bg-primary)]">
+      <div className="relative h-full bg-[var(--embed-bg-primary)]" style={EMPTY_CANVAS_DOTS}>
         {bootDone && renderEmptyState()}
       </div>
     ) : (

@@ -358,15 +358,16 @@ function NpmBentoVisual() {
 // "Drop-in embeds": static IDE card showing the import + the JSX usage.
 // Mirrors the snippet in the embed CTA section further down the page so
 // the reader sees the same shape in both places.
-const EMBED_SNIPPET = `import { CircuitCard } from '@/components/CircuitCard';
+const EMBED_SNIPPET = `import { CircuitCanvas, useSimulation } from '@simten/react';
 import { HalfAdder } from './half-adder';
 
-// Live, interactive hardware in three lines.
+// Live, interactive hardware in a few lines.
 export default function Post() {
+  const sim = useSimulation(HalfAdder);
   return (
     <article>
       <p>Here's a half adder you can poke at:</p>
-      <CircuitCard circuit={HalfAdder} />
+      <CircuitCanvas simulation={sim} />
     </article>
   );
 }`;
