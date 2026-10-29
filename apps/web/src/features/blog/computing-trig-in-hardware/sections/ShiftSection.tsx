@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { CORDIC_CIRCUITS } from '../circuits';
 
 export function ShiftSection() {
@@ -24,7 +24,7 @@ export function ShiftSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={entry.circuit}
           showControls={false}
           title={entry.name}

@@ -1,0 +1,49 @@
+{
+  "name": "@simten/app-kit",
+  "version": "0.0.0",
+  "private": true,
+  "description": "What simten.dev, the game and the embed page share: UI primitives, share links, the Fork button and the theme. Never published.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "sideEffects": [
+    "*.css"
+  ],
+  "exports": {
+    "./primitives/button": "./src/primitives/button.tsx",
+    "./primitives/dialog": "./src/primitives/dialog.tsx",
+    "./primitives/resizable": "./src/primitives/resizable.tsx",
+    "./primitives/sheet": "./src/primitives/sheet.tsx",
+    "./primitives/tooltip": "./src/primitives/tooltip.tsx",
+    "./share": "./src/share/index.ts",
+    "./fork": "./src/fork/index.ts",
+    "./error-display": "./src/ErrorDisplay.tsx",
+    "./composite-badge": "./src/CompositeBadge.tsx",
+    "./theme.css": "./src/theme.css"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "typecheck:tests": "tsc --noEmit -p tsconfig.check.json"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.1.15",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^0.562.0",
+    "lz-string": "^1.5.0",
+    "radix-ui": "^1.4.3",
+    "react-resizable-panels": "^4.11.1",
+    "tailwind-merge": "^3.4.0"
+  },
+  "peerDependencies": {
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4.1.18",
+    "typescript": "^5",
+    "vitest": "^5.0.5"
+  }
+}

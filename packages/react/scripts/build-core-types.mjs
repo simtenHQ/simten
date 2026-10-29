@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 //
-// Generates src/monaco/generated/core-types.gen.ts — the `@simten/core` type
+// Generates src/code-editor/generated/core-types.gen.ts — the `@simten/core` type
 // payloads inlined as string constants, ready to hand to Monaco's addExtraLib.
 //
 // Only @simten/react/monaco imports the output, and it costs every other subpath
@@ -29,7 +29,7 @@ import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const coreDist = join(here, '..', '..', 'core', 'dist');
-const outDir = join(here, '..', 'src', 'monaco', 'generated');
+const outDir = join(here, '..', 'src', 'code-editor', 'generated');
 const outPath = join(outDir, 'core-types.gen.ts');
 
 /** @param {string} p */

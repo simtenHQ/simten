@@ -6,8 +6,9 @@
  * lights, and each row ticks off as it passes. The proof is the machine
  * running, which is the thing they actually built.
  *
- * The harness names each Switch node after the port it feeds
- * (auto-harness.ts:70), so a vector's input names are already the node ids.
+ * A vector's input names are what the simulation's `set` takes, whether the
+ * level's inputs are ports or switches, and a whole row is set in one call, so
+ * a latch sees its inputs change together, as the grader writes them.
  *
  * Runs are cancellable by token because the source can change mid-sequence,
  * an edit invalidates the verdict, and a half-finished run writing to state
@@ -33,7 +34,7 @@ interface VictoryRun {
 
 export function useVictoryRun(
   vectors: Vector[],
-  drive: (nodeId: string, value: number) => Promise<unknown> | unknown,
+  drive: (inputs: Record<string, number>) => Promise<unknown> | unknown,
   tick: () => void,
 ): VictoryRun {
   const [active, setActive] = useState<number | null>(null);
@@ -69,9 +70,7 @@ export function useVictoryRun(
       for (let i = 0; i < vectors.length; i++) {
         if (token.current !== mine) return;
         setActive(i);
-        for (const [name, value] of Object.entries(vectors[i].inputs)) {
-          await driveRef.current(name, value);
-        }
+        await driveRef.current(vectors[i].inputs);
         // Then a clock edge, exactly as the grader does for every vector.
         //
         // Driving inputs propagates but does not advance a clock, so without

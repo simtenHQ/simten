@@ -3,7 +3,7 @@ import {
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
-} from '@simten/react/primitives/tooltip';
+} from '@simten/app-kit/primitives/tooltip';
 import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { SiteHeader } from '@/components/SiteHeader';
 import { explainInstruction } from './rv32i-explain';

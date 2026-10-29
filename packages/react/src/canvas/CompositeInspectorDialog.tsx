@@ -20,11 +20,10 @@ import type { CircuitDefinitions } from '@simten/core/internal';
 import React, { useCallback, useEffect, useMemo } from 'react';
 import type { NodeData } from '../nodes';
 import type { UseSimulationResult } from '../sandbox/useSimulation';
-import { CircuitCanvas } from './CircuitCanvas';
 import { ClockControls } from './ClockControls';
 import { createDrillDownViewCircuit, scopePortValues } from './drill-down-view';
 import { resolveDrillTarget } from './drill-target';
-import { EDGE_TYPES, NODE_TYPES } from './node-types';
+import { FlowCanvas } from './FlowCanvas';
 import type { InspectorFrame } from './types';
 import { useReferenceSession } from './useReferenceSession';
 
@@ -74,41 +73,15 @@ function InspectorCanvas({
   // No onToggleNode or onSetNodeValue: the boundary switches and inputs render
   // as indicators, and nothing here writes to the circuit.
   return (
-    <CircuitCanvas
+    <FlowCanvas
       circuit={viewCircuit}
       definitions={definitions}
       portValues={portValues}
       peripheralState={null}
       onNodeDoubleClick={handleNodeDoubleClick}
-      nodeTypes={NODE_TYPES}
-      edgeTypes={EDGE_TYPES}
       theme={theme}
-      showControls
       height="100%"
       panOnMobile
-    />
-  );
-}
-
-/** The main session's clock, since the modal covers the canvas's own controls. */
-function MainClock({ simulation }: { simulation: UseSimulationResult }) {
-  const { state, history, actions } = simulation;
-  return (
-    <ClockControls
-      floating
-      cycle={state.cycle}
-      historyLength={history.length}
-      historyIndex={history.index}
-      isRunning={state.isRunning}
-      isViewingPast={history.isViewingPast}
-      onStep={() => void actions.tick()}
-      onRun={() => void actions.run()}
-      onPause={() => void actions.pause()}
-      onReset={() => void actions.reset()}
-      onStepBack={() => void actions.stepBack()}
-      onStepForward={() => void actions.stepForward()}
-      onSeek={(index) => void actions.seek(index)}
-      showScrubber={history.length > 1}
     />
   );
 }
@@ -163,7 +136,7 @@ function InspectorBreadcrumb({ stack, onNavigate, theme = 'dark' }: BreadcrumbPr
 
 // ── Main dialog component (props-driven) ──
 
-export interface CompositeInspectorDialogProps {
+interface CompositeInspectorDialogProps {
   stack: InspectorFrame[];
   definitions: CircuitDefinitions;
   /** The simulation the canvas is showing. Null draws structure with no values. */
@@ -297,7 +270,8 @@ export function CompositeInspectorDialog({
                 theme={theme}
               />
             </div>
-            {simulation?.state.isSequential && <MainClock simulation={simulation} />}
+            {/* The main session's clock, since the modal covers the canvas's own controls. */}
+            {simulation && <ClockControls simulation={simulation} floating showScrubber />}
             {reference.error && (
               <div className="absolute inset-x-0 bottom-3 mx-auto w-fit rounded bg-red-950/80 px-3 py-1.5 text-xs text-red-200">
                 The reference build didn't run: {reference.error}

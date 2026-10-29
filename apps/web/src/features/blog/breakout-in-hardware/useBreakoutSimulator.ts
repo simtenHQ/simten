@@ -1,20 +1,18 @@
-import { useSimulation } from '@simten/react/sandbox';
+import { useSimulation } from '@simten/react';
 import { useCallback, useEffect, useState } from 'react';
-import { cyclesPerSecond, useAutoRun } from '@/lib/auto-run';
+import { useAutoRun } from '@/lib/auto-run';
 import { Breakout } from './circuits';
 
 const PIXELS = 512; // 32x16 combinational raster readout
 // ms between game ticks. The ball moves every 4 ticks and the paddle every 2,
 // so a smaller value = faster play. ~35ms → ball ≈ 7 cells/s, paddle ≈ 14.
 const TICK_MS = 35;
-// Harnessed, so `scan_addr`, `keyboard` and `game_en` are input nodes the page
-// can drive, and the outputs are read off their displays.
-const OPTIONS = { harness: true, speed: cyclesPerSecond(TICK_MS) };
-
 export function useBreakoutSimulator() {
-  const sim = useSimulation(Breakout, OPTIONS);
+  // `scan_addr`, `keyboard` and `game_en` are input ports the page sets by
+  // name. The canvas draws each output as a display, which `scan` reads.
+  const sim = useSimulation(Breakout);
   const { state, actions } = sim;
-  const { isRunning, setIsRunning } = useAutoRun(sim);
+  const { isRunning, setIsRunning } = useAutoRun(sim, TICK_MS);
   const [pixels, setPixels] = useState<number[]>(new Array(PIXELS).fill(0));
 
   // Refresh the screen after every tick: sweep scan_addr 0..511 and read
@@ -35,7 +33,7 @@ export function useBreakoutSimulator() {
   // per tick (we throttle the tick rate). On the FPGA this input is pulsed at
   // ~30 Hz instead, while the clock and the wall-fill FSM run at full speed.
   useEffect(() => {
-    if (state.ready) void actions.setInput('game_en', 1);
+    if (state.ready) void actions.set({ game_en: 1 });
   }, [state.ready, actions]);
 
   // Paddle input on the top-level `keyboard` bus: 75 = left, 77 = right, 0 = released.
@@ -45,13 +43,13 @@ export function useBreakoutSimulator() {
       const code = keyMap[e.key];
       if (code !== undefined) {
         e.preventDefault();
-        void actions.setInput('keyboard', code);
+        void actions.set({ keyboard: code });
       }
     };
     const handleKeyUp = (e: KeyboardEvent) => {
       if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
         e.preventDefault();
-        void actions.setInput('keyboard', 0);
+        void actions.set({ keyboard: 0 });
       }
     };
     window.addEventListener('keydown', handleKeyDown);
@@ -85,7 +83,7 @@ export function useBreakoutSimulator() {
 
   const sendDirection = useCallback(
     (code: number) => {
-      void actions.setInput('keyboard', code);
+      void actions.set({ keyboard: code });
     },
     [actions],
   );

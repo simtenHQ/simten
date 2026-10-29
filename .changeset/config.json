@@ -8,14 +8,15 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@simten/web",
-    "@simten/game",
-    "@simten/embed-page",
-    "@simten/sandbox-app",
+    "@simten/app-kit",
     "@simten/compiler",
-    "@simten/verifier",
-    "@simten/synth",
+    "@simten/demos",
+    "@simten/embed-page",
+    "@simten/game",
     "@simten/hardware-ulx3s",
-    "@simten/demos"
+    "@simten/sandbox-app",
+    "@simten/synth",
+    "@simten/verifier",
+    "@simten/web"
   ]
 }

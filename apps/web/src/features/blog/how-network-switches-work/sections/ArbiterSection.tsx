@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { SWITCH_CIRCUITS } from '../circuits';
 
 export function ArbiterSection() {
@@ -28,7 +28,7 @@ export function ArbiterSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={entry.circuit}
           showControls={false}
           title={entry.name}

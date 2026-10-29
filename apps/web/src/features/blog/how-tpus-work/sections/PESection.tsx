@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { TPU_CIRCUITS } from '../circuits';
 
 export function PESection() {
@@ -51,11 +51,10 @@ export function PESection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={TPU_CIRCUITS.processingElement.circuit}
           layout={TPU_CIRCUITS.processingElement.layout}
           showControls
-          autoRunSpeed={400}
           title="Processing Element (PE_Systolic)"
           description="Load a weight (set valid, tick), then tick again to see registered partial-sum output."
         />

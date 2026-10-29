@@ -1,5 +1,5 @@
 import { Register } from '@simten/core/std';
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 
 export function RegisterSection() {
   return (
@@ -30,7 +30,7 @@ export function RegisterSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={Register({ width: 4 })}
           title="4-bit register"
           description="data + we → q on clock tick. Hold we low and the register ignores data changes."

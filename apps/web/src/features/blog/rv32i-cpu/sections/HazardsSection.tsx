@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { BLOG_CIRCUITS } from '../circuits';
 
 export function HazardsSection() {
@@ -90,7 +90,7 @@ export function HazardsSection() {
           forwarding unit sets these bits automatically by comparing register addresses across
           pipeline stages.
         </p>
-        <CircuitEmbed
+        <CircuitCard
           circuit={BLOG_CIRCUITS.forwardingMux.circuit}
           title="Forwarding Mux"
           description="sel: 00=register 01=EX forward 10=MEM forward"

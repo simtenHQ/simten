@@ -17,7 +17,7 @@
  * nothing.
  */
 
-import type { SimulationActions } from '@simten/react/sandbox';
+import type { SimulationActions } from '@simten/react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { BEAT_SAMPLES, incFor, SAMPLE_RATE, SCORE } from './circuits';
 
@@ -67,7 +67,8 @@ export function useLiveVoice(sample: SimulationActions['sample'], controls: Voic
     // trig is high for the first sample of a note only, a one-tick gate, so it
     // gets a run of its own.
     const count = pos.sample === 0 ? 1 : Math.min(CHUNK_SAMPLES, remaining);
-    const raw = await sample('__top__.audio', count, {
+    // The canvas draws the `audio` output as a display, so its value is that display's input.
+    const raw = await sample('audio.in', count, {
       inc: incFor(note.hz),
       trig: pos.sample === 0 ? 1 : 0,
       wave: controlsRef.current.wave,

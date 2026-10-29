@@ -1,5 +1,4 @@
-import { ShareCircuitProvider } from '@simten/react/embed';
-import { SandboxProvider } from '@simten/react/sandbox';
+import { ShareCircuitProvider } from '@simten/app-kit/fork';
 import {
   createRootRoute,
   HeadContent,
@@ -114,15 +113,12 @@ function RootComponent() {
       <body className="bg-background antialiased">
         <RootProvider search={{ preload: false }}>
           <ThemeProvider defaultTheme="dark">
-            <SandboxProvider>
-              <ShareCircuitProvider value={shareCircuitFn}>
-                {!skipDefaultChrome && (
-                  <SiteHeader contained={isLanding} right={<SiteNavLinks />} />
-                )}
-                <Outlet />
-                {!skipDefaultChrome && <SiteFooter />}
-              </ShareCircuitProvider>
-            </SandboxProvider>
+            {/* Circuits share the page-wide sandbox @simten/react makes for the first one. */}
+            <ShareCircuitProvider value={shareCircuitFn}>
+              {!skipDefaultChrome && <SiteHeader contained={isLanding} right={<SiteNavLinks />} />}
+              <Outlet />
+              {!skipDefaultChrome && <SiteFooter />}
+            </ShareCircuitProvider>
           </ThemeProvider>
         </RootProvider>
         <Scripts />

@@ -7,14 +7,14 @@
 
 'use client';
 
-import { Button } from '@simten/react/primitives/button';
+import { Button } from '@simten/app-kit/primitives/button';
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-} from '@simten/react/primitives/dialog';
+} from '@simten/app-kit/primitives/dialog';
 import { Check, Copy, Loader2 } from 'lucide-react';
 import { type ReactNode, useCallback, useEffect, useState } from 'react';
 import { extractCircuitName } from '@/lib/extract-circuit-name';

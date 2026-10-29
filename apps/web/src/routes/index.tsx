@@ -1,8 +1,8 @@
 import { bit, circuit } from '@simten/core/circuit';
 import { And, DFlipFlop, Or, Xor } from '@simten/core/std';
-import { CircuitEmbed } from '@simten/react/embed';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { CircuitCard } from '@/components/CircuitCard';
 import { Container } from '@/components/Container';
 import { HighlightedCode } from '@/components/HighlightedCode';
 import { Section, SectionHeading } from '@/components/SectionHeading';
@@ -358,7 +358,7 @@ function NpmBentoVisual() {
 // "Drop-in embeds": static IDE card showing the import + the JSX usage.
 // Mirrors the snippet in the embed CTA section further down the page so
 // the reader sees the same shape in both places.
-const EMBED_SNIPPET = `import { CircuitEmbed } from '@simten/react/embed';
+const EMBED_SNIPPET = `import { CircuitCard } from '@/components/CircuitCard';
 import { HalfAdder } from './half-adder';
 
 // Live, interactive hardware in three lines.
@@ -366,7 +366,7 @@ export default function Post() {
   return (
     <article>
       <p>Here's a half adder you can poke at:</p>
-      <CircuitEmbed circuit={HalfAdder} />
+      <CircuitCard circuit={HalfAdder} />
     </article>
   );
 }`;
@@ -684,7 +684,7 @@ function DemoGallery() {
 
               {/* Right: live circuit */}
               <div style={{ height: 320 }}>
-                <CircuitEmbed
+                <CircuitCard
                   circuit={DrilldownFullAdder}
                   height={320}
                   layout={{
@@ -706,7 +706,7 @@ function DemoGallery() {
           <div className="rounded-lg border border-border overflow-hidden bg-card">
             <div className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr]">
               {/* Left: live circuit with full clock controls + time-travel */}
-              <CircuitEmbed
+              <CircuitCard
                 circuit={ShiftRegister4}
                 height={340}
                 initialInputs={{ din: 1 }}

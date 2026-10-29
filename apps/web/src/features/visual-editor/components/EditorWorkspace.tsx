@@ -7,24 +7,22 @@
 
 'use client';
 
-import type { CircuitIR, MemoryContents } from '@simten/core/internal';
-import { CircuitCanvas, ClockControls } from '@simten/react/canvas';
-import {
-  registerSimtenThemes,
-  SIMTEN_DARK,
-  SIMTEN_LIGHT,
-  SimtenCodeEditor,
-  type SimtenCodeEditorHandle,
-} from '@simten/react/monaco';
-import { Button } from '@simten/react/primitives/button';
+import { Button } from '@simten/app-kit/primitives/button';
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from '@simten/react/primitives/resizable';
-import { TooltipProvider } from '@simten/react/primitives/tooltip';
-import { useSimulation } from '@simten/react/sandbox';
-import { WaveformViewer } from '@simten/react/waveform';
+} from '@simten/app-kit/primitives/resizable';
+import { TooltipProvider } from '@simten/app-kit/primitives/tooltip';
+import type { CircuitIR, MemoryContents } from '@simten/core/internal';
+import { CircuitCanvas, ClockControls, useSimulation, WaveformViewer } from '@simten/react';
+import {
+  CodeEditor,
+  type CodeEditorHandle,
+  registerSimtenThemes,
+  SIMTEN_DARK,
+  SIMTEN_LIGHT,
+} from '@simten/react/code-editor';
 import { Download, Loader2, Share2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SiteHeader } from '@/components/SiteHeader';
@@ -89,7 +87,7 @@ const SCAN_CODES: Record<string, number> = {
 
 function useKeyboardInput(
   circuit: CircuitIR | null,
-  onKeyboardInput: (nodeId: string, scanCode: number) => void,
+  onKeyboardInput: (values: Record<string, number>) => void,
 ) {
   useEffect(() => {
     if (!circuit) return;
@@ -110,7 +108,7 @@ function useKeyboardInput(
             (node.label?.toLowerCase().includes('keyboard') ||
               node.id.toLowerCase().includes('keyboard')),
         )
-        .forEach((node) => onKeyboardInput(node.id, scanCode));
+        .forEach((node) => onKeyboardInput({ [node.id]: scanCode }));
 
       if (e.code.startsWith('Arrow')) e.preventDefault();
     };
@@ -144,7 +142,7 @@ export function EditorWorkspace({
 }: EditorWorkspaceProps) {
   const { resolvedTheme } = useTheme();
 
-  // Editor source. Typing recompiles after a 500ms pause.
+  // Editor source. Typing recompiles 50ms after it stops.
   const [code, setCode] = useState(initialSource ?? '');
 
   /**
@@ -155,10 +153,11 @@ export function EditorWorkspace({
    */
   const [memory, setMemory] = useState(NO_MEMORY);
 
-  // Compiles the source and simulates its last circuit in the sandbox,
-  // wrapped in switches and displays for its ports.
-  const simulation = useSimulation({ source: code }, { debounceMs: 500, harness: true, memory });
-  const { compileError, state, history, actions } = simulation;
+  // Compiles the source and simulates its last circuit in the sandbox. The
+  // canvas draws switches and displays for its ports.
+  const simulation = useSimulation({ source: code }, { memory });
+  const { state, actions } = simulation;
+  const { compileError } = state;
   const circuit = state.circuit;
   const diagnostics = useMemo(() => (compileError ? [compileError] : []), [compileError]);
 
@@ -179,16 +178,12 @@ export function EditorWorkspace({
     { kind: 'idle' } | { kind: 'error'; message: string }
   >({ kind: 'idle' });
 
-  // Drawer state
-  const [waveformData, setWaveformData] = useState<{
-    vcd: string;
-    circuit: string;
-    ticks: number;
-    steadyStateAt?: number;
-  } | null>(null);
+  // The waveform panel, opened when the MCP pushes traces. It records this
+  // simulation, the same circuit the MCP pushed with them.
+  const [waveformOpen, setWaveformOpen] = useState(false);
 
   // Editor handle for imperative get/set of the Monaco source.
-  const editorRef = useRef<SimtenCodeEditorHandle>(null);
+  const editorRef = useRef<CodeEditorHandle>(null);
   // requestId of an in-flight show_circuit render-ack, cleared when the
   // resulting session opens or the compile fails (see the effects below).
   const pendingRenderRef = useRef<string | null>(null);
@@ -255,7 +250,7 @@ export function EditorWorkspace({
   const showClockControls = state.isSequential;
 
   // Keyboard scan code input for Input nodes (e.g. keyboard-driven CPU demos)
-  useKeyboardInput(circuit, actions.setInput);
+  useKeyboardInput(circuit, actions.set);
 
   // A program loaded on an RV32I_InstrMem or DualPortROM node, or cleared
   // (an empty map). Node ids on the canvas are paths in the session.
@@ -271,15 +266,7 @@ export function EditorWorkspace({
 
   // Studio connection (WebSocket to MCP server)
   const { status: mcpStatus, sendRenderResult } = useMCPConnection({
-    onTraces: useCallback((data: unknown) => {
-      const payload = data as {
-        vcd: string;
-        circuit: string;
-        ticks: number;
-        steadyStateAt?: number;
-      };
-      if (payload?.vcd) setWaveformData(payload);
-    }, []),
+    onTraces: useCallback(() => setWaveformOpen(true), []),
     onSource: useCallback(
       (source: string, requestId?: string) => {
         pendingRenderRef.current = requestId ?? null;
@@ -339,14 +326,15 @@ export function EditorWorkspace({
   useEffect(() => {
     if (localStorage.getItem(RUN_PULSE_KEY) !== '1') setRunPulseSeen(false);
   }, []);
-  const markRunPulseSeen = useCallback(() => {
+  useEffect(() => {
+    if (!state.isRunning || runPulseSeen) return;
     setRunPulseSeen(true);
     try {
       localStorage.setItem(RUN_PULSE_KEY, '1');
     } catch {
       /* private mode */
     }
-  }, []);
+  }, [state.isRunning, runPulseSeen]);
 
   // Empty state with example picker
   const renderEmptyState = useCallback(
@@ -391,6 +379,16 @@ export function EditorWorkspace({
     ),
     [loadExample],
   );
+
+  // With no code there's nothing to compile, so the example picker stands in.
+  const canvas =
+    codeEmpty && !state.ready ? (
+      <div className="relative h-full bg-[var(--embed-bg-primary)]">
+        {bootDone && renderEmptyState()}
+      </div>
+    ) : (
+      <CircuitCanvas simulation={simulation} theme={theme} onLoadMemory={onLoadMemory} />
+    );
 
   return (
     <TooltipProvider delayDuration={300}>
@@ -501,7 +499,7 @@ export function EditorWorkspace({
             <ResizablePanel defaultSize={40} minSize={20} style={CLIP}>
               <div className="flex h-full flex-col">
                 <div className="min-h-0 flex-1">
-                  <SimtenCodeEditor
+                  <CodeEditor
                     ref={editorRef}
                     value={code}
                     onChange={(value) => {
@@ -522,22 +520,10 @@ export function EditorWorkspace({
             <ResizableHandle withHandle />
             {/* Right: Circuit Canvas, optionally split with Waveform below */}
             <ResizablePanel defaultSize={60} minSize={30} style={CLIP}>
-              {waveformData ? (
+              {waveformOpen ? (
                 <ResizablePanelGroup orientation="vertical">
                   <ResizablePanel defaultSize={65} minSize={20} style={CLIP}>
-                    <CircuitCanvas
-                      circuit={circuit}
-                      definitions={state.definitions ?? undefined}
-                      theme={theme}
-                      showControls
-                      renderEmptyState={bootDone && codeEmpty ? renderEmptyState : undefined}
-                      portValues={state.portValues}
-                      peripheralState={state.peripheralState}
-                      simulation={simulation}
-                      onToggleNode={actions.toggleNode}
-                      onSetNodeValue={actions.setInput}
-                      onLoadMemory={onLoadMemory}
-                    />
+                    {canvas}
                   </ResizablePanel>
                   <ResizableHandle withHandle />
                   <ResizablePanel
@@ -547,30 +533,13 @@ export function EditorWorkspace({
                     style={CLIP}
                   >
                     <WaveformViewer
-                      vcd={waveformData.vcd}
-                      circuit={waveformData.circuit}
-                      steadyStateAt={waveformData.steadyStateAt}
-                      onLoadVCD={(vcd) =>
-                        setWaveformData((prev) => (prev ? { ...prev, vcd } : null))
-                      }
-                      onClose={() => setWaveformData(null)}
+                      simulation={simulation}
+                      onClose={() => setWaveformOpen(false)}
                     />
                   </ResizablePanel>
                 </ResizablePanelGroup>
               ) : (
-                <CircuitCanvas
-                  circuit={circuit}
-                  definitions={state.definitions ?? undefined}
-                  theme={theme}
-                  showControls
-                  renderEmptyState={bootDone && codeEmpty ? renderEmptyState : undefined}
-                  portValues={state.portValues}
-                  peripheralState={state.peripheralState}
-                  simulation={simulation}
-                  onToggleNode={actions.toggleNode}
-                  onSetNodeValue={actions.setInput}
-                  onLoadMemory={onLoadMemory}
-                />
+                canvas
               )}
             </ResizablePanel>
           </ResizablePanelGroup>
@@ -580,26 +549,11 @@ export function EditorWorkspace({
         {bootDone && showClockControls && (
           <div className="flex items-center gap-4 border-t border-border bg-card/95 px-6 py-1.5">
             <ClockControls
-              cycle={state.cycle}
-              historyLength={history.length}
-              historyIndex={history.index}
-              isRunning={state.isRunning}
-              isViewingPast={history.isViewingPast}
-              speed={state.speed}
-              onStep={() => void actions.tick()}
-              onRun={() => {
-                markRunPulseSeen();
-                void actions.run();
-              }}
-              onPause={() => void actions.pause()}
-              pulseRun={!runPulseSeen && !state.isRunning}
-              onReset={() => void actions.reset()}
-              onStepBack={() => void actions.stepBack()}
-              onStepForward={() => void actions.stepForward()}
-              onSeek={(i) => void actions.seek(i)}
-              onSpeedChange={actions.setSpeed}
-              showScrubber={history.length > 1}
+              simulation={simulation}
+              showSpeed
+              showScrubber
               chromeless
+              pulseRun={!runPulseSeen && !state.isRunning}
             />
           </div>
         )}

@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { BLOG_CIRCUITS } from '../circuits';
 
 export function ALUSection() {
@@ -27,7 +27,7 @@ export function ALUSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={BLOG_CIRCUITS.alu1bit.circuit}
           title="1-Bit ALU Slice"
           description="op: 00=ADD 01=AND 10=OR 11=XOR"

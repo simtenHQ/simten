@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { BLOG_CIRCUITS } from '../circuits';
 
 const STAGES = [
@@ -135,7 +135,7 @@ export function PipelineSection() {
           JALR (indirect jumps). When a branch is taken, the pipeline flushes the wrongly-fetched
           instructions and redirects to the target address.
         </p>
-        <CircuitEmbed
+        <CircuitCard
           circuit={BLOG_CIRCUITS.programCounter.circuit}
           title="Program Counter"
           description="Increments by 4 each clock cycle. Stall freezes the count."
@@ -151,7 +151,7 @@ export function PipelineSection() {
             entirely (like a load-use hazard). Turn them off and the PC resumes incrementing by 4
             from wherever it landed.
           </p>
-          <CircuitEmbed
+          <CircuitCard
             circuit={BLOG_CIRCUITS.pcWithMux.circuit}
             showControls
             title="PC with Next-PC Mux"
@@ -171,7 +171,7 @@ export function PipelineSection() {
           register, used when a branch is taken and the partially-fetched instruction must be
           discarded.
         </p>
-        <CircuitEmbed
+        <CircuitCard
           circuit={BLOG_CIRCUITS.pipelineRegister.circuit}
           title="Pipeline Register"
           description="Latches data between stages. Flush clears to zero."

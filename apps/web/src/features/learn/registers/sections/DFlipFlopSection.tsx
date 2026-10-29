@@ -1,5 +1,5 @@
 import { DFlipFlop } from '@simten/core/std';
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 
 export function DFlipFlopSection() {
   return (
@@ -26,7 +26,7 @@ export function DFlipFlopSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={DFlipFlop()}
           title="D flip-flop"
           description="Toggle d, then step the clock, and q captures d on the tick."

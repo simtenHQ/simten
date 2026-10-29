@@ -1,4 +1,4 @@
-import { Button } from '@simten/react/primitives/button';
+import { Button } from '@simten/app-kit/primitives/button';
 import React from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 

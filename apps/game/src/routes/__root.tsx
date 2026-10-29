@@ -1,4 +1,3 @@
-import { SandboxProvider } from '@simten/react/sandbox';
 import { TanStackDevtools } from '@tanstack/react-devtools';
 import { createRootRoute, HeadContent, Scripts, useMatches } from '@tanstack/react-router';
 import { TanStackRouterDevtoolsPanel } from '@tanstack/react-router-devtools';
@@ -85,10 +84,9 @@ function RootDocument({ children }: { children: React.ReactNode }) {
         <HeadContent />
       </head>
       <body className="font-sans antialiased">
-        {/* Player source compiles and runs in the sandbox iframe, never here. */}
-        <SandboxProvider>
-          <Chrome>{children}</Chrome>
-        </SandboxProvider>
+        {/* Player source compiles and runs in the sandbox iframe, never here:
+            the page-wide sandbox @simten/react makes for the first circuit. */}
+        <Chrome>{children}</Chrome>
         <TanStackDevtools
           config={{
             position: 'bottom-right',

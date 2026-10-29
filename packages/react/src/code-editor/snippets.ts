@@ -20,7 +20,7 @@
 import type { Monaco } from '@monaco-editor/react';
 import type { editor, Position } from 'monaco-editor';
 
-export interface SimtenSnippet {
+interface SimtenSnippet {
   /** Typed to trigger the completion. */
   label: string;
   /** One-line grey text beside the label in the suggest widget. */
@@ -96,7 +96,7 @@ const LANGUAGES = ['typescript', 'javascript'] as const;
 
 const REGISTERED = new WeakSet<object>();
 
-export interface SnippetOptions {
+interface SnippetOptions {
   /**
    * Register even if this Monaco instance already has the provider. Off by
    * default: `beforeMount` can fire more than once for the same instance, and

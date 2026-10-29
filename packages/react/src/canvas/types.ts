@@ -35,7 +35,7 @@ export interface InspectorFrame {
 }
 
 /** Screen rect of the node that triggered the dialog (for animate-from-origin) */
-export interface OriginRect {
+interface OriginRect {
   x: number;
   y: number;
   width: number;

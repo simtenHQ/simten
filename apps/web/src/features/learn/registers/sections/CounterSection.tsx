@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { Counter } from '../circuits';
 
 export function CounterSection() {
@@ -27,7 +27,7 @@ export function CounterSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={Counter}
           title="8-bit counter"
           description="Register + Adder loop. Each tick: q → q + 1 → next q."

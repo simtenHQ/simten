@@ -14,8 +14,6 @@ import { createRoot } from 'react-dom/client';
 
 import '../src/styles.css';
 
-import { ShareCircuitProvider } from '@simten/react/embed';
-import { SandboxProvider } from '@simten/react/sandbox';
 import EditorShell from '@/components/EditorShell';
 import { ThemeProvider } from '@/components/ThemeProvider';
 
@@ -25,13 +23,8 @@ if (!rootEl) throw new Error('viewer: #root not found');
 createRoot(rootEl).render(
   <StrictMode>
     <ThemeProvider defaultTheme="dark">
-      <SandboxProvider>
-        {/* No server in the viewer — the Fork/Share context is a no-op.
-            CircuitEmbed guards `null` (see packages/react/src/embed/share-context.tsx). */}
-        <ShareCircuitProvider value={null}>
-          <EditorShell standalone />
-        </ShareCircuitProvider>
-      </SandboxProvider>
+      {/* No server in the viewer, so no share function: nothing here forks. */}
+      <EditorShell standalone />
     </ThemeProvider>
   </StrictMode>,
 );

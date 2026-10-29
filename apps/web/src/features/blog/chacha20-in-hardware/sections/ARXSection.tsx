@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { CHACHA20_CIRCUITS } from '../circuits';
 
 export function ARXSection() {
@@ -30,7 +30,7 @@ export function ARXSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={entry.circuit}
           showControls={false}
           title={entry.name}

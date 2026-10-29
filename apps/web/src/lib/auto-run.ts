@@ -3,23 +3,33 @@
  *
  * The demos' sliders are in milliseconds per cycle; the sandbox runs in
  * cycles per second, in its worker, so the page keeps no clock of its own.
+ * `run(speed)` is the one way to set the sandbox's speed, so the slider's value
+ * is kept here and sent with each run.
  */
 
-import type { UseSimulationResult } from '@simten/react/sandbox';
-import { useCallback } from 'react';
+import type { UseSimulationResult } from '@simten/react';
+import { useCallback, useState } from 'react';
 
 /** Cycles per second for one cycle every `ms` milliseconds. */
-export function cyclesPerSecond(ms: number): number {
+function cyclesPerSecond(ms: number): number {
   return 1000 / ms;
 }
 
-export function useAutoRun(sim: UseSimulationResult) {
+/** Run, pause and a speed in ms per cycle, starting at `initialMs`. */
+export function useAutoRun(sim: UseSimulationResult, initialMs: number) {
   const { state, actions } = sim;
-  const speed = Math.round(1000 / state.speed);
-  const setSpeed = useCallback((ms: number) => actions.setSpeed(cyclesPerSecond(ms)), [actions]);
-  const setIsRunning = useCallback(
-    (on: boolean) => void (on ? actions.run() : actions.pause()),
-    [actions],
+  const [speed, setSpeedMs] = useState(initialMs);
+  const isRunning = state.isRunning;
+  const setSpeed = useCallback(
+    (ms: number) => {
+      setSpeedMs(ms);
+      if (isRunning) void actions.run(cyclesPerSecond(ms));
+    },
+    [actions, isRunning],
   );
-  return { isRunning: state.isRunning, setIsRunning, speed, setSpeed };
+  const setIsRunning = useCallback(
+    (on: boolean) => void (on ? actions.run(cyclesPerSecond(speed)) : actions.pause()),
+    [actions, speed],
+  );
+  return { isRunning, setIsRunning, speed, setSpeed };
 }

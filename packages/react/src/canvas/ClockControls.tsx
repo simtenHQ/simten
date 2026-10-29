@@ -1,9 +1,13 @@
 /**
- * Unified ClockControls — one design, used everywhere.
+ * ClockControls: the clock of a simulation.
  *
- * Icon buttons (Step, Play/Pause, Reset) + cycle counter + time-travel.
- * Optional: speed slider, scrubber.
- * Floating style — position via parent container.
+ *   const sim = useSimulation(Counter);
+ *   <ClockControls simulation={sim} />
+ *
+ * Icon buttons (Tick, Run/Pause, Reset), the cycle counter and time travel,
+ * plus an optional speed slider and history scrubber. A combinational circuit
+ * has no clock, so for one it renders nothing: render it next to the canvas
+ * and it does the right thing for any circuit.
  */
 
 'use client';
@@ -18,9 +22,10 @@ import {
   RotateCcw,
   SkipForward,
 } from 'lucide-react';
-import type { ComponentType, SVGProps } from 'react';
+import { type ComponentType, type ReactElement, type SVGProps, useState } from 'react';
 import { Button } from '../primitives/button';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '../primitives/tooltip';
+import type { UseSimulationResult } from '../sandbox/useSimulation';
 
 /**
  * Dense icon button used throughout this toolbar. Wraps shadcn `Button`
@@ -66,6 +71,66 @@ function IconBtn({
 }
 
 export interface ClockControlsProps {
+  /** What `useSimulation` returned. */
+  simulation: UseSimulationResult;
+  /** Show a speed slider, from 1 to 10,000 cycles a second. @default false */
+  showSpeed?: boolean;
+  /** Show a slider over the history once there is some. @default false */
+  showScrubber?: boolean;
+  /** Float as a pill over a canvas instead of an inline bar. */
+  floating?: boolean;
+  /** Drop the bar's border and background, when the parent draws them. */
+  chromeless?: boolean;
+  /** Pulse the Run button to say "press this to simulate". */
+  pulseRun?: boolean;
+}
+
+export function ClockControls({
+  simulation,
+  showSpeed = false,
+  showScrubber = false,
+  floating,
+  chromeless,
+  pulseRun,
+}: ClockControlsProps): ReactElement | null {
+  const { state, actions } = simulation;
+  const { history } = state;
+  // The speed the next Run starts at. While running, the slider changes the
+  // run's speed directly.
+  const [speed, setSpeed] = useState(state.speed);
+  if (!state.ready || !state.isSequential) return null;
+  return (
+    <ClockBar
+      cycle={state.cycle}
+      historyLength={history.length}
+      historyIndex={history.index}
+      isRunning={state.isRunning}
+      isViewingPast={history.isViewingPast}
+      onStep={() => void actions.tick()}
+      onRun={() => void actions.run(speed)}
+      onPause={() => void actions.pause()}
+      onReset={() => void actions.reset()}
+      onStepBack={() => void actions.stepBack()}
+      onStepForward={() => void actions.stepForward()}
+      onSeek={(index) => void actions.seek(index)}
+      speed={state.isRunning ? state.speed : speed}
+      onSpeedChange={
+        showSpeed
+          ? (next) => {
+              setSpeed(next);
+              if (state.isRunning) void actions.run(next);
+            }
+          : undefined
+      }
+      showScrubber={showScrubber}
+      floating={floating}
+      chromeless={chromeless}
+      pulseRun={pulseRun}
+    />
+  );
+}
+
+interface ClockBarProps {
   cycle: number;
   historyLength: number;
   historyIndex: number;
@@ -79,7 +144,7 @@ export interface ClockControlsProps {
   onStepForward: () => void;
   onSeek?: (index: number) => void;
   onSpeedChange?: (speed: number) => void;
-  speed?: number;
+  speed: number;
   maxSpeed?: number;
   showScrubber?: boolean;
   /** Render as a floating pill (inspector/canvas overlay) vs inline bar (editor/embed bottom bar) */
@@ -90,14 +155,10 @@ export interface ClockControlsProps {
   pulseRun?: boolean;
 }
 
-/** Fallback tick rate. Sessions report `speed: 0` when stopped, so call sites
- *  need a non-zero value to resume at. */
-export const DEFAULT_SPEED = 15;
-
 /** Top of the speed slider. The engine does a few thousand cycles/s on an
  *  imported netlist and ~16k on a hand-written one, so this is roughly where
  *  asking for more stops buying anything. */
-export const MAX_SPEED = 10_000;
+const MAX_SPEED = 10_000;
 
 /** The slider is logarithmic. Linear would be useless here: with a 10k ceiling
  *  on an 80px track, everything under 100 tick/s — which is the whole range the
@@ -106,7 +167,8 @@ export const MAX_SPEED = 10_000;
 const speedToPos = (v: number) => Math.log10(Math.max(1, v));
 const posToSpeed = (p: number) => Math.round(10 ** p);
 
-export function ClockControls({
+/** The bar itself, from props. */
+function ClockBar({
   cycle,
   historyLength,
   historyIndex,
@@ -120,13 +182,13 @@ export function ClockControls({
   onStepForward,
   onSeek,
   onSpeedChange,
-  speed = DEFAULT_SPEED,
+  speed,
   maxSpeed = MAX_SPEED,
   showScrubber,
   floating,
   chromeless,
   pulseRun,
-}: ClockControlsProps) {
+}: ClockBarProps) {
   const wrapper = floating ? 'absolute top-3 left-1/2 -translate-x-1/2 z-10' : '';
   const inner = chromeless
     ? 'flex items-center gap-1.5'

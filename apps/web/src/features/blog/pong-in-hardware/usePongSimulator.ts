@@ -1,5 +1,5 @@
 import type { PeripheralValue } from '@simten/core/internal';
-import { useSimulation } from '@simten/react/sandbox';
+import { useSimulation } from '@simten/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PongSimple } from './circuits';
 
@@ -50,21 +50,21 @@ export function usePongSimulator() {
   useEffect(() => {
     if (!state.ready) return;
     for (const name of ENABLES) {
-      if (nodeIds[name]) void actions.setInput(nodeIds[name], 1);
+      if (nodeIds[name]) void actions.set({ [nodeIds[name]]: 1 });
     }
   }, [state.ready, actions, nodeIds]);
 
   // Each paddle gets its own keyboard input node so both can be held at once
   const sendLeftDirection = useCallback(
     (code: number) => {
-      if (nodeIds.keyboard0) void actions.setInput(nodeIds.keyboard0, code);
+      if (nodeIds.keyboard0) void actions.set({ [nodeIds.keyboard0]: code });
     },
     [nodeIds, actions],
   );
 
   const sendRightDirection = useCallback(
     (code: number) => {
-      if (nodeIds.keyboard1) void actions.setInput(nodeIds.keyboard1, code);
+      if (nodeIds.keyboard1) void actions.set({ [nodeIds.keyboard1]: code });
     },
     [nodeIds, actions],
   );

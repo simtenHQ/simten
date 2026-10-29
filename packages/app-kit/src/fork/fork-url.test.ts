@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
-import { decodeSourceFromUrl } from '../../share';
-import { forkUrl } from '../fork-url';
+import { decodeSourceFromUrl } from '../share';
+import { forkUrl } from './fork-url';
 
 const HOST = 'https://simten.dev';
 const SOURCE = "const Toggle = circuit('Toggle', {})";

@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { TPU_CIRCUITS } from '../circuits';
 
 export function WeightFlowSection() {
@@ -38,11 +38,10 @@ export function WeightFlowSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={TPU_CIRCUITS.twoPEColumn.circuit}
           layout={TPU_CIRCUITS.twoPEColumn.layout}
           showControls
-          autoRunSpeed={400}
           title="Two-PE Column"
           description="Partial sums flow down through registers, one PE per clock cycle, matching real TPU hardware."
         />

@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { SWITCH_CIRCUITS } from '../circuits';
 
 export function FrameSection() {
@@ -32,7 +32,7 @@ export function FrameSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={entry.circuit}
           showControls
           title={entry.name}

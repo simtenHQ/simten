@@ -1,5 +1,5 @@
 /**
- * SimtenCodeEditor — Monaco, pre-wired for Simten circuit source.
+ * CodeEditor — Monaco, pre-wired for Simten circuit source.
  *
  * Sugar over `setupSimtenIntellisense` + `useTypeAcquisition`. Use it when you
  * want an editor; use the two primitives directly when you already own a Monaco
@@ -40,7 +40,7 @@ const DEFAULT_OPTIONS: editor.IStandaloneEditorConstructionOptions = {
  * import `monaco-editor` just to show errors. Converted to `IMarkerData`
  * internally using the runtime Monaco instance.
  */
-export interface SimtenDiagnostic {
+export interface CodeEditorDiagnostic {
   message: string;
   /** 1-based line. */
   line: number;
@@ -53,14 +53,14 @@ export interface SimtenDiagnostic {
 }
 
 /** Imperative handle exposed via `ref`. Getters return null/`''` before mount. */
-export interface SimtenCodeEditorHandle {
+export interface CodeEditorHandle {
   getEditor: () => editor.IStandaloneCodeEditor | null;
   getMonaco: () => Monaco | null;
   getValue: () => string;
   setValue: (value: string) => void;
 }
 
-export interface SimtenCodeEditorProps
+export interface CodeEditorProps
   extends Omit<EditorProps, 'beforeMount' | 'language' | 'defaultLanguage'> {
   /**
    * Tune or disable Simten's IntelliSense. `false` leaves Monaco untouched.
@@ -74,9 +74,9 @@ export interface SimtenCodeEditorProps
   /** Runs after Simten's own setup, so you can layer on your own Monaco config. */
   beforeMount?: (monaco: Monaco) => void;
   /** Diagnostics to render as squiggles. Pass `[]` (or omit) to clear. */
-  diagnostics?: SimtenDiagnostic[];
+  diagnostics?: CodeEditorDiagnostic[];
   /** React 19 imperative handle. */
-  ref?: Ref<SimtenCodeEditorHandle>;
+  ref?: Ref<CodeEditorHandle>;
 }
 
 /**
@@ -94,14 +94,14 @@ export function preloadMonaco(): void {
   });
 }
 
-function severityOf(monaco: Monaco, s: SimtenDiagnostic['severity']): number {
+function severityOf(monaco: Monaco, s: CodeEditorDiagnostic['severity']): number {
   const { MarkerSeverity } = monaco;
   if (s === 'warning') return MarkerSeverity.Warning;
   if (s === 'info') return MarkerSeverity.Info;
   return MarkerSeverity.Error;
 }
 
-export function SimtenCodeEditor({
+export function CodeEditor({
   intellisense,
   typeAcquisition,
   beforeMount,
@@ -112,7 +112,7 @@ export function SimtenCodeEditor({
   theme = 'vs-dark',
   options,
   ...editorProps
-}: SimtenCodeEditorProps) {
+}: CodeEditorProps) {
   const [ed, setEd] = useState<editor.IStandaloneCodeEditor | null>(null);
   const [monaco, setMonaco] = useState<Monaco | null>(null);
   const [source, setSource] = useState('');

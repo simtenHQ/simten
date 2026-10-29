@@ -38,7 +38,7 @@ const PIN_LABEL_CLASS =
  */
 const PIN_LABEL_DISPLAY = 'var(--simten-pin-labels, block)';
 
-export interface BaseNodeProps {
+interface BaseNodeProps {
   children: React.ReactNode;
   inputPorts?: PortConfig[];
   outputPorts?: PortConfig[];

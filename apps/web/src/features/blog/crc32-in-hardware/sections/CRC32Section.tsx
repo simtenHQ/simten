@@ -1,4 +1,4 @@
-import { useSimulation } from '@simten/react/sandbox';
+import { useSimulation } from '@simten/react';
 import { useCallback, useState } from 'react';
 import { CRC32ByteDemo } from '../circuits';
 
@@ -24,7 +24,7 @@ function CRC32DemoInner() {
   const handleStep = useCallback(() => {
     const byteVal = Math.max(0, Math.min(255, parseInt(dataInput, 10) || 0));
     // In order: the sandbox applies one session's requests as they're sent.
-    void actions.setInput('data', byteVal);
+    void actions.set({ data: byteVal });
     void actions.tick();
     setCycleCount((c) => c + 1);
     setSoftwareCRC((prev) => crc32Byte(prev, byteVal));

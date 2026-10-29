@@ -1,4 +1,4 @@
-import { hashSource, loadShare, type ShareKV } from '@simten/react/share';
+import { hashSource, loadShare, type ShareKV } from '@simten/app-kit/share';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import { fakeBudget, fakeRateLimiter } from '../../../api/__tests__/fakes';
 import { createShare, MAX_SOURCE_BYTES, sourceBytes, validateShareInput } from '../store';
