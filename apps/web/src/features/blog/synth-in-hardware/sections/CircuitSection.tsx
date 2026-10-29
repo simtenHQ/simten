@@ -9,10 +9,11 @@ export function CircuitSection() {
       <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">What you just heard</h2>
       <div className="prose-invert space-y-6">
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          Sixteen nodes. A register and an adder make the phase accumulator: every tick it adds{' '}
-          <code>inc</code> to itself and wraps at 2<sup>16</sup>, so <code>inc</code> is the pitch.
-          The top twelve bits index the wavetable, and the four discarded bits are the fractional
-          part. That is a zero-order hold, exactly the shortcut the era took.
+          Double-click the <code>SynthVoice</code> box above to see inside: sixteen nodes. A
+          register and an adder make the phase accumulator: every tick it adds <code>inc</code> to
+          itself and wraps at 2<sup>16</sup>, so <code>inc</code> is the pitch. The top twelve bits
+          index the wavetable, and the four discarded bits are the fractional part. That is a
+          zero-order hold, exactly the shortcut the era took.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           The table holds 0&ndash;255, so a subtractor recentres it to two&rsquo;s complement before
@@ -20,11 +21,11 @@ export function CircuitSection() {
           than a waveform, and every note would click.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
-          The envelope is the cluster on the right: subtract a step each tick, a comparator and mux
-          clamp it at zero rather than letting it wrap, and a second mux reloads it to full when{' '}
-          <code>trig</code> goes high for one tick. Then one signed multiply scales the sample.
-          Everything between the two registers is combinational, which is why one clock tick
-          produces exactly one audio sample.
+          The envelope is the last stage before <code>audio</code>: subtract a step each tick, a
+          comparator and mux clamp it at zero rather than letting it wrap, and a second mux reloads
+          it to full when <code>trig</code> goes high for one tick. Then one signed multiply scales
+          the sample. Everything between the two registers is combinational, which is why one clock
+          tick produces exactly one audio sample.
         </p>
         <p className="text-gray-600 dark:text-gray-300 leading-relaxed">
           Nothing above is a setting in the page. <code>wave</code> and <code>decay</code> are input

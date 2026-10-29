@@ -2,19 +2,6 @@ import { TooltipProvider } from '@simten/app-kit/primitives/tooltip';
 import { CircuitCanvas } from '@simten/react';
 import { useCORDICSimulator } from './useCORDICSimulator';
 
-const CORDIC_LAYOUT: Record<string, { x: number; y: number }> = {
-  x: { x: 30, y: 30 },
-  y: { x: 30, y: 130 },
-  z: { x: 30, y: 230 },
-  iteration: { x: 30, y: 330 },
-  step: { x: 360, y: 180 },
-  xDisplay: { x: 750, y: 30 },
-  yDisplay: { x: 750, y: 130 },
-  zDisplay: { x: 750, y: 230 },
-  iterDisplay: { x: 750, y: 330 },
-  doneLed: { x: 750, y: 430 },
-};
-
 export function CORDICDemo() {
   const { sim, isRunning, setIsRunning, speed, setSpeed, isDone, handleReset } =
     useCORDICSimulator();
@@ -89,7 +76,7 @@ export function CORDICDemo() {
         </div>
 
         {/* Circuit canvas */}
-        <CircuitCanvas simulation={sim} height={400} layout={CORDIC_LAYOUT} />
+        <CircuitCanvas simulation={sim} height={400} />
 
         {/* Controls bar */}
         <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-100 dark:bg-gray-900/90">
