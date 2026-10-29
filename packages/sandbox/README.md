@@ -25,12 +25,14 @@ await sim.run(1000); // 1000 cycles a second, in the worker
 
 | Method | What it does |
 |---|---|
-| `setInput(path, value)` | Set a Switch or Input node inside the circuit. Anything else is rejected. |
-| `setInputs(values)` | Set several of those nodes, by path, before the circuit settles. If one path is rejected, none are set. |
 | `run(speed)`, `pause()` | Auto-run in the worker, which pushes about 30 updates a second. |
 | `sample(port, count)` | Tick `count` times and return a port's value after each tick. |
-| `scan(path, port, count)` | Drive an input through `0..count-1` and read a port each time, without ticking. |
+| `scan(input, port, count)` | Drive an input through `0..count-1` and read a port each time, without ticking. |
 | `close()` | Free the session in the sandbox. |
+
+`set` takes input port names and the paths of Switch and Input nodes (`{ d: 0, en: 0 }`), and writes them all before the circuit settles. A key that names anything else, or both a port and a Switch, rejects, and nothing is written. `scan` takes the same keys.
+
+For tests, `inProcessSandbox()` from `@simten/sandbox/host` is a `SandboxClient` whose sandbox runs in the same process. It runs circuit code in that process, so use it for circuits you trust.
 
 Memory contents (a program for a CPU) are part of opening a session: `open(source, { memory: { imem: contents } })`. To load a different program, open a new session.
 

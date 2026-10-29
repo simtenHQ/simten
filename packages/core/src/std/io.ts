@@ -3,7 +3,20 @@
  */
 
 import { bit, bus } from '../circuit/bit-bus.js';
+import type { Circuit, Control } from '../circuit/builder-types.js';
 import { circuit } from '../circuit/circuit.js';
+
+/**
+ * Marks a component, or a factory's result, as one `set` can write by path.
+ * Type-level only: the value is returned unchanged.
+ */
+function asControl<C extends Circuit>(component: C): Control<C>;
+function asControl<A extends unknown[], C extends Circuit>(
+  factory: (...args: A) => C,
+): (...args: A) => Control<C>;
+function asControl(component: unknown): unknown {
+  return component;
+}
 
 /**
  * User-controllable 1-bit toggle. Stays in the chosen state until clicked
@@ -27,16 +40,18 @@ import { circuit } from '../circuit/circuit.js';
  * destructure here is purely for the typed call signature — the body
  * doesn't need to reference it.
  */
-export const Switch = circuit('Switch', {
-  outputs: { out: bit },
-  eval: ({ value }) => ({ out: value ? 1 : 0 }),
-  meta: {
-    category: 'input-output',
-    icon: '⚡',
-    description: 'User-controllable 1-bit toggle',
-    interactiveArg: 'value',
-  },
-});
+export const Switch = asControl(
+  circuit('Switch', {
+    outputs: { out: bit },
+    eval: ({ value }) => ({ out: value ? 1 : 0 }),
+    meta: {
+      category: 'input-output',
+      icon: '⚡',
+      description: 'User-controllable 1-bit toggle',
+      interactiveArg: 'value',
+    },
+  }),
+);
 
 /**
  * Visual output LED indicator. Lights up on the canvas when its input is 1.
@@ -81,16 +96,18 @@ export const Led = circuit('Led', {
  * })
  * ```
  */
-export const Input = circuit('Input', ({ width = 8 }: { value?: number; width?: number } = {}) => ({
-  outputs: { out: bus(width) },
-  eval: ({ value }) => ({ out: typeof value === 'number' ? value : 0 }),
-  meta: {
-    category: 'input-output',
-    icon: '🔢',
-    description: 'Multi-bit numeric input',
-    interactiveArg: 'value',
-  },
-}));
+export const Input = asControl(
+  circuit('Input', ({ width = 8 }: { value?: number; width?: number } = {}) => ({
+    outputs: { out: bus(width) },
+    eval: ({ value }) => ({ out: typeof value === 'number' ? value : 0 }),
+    meta: {
+      category: 'input-output',
+      icon: '🔢',
+      description: 'Multi-bit numeric input',
+      interactiveArg: 'value',
+    },
+  })),
+);
 
 /**
  * Multi-bit output sink. Passive observer for an 8-bit bus — the canvas

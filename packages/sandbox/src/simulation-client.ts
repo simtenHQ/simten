@@ -6,7 +6,7 @@
  * in the worker.
  *
  * Requests to one session are applied in the order they're sent, so
- * `setInput(...)` then `tick()` without awaiting the first is safe.
+ * `set(...)` then `tick()` without awaiting the first is safe.
  */
 
 import type { CircuitDefinitions, CircuitIR, PeripheralValue } from '@simten/core/internal';
@@ -133,22 +133,14 @@ export class SimulationClient {
     return this.state.ports.get(`${TOP}.${name}`) ?? 0;
   }
 
-  /** Drive top-level input ports. Unknown names reject. */
+  /**
+   * Drive the circuit's inputs: input ports by name, and Switch and Input
+   * nodes (keyboards write Inputs) by dotted path, all before the circuit
+   * settles. Rejects, writing nothing, if any key is neither, names any other
+   * node, or names both a port and a Switch.
+   */
   async set(values: Record<string, number>): Promise<void> {
     await this.update({ type: 'set', values });
-  }
-
-  /** Write an Input, Switch or keyboard node by dotted path. Rejects for any other node. */
-  async setInput(path: string, value: number): Promise<void> {
-    await this.setInputs({ [path]: value });
-  }
-
-  /**
-   * Write several Input, Switch or keyboard nodes, by dotted path, before the
-   * circuit settles. If any path isn't one of those, none are written.
-   */
-  async setInputs(values: Record<string, number>): Promise<void> {
-    await this.update({ type: 'set-input', values });
   }
 
   /** Advance `count` rising clock edges (default 1), recorded as one history step. */
@@ -189,9 +181,13 @@ export class SimulationClient {
     return response.samples;
   }
 
-  /** Drive input `path` through 0..count-1, settling each time, and read `port`. Doesn't tick. */
-  async scan(path: string, port: string, count: number): Promise<number[]> {
-    const response = await this.send({ type: 'scan', path, port, count });
+  /**
+   * Drive one input (a port name or a Switch or Input path, as `set` takes)
+   * through 0..count-1, settling each time, and read `port` (a port-map key)
+   * after each. Doesn't tick.
+   */
+  async scan(input: string, port: string, count: number): Promise<number[]> {
+    const response = await this.send({ type: 'scan', path: input, port, count });
     if (response.type !== 'scanned') throw unexpected(response);
     return response.values;
   }

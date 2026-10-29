@@ -152,43 +152,35 @@ describe('SimulationClient', () => {
     const { client } = startSandbox();
     const compiled = await client.compile(COUNTER);
     const sim = await client.open({ compiled, circuit: 'Counter' }, { harness: true });
-    void sim.setInput('en', 1);
+    void sim.set({ en: 1 });
     void sim.tick(3);
-    void sim.setInput('en', 0);
+    void sim.set({ en: 0 });
     await sim.tick(3);
     expect(sim.getState().ports.get('count.in')).toBe(3);
   });
 
-  it('rejects setInput on a register with a SandboxError', async () => {
+  it('rejects set on a register with a SandboxError', async () => {
     const { client } = startSandbox();
     const sim = await openCounter(client);
-    const error = await sim.setInput('reg', 1).catch((e: unknown) => e);
+    const error = await sim.set({ reg: 1 }).catch((e: unknown) => e);
     expect(error).toBeInstanceOf(SandboxError);
     expect((error as SandboxError).code).toBe('failed');
     expect((error as SandboxError).message).toMatch(/'reg' is a Register, not an input/);
   });
 
-  it('setInputs writes several switches in one request', async () => {
+  it('set writes several switches in one request', async () => {
     const sent: SessionRequest[] = [];
     const { client } = startSandbox({ onSend: (request) => sent.push(request) });
     const compiled = await client.compile(D_LATCH);
     const sim = await client.open({ compiled, circuit: 'DLatch' });
-    await sim.setInputs({ d: 1, en: 1 });
-    await sim.setInputs({ d: 0, en: 0 });
+    await sim.set({ d: 1, en: 1 });
+    await sim.set({ d: 0, en: 0 });
     expect(sim.getState().ports.get('q.in')).toBe(1);
-    const writes = sent.filter((r) => r.type === 'set-input');
+    const writes = sent.filter((r) => r.type === 'set');
     expect(writes.map((r) => ('values' in r ? r.values : null))).toEqual([
       { d: 1, en: 1 },
       { d: 0, en: 0 },
     ]);
-  });
-
-  it('setInput sends a one-entry record', async () => {
-    const sent: SessionRequest[] = [];
-    const { client } = startSandbox({ onSend: (request) => sent.push(request) });
-    const sim = await client.open({ compiled: await client.compile(D_LATCH), circuit: 'DLatch' });
-    await sim.setInput('d', 1);
-    expect(sent.find((r) => r.type === 'set-input')).toMatchObject({ values: { d: 1 } });
   });
 
   it('streams auto-run frames to subscribers and stops on pause', async () => {

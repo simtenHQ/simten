@@ -6,11 +6,14 @@
  *   sim.set({ a: 1, b: 1 })
  *   sim.get('sum')  // 0
  *
+ * `set` takes input port names and the paths of Switch and Input nodes, so a
+ * circuit driven by switches is driven the same way: `sim.set({ d: 0, en: 0 })`.
+ *
  * See `simulation.ts` for the `Simulation` it returns.
  */
 
 import { libraryOf } from '../circuit/behavior.js';
-import type { Circuit, PortMap } from '../circuit/builder-types.js';
+import type { Circuit, InputKey, PortMap } from '../circuit/builder-types.js';
 import { internalsOf } from '../circuit/internals.js';
 import type { ArgumentValue, CircuitIR, Connection } from '../ir/circuit-ir.js';
 import { createSimulation, type SimulateOptions, type Simulation } from './simulation.js';
@@ -19,17 +22,23 @@ import { createSimulation, type SimulateOptions, type Simulation } from './simul
  * Create a simulation from a component.
  *
  * @param top - A Circuit (from circuit() or std)
- * @param options - `history`: cycles kept for stepBack/stepForward/seek (default 0, off)
+ * @param options - `history`: cycles kept for stepBack/stepForward/seek (default 0, off).
+ *   `memory`: contents by node path, loaded before cycle 0.
  */
-export function simulate<Ins extends PortMap, Outs extends PortMap>(
-  top: Circuit<Ins, Outs>,
+export function simulate<
+  Ins extends PortMap,
+  Outs extends PortMap,
+  Ns extends Record<string, unknown> = Record<string, unknown>,
+>(
+  top: Circuit<Ins, Outs, Ns>,
   options?: SimulateOptions,
-): Simulation<Ins, Outs> {
+): Simulation<Ins, Outs, InputKey<Circuit<Ins, Outs, Ns>>> {
   const { ir, args } = internalsOf(top);
   // A primitive runs inside a composite shell, which elaboration needs.
   return createSimulation(wrapIfPrimitive(ir, args), libraryOf(top), options) as Simulation<
     Ins,
-    Outs
+    Outs,
+    InputKey<Circuit<Ins, Outs, Ns>>
   >;
 }
 

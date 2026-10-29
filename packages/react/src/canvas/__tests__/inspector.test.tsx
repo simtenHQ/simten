@@ -33,7 +33,7 @@ import type { ReactNode } from 'react';
 import { afterEach, beforeAll, describe, expect, it } from 'vitest';
 import type { NodeData } from '../../nodes';
 import { NumericInputNode } from '../../nodes/NumericInputNode';
-import { inProcessClient } from '../../sandbox/__tests__/in-process';
+import { loggedSandbox } from '../../sandbox/__tests__/logged-sandbox';
 import { SandboxProvider } from '../../sandbox/SandboxProvider';
 import { type UseSimulationResult, useSimulation } from '../../sandbox/useSimulation';
 import { CompositeInspectorDialog } from '../CompositeInspectorDialog';
@@ -100,9 +100,9 @@ afterEach(() => {
 });
 
 function sandbox() {
-  const made = inProcessClient();
-  clients.push(made.client);
-  return made;
+  const logged = loggedSandbox();
+  clients.push(logged.client);
+  return logged;
 }
 
 beforeAll(() => {
@@ -193,7 +193,7 @@ describe('CompositeInspectorDialog', () => {
   }
 
   it('shows boundary ports as indicators that follow the main session', async () => {
-    const { client, transport } = sandbox();
+    const { client, sets } = sandbox();
     let simulation: UseSimulationResult | null = null;
     render(
       <SandboxProvider client={client}>
@@ -212,8 +212,7 @@ describe('CompositeInspectorDialog', () => {
     await waitFor(() => expect(screen.getByLabelText('a: on')).toBeTruthy());
 
     // Nothing the dialog did wrote to the circuit: the one input write is ours.
-    const writes = transport.sent.filter((r) => r.type === 'set-input' || r.type === 'set');
-    expect(writes).toHaveLength(1);
+    expect(sets).toHaveLength(1);
   });
 });
 
@@ -274,11 +273,10 @@ describe('useReferenceSession', () => {
   }
 
   it('opens on drill-down, follows the parent, and closes with the frame', async () => {
-    const { client, transport } = sandbox();
+    const { client, calls, opens, sets } = sandbox();
     const hook = renderReference(client);
 
     await waitFor(() => expect(hook.result.current.ports?.get('__top__.sum')).toBe(7));
-    const opens = transport.sent.filter((r) => r.type === 'open');
     expect(opens).toHaveLength(1);
     expect(opens[0]).toMatchObject({ circuit: 'Adder4_madeOf', history: 0 });
 
@@ -292,11 +290,10 @@ describe('useReferenceSession', () => {
       ]),
     });
     await waitFor(() => expect(hook.result.current.ports?.get('__top__.sum')).toBe(14));
-    const sets = transport.sent.filter((r) => r.type === 'set');
-    expect(sets.at(-1)).toMatchObject({ values: { a: 9, carry_in: 1 } });
+    expect(sets.at(-1)).toEqual({ a: 9, carry_in: 1 });
 
     // A parent update with the same inputs sends nothing.
-    const before = transport.sent.length;
+    const before = calls.length;
     hook.rerender({
       frame: adder,
       ports: new Map([
@@ -307,20 +304,20 @@ describe('useReferenceSession', () => {
       ]),
     });
     await new Promise((r) => setTimeout(r, 20));
-    expect(transport.sent.length).toBe(before);
+    expect(calls.length).toBe(before);
 
     // Popping the frame closes the session and frees its compile.
     hook.rerender({ frame: null, ports: new Map() });
-    await waitFor(() => expect(transport.sent.some((r) => r.type === 'release')).toBe(true));
-    expect(transport.sent.some((r) => r.type === 'close')).toBe(true);
+    await waitFor(() => expect(calls).toContain('release'));
+    expect(calls).toContain('close');
     expect(hook.result.current.ports).toBeNull();
   });
 
   it('closes when the dialog unmounts', async () => {
-    const { client, transport } = sandbox();
+    const { client, calls } = sandbox();
     const hook = renderReference(client);
     await waitFor(() => expect(hook.result.current.ports).not.toBeNull());
     hook.unmount();
-    await waitFor(() => expect(transport.sent.some((r) => r.type === 'close')).toBe(true));
+    await waitFor(() => expect(calls).toContain('close'));
   });
 });

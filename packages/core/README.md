@@ -40,7 +40,9 @@ console.log(sim.get('sum'));    // 0
 console.log(sim.get('carry'));  // 1
 ```
 
-`simulate()` returns a `Simulation`. There is nothing to clean up afterwards. `sim.tick(n)` runs n clock edges, `sim.reset()` goes back to cycle 0, and `simulate(top, { history: 100 })` keeps the last 100 steps for `stepBack()`, `stepForward()` and `seek(index)`.
+`simulate()` returns a `Simulation`. There is nothing to clean up afterwards. `sim.tick(n)` runs n clock edges, `sim.reset()` goes back to cycle 0 (the reset line: inputs stay where they are), and `simulate(top, { history: 100 })` keeps the last 100 steps for `stepBack()`, `stepForward()` and `seek(index)`.
+
+`sim.set` takes input port names and the paths of Switch and Input nodes, so a circuit driven by switches is driven the same way: `sim.set({ d: 0, en: 0 })`. Every value is written before the circuit settles. `simulate(top, { memory: { rom: { 0: 0x11 } } })` loads memory contents by node path before cycle 0, and `reset()` keeps them.
 
 ### Running it
 

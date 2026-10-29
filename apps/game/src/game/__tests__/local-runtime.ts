@@ -6,10 +6,10 @@
  * `executeCircuitCode` and core's `Simulation` directly. That is what lets the
  * validation gate run in CI.
  *
- * It follows the sandbox's rules: a vector input is a top-level port (`set`)
- * or a Switch/Input node (`setInput` in the sandbox, which refuses anything
- * else), and outputs are read from the flat port map, where a self-contained
- * level's `Led` named `out` is exactly `out.in`.
+ * It follows the sandbox's rules: a vector input is a top-level port or a
+ * Switch/Input node, both written by `set`, which refuses anything else, and
+ * outputs are read from the flat port map, where a self-contained level's
+ * `Led` named `out` is exactly `out.in`.
  *
  * Deliberately not exported from the app: shipping a path that executes player
  * source in the main frame would defeat the sandbox.
@@ -26,10 +26,7 @@ import {
   nodesOf,
 } from '@simten/core/internal';
 import type { GradeRuntime } from '../runtime';
-import { RuntimeFailure, readOutputs, splitInputs } from '../runtime';
-
-/** What the sandbox's `setInput` accepts. */
-const INPUT_COMPONENTS = new Set(['Switch', 'Input']);
+import { RuntimeFailure, readOutputs } from '../runtime';
 
 export function localRuntime(): GradeRuntime {
   let compiled: CircuitIR[] = [];
@@ -72,22 +69,13 @@ export function localRuntime(): GradeRuntime {
       if (!simulation || !selected) {
         throw new RuntimeFailure('select() was not called before evaluate()');
       }
-      const nodes = nodesOf(simulation);
-      const { ports, nodes: inputNodes } = splitInputs(selected, inputs);
-      for (const [path, value] of Object.entries(inputNodes)) {
-        const type = nodes.primitiveOf(path);
-        if (!type || !INPUT_COMPONENTS.has(type)) {
-          throw new RuntimeFailure(`\`${path}\` is a ${type}, not a Switch or Input`);
-        }
-        nodes.set(path, value);
-      }
-      if (Object.keys(ports).length > 0) simulation.set(ports);
+      simulation.set(inputs);
       // A clock cycle, as the browser grades: `sandboxRuntime` ticks after
       // every vector. Settling alone agrees on every combinational level and
       // silently disagrees on anything clocked, so a level that graded
       // correctly in the browser could never pass CI.
       simulation.tick();
-      return readOutputs(Object.fromEntries(nodes.ports()), outputs);
+      return readOutputs(Object.fromEntries(nodesOf(simulation).ports()), outputs);
     },
 
     async close() {

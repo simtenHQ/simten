@@ -40,7 +40,7 @@ sim.subscribe(() => render(sim.getState()));
 await sim.run(30); // 30 cycles a second, in the worker
 ```
 
-`SimulationClient` has the same methods as core's `Simulation`, returning promises, plus `setInput` for switches, `run` and `pause` for auto-run, and `close`. Call `close()` when your component unmounts, and `dispose()` on the `SandboxClient` when you're done with the sandbox. The full list is in the [package README](https://www.npmjs.com/package/@simten/sandbox).
+`SimulationClient` has the same methods as core's `Simulation`, returning promises, plus `run` and `pause` for auto-run, and `close`. Its `set` takes input port names and Switch and Input paths, like core's. Call `close()` when your component unmounts, and `dispose()` on the `SandboxClient` when you're done with the sandbox. The full list is in the [package README](https://www.npmjs.com/package/@simten/sandbox).
 
 Wiring this into a framework is a small adapter: subscribe in the component's mount hook, copy `getState()` into the framework's state, and close on unmount. That is all `useSimulation` in `@simten/react` does on top of it. There are no Vue or Svelte packages yet.
 
