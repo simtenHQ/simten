@@ -15,7 +15,7 @@ The four layers a circuit flows through in the browser:
 
 | Layer | File | Responsibility |
 |---|---|---|
-| **Public hook** | `packages/ui/src/sandbox/useSimulation.ts` | What embeds, blog demos and docs call. Compiles, opens a session, and mirrors its state into React: `state`, `history`, and `actions` such as `tick`, `setInput`, `stepBack` and `run`. |
+| **Public hook** | `packages/react/src/sandbox/useSimulation.ts` | What embeds, blog demos and docs call. Compiles, opens a session, and mirrors its state into React: `state`, `history`, and `actions` such as `tick`, `setInput`, `stepBack` and `run`. |
 | **Sandbox client** (page) | `packages/sandbox/src/sandbox-client.ts`, `simulation-client.ts` | The hidden iframe, request ids, and `SimulationClient`, an async mirror of core's `Simulation` that forwards each call as a message. No React. |
 | **Sandbox iframe** | `apps/sandbox/src/main.ts`, `worker.ts` | The other side of the bridge. Runs *inside* the iframe (cross-origin). The iframe's main thread relays postMessage commands to a Web Worker, which runs user code and every simulation (`SessionHost`), and restarts the worker if it hangs. |
 | **Simulator engine** | `packages/core/src/simulator/` | Pure computation, with no iframe and no React. Used by the iframe app for browser sims; used directly by `simulate()` from `@simten/core` for Node/CI scripts. |
@@ -203,32 +203,33 @@ In the browser, the page can only set Switch and Input nodes (`SimulationClient.
 ```
 @simten/core       ← headless: circuit builder, compiler, simulator
        ↑
-@simten/ui         ← visual: nodes, canvas, useSimulation, editor
+@simten/sandbox    ← the sandbox from any page, no framework
        ↑
-@simten/embed      ← convenience: CircuitViewer, CircuitEmbed, web component
+@simten/react      ← React: CircuitEmbed, useSimulation, canvas, code editor
 ```
 
 | Package | Description |
 |---------|-------------|
 | `@simten/core` | TypeScript builder, compiler, validator, simulator engine, `Simulation`, environmental state, Verilog export. No UI dependencies. |
 | `@simten/sandbox` | The sandbox without React: `SandboxClient` and `SimulationClient` for pages, the message protocol, and the worker's session host and the iframe's relay. Depends on core. |
-| `@simten/ui` | React components: canonical node renderers, shared canvas, ELK layout, `useSimulation` and `SandboxProvider`, `ClockControls`, editor UI. |
-| `@simten/embed` | `CircuitViewer` (simulation + canvas), `CircuitEmbed` (viewer + auto-harness + info bar), `<circuit-embed>` web component. Depends on core + ui. |
+| `@simten/react` | React components and hooks: `CircuitEmbed`, `CircuitViewer` and `SimulationView`, `useSimulation` and `SandboxProvider`, the canvas and node renderers, `ClockControls`, the Monaco editor and the waveform viewer. Depends on core and sandbox. |
 | `@simten/mcp` | MCP server for Claude Code integration |
+
+The split follows Sandpack's `sandpack-client` and `sandpack-react`: everything that isn't React lives in core and sandbox, so a Vue or Svelte layer would sit on `@simten/sandbox` the same way. A page that isn't an app embeds the iframe from Share → Embed and needs no package. See [Using Simten without React](/docs/without-react).
 
 ### Hooks
 
-One hook, `useSimulation`, compiles and simulates. Give it a circuit built on the page (blog posts, docs, `<CircuitEmbed>`) or source text (`<circuit-embed>`). It compiles in the sandbox, opens a session on the chosen circuit, and subscribes to it. The session's history, ticking and auto-run all run in the sandbox worker; the hook keeps no timers.
+One hook, `useSimulation`, compiles and simulates. Give it a circuit built on the page (blog posts, docs, `<CircuitEmbed>`) or source text (the editor, the embed page). It compiles in the sandbox, opens a session on the chosen circuit, and subscribes to it. The session's history, ticking and auto-run all run in the sandbox worker; the hook keeps no timers.
 
 | Call | Input | Used by |
 |------|-------|---------|
 | `useSimulation(circuit, options)` | `Circuit` built on the page, sent as IR plus behavior as text (`compile-ir`) | `CircuitViewer` → `CircuitEmbed`, landing page, blog demos, docs demos, the RV32I debugger |
-| `useSimulation({ source, circuit? }, options)` | source text | the editor, the game's level page and map drilldown, `<circuit-embed>` |
+| `useSimulation({ source, circuit? }, options)` | source text | the editor, the game's level page and map drilldown, the embed page |
 | `useSandboxClient()` | source text | code that compiles without simulating: the game's grader, the docs pipeline visualizer |
 
 `options` takes `harness` (wrap in switches and lamps), `initialInputs`, `history` (200 steps by default) and `memory` (contents by node path, loaded before cycle 0; a new object opens a new session, as loading a program does on real hardware). The page can write only switches and input nodes (`actions.setInput`) and a bare circuit's own inputs (`actions.set`).
 
-Each `SandboxProvider` holds one sandbox, and each `useSimulation` under it opens its own session, so simulation state never leaks across embeds. Every `<circuit-embed>` element has a provider, and so a sandbox, of its own.
+Each `SandboxProvider` holds one sandbox, and each `useSimulation` under it opens its own session, so simulation state never leaks across embeds. A `useSimulation` with no provider above it makes a sandbox of its own.
 
 The drill-down inspector is a view of the simulation the canvas is showing. It draws a composite from its definition and reads its values from the same session's port map by dotted path (`dut.ha1.x.out`), so it shows the same cycle as the canvas and moves with it while auto-run is on. It writes nothing: a composite's input ports are drawn as indicators, not switches. A primitive's gate-level reference build (`MADE_OF`, an `Adder` drawn as full adders) isn't in the running circuit, so while its frame is open it runs as a second session in the same sandbox, fed the primitive's input values from the first.
 
@@ -250,21 +251,20 @@ circuit() or source text
 
 The editor holds the source text and passes it to `useSimulation` with `harness: true`. The canvas draws the session's own circuit (`state.circuit`), so its node ids are paths in the simulation it shows, and the inspector, a program upload and the keyboard all address nodes by those ids. A program loaded on an instruction memory goes in through the `memory` option, so loading or clearing one starts a new session at cycle 0.
 
-The Zustand stores in `@simten/ui/editor/stores` predate this and the editor no longer reads them; they stay exported for other users of the package.
-
 ### Import paths
 
 | Import | Contents |
 |--------|----------|
 | `@simten/core` | `circuit`, `bit`, `bus`, `simulate`, `Circuit`: the public API. Components come from `@simten/core/std` |
 | `@simten/core/internal` | `elaborate`, `createEngine`, `createSimulation`, `nodesOf`, `SimulatorEngine`, the IR types (`CircuitIR`), a built circuit's internals (`internalsOf`), libraries of definitions and behavior (`libraryOf`), `executeCircuitCode`, `captureEnvironmentalState`, `restoreEnvironmentalState`: for Simten's own packages, no stability promise |
-| `@simten/embed` | `CircuitViewer`, `CircuitEmbed`, `<circuit-embed>` web component: everything needed to embed a circuit |
-| `@simten/ui/canvas` | `CircuitCanvas`, `ClockControls`: shared simulation UI |
-| `@simten/ui/sandbox` | `useSimulation`, `useSandboxClient`, `SandboxProvider`: the sandbox from React |
-| `@simten/ui/nodes` | `BaseNode`, `InputNode`, `OutputNode`, `LogicGateNode`, `NodeData`: canonical node components (props-driven, store-free) |
-| `@simten/ui/monaco` | `SimtenCodeEditor`, `setupSimtenIntellisense`, `useTypeAcquisition`, `registerSimtenThemes`: Monaco editor with circuit IntelliSense. See [Code Editor](/docs/code-editor) |
+| `@simten/sandbox` | `SandboxClient`, `SimulationClient`: the sandbox from any page, no framework |
+| `@simten/react/embed` | `CircuitEmbed`, `CircuitViewer`, `SimulationView`: everything needed to embed a circuit in a React app |
+| `@simten/react/canvas` | `CircuitCanvas`, `ClockControls`: shared simulation UI |
+| `@simten/react/sandbox` | `useSimulation`, `useSandboxClient`, `SandboxProvider`: the sandbox from React |
+| `@simten/react/nodes` | `BaseNode`, `InputNode`, `OutputNode`, `LogicGateNode`, `NodeData`: canonical node components (props-driven, store-free) |
+| `@simten/react/monaco` | `SimtenCodeEditor`, `setupSimtenIntellisense`, `useTypeAcquisition`, `registerSimtenThemes`: Monaco editor with circuit IntelliSense. See [Code Editor](/docs/code-editor) |
 
-Node components live in `@simten/ui/nodes` and are the single source of truth; both the embed and the editor use them.
+Node components live in `@simten/react/nodes` and are the single source of truth; both the embed and the editor use them.
 
 ## Two ways to run a circuit
 
@@ -272,7 +272,7 @@ The same engine powers two distinct consumption paths. The split is **interactiv
 
 | Path | Where it runs | Has a canvas? | Drives the canvas? | Typical use |
 |------|---------------|---------------|--------------------|-------------|
-| **Sandbox** | Browser worker (editor, `<circuit-embed>`, web component) | yes | only via human clicks or MCP actions | live editing, interactive embeds, LLM-driven design |
+| **Sandbox** | Browser worker (editor, `<CircuitEmbed>`, embed pages) | yes | only via human clicks or MCP actions | live editing, interactive embeds, LLM-driven design |
 | **Script** | Node (`tsx`, `vitest`, CI) | no | n/a, there is none | property tests, fuzzers, batch sweeps, CI verification |
 
 ### Sandbox path
@@ -295,7 +295,7 @@ sim.tick();
 
 This is the path for any code that needs to drive simulation programmatically, whether that's a `vitest` property test you're writing during prototyping or a CI fuzzer comparing the TS sim to iverilog. There's nothing for it to be out of sync with, so the constraints that apply in the browser don't apply here.
 
-A blog-post `<circuit-embed>` is "production" but uses the sandbox path. A throwaway `vitest` exploration is "prototyping" but uses the script path. The axis that matters is whether there's a canvas and whether human/LLM input drives it, not how finished the code is.
+A blog-post `<CircuitEmbed>` is "production" but uses the sandbox path. A throwaway `vitest` exploration is "prototyping" but uses the script path. The axis that matters is whether there's a canvas and whether human/LLM input drives it, not how finished the code is.
 
 ## MCP Integration
 

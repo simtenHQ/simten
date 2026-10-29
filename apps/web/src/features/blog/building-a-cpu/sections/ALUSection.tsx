@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/embed';
+import { CircuitEmbed } from '@simten/react/embed';
 import { BLOG_CIRCUITS } from '../circuits';
 
 export function ALUSection() {

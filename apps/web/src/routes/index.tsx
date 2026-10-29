@@ -1,6 +1,6 @@
 import { bit, circuit } from '@simten/core/circuit';
 import { And, DFlipFlop, Or, Xor } from '@simten/core/std';
-import { CircuitEmbed } from '@simten/embed';
+import { CircuitEmbed } from '@simten/react/embed';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 import { Container } from '@/components/Container';
@@ -358,7 +358,7 @@ function NpmBentoVisual() {
 // "Drop-in embeds": static IDE card showing the import + the JSX usage.
 // Mirrors the snippet in the embed CTA section further down the page so
 // the reader sees the same shape in both places.
-const EMBED_SNIPPET = `import { CircuitEmbed } from '@simten/embed';
+const EMBED_SNIPPET = `import { CircuitEmbed } from '@simten/react/embed';
 import { HalfAdder } from './half-adder';
 
 // Live, interactive hardware in three lines.

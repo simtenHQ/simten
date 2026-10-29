@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/embed';
+import { CircuitEmbed } from '@simten/react/embed';
 import { SNAKE_CIRCUITS } from '../circuits';
 
 export function AddressingSection() {

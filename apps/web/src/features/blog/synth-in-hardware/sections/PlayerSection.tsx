@@ -1,6 +1,6 @@
 import { internalsOf } from '@simten/core/internal';
-import { CircuitCanvas } from '@simten/ui/canvas';
-import { useSimulation } from '@simten/ui/sandbox';
+import { CircuitCanvas } from '@simten/react/canvas';
+import { useSimulation } from '@simten/react/sandbox';
 import { useMemo, useState } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 import { buildVoice, DEFAULT_ENV_STEP, WAVES } from '../circuits';

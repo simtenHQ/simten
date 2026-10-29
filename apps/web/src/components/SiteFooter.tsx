@@ -130,8 +130,10 @@ export function SiteFooter() {
             <Col heading="Packages">
               <ExtLink href="https://www.npmjs.com/package/@simten/core">@simten/core</ExtLink>
               <ExtLink href="https://www.npmjs.com/package/@simten/mcp">@simten/mcp</ExtLink>
-              <ExtLink href="https://www.npmjs.com/package/@simten/embed">@simten/embed</ExtLink>
-              <ExtLink href="https://www.npmjs.com/package/@simten/ui">@simten/ui</ExtLink>
+              <ExtLink href="https://www.npmjs.com/package/@simten/react">@simten/react</ExtLink>
+              <ExtLink href="https://www.npmjs.com/package/@simten/sandbox">
+                @simten/sandbox
+              </ExtLink>
             </Col>
           </div>
         </div>

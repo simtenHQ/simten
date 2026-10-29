@@ -22,7 +22,7 @@ This document explains the details so you don't have to take that on faith.
 - No cookies.
 - No third-party analytics, tracking pixels, advertising scripts, or session replay.
 - No telemetry from the MCP server (`@simten/mcp`) — it runs entirely on your machine and does not phone home.
-- No telemetry from the embed library (`@simten/embed` / `<CircuitEmbed />`) — it does not call back to simten.dev when loaded on third-party sites.
+- No telemetry from the React components (`@simten/react` / `<CircuitEmbed />`); they do not call back to simten.dev when loaded on third-party sites.
 - No telemetry from the FPGA pipeline (`apps/synth`, `apps/verifier`) beyond Cloudflare's standard logs; circuit source and Verilog passed through these services are processed and returned, not persisted.
 
 ## What's stored on your device

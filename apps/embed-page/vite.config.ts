@@ -35,8 +35,8 @@ export default defineConfig({
     dedupe: ['react', 'react-dom'],
   },
   build: {
-    // The circuit chunk (React, React Flow, the simulator) is about 680 kB,
-    // 214 kB gzipped, loaded in parallel with the share. Splitting it further
+    // The circuit chunk (React, React Flow, the simulator) is about 590 kB,
+    // 186 kB gzipped, loaded in parallel with the share. Splitting it further
     // is #419's "Later" bundle work, not a warning to repeat on every build.
     chunkSizeWarningLimit: 800,
   },

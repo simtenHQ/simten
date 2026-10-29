@@ -8,24 +8,23 @@
 'use client';
 
 import type { CircuitIR, MemoryContents } from '@simten/core/internal';
-import { CircuitCanvas } from '@simten/ui/canvas';
-import { ClockControls, ReactFlowProvider } from '@simten/ui/editor/components';
+import { CircuitCanvas, ClockControls } from '@simten/react/canvas';
 import {
   registerSimtenThemes,
   SIMTEN_DARK,
   SIMTEN_LIGHT,
   SimtenCodeEditor,
   type SimtenCodeEditorHandle,
-} from '@simten/ui/monaco';
-import { Button } from '@simten/ui/primitives/button';
+} from '@simten/react/monaco';
+import { Button } from '@simten/react/primitives/button';
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
-} from '@simten/ui/primitives/resizable';
-import { TooltipProvider } from '@simten/ui/primitives/tooltip';
-import { useSimulation } from '@simten/ui/sandbox';
-import { WaveformViewer } from '@simten/ui/waveform';
+} from '@simten/react/primitives/resizable';
+import { TooltipProvider } from '@simten/react/primitives/tooltip';
+import { useSimulation } from '@simten/react/sandbox';
+import { WaveformViewer } from '@simten/react/waveform';
 import { Download, Loader2, Share2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SiteHeader } from '@/components/SiteHeader';
@@ -394,103 +393,102 @@ export function EditorWorkspace({
   );
 
   return (
-    <ReactFlowProvider>
-      <TooltipProvider delayDuration={300}>
-        <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-50 dark:bg-[#111113]">
-          {/* SiteHeader (brand on left) + editor controls on the right */}
-          <SiteHeader
-            sticky={false}
-            brandHref={standalone ? 'https://simten.dev' : undefined}
-            right={
-              <div className="flex flex-1 items-center gap-2 justify-end pl-3">
-                <span className="text-sm font-semibold text-foreground/80 mr-auto pl-2 border-l border-border">
-                  Editor
-                </span>
+    <TooltipProvider delayDuration={300}>
+      <div className="flex h-screen w-screen flex-col overflow-hidden bg-gray-50 dark:bg-[#111113]">
+        {/* SiteHeader (brand on left) + editor controls on the right */}
+        <SiteHeader
+          sticky={false}
+          brandHref={standalone ? 'https://simten.dev' : undefined}
+          right={
+            <div className="flex flex-1 items-center gap-2 justify-end pl-3">
+              <span className="text-sm font-semibold text-foreground/80 mr-auto pl-2 border-l border-border">
+                Editor
+              </span>
 
-                {!standalone && (
-                  <>
-                    <div className="h-5 w-px bg-border" />
+              {!standalone && (
+                <>
+                  <div className="h-5 w-px bg-border" />
 
-                    <Button
-                      onClick={() => setShareOpen(true)}
-                      variant="outline"
-                      size="sm"
-                      className="gap-2"
-                      title="Share a link to this circuit, or embed it in another site"
-                    >
-                      <Share2 className="h-4 w-4" />
-                      <span className="hidden sm:inline text-xs">Share</span>
-                    </Button>
-                    <ShareDialog
-                      open={shareOpen}
-                      onOpenChange={setShareOpen}
-                      getSource={getShareSource}
-                    />
-                  </>
-                )}
+                  <Button
+                    onClick={() => setShareOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="gap-2"
+                    title="Share a link to this circuit, or embed it in another site"
+                  >
+                    <Share2 className="h-4 w-4" />
+                    <span className="hidden sm:inline text-xs">Share</span>
+                  </Button>
+                  <ShareDialog
+                    open={shareOpen}
+                    onOpenChange={setShareOpen}
+                    getSource={getShareSource}
+                  />
+                </>
+              )}
 
-                <VerilogImportSheet
-                  onImport={(source) => {
-                    editorRef.current?.setValue(source);
-                    setTimeout(() => void actions.recompile(), 100);
-                  }}
-                />
+              <VerilogImportSheet
+                onImport={(source) => {
+                  editorRef.current?.setValue(source);
+                  setTimeout(() => void actions.recompile(), 100);
+                }}
+              />
 
-                <Button
-                  onClick={handleExportVerilog}
-                  variant="outline"
-                  size="sm"
-                  className="gap-2"
-                  title={
-                    exportStatus.kind === 'error'
-                      ? exportStatus.message
-                      : 'Export circuit to Verilog (.v)'
-                  }
-                  disabled={!circuit}
+              <Button
+                onClick={handleExportVerilog}
+                variant="outline"
+                size="sm"
+                className="gap-2"
+                title={
+                  exportStatus.kind === 'error'
+                    ? exportStatus.message
+                    : 'Export circuit to Verilog (.v)'
+                }
+                disabled={!circuit}
+              >
+                <Download className="h-4 w-4" />
+                <span
+                  className={`hidden sm:inline text-xs${exportStatus.kind === 'error' ? ' text-destructive' : ''}`}
                 >
-                  <Download className="h-4 w-4" />
-                  <span
-                    className={`hidden sm:inline text-xs${exportStatus.kind === 'error' ? ' text-destructive' : ''}`}
-                  >
-                    {exportStatus.kind === 'error' ? "Can't export" : 'Verilog'}
-                  </span>
-                </Button>
+                  {exportStatus.kind === 'error' ? "Can't export" : 'Verilog'}
+                </span>
+              </Button>
 
-                {/* Sandbox indicator: when MCP-linked, the file is the source of truth */}
-                {mcpStatus === 'connected' && (
-                  <span
-                    className="hidden md:inline text-[11px] leading-tight text-muted-foreground pl-2"
-                    title="This editor is a sandbox view. The file Claude edits (from the terminal) is the source of truth; edits here are local experiments; ask Claude to save them, or use Share."
-                  >
-                    Sandbox · file is source of truth
-                  </span>
-                )}
+              {/* Sandbox indicator: when MCP-linked, the file is the source of truth */}
+              {mcpStatus === 'connected' && (
+                <span
+                  className="hidden md:inline text-[11px] leading-tight text-muted-foreground pl-2"
+                  title="This editor is a sandbox view. The file Claude edits (from the terminal) is the source of truth; edits here are local experiments; ask Claude to save them, or use Share."
+                >
+                  Sandbox · file is source of truth
+                </span>
+              )}
 
-                {/* Studio Connection Status */}
-                {mcpStatus === 'connected' && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground pl-2">
-                    <div className="h-2 w-2 rounded-full bg-emerald-400" />
-                    <span>Connected</span>
-                  </div>
-                )}
-                {mcpStatus === 'reconnecting' && (
-                  <div className="flex items-center gap-1.5 text-xs text-muted-foreground pl-2">
-                    <div className="h-2 w-2 rounded-full bg-amber-400" />
-                    <span>Reconnecting...</span>
-                  </div>
-                )}
-              </div>
-            }
-          />
+              {/* Studio Connection Status */}
+              {mcpStatus === 'connected' && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground pl-2">
+                  <div className="h-2 w-2 rounded-full bg-emerald-400" />
+                  <span>Connected</span>
+                </div>
+              )}
+              {mcpStatus === 'reconnecting' && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground pl-2">
+                  <div className="h-2 w-2 rounded-full bg-amber-400" />
+                  <span>Reconnecting...</span>
+                </div>
+              )}
+            </div>
+          }
+        />
 
-          {/* Main Content Area - Unified Workspace */}
-          <div className="relative flex flex-1 overflow-hidden">
-            {!bootDone && (
-              <div className="absolute inset-0 z-20 flex items-center justify-center bg-background">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            )}
-            {/*
+        {/* Main Content Area - Unified Workspace */}
+        <div className="relative flex flex-1 overflow-hidden">
+          {!bootDone && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-background">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          )}
+          {/*
               Every panel here clips with `style`, not a class. react-resizable-
               panels wraps each panel's content in a div whose inline style says
               `overflow: auto`, which a class cannot beat. Left scrollable, that
@@ -498,115 +496,114 @@ export function EditorWorkspace({
               relayout a frame after their box changes size, and for that frame
               they overflow it.
             */}
-            <ResizablePanelGroup orientation="horizontal">
-              {/* Left: Code Editor */}
-              <ResizablePanel defaultSize={40} minSize={20} style={CLIP}>
-                <div className="flex h-full flex-col">
-                  <div className="min-h-0 flex-1">
-                    <SimtenCodeEditor
-                      ref={editorRef}
-                      value={code}
-                      onChange={(value) => {
-                        setCode(value ?? '');
-                        // An edit starts a new run of the new circuit, without
-                        // the programs loaded into the old one.
-                        setMemory(NO_MEMORY);
-                      }}
-                      theme={resolvedTheme === 'dark' ? SIMTEN_DARK : SIMTEN_LIGHT}
-                      diagnostics={diagnostics}
-                      beforeMount={(m) => registerSimtenThemes(m, { lightBackground: '#faf9f4' })}
-                      options={{ 'semanticHighlighting.enabled': true }}
-                    />
-                  </div>
-                  {diagnostics.length > 0 && <ErrorDisplay errors={diagnostics} />}
-                </div>
-              </ResizablePanel>
-              <ResizableHandle withHandle />
-              {/* Right: Circuit Canvas, optionally split with Waveform below */}
-              <ResizablePanel defaultSize={60} minSize={30} style={CLIP}>
-                {waveformData ? (
-                  <ResizablePanelGroup orientation="vertical">
-                    <ResizablePanel defaultSize={65} minSize={20} style={CLIP}>
-                      <CircuitCanvas
-                        circuit={circuit}
-                        definitions={state.definitions ?? undefined}
-                        theme={theme}
-                        showControls
-                        renderEmptyState={bootDone && codeEmpty ? renderEmptyState : undefined}
-                        portValues={state.portValues}
-                        peripheralState={state.peripheralState}
-                        simulation={simulation}
-                        onToggleNode={actions.toggleNode}
-                        onSetNodeValue={actions.setInput}
-                        onLoadMemory={onLoadMemory}
-                      />
-                    </ResizablePanel>
-                    <ResizableHandle withHandle />
-                    <ResizablePanel
-                      defaultSize={35}
-                      minSize={10}
-                      className="flex flex-col"
-                      style={CLIP}
-                    >
-                      <WaveformViewer
-                        vcd={waveformData.vcd}
-                        circuit={waveformData.circuit}
-                        steadyStateAt={waveformData.steadyStateAt}
-                        onLoadVCD={(vcd) =>
-                          setWaveformData((prev) => (prev ? { ...prev, vcd } : null))
-                        }
-                        onClose={() => setWaveformData(null)}
-                      />
-                    </ResizablePanel>
-                  </ResizablePanelGroup>
-                ) : (
-                  <CircuitCanvas
-                    circuit={circuit}
-                    definitions={state.definitions ?? undefined}
-                    theme={theme}
-                    showControls
-                    renderEmptyState={bootDone && codeEmpty ? renderEmptyState : undefined}
-                    portValues={state.portValues}
-                    peripheralState={state.peripheralState}
-                    simulation={simulation}
-                    onToggleNode={actions.toggleNode}
-                    onSetNodeValue={actions.setInput}
-                    onLoadMemory={onLoadMemory}
+          <ResizablePanelGroup orientation="horizontal">
+            {/* Left: Code Editor */}
+            <ResizablePanel defaultSize={40} minSize={20} style={CLIP}>
+              <div className="flex h-full flex-col">
+                <div className="min-h-0 flex-1">
+                  <SimtenCodeEditor
+                    ref={editorRef}
+                    value={code}
+                    onChange={(value) => {
+                      setCode(value ?? '');
+                      // An edit starts a new run of the new circuit, without
+                      // the programs loaded into the old one.
+                      setMemory(NO_MEMORY);
+                    }}
+                    theme={resolvedTheme === 'dark' ? SIMTEN_DARK : SIMTEN_LIGHT}
+                    diagnostics={diagnostics}
+                    beforeMount={(m) => registerSimtenThemes(m, { lightBackground: '#faf9f4' })}
+                    options={{ 'semanticHighlighting.enabled': true }}
                   />
-                )}
-              </ResizablePanel>
-            </ResizablePanelGroup>
-          </div>
-
-          {/* Conditional Bottom Bar: Clock Controls (only for sequential circuits) */}
-          {bootDone && showClockControls && (
-            <div className="flex items-center gap-4 border-t border-border bg-card/95 px-6 py-1.5">
-              <ClockControls
-                cycle={state.cycle}
-                historyLength={history.length}
-                historyIndex={history.index}
-                isRunning={state.isRunning}
-                isViewingPast={history.isViewingPast}
-                speed={state.speed}
-                onStep={() => void actions.tick()}
-                onRun={() => {
-                  markRunPulseSeen();
-                  void actions.run();
-                }}
-                onPause={() => void actions.pause()}
-                pulseRun={!runPulseSeen && !state.isRunning}
-                onReset={() => void actions.reset()}
-                onStepBack={() => void actions.stepBack()}
-                onStepForward={() => void actions.stepForward()}
-                onSeek={(i) => void actions.seek(i)}
-                onSpeedChange={actions.setSpeed}
-                showScrubber={history.length > 1}
-                chromeless
-              />
-            </div>
-          )}
+                </div>
+                {diagnostics.length > 0 && <ErrorDisplay errors={diagnostics} />}
+              </div>
+            </ResizablePanel>
+            <ResizableHandle withHandle />
+            {/* Right: Circuit Canvas, optionally split with Waveform below */}
+            <ResizablePanel defaultSize={60} minSize={30} style={CLIP}>
+              {waveformData ? (
+                <ResizablePanelGroup orientation="vertical">
+                  <ResizablePanel defaultSize={65} minSize={20} style={CLIP}>
+                    <CircuitCanvas
+                      circuit={circuit}
+                      definitions={state.definitions ?? undefined}
+                      theme={theme}
+                      showControls
+                      renderEmptyState={bootDone && codeEmpty ? renderEmptyState : undefined}
+                      portValues={state.portValues}
+                      peripheralState={state.peripheralState}
+                      simulation={simulation}
+                      onToggleNode={actions.toggleNode}
+                      onSetNodeValue={actions.setInput}
+                      onLoadMemory={onLoadMemory}
+                    />
+                  </ResizablePanel>
+                  <ResizableHandle withHandle />
+                  <ResizablePanel
+                    defaultSize={35}
+                    minSize={10}
+                    className="flex flex-col"
+                    style={CLIP}
+                  >
+                    <WaveformViewer
+                      vcd={waveformData.vcd}
+                      circuit={waveformData.circuit}
+                      steadyStateAt={waveformData.steadyStateAt}
+                      onLoadVCD={(vcd) =>
+                        setWaveformData((prev) => (prev ? { ...prev, vcd } : null))
+                      }
+                      onClose={() => setWaveformData(null)}
+                    />
+                  </ResizablePanel>
+                </ResizablePanelGroup>
+              ) : (
+                <CircuitCanvas
+                  circuit={circuit}
+                  definitions={state.definitions ?? undefined}
+                  theme={theme}
+                  showControls
+                  renderEmptyState={bootDone && codeEmpty ? renderEmptyState : undefined}
+                  portValues={state.portValues}
+                  peripheralState={state.peripheralState}
+                  simulation={simulation}
+                  onToggleNode={actions.toggleNode}
+                  onSetNodeValue={actions.setInput}
+                  onLoadMemory={onLoadMemory}
+                />
+              )}
+            </ResizablePanel>
+          </ResizablePanelGroup>
         </div>
-      </TooltipProvider>
-    </ReactFlowProvider>
+
+        {/* Conditional Bottom Bar: Clock Controls (only for sequential circuits) */}
+        {bootDone && showClockControls && (
+          <div className="flex items-center gap-4 border-t border-border bg-card/95 px-6 py-1.5">
+            <ClockControls
+              cycle={state.cycle}
+              historyLength={history.length}
+              historyIndex={history.index}
+              isRunning={state.isRunning}
+              isViewingPast={history.isViewingPast}
+              speed={state.speed}
+              onStep={() => void actions.tick()}
+              onRun={() => {
+                markRunPulseSeen();
+                void actions.run();
+              }}
+              onPause={() => void actions.pause()}
+              pulseRun={!runPulseSeen && !state.isRunning}
+              onReset={() => void actions.reset()}
+              onStepBack={() => void actions.stepBack()}
+              onStepForward={() => void actions.stepForward()}
+              onSeek={(i) => void actions.seek(i)}
+              onSpeedChange={actions.setSpeed}
+              showScrubber={history.length > 1}
+              chromeless
+            />
+          </div>
+        )}
+      </div>
+    </TooltipProvider>
   );
 }

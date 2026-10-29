@@ -3,7 +3,7 @@
  *
  * Takes column metadata and a positional row matrix; renders a styled,
  * accessible <table> in a card that matches the CircuitEmbed aesthetic
- * (theme tokens from packages/embed/src/styles/embed.css). No simulator
+ * (theme tokens from packages/react/src/styles/embed.css). No simulator
  * coupling; data is hand-coded at the call site.
  *
  * Plan: ~/.claude/plans/yeah-lets-mae-a-crystalline-cookie.md

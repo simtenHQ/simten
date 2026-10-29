@@ -3,7 +3,7 @@
  *
  * Copied verbatim from `apps/web/src/components/Logo.tsx` (`LogoSim10`) so the
  * two apps render an identical brand. Deliberately duplicated rather than
- * shared: `@simten/ui` is a published package, and putting a first-party
+ * shared: `@simten/react` is a published package, and putting a first-party
  * wordmark in it would make brand art permanent public API for the benefit of
  * two apps we control.
  *

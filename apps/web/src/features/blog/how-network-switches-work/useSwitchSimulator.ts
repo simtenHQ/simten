@@ -1,4 +1,4 @@
-import { useSimulation } from '@simten/ui/sandbox';
+import { useSimulation } from '@simten/react/sandbox';
 import { useCallback, useEffect, useMemo } from 'react';
 import { cyclesPerSecond, useAutoRun } from '@/lib/auto-run';
 import { MiniSwitch2Port } from './circuits';

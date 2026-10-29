@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/embed';
+import { CircuitEmbed } from '@simten/react/embed';
 import { ABSTRACTION_CIRCUITS } from '../circuits';
 
 export function BuildingUpSection() {

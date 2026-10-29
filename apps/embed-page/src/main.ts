@@ -1,16 +1,17 @@
 /**
  * The embed page: one shared circuit, full-bleed, for another site's iframe.
  *
- * The circuit renders through `<circuit-embed code="...">` from
- * @simten/embed, the same component and the same sandbox path as a web
- * component on any page: the source compiles and simulates in the sandbox
- * iframe, never here. Nothing in this frame writes anything: forking or
- * saving happens on simten.dev, behind the "Open in Simten" link.
+ * The circuit renders with `useSimulation` and `SimulationView` from
+ * @simten/react (./circuit.tsx): the source compiles and simulates in the
+ * sandbox iframe, never here. Nothing in this frame writes anything: forking
+ * or saving happens on simten.dev, behind the "Open in Simten" link.
  */
 
 import './page.css';
 import { fetchShare } from './fetch-share';
 import { parseEmbedRequest, resolveTheme } from './options';
+
+type MountCircuit = typeof import('./circuit').mountCircuit;
 
 const SITE = import.meta.env.DEV ? 'http://localhost:3001' : 'https://simten.dev';
 
@@ -40,25 +41,21 @@ function openLink(id: string): HTMLAnchorElement {
   return a;
 }
 
-/** Mounts the circuit, and keeps its size and theme in step with the frame. */
-function mount(id: string, source: string): void {
-  const embed = document.createElement('circuit-embed');
-  embed.setAttribute('code', source);
-  embed.setAttribute('theme', theme());
-  embed.setAttribute('height', String(window.innerHeight));
-  if (!request.controls) embed.setAttribute('show-controls', 'false');
-  // An `href` replaces the embed's Fork button. Fork is hidden in frames
-  // narrower than 768px, and there is no info bar to show `href` in, so the
-  // page's own "Open in Simten" link, to the same share, stands in for both.
-  embed.setAttribute('href', `${SITE}/circuit/s/${id}`);
-  root.replaceChildren(embed, openLink(id));
-
-  window.addEventListener('resize', () => {
-    embed.setAttribute('height', String(window.innerHeight));
+/** Mounts the circuit and keeps its theme in step with the system's. CSS sizes it to the frame. */
+function mount(id: string, source: string, mountCircuit: MountCircuit): void {
+  const container = document.createElement('div');
+  container.className = 'circuit';
+  // No Fork button: the page's own "Open in Simten" link, to the same share,
+  // is the way out of the frame.
+  root.replaceChildren(container, openLink(id));
+  const setTheme = mountCircuit(container, {
+    source,
+    theme: theme(),
+    controls: request.controls,
   });
   darkQuery.addEventListener('change', () => {
     document.documentElement.dataset.theme = theme();
-    embed.setAttribute('theme', theme());
+    setTheme(theme());
   });
 }
 
@@ -71,7 +68,7 @@ async function main(): Promise<void> {
   }
   // The circuit's code (React, the canvas, the simulator) loads while the
   // share is fetched, not after.
-  const component = import('@simten/embed/webcomponent');
+  const circuit = import('./circuit').then((m) => m.mountCircuit);
   const share = await fetchShare(id, {
     onRetry: () => showStatus('This circuit is still publishing. Retrying…'),
   });
@@ -83,8 +80,7 @@ async function main(): Promise<void> {
     showStatus(`Couldn't load this circuit: ${share.message}`);
     return;
   }
-  await component;
-  mount(id, share.source);
+  mount(id, share.source, await circuit);
 }
 
 main().catch(() => showStatus("Couldn't load this circuit. Try reloading."));

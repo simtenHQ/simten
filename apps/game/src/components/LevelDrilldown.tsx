@@ -23,8 +23,12 @@
  */
 
 import type { CircuitIR } from '@simten/core/internal';
-import { CompositeInspectorDialog, type InspectorFrame, useDetectTheme } from '@simten/ui/canvas';
-import { useSimulation } from '@simten/ui/sandbox';
+import {
+  CompositeInspectorDialog,
+  type InspectorFrame,
+  useDetectTheme,
+} from '@simten/react/canvas';
+import { useSimulation } from '@simten/react/sandbox';
 import { useCallback, useEffect, useState } from 'react';
 import { SOLUTIONS } from '../game/solutions';
 import type { Level } from '../game/types';

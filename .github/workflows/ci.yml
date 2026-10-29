@@ -1,7 +1,8 @@
 name: CI
 
 # Every workspace test suite, the Go container tests, typecheck, lint,
-# package builds, the web build, and the embed and sandbox browser tests.
+# package builds, the web build, and the CircuitEmbed and sandbox browser
+# tests.
 
 on:
   push:
@@ -71,9 +72,9 @@ jobs:
         # `dist/*.d.ts` to already exist. Locally these dists persist
         # between runs; on a fresh CI checkout they don't.
         #
-        # @simten/web also imports `@simten/core/circuit`, `@simten/ui`,
-        # `@simten/embed` via their `exports` map → `./dist/...`, so the
-        # web build needs this too.
+        # @simten/web also imports `@simten/core/circuit` and `@simten/react`
+        # via their `exports` map → `./dist/...`, so the web build needs
+        # this too.
         #
         # `--workspace-concurrency=1` forces sequential builds so @simten/mcp
         # doesn't race ahead of @simten/core. pnpm doesn't enforce topological
@@ -86,7 +87,7 @@ jobs:
         # the built dist/: exports paths resolve to real files, types
         # entries are correct, no deprecated patterns. Catches the
         # "publishConfig says ./dist/foo.js but dist/foo.js doesn't exist"
-        # class of bug — which is exactly what surfaced for @simten/embed
+        # class of bug, which is exactly what surfaced for the embed package
         # when CircuitViewer.tsx had a type error blocking the build.
         # Runs after the workspace build (publint reads dist/) and pairs
         # with the build because it's checking the produced artifact.
@@ -102,7 +103,7 @@ jobs:
         # https://github.com/arethetypeswrong/arethetypeswrong.github.io/pull/263
         # Re-enable here once a new attw release ships.
         run: |
-          for pkg in core sandbox ui embed mcp; do
+          for pkg in core sandbox react mcp; do
             pnpm dlx publint "packages/$pkg"
           done
 
@@ -198,7 +199,7 @@ jobs:
         run: pnpm --filter @simten/web build
 
   e2e:
-    name: browser tests (embed, sandbox)
+    name: browser tests (CircuitEmbed, sandbox)
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
@@ -229,19 +230,19 @@ jobs:
         # of this job's five minutes.
         run: pnpm exec playwright install --only-shell chromium
 
-      - name: Build core, sandbox and ui
-        # The embed bundle resolves them through their built `dist/`. One at a
-        # time, in dependency order (see the workspace build above).
+      - name: Build core, sandbox and react
+        # Built before the Playwright suites, one at a time, in dependency
+        # order (see the workspace build above).
         run: |
           pnpm --filter @simten/core build
           pnpm --filter @simten/sandbox build
-          pnpm --filter @simten/ui build
+          pnpm --filter @simten/react build
 
-      - name: Embed (Playwright)
-        # Builds the sandbox and an embed bundle pointed at it, then runs the
-        # <circuit-embed> suite against both, so it tests this commit's
+      - name: CircuitEmbed (Playwright)
+        # Builds the sandbox and a fixture page of <CircuitEmbed>s pointed at
+        # it, then runs the suite against both, so it tests this commit's
         # sandbox rather than the deployed one.
-        run: pnpm --filter @simten/embed test:e2e
+        run: pnpm --filter @simten/react test:e2e
 
       - name: Sandbox watchdog
         # An infinite loop in user code times out, the page stays responsive,

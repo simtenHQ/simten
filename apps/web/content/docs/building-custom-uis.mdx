@@ -55,7 +55,7 @@ every page on simten.dev. Use this unless you need something it
 doesn't give you.
 
 ```tsx
-import { CircuitEmbed } from '@simten/embed'
+import { CircuitEmbed } from '@simten/react/embed'
 
 <CircuitEmbed
   circuit={MyCircuit}
@@ -80,8 +80,8 @@ first settles, then again on every subsequent settled change.
 
 ```tsx
 import { useState } from 'react'
-import { CircuitEmbed } from '@simten/embed'
-import type { FlatPortValueMap } from '@simten/embed'
+import { CircuitEmbed } from '@simten/react/embed'
+import type { FlatPortValueMap } from '@simten/react/embed'
 import { TruthTable, computeActiveRow } from '@/components/TruthTable'
 
 function HalfAdderWithLiveTable() {
@@ -140,7 +140,7 @@ the existing `ref` handle. No new API required.
 
 ```tsx
 import { useRef } from 'react'
-import { CircuitEmbed, type CircuitEmbedHandle } from '@simten/embed'
+import { CircuitEmbed, type CircuitEmbedHandle } from '@simten/react/embed'
 
 function HalfAdderDrivenByTable() {
   const embedRef = useRef<CircuitEmbedHandle>(null)
@@ -172,12 +172,12 @@ side.
 
 When you want to break out of the embed's chrome entirely and build
 your own frontend on top of the simulator, drop down to the underlying
-primitives. `useSimulation` from `@simten/ui/sandbox` gives you the
+primitives. `useSimulation` from `@simten/react/sandbox` gives you the
 live state and the actions; render whatever React you want with them.
 The circuit becomes your engine, your component is the UI.
 
 ```tsx
-import { useSimulation } from '@simten/ui/sandbox'
+import { useSimulation } from '@simten/react/sandbox'
 import { TruthTable, computeActiveRow } from '@/components/TruthTable'
 
 function HalfAdderWithCustomControls() {

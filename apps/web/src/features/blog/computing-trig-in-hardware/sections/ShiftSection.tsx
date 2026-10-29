@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/embed';
+import { CircuitEmbed } from '@simten/react/embed';
 import { CORDIC_CIRCUITS } from '../circuits';
 
 export function ShiftSection() {

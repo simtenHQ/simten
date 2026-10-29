@@ -4,7 +4,7 @@ The Simten simulation engine and circuit DSL — write hardware as TypeScript, s
 
 This is the engine package. For most use cases you'll want one of the higher-level packages instead:
 
-- **[`@simten/embed`](https://www.npmjs.com/package/@simten/embed)** — drop interactive simulations into a React app or web page.
+- **[`@simten/react`](https://www.npmjs.com/package/@simten/react)**: put interactive simulations in a React app. On any other page, use the iframe embed from Share > Embed on simten.dev.
 - **[`@simten/mcp`](https://www.npmjs.com/package/@simten/mcp)** — let Claude design and verify circuits in your editor.
 
 Use `@simten/core` directly when you need the simulator without UI: testing, batch verification, custom build pipelines, headless tooling.

@@ -1,5 +1,5 @@
 import type { PeripheralValue } from '@simten/core/internal';
-import { useSimulation } from '@simten/ui/sandbox';
+import { useSimulation } from '@simten/react/sandbox';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { PongSimple } from './circuits';
 

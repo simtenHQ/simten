@@ -279,7 +279,7 @@ export interface CircuitMeta {
 // Built component
 // ============================================================================
 
-/** Carries a composite's node types, for `CircuitLayout` in `@simten/ui`. Type-level only. */
+/** Carries a composite's node types, for `CircuitLayout` in `@simten/react`. Type-level only. */
 declare const __nodes: unique symbol;
 
 /**

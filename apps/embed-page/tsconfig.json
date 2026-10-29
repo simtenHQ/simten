@@ -1,6 +1,7 @@
 {
   "include": [
     "src/**/*.ts",
+    "src/**/*.tsx",
     "e2e/**/*.ts",
     "e2e/**/*.mts",
     "vite.config.ts",

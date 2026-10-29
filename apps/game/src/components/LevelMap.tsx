@@ -10,7 +10,7 @@
  * meaning, so letting a player rearrange it only lets them break it.
  */
 
-import { CompositeBadge } from '@simten/ui/nodes';
+import { CompositeBadge } from '@simten/react/nodes';
 import { Link } from '@tanstack/react-router';
 import {
   Background,
@@ -58,7 +58,7 @@ const ENFORCE_LOCKING = true;
 /**
  * Wire and port styling, matched to the circuit canvas rather than invented.
  *
- * `WIRE_COLORS` in `packages/ui/src/editor/types/visual.ts`: a live signal is
+ * The wire colours in `packages/react/src/canvas/circuit-to-flow.ts`: a live signal is
  * green-500, a low one slate-400, and the canvas draws every wire at
  * `strokeWidth: 2` without animation. Matching is not only cosmetic; the map
  * *is* a circuit, so a wire leaving a solved level carries a real 1, and it

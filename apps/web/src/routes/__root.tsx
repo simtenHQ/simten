@@ -1,5 +1,5 @@
-import { ShareCircuitProvider } from '@simten/embed';
-import { SandboxProvider } from '@simten/ui/sandbox';
+import { ShareCircuitProvider } from '@simten/react/embed';
+import { SandboxProvider } from '@simten/react/sandbox';
 import {
   createRootRoute,
   HeadContent,

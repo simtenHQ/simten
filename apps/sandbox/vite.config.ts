@@ -23,8 +23,9 @@ import { defineConfig } from 'vite';
 //   base-uri / form-action /
 //   object-src 'none'             — cheap defense-in-depth; sandbox uses none of these.
 //   frame-ancestors http: https: — any web page may embed the sandbox: it
-//                                   is iframed by simten.dev, play.simten.dev
-//                                   and third-party @simten/embed pages.
+//                                   is iframed by simten.dev, play.simten.dev,
+//                                   embed.simten.dev and third-party pages
+//                                   using @simten/react or @simten/sandbox.
 //
 // Dev caveat: this tightens dev to match prod. If Vite's HMR error overlay
 // breaks (it uses inline styles which `default-src 'none'` blocks), comment
