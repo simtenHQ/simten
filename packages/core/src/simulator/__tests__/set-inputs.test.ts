@@ -107,6 +107,17 @@ describe('set', () => {
   });
 });
 
+describe('reset', () => {
+  it('leaves switches and ports where they are', () => {
+    const sim = simulate(Board);
+    sim.set({ a: 1, kbd: 9, 'latch.d': 1 });
+    sim.reset();
+    expect(outputs(sim).y).toBe(0);
+    expect(nodesOf(sim).ports().get('kbd.out')).toBe(9);
+    expect(nodesOf(sim).ports().get('latch.d.out')).toBe(1);
+  });
+});
+
 describe('simulate(top, { memory })', () => {
   const Reader = circuit('SetReader', {
     inputs: { addr: bus(16) },
