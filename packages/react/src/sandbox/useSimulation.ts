@@ -1,28 +1,37 @@
 /**
  * useSimulation: compile a circuit in the sandbox and simulate it there.
  *
- * Give it source text (the editor, the embed page) or a circuit built on the
- * page (blog posts, docs, `<CircuitEmbed>`, which goes through `compile-ir`).
- * It compiles, opens a session on the chosen circuit, and mirrors the
- * session's state into React. History, ticking and auto-run all run in the
- * sandbox worker; this hook keeps no timers and no history of its own.
+ * Give it a circuit built on the page (sent as IR plus behavior as text,
+ * `compile-ir`) or source text (`{ source }`). It compiles, opens a session on
+ * the chosen circuit and mirrors the session's state into React. History,
+ * ticking and auto-run all run in the sandbox worker; this hook keeps no timers
+ * and no history of its own.
  *
- * A failed compile sets `compileError` and leaves the last good session
- * running. A new compile, a different circuit or new `memory` opens a new
- * session and closes the old one.
+ * It returns `{ state, actions }`. `state` is what the simulation is doing now;
+ * `actions` is what you can tell it to do, with one identity for the life of
+ * the hook. The options say how the simulation starts: a change to
+ * `initialInputs`, `memory` or `history` opens a new session at cycle 0.
  *
- * Needs a `SandboxProvider` above it to share one sandbox; without one it
- * makes its own.
+ * Inputs are named as a person at the board sees them: input ports by name,
+ * Switch and Input nodes by path. The session wraps a circuit with ports in a
+ * harness of switches and lamps for the canvas to draw; `harness-keys.ts` maps
+ * the names onto it.
+ *
+ * A failed compile sets `state.compileError` and leaves the last good session
+ * running. Source text recompiles 50 ms after it stops changing; the first
+ * compile goes at once.
+ *
+ * The sandbox is the page-wide one, or the nearest `SandboxProvider`'s.
  */
 
-import type { Circuit } from '@simten/core';
-import {
-  type CircuitDefinitions,
-  type CircuitIR,
-  internalsOf,
-  type MemoryContents,
-  type PeripheralValue,
+import type { Circuit, InputKey, PortMap } from '@simten/core';
+import type {
+  CircuitDefinitions,
+  CircuitIR,
+  MemoryContents,
+  PeripheralValue,
 } from '@simten/core/internal';
+import { internalsOf } from '@simten/core/internal';
 import { HexDisplay, Input, Led, Output, Switch } from '@simten/core/std';
 import type { ExportResult, VerilogExportOptions } from '@simten/core/verilog';
 import {
@@ -33,35 +42,32 @@ import {
   type SimulationClientState,
 } from '@simten/sandbox';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { type HarnessKeys, harnessKeys, sessionInputs } from './harness-keys.js';
 import { useSandboxClient } from './SandboxProvider.js';
 
-/** Source text, with the circuit to simulate picked by name or by a function; or a circuit built on the page. */
-export type SimulationSource =
-  | {
-      source: string;
-      /** Defaults to the last circuit the source builds, then the last it exports. */
-      circuit?: string | ((circuits: CircuitIR[]) => CircuitIR | undefined);
-    }
-  | Circuit;
+/** Source text, with the circuit to simulate picked by name or by a function. */
+export interface SourceText {
+  source: string;
+  /** Defaults to the last circuit the source builds, then the last it exports. */
+  circuit?: string | ((circuits: CircuitIR[]) => CircuitIR | undefined);
+}
 
-export interface UseSimulationOptions {
-  /** Wait this long after `source` text changes before recompiling. The first compile isn't delayed. @default 300 */
-  debounceMs?: number;
-  /** Wrap the circuit in Switch/Input and Led/HexDisplay nodes. */
-  harness?: boolean;
-  /** Starting values for the circuit's inputs (the harness's switches when harnessed). */
-  initialInputs?: Record<string, number>;
-  /** Cycles of history. @default 200 */
-  history?: number;
-  /** Memory contents by node path, loaded before cycle 0. A new object reopens the session (a new program). */
+/** A circuit built on the page, or source text. */
+export type SimulationSource = Circuit | SourceText;
+
+/** How a simulation starts. A change to any of these starts a new one at cycle 0. */
+export interface UseSimulationOptions<Keys extends string = string> {
+  /** Where the inputs sit at power-on, by the keys `set` takes. `reset` doesn't move them. */
+  initialInputs?: Partial<Record<Keys, number>>;
+  /** Memory contents by node path (`imem`, `cpu.rom`), loaded before cycle 0. A new program is a new run. */
   memory?: Record<string, MemoryContents>;
-  /** Auto-run speed in cycles per second until `run` or `setSpeed` changes it. @default 15 */
-  speed?: number;
+  /** History entries kept for `stepBack`, `stepForward` and `seek`; 0 for none. @default 200 */
+  history?: number;
 }
 
 /**
  * A compile error. `line` and `column` are 1-based, or 0 when the error has no
- * location. Shaped like `@simten/react/monaco`'s `SimtenDiagnostic`.
+ * location. Pass it to `CodeEditor`'s `diagnostics` to mark the line.
  */
 export interface CompileDiagnostic {
   message: string;
@@ -69,80 +75,95 @@ export interface CompileDiagnostic {
   column: number;
 }
 
-export interface SimulationViewState {
+/** What the simulation is doing now. A new object on every update. */
+export interface SimulationState<Outs extends string = string> {
+  /** A session is open and has reported its state. */
   ready: boolean;
   /** Fatal: the sandbox didn't load, the circuit failed to open, or an action failed. */
   error: string | null;
   /** Non-fatal: the sandbox restarted this session at cycle 0. */
   notice: string | null;
+  /** The last compile's error; null on success. The last good session keeps running. */
+  compileError: CompileDiagnostic | null;
 
+  /** The circuit's outputs by name. */
+  outputs: Record<Outs, number>;
+  /**
+   * Every port value, keyed `nodePath.port`, for the canvas and tooling. Paths
+   * are the session's, so a circuit with ports appears inside its harness
+   * (`dut.…`) and an output `sum` as the lamp it drives (`sum.in`). Null until
+   * the first state.
+   */
+  portValues: ReadonlyMap<string, number> | null;
+  /** Screens, consoles, UARTs and the memories behind them, by session path. */
+  peripheralState: ReadonlyMap<string, PeripheralValue>;
+  cycle: number;
+  /** Whether the circuit has a clock (registers, memories). */
+  isSequential: boolean;
+  isRunning: boolean;
+  /** Auto-run speed in cycles per second: the last one given to `run`. */
+  speed: number;
+  /** Where the history cursor is. */
+  history: { length: number; index: number; isViewingPast: boolean };
+
+  /** The circuit the session runs, for the canvas: harnessed when it has ports. */
   circuit: CircuitIR | null;
-  /** The simulated circuit by the name given to `circuit(...)`, before any harness. Export uses it. */
+  /** The simulated circuit's name, as given to `circuit(...)`. */
   circuitName: string | null;
-  definitions: CircuitDefinitions | null;
   /** Every circuit the last good compile built, for pickers. */
   circuits: CircuitIR[];
-  isSequential: boolean;
-
-  cycle: number;
-  /** Every port value, keyed `nodePath.port` (top-level ports under `__top__`). Null until the first state. */
-  portValues: ReadonlyMap<string, number> | null;
-  /** Top-level outputs by name; the harness's displays when harnessed. */
-  outputs: Record<string, number>;
-  /** Screens, consoles, UARTs and the memories behind them, by node path. */
-  peripheralState: ReadonlyMap<string, PeripheralValue>;
-
-  isRunning: boolean;
-  /** Auto-run speed in cycles per second. */
-  speed: number;
+  definitions: CircuitDefinitions | null;
 }
 
-export interface SimulationActions {
-  /** Drive top-level inputs by name. */
-  set(values: Record<string, number>): Promise<void>;
-  /** Write a Switch or Input node (keyboards write Inputs) by node path. Nothing else. */
-  setInput(path: string, value: number): Promise<void>;
-  /** Write several Switch or Input nodes by node path, all before the circuit settles. */
-  setInputs(values: Record<string, number>): Promise<void>;
-  /** Flip a Switch node between 0 and 1. */
-  toggleNode(path: string): Promise<void>;
+/** What you can tell the simulation to do. Failures land in `state.error`, not in a rejection. */
+export interface SimulationActions<Keys extends string = string> {
+  /**
+   * Set inputs: input ports by name and Switch and Input nodes by path, all
+   * before the circuit settles. A key that names anything else, or both a port
+   * and a Switch, is an error, and then nothing is written.
+   */
+  set(values: Partial<Record<Keys, number>>): Promise<void>;
+  /** Flip one 1-bit input or Switch between 0 and 1. */
+  toggle(name: Keys): Promise<void>;
+  /** Advance `count` clock cycles (default 1), as one history step. */
   tick(count?: number): Promise<void>;
+  /** Auto-run in the sandbox at `speed` cycles per second (default: the current `state.speed`). */
+  run(speed?: number): Promise<void>;
+  pause(): Promise<void>;
+  /**
+   * The reset line: back to cycle 0, registers and history to the start.
+   * Memory contents stay, and so do the inputs. To start over from power-on,
+   * `set(initialInputs)` then `reset()`.
+   */
   reset(): Promise<void>;
   stepBack(): Promise<boolean>;
   stepForward(): Promise<boolean>;
   seek(index: number): Promise<boolean>;
-  /** Auto-run in the sandbox at `speed` cycles per second (default: the current speed). */
-  run(speed?: number): Promise<void>;
-  pause(): Promise<void>;
-  /** Changes the auto-run speed; doesn't start a stopped run. */
-  setSpeed(speed: number): void;
-  /** Tick `count` times and return `port` (a port-map key) after each tick. */
-  sample(port: string, count: number, inputs?: Record<string, number>): Promise<number[]>;
-  /** Drive input `path` through 0..count-1, settling each time, and read `port`. Doesn't tick. */
-  scan(path: string, port: string, count: number): Promise<number[]>;
-  /** Compile now, skipping the debounce. */
-  recompile(): Promise<void>;
+  /** Drive one input through 0..count-1, settling each time, and read `port` (a `portValues` key) after each. Doesn't tick. */
+  scan(input: Keys, port: string, count: number): Promise<number[]>;
+  /** Tick `count` times, after setting `inputs`, and read `port` (a `portValues` key) after each tick. */
+  sample(port: string, count: number, inputs?: Partial<Record<Keys, number>>): Promise<number[]>;
   /** Verilog for the simulated circuit, from the same compile. */
   exportVerilog(options?: VerilogExportOptions): Promise<ExportResult>;
+  /** Compile the source text now, without waiting for the debounce. */
+  recompile(): Promise<void>;
 }
 
-export interface UseSimulationResult {
-  /** The last compile's error; null on success. The last good session keeps running. */
-  compileError: CompileDiagnostic | null;
-  /** What the circuit is doing now. Changes on every update. */
-  state: SimulationViewState;
-  /** Where the history cursor is. */
-  history: { length: number; index: number; isViewingPast: boolean };
-  /** One identity for the life of the hook, so they're safe in dependency arrays. */
-  actions: SimulationActions;
-  /** The open session, for anything that reads it directly. */
-  client: SimulationClient | null;
+/** A running simulation, as `CircuitCanvas`, `ClockControls` and `WaveformViewer` take it. */
+export interface UseSimulationResult<Keys extends string = string, Outs extends string = string> {
+  state: SimulationState<Outs>;
+  actions: SimulationActions<Keys>;
 }
 
-const DEFAULT_DEBOUNCE_MS = 300;
+/** A circuit's output port names, or `string` when its type isn't known. */
+type OutputName<C extends Circuit> =
+  C extends Circuit<PortMap, infer Outs> ? keyof Outs & string : string;
+
+/** Source text waits this long after the last change before it compiles. */
+const DEBOUNCE_MS = 50;
 const DEFAULT_SPEED = 15;
+const DEFAULT_HISTORY = 200;
 const TOP = '__top__';
-const NO_PORTS: ReadonlyMap<string, number> = new Map();
 const NO_PERIPHERALS: ReadonlyMap<string, PeripheralValue> = new Map();
 const NO_CIRCUITS: CircuitIR[] = [];
 const NO_OUTPUTS: Record<string, number> = {};
@@ -167,7 +188,7 @@ function withHarnessParts(definitions: CircuitDefinitions): CircuitDefinitions {
   };
 }
 
-function isSourceText(source: SimulationSource): source is { source: string } {
+function isSourceText(source: SimulationSource): source is SourceText {
   return typeof (source as { source?: unknown }).source === 'string';
 }
 
@@ -186,13 +207,10 @@ export function diagnosticOf(error: unknown): CompileDiagnostic {
   };
 }
 
-function pickCircuit(
-  compiled: Compiled,
-  choice: string | ((circuits: CircuitIR[]) => CircuitIR | undefined) | undefined,
-): string | undefined {
-  if (typeof choice === 'string') return choice;
-  if (choice) return choice(compiled.circuits)?.name;
-  return (compiled.circuits.at(-1) ?? compiled.exported.at(-1))?.name;
+function pickCircuit(compiled: Compiled, choice: SourceText['circuit']): CircuitIR | undefined {
+  if (typeof choice === 'string') return compiled.definitions.resolveCircuit(choice);
+  if (choice) return choice(compiled.circuits);
+  return compiled.circuits.at(-1) ?? compiled.exported.at(-1);
 }
 
 /** Outputs by name: the circuit's own, or the harness's displays. */
@@ -210,6 +228,12 @@ function outputsOf(circuit: CircuitIR, ports: ReadonlyMap<string, number>): Reco
     if (value !== undefined) outputs[node.id] = value;
   }
   return outputs;
+}
+
+/** Zero for each output of a circuit built on the page, so `outputs` has every key before the first state. */
+function zeroOutputs(circuit: Circuit | null): Record<string, number> {
+  if (!circuit) return NO_OUTPUTS;
+  return Object.fromEntries(Object.keys(circuit.outputs).map((name) => [name, 0]));
 }
 
 /**
@@ -233,10 +257,11 @@ interface Live {
   session: SimulationClient;
   compiled: Compiled;
   name: string;
+  keys: HarnessKeys;
 }
 
 /**
- * Undo a rejected write's entries in `written`: each path goes back to what was
+ * Undo a rejected write's entries in `written`: each key goes back to what was
  * remembered `before`, unless a later write has replaced the value since.
  */
 function restoreWritten(
@@ -244,22 +269,34 @@ function restoreWritten(
   values: Record<string, number>,
   before: Map<string, number | undefined>,
 ): void {
-  for (const [path, value] of before) {
-    if (written.get(path) !== values[path]) continue;
-    if (value === undefined) written.delete(path);
-    else written.set(path, value);
+  for (const [key, value] of before) {
+    if (written.get(key) !== values[key]) continue;
+    if (value === undefined) written.delete(key);
+    else written.set(key, value);
   }
 }
 
+export function useSimulation<C extends Circuit>(
+  circuit: C | null,
+  options?: UseSimulationOptions<InputKey<C>>,
+): UseSimulationResult<InputKey<C>, OutputName<C>>;
+export function useSimulation(
+  source: SourceText | null,
+  options?: UseSimulationOptions,
+): UseSimulationResult;
+export function useSimulation(
+  source: SimulationSource | null,
+  options?: UseSimulationOptions,
+): UseSimulationResult;
 export function useSimulation(
   source: SimulationSource | null,
   options: UseSimulationOptions = {},
 ): UseSimulationResult {
-  const { debounceMs = DEFAULT_DEBOUNCE_MS, harness = false, history } = options;
+  const history = options.history ?? DEFAULT_HISTORY;
   const initialInputs = useByValue(options.initialInputs);
   const memory = useByValue(options.memory);
   const client = useSandboxClient();
-  // Latest-value refs (client, choice, text, speed) let the stable actions and
+  // Latest-value refs (client, choice, text) let the stable actions and
   // effects read the current props without being recreated.
   const clientRef = useRef(client);
   clientRef.current = client;
@@ -279,21 +316,21 @@ export function useSimulation(
   const liveRef = useRef<Live | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [actionNotice, setActionNotice] = useState<string | null>(null);
-  const [speed, setSpeedState] = useState(options.speed ?? DEFAULT_SPEED);
+  const [speed, setSpeed] = useState(DEFAULT_SPEED);
   const speedRef = useRef(speed);
-  /** A `run` called before the session opened (an embed's handle on mount); it starts when it does. */
+  /** A `run` called before the session opened (a demo that starts running on mount); it starts when it does. */
   const pendingRun = useRef<number | null>(null);
   /**
-   * Values written with `setInput` or `setInputs` since the session last moved through
-   * history. `toggleNode` reads these first: the pushed state lags behind
-   * writes still in flight, so a fast double click would otherwise flip from
-   * the same stale value twice.
+   * Values written with `set` since the session last moved through history,
+   * by the caller's key. `toggle` reads these first: the pushed state lags
+   * behind writes still in flight, so a fast double click would otherwise flip
+   * from the same stale value twice.
    */
   const written = useRef(new Map<string, number>());
 
   /** Every compile this hook holds in the sandbox, so each is released once nothing needs it. */
   const held = useRef(new Set<Compiled>());
-  /** The sandbox each compile lives in: when the provider's client changes, an old compile can't open in the new one. */
+  /** The sandbox each compile lives in: when the client changes, an old compile can't open in the new one. */
   const compiledIn = useRef(new WeakMap<Compiled, SandboxClient>());
   /** Bumped by every compile, so an older one finishing after a newer one started is dropped. */
   const generation = useRef(0);
@@ -348,10 +385,10 @@ export function useSimulation(
         compiledOnce.current = true;
         void compile(client, text);
       },
-      compiledOnce.current ? debounceMs : 0,
+      compiledOnce.current ? DEBOUNCE_MS : 0,
     );
     return () => clearTimeout(timer);
-  }, [client, text, debounceMs, compile]);
+  }, [client, text, compile]);
 
   // A circuit built on the page: compile it once per circuit.
   useEffect(() => {
@@ -364,20 +401,38 @@ export function useSimulation(
   useEffect(() => {
     if (!client || !compiled) return;
     if (compiledIn.current.get(compiled) !== client) return;
-    const name = pickCircuit(compiled, choiceName ?? choiceRef.current);
-    if (!name) {
+    const target = pickCircuit(compiled, choiceName ?? choiceRef.current);
+    if (!target) {
       setCompileError({ message: 'No circuit to simulate.', line: 0, column: 0 });
       return;
     }
+    const name = target.name;
+    let opening: Promise<SimulationClient>;
+    try {
+      // The starting values and memory, in the harness's terms.
+      const before = harnessKeys(target, compiled.definitions);
+      const start = initialInputs ? sessionInputs(before, initialInputs) : undefined;
+      const contents = memory
+        ? Object.fromEntries(Object.entries(memory).map(([path, c]) => [before.node(path), c]))
+        : undefined;
+      opening = client.open(
+        { compiled, circuit: name },
+        { harness: true, initialInputs: start, history, memory: contents },
+      );
+    } catch (e) {
+      setActionError(e instanceof Error ? e.message : String(e));
+      return;
+    }
     let cancelled = false;
-    client.open({ compiled, circuit: name }, { harness, initialInputs, history, memory }).then(
+    opening.then(
       (session) => {
         if (cancelled) {
           session.close().catch(ignore);
           return;
         }
         const previous = liveRef.current;
-        const next = { session, compiled, name };
+        const keys = harnessKeys(target, compiled.definitions, session.circuit);
+        const next = { session, compiled, name, keys };
         liveRef.current = next;
         written.current.clear();
         setLive(next);
@@ -400,7 +455,7 @@ export function useSimulation(
     return () => {
       cancelled = true;
     };
-  }, [client, compiled, choiceName, harness, initialInputs, history, memory, releaseExcept]);
+  }, [client, compiled, choiceName, initialInputs, history, memory, releaseExcept]);
 
   // Unmount: close the session and free every compile.
   useEffect(
@@ -443,29 +498,12 @@ export function useSimulation(
     () => (session ? withHarnessParts(session.definitions) : null),
     [session],
   );
-  const ports = current?.ports ?? NO_PORTS;
+  const ports = current?.ports ?? null;
+  const beforeFirstState = useMemo(() => zeroOutputs(built), [built]);
   const outputs = useMemo(
-    () => (session ? outputsOf(session.circuit, ports) : NO_OUTPUTS),
-    [session, ports],
+    () => (session && ports ? outputsOf(session.circuit, ports) : beforeFirstState),
+    [session, ports, beforeFirstState],
   );
-
-  const closedBySandbox = current?.status === 'closed' ? current.notice : null;
-  const state: SimulationViewState = {
-    ready: current !== null && current.status !== 'closed',
-    error: unavailable ?? actionError ?? closedBySandbox,
-    notice: current?.status === 'restarted' ? current.notice : actionNotice,
-    circuit: session?.circuit ?? null,
-    circuitName: live?.name ?? null,
-    definitions,
-    circuits: compiled?.circuits ?? NO_CIRCUITS,
-    isSequential: session?.isSequential ?? false,
-    cycle: current?.cycle ?? 0,
-    portValues: current && ports.size > 0 ? ports : null,
-    outputs,
-    peripheralState: current?.peripherals ?? NO_PERIPHERALS,
-    isRunning: current?.isRunning ?? false,
-    speed,
-  };
 
   const historyLength = current?.history.length ?? 0;
   const historyIndex = current?.history.index ?? -1;
@@ -478,6 +516,26 @@ export function useSimulation(
     [historyLength, historyIndex],
   );
 
+  const closedBySandbox = current?.status === 'closed' ? current.notice : null;
+  const state: SimulationState = {
+    ready: current !== null && current.status !== 'closed',
+    error: unavailable ?? actionError ?? closedBySandbox,
+    notice: current?.status === 'restarted' ? current.notice : actionNotice,
+    compileError,
+    outputs,
+    portValues: ports && ports.size > 0 ? ports : null,
+    peripheralState: current?.peripherals ?? NO_PERIPHERALS,
+    cycle: current?.cycle ?? 0,
+    isSequential: session?.isSequential ?? false,
+    isRunning: current?.isRunning ?? false,
+    speed,
+    history: historyView,
+    circuit: session?.circuit ?? null,
+    circuitName: live?.name ?? null,
+    circuits: compiled?.circuits ?? NO_CIRCUITS,
+    definitions,
+  };
+
   // ── Actions ──────────────────────────────────────────────────────────────
 
   const textRef = useRef(text);
@@ -485,15 +543,12 @@ export function useSimulation(
 
   const actions = useMemo((): SimulationActions => {
     /** Run `work` on the open session; report a failure instead of throwing it. */
-    async function withSession<T>(
-      fallback: T,
-      work: (session: SimulationClient) => Promise<T>,
-    ): Promise<T> {
-      const session = liveRef.current?.session;
-      if (!session) return fallback;
+    async function withSession<T>(fallback: T, work: (opened: Live) => Promise<T>): Promise<T> {
+      const opened = liveRef.current;
+      if (!opened) return fallback;
       setActionNotice(null);
       try {
-        return await work(session);
+        return await work(opened);
       } catch (e) {
         report(e);
         return fallback;
@@ -521,70 +576,76 @@ export function useSimulation(
     }
 
     /**
-     * Remember each value before sending it, for `toggleNode`; see `written`.
-     * A rejected write changed nothing in the sandbox, so put back what was
+     * Remember each value before sending it, for `toggle`; see `written`. A
+     * rejected write changed nothing in the sandbox, so put back what was
      * remembered before it, unless a later write has replaced the value since.
      */
-    function setInputs(values: Record<string, number>): Promise<void> {
-      return withSession(undefined, async (s) => {
-        const paths = Object.keys(values);
-        const before = new Map(paths.map((path) => [path, written.current.get(path)]));
-        for (const path of paths) written.current.set(path, values[path]);
+    function set(values: Partial<Record<string, number>>): Promise<void> {
+      return withSession(undefined, async ({ session: s, keys }) => {
+        const given: Record<string, number> = {};
+        for (const [key, value] of Object.entries(values)) {
+          if (value !== undefined) given[key] = value;
+        }
+        const raw = sessionInputs(keys, given);
+        const before = new Map(Object.keys(given).map((key) => [key, written.current.get(key)]));
+        for (const [key, value] of Object.entries(given)) written.current.set(key, value);
         try {
-          await s.set(values);
+          if (Object.keys(raw).length > 0) await s.set(raw);
         } catch (e) {
-          restoreWritten(written.current, values, before);
+          restoreWritten(written.current, given, before);
           throw e;
         }
       });
     }
 
     return {
-      set: (values) => withSession(undefined, (s) => s.set(values)),
-      setInput: (path, value) => setInputs({ [path]: value }),
-      setInputs,
-      toggleNode: (path) =>
-        withSession(undefined, (s) => {
-          // A Switch only changes when the page writes it, so the last write
-          // is its value; the pushed state may not have caught up yet.
-          const now = written.current.get(path) ?? s.getState().ports.get(`${path}.out`);
-          const next = now === 1 ? 0 : 1;
-          written.current.set(path, next);
-          return s.set({ [path]: next });
-        }),
-      tick: (count = 1) => withSession(undefined, (s) => s.tick(count)),
-      reset: () => withSession(undefined, (s) => s.reset()),
-      // History puts switches back where they were, so the pushed state is
-      // their value again once a move lands.
-      stepBack: () => withSession(false, (s) => moved(s.stepBack())),
-      stepForward: () => withSession(false, (s) => moved(s.stepForward())),
-      seek: (index) => withSession(false, (s) => moved(s.seek(index))),
+      set,
+      toggle: (name) => {
+        const opened = liveRef.current;
+        if (!opened) return Promise.resolve();
+        // A Switch only changes when the page writes it, so the last write is
+        // its value; the pushed state may not have caught up yet.
+        let now = written.current.get(name);
+        if (now === undefined) {
+          try {
+            const path = opened.keys.input(name);
+            now = path === null ? 0 : opened.session.getState().ports.get(`${path}.out`);
+          } catch (e) {
+            report(e);
+            return Promise.resolve();
+          }
+        }
+        return set({ [name]: now === 1 ? 0 : 1 });
+      },
+      tick: (count = 1) => withSession(undefined, ({ session: s }) => s.tick(count)),
       run: (next) => {
         const runSpeed = next ?? speedRef.current;
         speedRef.current = runSpeed;
-        setSpeedState(runSpeed);
+        setSpeed(runSpeed);
         if (!liveRef.current) pendingRun.current = runSpeed;
-        return withSession(undefined, (s) => s.run(runSpeed));
+        return withSession(undefined, ({ session: s }) => s.run(runSpeed));
       },
       pause: () => {
         pendingRun.current = null;
-        return withSession(undefined, (s) => s.pause());
+        return withSession(undefined, ({ session: s }) => s.pause());
       },
-      setSpeed: (next) => {
-        speedRef.current = next;
-        setSpeedState(next);
-        const session = liveRef.current?.session;
-        if (session?.getState().isRunning) {
-          withSession(undefined, (s) => s.run(next)).catch(ignore);
-        }
-      },
-      sample: (port, count, inputs) => withSession([], (s) => s.sample(port, count, inputs)),
-      scan: (path, port, count) => withSession([], (s) => s.scan(path, port, count)),
-      recompile: async () => {
-        const sandbox = clientRef.current;
-        const source = textRef.current;
-        if (sandbox && source?.trim()) await compile(sandbox, source);
-      },
+      // The inputs stay where they are, so what was written still stands.
+      reset: () => withSession(undefined, ({ session: s }) => s.reset()),
+      // History puts switches back where they were, so the pushed state is
+      // their value again once a move lands.
+      stepBack: () => withSession(false, ({ session: s }) => moved(s.stepBack())),
+      stepForward: () => withSession(false, ({ session: s }) => moved(s.stepForward())),
+      seek: (index) => withSession(false, ({ session: s }) => moved(s.seek(index))),
+      scan: (input, port, count) =>
+        withSession([], ({ session: s, keys }) => {
+          const path = keys.input(input);
+          if (path === null) return Promise.resolve(new Array<number>(count).fill(0));
+          return s.scan(path, port, count);
+        }),
+      sample: (port, count, inputs) =>
+        withSession([], ({ session: s, keys }) =>
+          s.sample(port, count, inputs ? sessionInputs(keys, inputs) : undefined),
+        ),
       exportVerilog: async (exportOptions) => {
         const sandbox = clientRef.current;
         const opened = liveRef.current;
@@ -592,8 +653,13 @@ export function useSimulation(
           throw new Error('Nothing to export yet: the circuit is still compiling.');
         return sandbox.export(opened.compiled, opened.name, exportOptions);
       },
+      recompile: async () => {
+        const sandbox = clientRef.current;
+        const source = textRef.current;
+        if (sandbox && source?.trim()) await compile(sandbox, source);
+      },
     };
   }, [compile]);
 
-  return { compileError, state, history: historyView, actions, client: session };
+  return { state, actions };
 }

@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { ABSTRACTION_CIRCUITS } from '../circuits';
 
 export function BuildingUpSection() {
@@ -20,13 +20,13 @@ export function BuildingUpSection() {
       </div>
 
       <div className="mt-8 space-y-6">
-        <CircuitEmbed
+        <CircuitCard
           circuit={flat.circuit}
           showControls={false}
           title={flat.name}
           description={flat.description}
         />
-        <CircuitEmbed
+        <CircuitCard
           circuit={composed.circuit}
           showControls={false}
           title={composed.name}

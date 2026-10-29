@@ -207,7 +207,7 @@ describe('CompositeInspectorDialog', () => {
 
     // Flip the switch on the canvas behind the dialog: the inspector follows.
     await act(async () => {
-      await simulation?.actions.setInput('a', 1);
+      await simulation?.actions.set({ a: 1 });
     });
     await waitFor(() => expect(screen.getByLabelText('a: on')).toBeTruthy());
 

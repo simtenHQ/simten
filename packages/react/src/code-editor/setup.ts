@@ -20,7 +20,7 @@
  * node_modules tree, not via a `paths` mapping. It is also why the editor's
  * model needs a real `file:///` URI — TS resolution walks up from the containing
  * file looking for node_modules, and finds nothing from Monaco's default
- * `inmemory://` scheme. `SimtenCodeEditor` sets that for you; if you are wiring
+ * `inmemory://` scheme. `CodeEditor` sets that for you; if you are wiring
  * Monaco yourself, pass `path="file:///circuit.ts"` or similar.
  *
  * Note this is types-only. Actual execution resolves bare imports from esm.sh

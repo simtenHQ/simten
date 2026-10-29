@@ -107,7 +107,7 @@ async function getAta(monaco: Monaco, cdn: string): Promise<Ata> {
  * Re-runs type acquisition when `source` settles. Pass `monaco` once it exists
  * (i.e. from `beforeMount`/`onMount`); null is a no-op.
  *
- * `SimtenCodeEditor` calls this for you — reach for it directly only when you
+ * `CodeEditor` calls this for you — reach for it directly only when you
  * are wiring Monaco yourself.
  */
 export function useTypeAcquisition(

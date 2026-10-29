@@ -1,4 +1,4 @@
-import { useSimulation } from '@simten/react/sandbox';
+import { useSimulation } from '@simten/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Blog6502Computer, romImage } from './computer6502.circuit';
 

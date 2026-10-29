@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { SNAKE_CIRCUITS } from '../circuits';
 
 export function PixelsSection() {
@@ -28,7 +28,7 @@ export function PixelsSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={SNAKE_CIRCUITS.simpleFramebuffer.circuit}
           layout={SNAKE_CIRCUITS.simpleFramebuffer.layout}
           showControls

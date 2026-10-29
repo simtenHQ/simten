@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { TPU_CIRCUITS } from '../circuits';
 
 export function PhaseSection() {
@@ -32,11 +32,10 @@ export function PhaseSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={TPU_CIRCUITS.wavefrontController.circuit}
           layout={TPU_CIRCUITS.wavefrontController.layout}
           showControls
-          autoRunSpeed={400}
           title="Wavefront Controller"
           description="Toggle enable and tick to advance through phases. LEDs show active phase."
         />

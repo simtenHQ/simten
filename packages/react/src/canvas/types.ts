@@ -34,14 +34,6 @@ export interface InspectorFrame {
   reference?: { instance: string; circuit: Circuit };
 }
 
-/** Screen rect of the node that triggered the dialog (for animate-from-origin) */
-export interface OriginRect {
-  x: number;
-  y: number;
-  width: number;
-  height: number;
-}
-
 // --- Layout metadata types ---
 
 interface Position {
@@ -71,7 +63,7 @@ export interface MetadataState {
 
 /**
  * Public layout prop type. Maps a node's label (or id, as fallback) to its
- * position on the canvas. Pass to CircuitCanvas / CircuitEmbed via the
+ * position on the canvas. Pass to CircuitCanvas via the
  * `layout` prop to bypass the runtime layout engine entirely.
  *
  * When parameterised by a `Circuit`, the keys are constrained at compile

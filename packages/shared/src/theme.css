@@ -1,31 +1,28 @@
 /**
- * @simten/react/styles/theme.css: design tokens, for apps that use Tailwind.
+ * @simten/shared/theme.css: design tokens, for the apps, which use Tailwind.
  *
- * The components in this package are written with `bg-card`, `border-border`,
- * `text-muted-foreground` and friends. Those resolve to the custom properties
- * defined here, so without this file they render unstyled. It lived inlined in
- * apps/web for a long time and got copy-pasted into the second app the moment
- * one existed, which is how it came to be shared.
+ * The apps and @simten/react's components are written with `bg-card`,
+ * `border-border`, `text-muted-foreground` and friends. Those resolve to the
+ * custom properties defined here, so without this file they render unstyled.
+ * simten.dev and the game import the same file so their palettes can't drift.
  *
  * ── Consuming it ──
  *
- * An app that already uses Tailwind v4 imports this and points Tailwind at the
- * package so the utility classes the components reference actually get emitted:
+ * Import it after Tailwind, and point Tailwind at the packages whose classes
+ * the components use, since Tailwind v4 does not scan workspace packages:
  *
  *   @import "tailwindcss";
- *   @import "@simten/react/styles/theme.css";
- *   @source "../node_modules/@simten/react/dist";
+ *   @import "@simten/shared/theme.css";
+ *   @source "../../../packages/react/src/**\/*.tsx";
+ *   @source "../../../packages/shared/src/**\/*.tsx";
  *
- * The `@source` line is not optional: Tailwind v4 does not scan dependencies,
- * so without it every node renders with no width or padding.
- *
- * Apps that do not use Tailwind import `@simten/react/styles.css` instead: the
- * same components' classes, already compiled (src/styles/embed.css).
+ * A page that doesn't use Tailwind imports `@simten/react/styles.css` instead:
+ * the library's classes, already compiled, with the same theme as variables.
  *
  * ── Fonts ──
  *
- * `--font-geist-sans` / `--font-geist-mono` name faces this package does not
- * ship; a consumer serves them and declares the `@font-face`. Both fall back to
+ * `--font-geist-sans` / `--font-geist-mono` name faces this file does not
+ * ship; each app serves them and declares the `@font-face`. Both fall back to
  * system stacks, so omitting them degrades rather than breaks.
  */
 

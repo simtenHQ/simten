@@ -3,7 +3,7 @@ title: How it works
 description: A short tour of Simten's model, covering primitives, composites, time, and export.
 ---
 
-import { CircuitEmbed } from '@simten/react/embed'
+import { CircuitCard } from '../../src/components/CircuitCard'
 import { HalfAdder, FullAdder, DelayLine } from '../../src/features/splash/circuits'
 
 Five things that make Simten different from a textbook simulator. Most of this page is live circuits: read the code, hit play, drill in.
@@ -26,7 +26,7 @@ const HalfAdder = circuit('HalfAdder', {
 });
 ```
 
-<CircuitEmbed
+<CircuitCard
   circuit={HalfAdder}
   layout={{
     a:     { x: 10,  y: 10 },
@@ -43,7 +43,7 @@ Toggle the input switches. The output reflects the change immediately because ev
 
 Hardware is recursive. A circuit is built of circuits, which are built of circuits, all the way down to primitives. **Double-click any composite node to drill in.**
 
-<CircuitEmbed
+<CircuitCard
   circuit={FullAdder}
   layout={{
     a:    { x: 10,  y: 10 },
@@ -64,7 +64,7 @@ This `FullAdder` is two `HalfAdder`s and an `Or` gate. Double-click `ha1` and yo
 Combinational logic answers *what*: the output is a pure function of the inputs.
 Sequential logic remembers *when*: state advances on each clock tick.
 
-<CircuitEmbed
+<CircuitCard
   circuit={DelayLine}
   layout={{
     d:    { x: 10,  y: 80 },

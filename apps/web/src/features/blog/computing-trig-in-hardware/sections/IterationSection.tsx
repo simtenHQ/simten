@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { CORDIC_CIRCUITS } from '../circuits';
 
 export function IterationSection() {
@@ -21,7 +21,7 @@ export function IterationSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={entry.circuit}
           showControls={true}
           title={entry.name}

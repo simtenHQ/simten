@@ -1,6 +1,6 @@
 # @simten/react
 
-React components and hooks for Simten: `<CircuitEmbed>`, `useSimulation`, the circuit canvas, the code editor and the waveform viewer. Every circuit runs in Simten's cross-origin sandbox, never on your page.
+React for Simten circuits: `useSimulation` runs a circuit, and `CircuitCanvas`, `ClockControls` and `WaveformViewer` show it. Every circuit runs in Simten's cross-origin sandbox, never on your page.
 
 This package replaces `@simten/ui` and `@simten/embed`.
 
@@ -17,7 +17,7 @@ npm install -D @types/react @types/react-dom    # if you use TypeScript
 
 ```tsx
 import '@simten/react/styles.css'
-import { CircuitEmbed } from '@simten/react/embed'
+import { CircuitCanvas, ClockControls, useSimulation } from '@simten/react'
 import { circuit, bit } from '@simten/core'
 import { Xor, And } from '@simten/core/std'
 
@@ -34,133 +34,115 @@ const HalfAdder = circuit('HalfAdder', {
 })
 
 function App() {
-  return <CircuitEmbed circuit={HalfAdder} height={300} />
+  const sim = useSimulation(HalfAdder)
+  return (
+    <>
+      <CircuitCanvas simulation={sim} height={300} />
+      <ClockControls simulation={sim} />
+    </>
+  )
 }
 ```
 
-The circuit is sent to a sandbox (a hidden iframe on another origin), which simulates it in a Web Worker. The canvas draws it with a switch for each input and a light for each output. Each embed opens its own simulation, so circuits on one page don't share state.
+The circuit is sent to a sandbox (a hidden iframe on another origin), which simulates it in a Web Worker. The canvas draws it with a switch for each input and a light for each output, and shows its own loading and error states. `ClockControls` renders nothing for a circuit without a clock, so it's safe next to any canvas. Every circuit on a page shares one sandbox, created when the first one needs it.
 
-### Your own UI
-
-`useSimulation` runs a circuit in the same sandbox and gives you its state and actions. Render whatever you want with them:
+## useSimulation
 
 ```tsx
-import { useSimulation } from '@simten/react/sandbox'
-
-function MyComponent() {
-  const { state, actions } = useSimulation(HalfAdder, { harness: true })
-  // state.portValues, state.cycle, state.error
-  // actions.setInput(), actions.tick(), actions.reset()
-}
+const { state, actions } = useSimulation(HalfAdder, { initialInputs: { a: 1 }, history: 200 })
 ```
 
-It also takes source text, `useSimulation({ source })`, which compiles in the sandbox too. `SimulationView` from `@simten/react/embed` draws the canvas and clock controls for any `useSimulation` result. See [Building custom UIs](https://simten.dev/docs/building-custom-uis).
+It takes a circuit built on the page, or source text: `useSimulation({ source })`, which compiles in the sandbox. The options say how the simulation starts: `initialInputs` (where the switches sit at power-on; `reset` is the reset line and leaves them where they are), `memory` (contents by node path, loaded before cycle 0) and `history` (entries kept, 0 for none). Changing one starts a new run at cycle 0.
 
-## Subpaths
+`state` is what the simulation is doing now: `outputs` by name, `cycle`, `isRunning`, `speed`, `ready`, `error`, `compileError`, `history`, and `portValues` for tooling.
 
-| Subpath | What it has |
+`actions` is what you can tell it to do:
+
+| Action | What it does |
 |---|---|
-| `@simten/react/embed` | `CircuitEmbed`, `CircuitViewer`, `SimulationView`, `ErrorDisplay`, `ShareCircuitProvider` |
-| `@simten/react/sandbox` | `useSimulation`, `useSandboxClient`, `SandboxProvider` |
-| `@simten/react/canvas` | `CircuitCanvas`, `ClockControls`, `CircuitLayout`, the inspector dialog |
-| `@simten/react/nodes` | Node renderers for primitives (gates, registers, memories, peripherals) |
-| `@simten/react/monaco` | `SimtenCodeEditor`: Monaco with IntelliSense for circuit source ([below](#the-code-editor)) |
-| `@simten/react/waveform` | `WaveformViewer` for VCD playback |
-| `@simten/react/share` | Encode and decode share links |
-| `@simten/react/primitives/*` | `button`, `dialog`, `resizable`, `sheet`, `tooltip` |
-| `@simten/react/styles.css` | Every class the components use, compiled, for apps without Tailwind |
-| `@simten/react/styles/theme.css` | The design tokens, for apps that use Tailwind v4 |
+| `set({ a: 1, d: 0 })` | Set inputs: input ports by name, Switch and Input nodes by path. All are written before the circuit settles |
+| `toggle(name)` | Flip one 1-bit input or switch |
+| `tick(n)`, `run(speed)`, `pause()`, `reset()` | The clock |
+| `stepBack()`, `stepForward()`, `seek(i)` | History |
+| `scan(input, port, count)`, `sample(port, count)` | Bulk reads that save round trips |
+| `exportVerilog()`, `recompile()` | Verilog from the same compile; compile source text now |
 
-## CircuitEmbed props
+With a circuit built on the page, the keys of `set` and `toggle` and the names in `state.outputs` are typed from the circuit, so a typo is a compile error. With source text they are strings, checked when the call reaches the sandbox.
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `circuit` | `Circuit` | required | The circuit (what `circuit()` returns) |
-| `height` | `number \| string` | responsive | Height. Without it the embed sizes itself to its width, at a ratio from `layout` (3:2 without one) |
-| `showControls` | `boolean` | `true` | Clock controls for sequential circuits |
-| `title` | `string` | | Title in the info bar |
-| `description` | `string` | | Shown below the title |
-| `layout` | `CircuitLayout` | | Node positions, keyed by input, output and node names. Skips the layout engine |
-| `initialInputs` | `Record<string, number>` | | Starting values for the inputs |
-| `autoRunSpeed` | `number` | `500` | Auto-run interval in ms |
-| `onPortValuesChange` | `(values) => void` | | Called when the simulation settles on new values |
+To build your own UI, read `state` and call `actions` from your components. See [Building custom UIs](https://simten.dev/docs/building-custom-uis).
 
-A `ref` gives you `tick`, `reset`, `setNodeValue`, `startAutoRun` and `stopAutoRun`.
+## Components
 
-### Type-safe layouts
+| Component | Props |
+|---|---|
+| `CircuitCanvas` | `simulation`, and how it looks: `height`, `theme`, `layout`, `focus`, `draggable`, `autoLayout`, `onLoadMemory` |
+| `ClockControls` | `simulation`, `showSpeed`, `showScrubber`, `floating`, `chromeless`, `pulseRun` |
+| `WaveformViewer` | `simulation`, `onClose`: the inputs and outputs over the cycles it has seen, with Save VCD for GTKWave |
 
-`CircuitLayout<C>` limits the keys to the circuit's own names at compile time:
+Double-clicking a component on the canvas opens its insides as a live view of the same simulation, with breadcrumbs.
 
-```tsx
-import type { CircuitLayout } from '@simten/react/canvas'
+## Choosing the sandbox
 
-// a | b | sum | carry | xor1 | and1
-const layout: CircuitLayout<typeof HalfAdder> = {
-  a:    { x: 0,   y: 0   },
-  b:    { x: 0,   y: 80  },
-  xor1: { x: 200, y: 0   },
-  and1: { x: 200, y: 100 },
-}
-```
+`SandboxProvider` is optional. The nearest one above a `useSimulation` wins:
+
+- `<SandboxProvider client={client}>` uses that client: `inProcessSandbox()` from `@simten/sandbox/host` in tests, or `new SandboxClient({ origin })` for a sandbox you host yourself.
+- `<SandboxProvider>` with no client gives its subtree a sandbox of its own, for a heavy demo that should get its own core.
+
+`useSandboxClient()` returns the client in use, for code that compiles or exports without simulating.
 
 ## CSS
 
-Apps without Tailwind import the compiled stylesheet once:
+Import the stylesheet once:
 
 ```tsx
 import '@simten/react/styles.css'
 ```
 
-Its resets apply only inside the components (under `[data-embed-theme]`), so it doesn't restyle the rest of your page.
-
-Apps on Tailwind v4 import the tokens instead and point Tailwind at the package, since Tailwind doesn't scan dependencies:
-
-```css
-@import "tailwindcss";
-@import "@simten/react/styles/theme.css";
-@source "../node_modules/@simten/react/dist";
-```
+It carries the theme as CSS variables. Its resets apply only inside the components (under `[data-embed-theme]`), so it doesn't restyle the rest of your page.
 
 ## The code editor
 
-`@simten/react/monaco` gives you Monaco set up for circuit source: typed completions and hovers for the Simten stdlib, and type acquisition so third-party imports (`react`, `zod`) resolve to real types.
+`@simten/react/code-editor` gives you Monaco set up for circuit source: typed completions and hovers for the Simten stdlib, and type acquisition so third-party imports (`react`, `zod`) resolve to real types. It knows nothing about simulations; wire it to one with `diagnostics`:
 
 ```bash
 npm install @simten/react @monaco-editor/react
 ```
 
 ```tsx
-import { SimtenCodeEditor } from '@simten/react/monaco'
+import { CodeEditor } from '@simten/react/code-editor'
 
-<SimtenCodeEditor value={source} onChange={setSource} />
+const sim = useSimulation({ source })
+const { compileError } = sim.state
+
+<CodeEditor value={source} onChange={setSource} diagnostics={compileError ? [compileError] : []} />
 ```
 
 If you already own a Monaco instance (a collaborative editor with a Yjs binding, say), use the headless setup and keep your own `<Editor>`:
 
 ```tsx
-import { setupSimtenIntellisense, useTypeAcquisition } from '@simten/react/monaco'
+import { setupSimtenIntellisense, useTypeAcquisition } from '@simten/react/code-editor'
 
 useTypeAcquisition(source, monaco)
 
 <Editor path="file:///circuit.ts" beforeMount={setupSimtenIntellisense} onMount={bindYjs} />
 ```
 
-The model needs a real `file:///` URI: TypeScript resolves modules by walking up from the file looking for `node_modules`, and Monaco's default `inmemory://` scheme has nothing to walk. `SimtenCodeEditor` sets this for you. Without it every import resolves to `any`.
+The model needs a real `file:///` URI: TypeScript resolves modules by walking up from the file looking for `node_modules`, and Monaco's default `inmemory://` scheme has nothing to walk. `CodeEditor` sets this for you. Without it every import resolves to `any`.
 
-This subpath handles types only. Circuit source runs in the sandbox, which resolves imports from esm.sh on its own, so code can run while its types are still downloading. That's why module-not-found diagnostics are suppressed while semantic checks stay on.
+This entry handles types only. Circuit source runs in the sandbox, which resolves imports from esm.sh on its own, so code can run while its types are still downloading. That's why module-not-found diagnostics are suppressed while semantic checks stay on.
 
 Type acquisition fetches from jsDelivr at runtime. Pass `typeAcquisition={{ enabled: false }}` to turn it off, or `{ typescriptCdn }` to self-host. A failure means no completions, not a broken editor.
 
 ## Server-side rendering
 
-The components render on the client. The layout engine loads with a dynamic `import()`, so it never loads on the server, and with a `layout` prop it doesn't load at all. In the Next.js Pages Router, load `CircuitEmbed` with `dynamic(..., { ssr: false })`.
+The components render on the client, and the sandbox is only created in the browser. The layout engine loads with a dynamic `import()`, so it never loads on the server, and with a `layout` prop it doesn't load at all.
 
 ## Peer dependencies
 
 - React 19
-- `@monaco-editor/react`: optional, needed only by `@simten/react/monaco`
+- `@monaco-editor/react`: optional, needed only by `@simten/react/code-editor`
 
-Monaco is an optional peer, so it is never installed unless you ask for it, and every other subpath stays free of it. `monaco-editor` follows as a peer of `@monaco-editor/react`, and `@monaco-editor/react` loads Monaco itself from a CDN at runtime.
+Monaco is an optional peer, so it is never installed unless you ask for it, and `@simten/react` itself stays free of it. `monaco-editor` follows as a peer of `@monaco-editor/react`, and `@monaco-editor/react` loads Monaco itself from a CDN at runtime.
 
 ## Docs
 

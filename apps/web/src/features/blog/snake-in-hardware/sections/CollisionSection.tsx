@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { SNAKE_CIRCUITS } from '../circuits';
 
 export function CollisionSection() {
@@ -25,7 +25,7 @@ export function CollisionSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={SNAKE_CIRCUITS.collisionDetector.circuit}
           layout={SNAKE_CIRCUITS.collisionDetector.layout}
           showControls

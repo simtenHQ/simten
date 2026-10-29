@@ -1,14 +1,9 @@
 /**
- * Canonical node components for circuit rendering.
+ * The canvas's node components. Internal: `CircuitCanvas` draws with them.
  *
  * Props-driven, store-free, theme-aware via CSS custom properties.
- * Single source of truth — used by embed, editor, and blog.
  */
 
-export type { BaseNodeProps, PortConfig } from './BaseNode';
-// Base
-export { BaseNode } from './BaseNode';
-export { CompositeBadge } from './CompositeBadge';
 export { ConsoleNode, UartTxNode } from './ConsoleNode';
 export { EthFrameInputNode } from './EthFrameInputNode';
 // Input nodes

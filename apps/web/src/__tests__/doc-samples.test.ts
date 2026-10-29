@@ -37,7 +37,7 @@ const definedNames = (code: string) =>
 
 const FENCE = /^([ \t]*)```[^\n]*\n[\s\S]*?^\1```/gm;
 const TS_FENCE = /^([ \t]*)```(?:ts|tsx|typescript)\b[^\n]*\n([\s\S]*?)^\1```/gm;
-// A circuit exported from the MDX itself, rendered live by a <CircuitEmbed>.
+// A circuit exported from the MDX itself, rendered live by a <CircuitCard>.
 const MDX_EXPORT = /^export const \w+ = circuit\('[\s\S]*?^\}\)/gm;
 
 function samples(file: string): Sample[] {
@@ -46,7 +46,7 @@ function samples(file: string): Sample[] {
   const found: Array<{ index: number; code: string }> = [];
 
   for (const m of src.matchAll(TS_FENCE)) {
-    // JSX lines (`<CircuitEmbed … />`) render the circuit; they are not part of it.
+    // JSX lines (`<CircuitCard … />`) render the circuit; they are not part of it.
     const code = m[2]
       .split('\n')
       .filter((l) => !l.trimStart().startsWith('<'))

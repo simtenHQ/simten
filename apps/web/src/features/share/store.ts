@@ -1,12 +1,12 @@
 /**
  * Creating share links: the limits around the write. The storage format, and
- * the read that embed.simten.dev shares with this app, are in `@simten/react/share`.
+ * the read that embed.simten.dev shares with this app, are in `@simten/shared/share`.
  *
  * Kept apart from the server functions in `server.ts` so it can be tested with
  * fake bindings.
  */
 
-import { hashSource, type ShareKV, saveShare } from '@simten/react/share';
+import { hashSource, type ShareKV, saveShare } from '@simten/shared/share';
 import { type ApiEnv, checkLimits } from '../../api/limits';
 
 /** Largest source accepted, in UTF-8 bytes. */

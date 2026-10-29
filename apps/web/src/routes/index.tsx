@@ -1,8 +1,8 @@
 import { bit, circuit } from '@simten/core/circuit';
 import { And, DFlipFlop, Or, Xor } from '@simten/core/std';
-import { CircuitEmbed } from '@simten/react/embed';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
+import { CircuitCard } from '@/components/CircuitCard';
 import { Container } from '@/components/Container';
 import { HighlightedCode } from '@/components/HighlightedCode';
 import { Section, SectionHeading } from '@/components/SectionHeading';
@@ -102,7 +102,7 @@ function Claim() {
 // the heavy demo gallery. Modeled on Vercel/Linear/Anthropic landing bento
 // grids: each cell is title + one-line description + subtle arrow link +
 // a visual area at the bottom. Visuals are placeholder boxes for now; the
-// plan is to drop in real little mockups (stripped CircuitEmbed, waveform
+// plan is to drop in real little mockups (stripped circuit cards, waveform
 // timeline, terminal snippet, code snippet, etc.) cell-by-cell once the
 // layout is approved.
 // ============================================================================
@@ -358,15 +358,16 @@ function NpmBentoVisual() {
 // "Drop-in embeds": static IDE card showing the import + the JSX usage.
 // Mirrors the snippet in the embed CTA section further down the page so
 // the reader sees the same shape in both places.
-const EMBED_SNIPPET = `import { CircuitEmbed } from '@simten/react/embed';
+const EMBED_SNIPPET = `import { CircuitCanvas, useSimulation } from '@simten/react';
 import { HalfAdder } from './half-adder';
 
-// Live, interactive hardware in three lines.
+// Live, interactive hardware in a few lines.
 export default function Post() {
+  const sim = useSimulation(HalfAdder);
   return (
     <article>
       <p>Here's a half adder you can poke at:</p>
-      <CircuitEmbed circuit={HalfAdder} />
+      <CircuitCanvas simulation={sim} />
     </article>
   );
 }`;
@@ -684,7 +685,7 @@ function DemoGallery() {
 
               {/* Right: live circuit */}
               <div style={{ height: 320 }}>
-                <CircuitEmbed
+                <CircuitCard
                   circuit={DrilldownFullAdder}
                   height={320}
                   layout={{
@@ -706,7 +707,7 @@ function DemoGallery() {
           <div className="rounded-lg border border-border overflow-hidden bg-card">
             <div className="grid grid-cols-1 sm:grid-cols-[1.5fr_1fr]">
               {/* Left: live circuit with full clock controls + time-travel */}
-              <CircuitEmbed
+              <CircuitCard
                 circuit={ShiftRegister4}
                 height={340}
                 initialInputs={{ din: 1 }}
@@ -1007,7 +1008,7 @@ function SnakeCard() {
         )}
       </div>
 
-      {/* Info strip, matches CircuitEmbed */}
+      {/* Info strip, matches the circuit cards */}
       <div className="border-t border-border px-4 py-3 flex items-end justify-between gap-4">
         <div>
           <div className="text-[13px] font-semibold text-foreground">Snake</div>

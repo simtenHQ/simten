@@ -62,7 +62,7 @@ Circuit code runs in an isolated sandbox. See [Security Architecture](/docs/secu
 |---------|-------------|
 | `@simten/core` | TypeScript builder, compiler, validator, simulator engine, `Simulation`, Verilog export |
 | `@simten/sandbox` | `SandboxClient` and `SimulationClient`: compile and simulate in the sandbox iframe from any page |
-| `@simten/react` | `CircuitEmbed` (`@simten/react/embed`), the `useSimulation` hook (`@simten/react/sandbox`), the canvas and node components, `ClockControls`, and the [Monaco code editor](/docs/code-editor) (`@simten/react/monaco`) |
+| `@simten/react` | The `useSimulation` hook, `CircuitCanvas`, `ClockControls` and `WaveformViewer`, and the [code editor](/docs/code-editor) (`@simten/react/code-editor`) |
 | `@simten/mcp` | MCP server for Claude Code integration |
 
 Not using React? See [Using Simten without React](/docs/without-react).
@@ -72,7 +72,6 @@ Not using React? See [Using Simten without React](/docs/without-react).
 Drop an interactive circuit into any React app:
 
 ```tsx
-import { CircuitEmbed } from '@simten/react/embed';
 import { circuit, bit } from '@simten/core/circuit';
 import { Xor, And } from '@simten/core/std';
 
@@ -87,15 +86,30 @@ const HalfAdder = circuit('HalfAdder', {
     and1.out.to(outputs.carry),
   ],
 });
-
-<CircuitEmbed circuit={HalfAdder} height={250} showControls />
 ```
 
-The embed auto-wraps the circuit with switches for inputs and LEDs for outputs.
+```tsx
+import '@simten/react/styles.css';
+import { CircuitCanvas, ClockControls, useSimulation } from '@simten/react';
 
-Here's that exact code running live:
+function HalfAdderDemo() {
+  const sim = useSimulation(HalfAdder);
+  return (
+    <>
+      <CircuitCanvas simulation={sim} height={250} />
+      <ClockControls simulation={sim} />
+    </>
+  );
+}
+```
 
-import { CircuitEmbed } from '@simten/react/embed'
+The canvas draws the circuit with switches for inputs and LEDs for outputs. `ClockControls` shows only for a circuit with a clock.
+
+Not a React page? Open the circuit in the editor and use Share → Embed for an iframe.
+
+Here's that circuit running live, in the card simten.dev puts around its circuits:
+
+import { CircuitCard } from '../../src/components/CircuitCard'
 import { circuit, bit } from '@simten/core/circuit'
 import { Xor, And } from '@simten/core/std'
 
@@ -111,7 +125,7 @@ export const HalfAdder = circuit('HalfAdder', {
   ],
 })
 
-<CircuitEmbed
+<CircuitCard
   circuit={HalfAdder}
   showControls
   title="Half Adder"

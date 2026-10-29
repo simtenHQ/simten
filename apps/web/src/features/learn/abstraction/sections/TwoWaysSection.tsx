@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { HighlightedCode } from '@/components/HighlightedCode';
 import { ABSTRACTION_CIRCUITS } from '../circuits';
 
@@ -73,13 +73,13 @@ export function TwoWaysSection() {
       </div>
 
       <div className="mt-8 space-y-6">
-        <CircuitEmbed
+        <CircuitCard
           circuit={flat.circuit}
           showControls={false}
           title={flat.name}
           description={flat.description}
         />
-        <CircuitEmbed
+        <CircuitCard
           circuit={wrapped.circuit}
           showControls={false}
           title={wrapped.name}

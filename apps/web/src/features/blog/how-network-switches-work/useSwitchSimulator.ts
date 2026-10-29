@@ -1,15 +1,13 @@
-import { useSimulation } from '@simten/react/sandbox';
+import { useSimulation } from '@simten/react';
 import { useCallback, useEffect, useMemo } from 'react';
-import { cyclesPerSecond, useAutoRun } from '@/lib/auto-run';
+import { useAutoRun } from '@/lib/auto-run';
 import { MiniSwitch2Port } from './circuits';
 
-/** One cycle every 50ms until the slider says otherwise. */
-const OPTIONS = { speed: cyclesPerSecond(50) };
-
 export function useSwitchSimulator() {
-  const sim = useSimulation(MiniSwitch2Port, OPTIONS);
+  const sim = useSimulation(MiniSwitch2Port);
   const { state, actions } = sim;
-  const { isRunning, setIsRunning, speed, setSpeed } = useAutoRun(sim);
+  // One cycle every 50ms until the slider says otherwise.
+  const { isRunning, setIsRunning, speed, setSpeed } = useAutoRun(sim, 50);
 
   // Find key node IDs by label
   const nodeIds = useMemo(() => {
@@ -34,7 +32,7 @@ export function useSwitchSimulator() {
   // their position through a reset, so this runs once per session.
   useEffect(() => {
     if (!state.ready || !nodeIds?.always_ready) return;
-    void actions.setInput(nodeIds.always_ready, 1);
+    void actions.set({ [nodeIds.always_ready]: 1 });
   }, [state.ready, nodeIds, actions]);
 
   const handleReset = useCallback(() => {
@@ -48,8 +46,7 @@ export function useSwitchSimulator() {
       if (!nodeIds) return;
       const byteNode = port === 0 ? nodeIds.p0_byte : nodeIds.p1_byte;
       const validNode = port === 0 ? nodeIds.p0_valid : nodeIds.p1_valid;
-      if (byteNode) void actions.setInput(byteNode, byte);
-      if (validNode) void actions.setInput(validNode, 1);
+      if (byteNode && validNode) void actions.set({ [byteNode]: byte, [validNode]: 1 });
     },
     [nodeIds, actions],
   );
@@ -58,7 +55,7 @@ export function useSwitchSimulator() {
     (port: 0 | 1) => {
       if (!nodeIds) return;
       const validNode = port === 0 ? nodeIds.p0_valid : nodeIds.p1_valid;
-      if (validNode) void actions.setInput(validNode, 0);
+      if (validNode) void actions.set({ [validNode]: 0 });
     },
     [nodeIds, actions],
   );

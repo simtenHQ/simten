@@ -9,7 +9,7 @@
 import type { Circuit } from '@simten/core/circuit';
 import { bit, circuit } from '@simten/core/circuit';
 import { And, DFlipFlop, Not, Or, Xor } from '@simten/core/std';
-import { CircuitEmbed, type CircuitEmbedHandle } from '@simten/react/embed';
+import { useSimulation } from '@simten/react';
 import { Link } from '@tanstack/react-router';
 import {
   forwardRef,
@@ -20,6 +20,7 @@ import {
   useRef,
   useState,
 } from 'react';
+import { SimulationCard } from '@/components/CircuitCard';
 import { Container } from '@/components/Container';
 import { HighlightedCode } from '@/components/HighlightedCode';
 import { CodeWithHovers } from './CodeWithHovers';
@@ -792,31 +793,37 @@ const HERO_DEMOS: HeroDemo[] = [
   })),
 ];
 
+/** A hero demo's card. With `autoRun`, it runs from the start and stops when it unmounts. */
+function DemoCard({
+  circuit,
+  forkSource,
+  autoRun,
+}: {
+  circuit: Circuit;
+  forkSource: string;
+  autoRun: boolean;
+}) {
+  const simulation = useSimulation(circuit);
+  const { actions } = simulation;
+  useEffect(() => {
+    if (!autoRun) return;
+    // Asked before the session opens, the run starts when it does.
+    void actions.run(5);
+    return () => void actions.pause();
+  }, [autoRun, actions]);
+  return <SimulationCard simulation={simulation} forkSource={() => forkSource} height="100%" />;
+}
+
 const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, { canvasReady?: boolean }>(
   function HeroBrowserWindow({ canvasReady = false }, ref) {
     const [codeTyping, setCodeTyping] = useState(false);
     const [showCircuit, setShowCircuit] = useState(false);
     const [targetCircuit, setTargetCircuit] = useState<Circuit>(HalfAdder);
     const [displayCode, setDisplayCode] = useState(HALF_ADDER_DISPLAY);
-    // Stable identity per demo so CircuitEmbed remounts cleanly when the
+    // Stable identity per demo so the card remounts cleanly when the
     // user cycles through HERO_DEMOS post-reveal (React Flow doesn't
     // gracefully swap a different circuit on the same instance).
     const [embedKey, setEmbedKey] = useState('half-adder');
-    const embedRef = useRef<CircuitEmbedHandle>(null);
-
-    // Figlet streams bytes through a Register+Adder feedback loop, so it
-    // only does anything once the clock is ticking. Auto-run whenever the
-    // figlet demo is the selected one; stop when the user switches away.
-    // setTimeout(0) gives the new embed instance (remounted via key change)
-    // a tick to attach its imperative handle before we call into it.
-    useEffect(() => {
-      if (embedKey !== 'figlet') return;
-      const id = setTimeout(() => embedRef.current?.startAutoRun(5), 0);
-      return () => {
-        clearTimeout(id);
-        embedRef.current?.stopAutoRun();
-      };
-    }, [embedKey]);
 
     const codeTw = useTypewriter(displayCode, 12, 0, codeTyping);
 
@@ -847,7 +854,7 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, { canvasReady?: bo
       [],
     );
 
-    // CircuitEmbed only mounts once the parent has confirmed the
+    // The card only mounts once the parent has confirmed the
     // column-collapse animation finished (canvasReady=true), so React
     // Flow measures at the final expanded width on its very first
     // render instead of reflowing during the animation. The fade-in
@@ -892,11 +899,12 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, { canvasReady?: bo
                       the Fork button opens the editor with the nice version,
                       not the IR-derived one (which for figlet would inline
                       romFromBytes(...) as a 256-entry literal byte map). */}
-                  <CircuitEmbed
-                    ref={embedRef}
+                  <DemoCard
                     circuit={targetCircuit}
                     forkSource={displayCode}
-                    height="100%"
+                    // Figlet streams bytes through a Register+Adder feedback
+                    // loop, so it only does anything once the clock is ticking.
+                    autoRun={embedKey === 'figlet'}
                   />
                 </div>
               ) : (
@@ -932,7 +940,7 @@ export function ClaudeDemoSection({ onComplete, autoPlay = false }: ClaudeDemoSe
   const [demoComplete, setDemoComplete] = useState(false);
   const [expanded, setExpanded] = useState(false);
   // Gates the canvas mount inside HeroBrowserWindow: stays false until
-  // the column-collapse animation has finished, so CircuitEmbed measures
+  // the column-collapse animation has finished, so the card measures
   // at its final (expanded) width on first render rather than mounting
   // at the narrow build-phase width and then reflowing partway through
   // the collapse animation.
@@ -1055,7 +1063,7 @@ export function ClaudeDemoSection({ onComplete, autoPlay = false }: ClaudeDemoSe
   //   → trigger column-collapse animation (expanded=true, CSS handles
   //     the transition over COLLAPSE_MS)
   //   → after the animation completes, mount the canvas (canvasReady=true)
-  //     so CircuitEmbed measures at its final width on first render.
+  //     so the card measures at its final width on first render.
   // Both timers cancel on unmount or when demoComplete resets (e.g.
   // user clicks "Try another demo" mid-run).
   useEffect(() => {

@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { BLOG_CIRCUITS } from '../circuits';
 
 export function AdderSection() {
@@ -25,7 +25,7 @@ export function AdderSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={BLOG_CIRCUITS.adder4bit.circuit}
           title="4-Bit Ripple-Carry Adder"
           description="Set A and B in binary, watch the carry propagate"

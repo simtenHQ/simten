@@ -7,8 +7,7 @@ import {
   tracePropagation,
 } from '@simten/core/internal';
 import { And, Led, Switch, Xor } from '@simten/core/std';
-import { CircuitCanvas } from '@simten/react/canvas';
-import { useSimulation } from '@simten/react/sandbox';
+import { CircuitCanvas, useSimulation } from '@simten/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 const HalfAdder = circuit('HalfAdder', {
@@ -263,13 +262,7 @@ export function PropagationDemo() {
 
       {/* Circuit */}
       <CircuitCanvas
-        circuit={sim.state.circuit}
-        definitions={sim.state.definitions ?? undefined}
-        portValues={sim.state.portValues}
-        peripheralState={sim.state.peripheralState}
         simulation={sim}
-        onToggleNode={sim.actions.toggleNode}
-        onSetNodeValue={sim.actions.setInput}
         height={280}
         focus={focusLabel ? [focusLabel] : undefined}
         theme="dark"

@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/react/embed';
+import { CircuitCard } from '@/components/CircuitCard';
 import { TPU_CIRCUITS } from '../circuits';
 
 export function WeightSection() {
@@ -32,11 +32,10 @@ export function WeightSection() {
       </div>
 
       <div className="mt-8">
-        <CircuitEmbed
+        <CircuitCard
           circuit={TPU_CIRCUITS.weightRegister.circuit}
           layout={TPU_CIRCUITS.weightRegister.layout}
           showControls
-          autoRunSpeed={400}
           title="Weight Register"
           description="Toggle valid to store the weight. It stays fixed while data streams through."
         />

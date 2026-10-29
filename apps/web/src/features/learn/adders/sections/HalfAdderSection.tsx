@@ -1,6 +1,6 @@
-import type { FlatPortValueMap } from '@simten/core/internal';
-import { CircuitEmbed } from '@simten/react/embed';
-import { useState } from 'react';
+import { circuitToSource } from '@simten/core/internal';
+import { useSimulation } from '@simten/react';
+import { SimulationCard } from '@/components/CircuitCard';
 import { computeActiveRow, TruthTable } from '@/components/TruthTable';
 import { HalfAdder } from '../circuits';
 
@@ -19,11 +19,10 @@ const HA_ROWS: Array<Array<number | string>> = [
 ];
 
 export function HalfAdderSection() {
-  // Live port values from the embed's internal simulator, captured via
-  // its onPortValuesChange callback. Stays null until the sim is ready
-  // and first settles; the table renders un-highlighted in that window
-  // (one paint, then the embed fires with the initial steady state).
-  const [portValues, setPortValues] = useState<FlatPortValueMap | null>(null);
+  // One simulation for the card and the table. Until it's ready the table
+  // renders un-highlighted.
+  const simulation = useSimulation(HalfAdder);
+  const portValues = simulation.state.portValues;
 
   const activeRow = computeActiveRow(portValues, HA_COLUMNS, HA_ROWS);
 
@@ -45,11 +44,11 @@ export function HalfAdderSection() {
 
       <div className="mt-8 flex flex-col lg:flex-row lg:items-center gap-4">
         <div className="flex-1 min-w-0">
-          <CircuitEmbed
-            circuit={HalfAdder}
+          <SimulationCard
+            simulation={simulation}
             title="Half adder"
             description="Two switches → XOR for the sum, AND for the carry."
-            onPortValuesChange={setPortValues}
+            forkSource={() => circuitToSource(HalfAdder)}
           />
         </div>
         <div className="shrink-0">

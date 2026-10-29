@@ -150,9 +150,9 @@ describe('TPU post systolic array', () => {
   });
 
   it('shows each result on its display in the demo on the same tick', () => {
-    // The demo's inputs are Input nodes inside it, so they're written by path.
+    // The demo's inputs are Input nodes inside it; `set` takes their paths.
     const sim = simulate(TestSystolic3x3);
-    nodesOf(sim).set('start', 1);
+    sim.set({ start: 1 });
     const settled = settleTicks(
       () => sim.tick(),
       (rc) => Number(nodesOf(sim).ports().get(`display_c${rc}.in`)),

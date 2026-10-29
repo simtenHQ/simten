@@ -1,5 +1,5 @@
 import type { MemoryContents } from '@simten/core/internal';
-import { useSimulation } from '@simten/react/sandbox';
+import { useSimulation } from '@simten/react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAutoRun } from '@/lib/auto-run';
 import { RV32I_CPU } from './rv32i-cpu.circuit';
@@ -91,14 +91,11 @@ function binaryToROM(base64: string): MemoryContents {
   return contents;
 }
 
-/** Read one of the CPU's 32-bit outputs, off the display the harness gives it. */
+/** Read one of the CPU's 32-bit outputs, off the display the canvas draws for it. */
 function readOutput(portValues: ReadonlyMap<string, number> | null, name: string): number | null {
   const val = portValues?.get(`${name}.in`);
   return val === undefined ? null : val >>> 0;
 }
-
-/** The CPU's node in the harness; its memories are under this path. */
-const CPU = 'dut';
 
 interface CompileResult {
   binary: string; // base64
@@ -111,22 +108,15 @@ export function useRV32IDebugger() {
   const [compiling, setCompiling] = useState(false);
   const [compileError, setCompileError] = useState<string | null>(null);
 
-  // Harnessed, so `debug_addr` is an Input node the debugger can scan, as a
-  // JTAG probe would. The program is part of what the simulation is built
-  // from: a new program opens a new session at cycle 0, as loading a program
-  // does on real hardware.
-  // Run executes 10 cycles a second, slow enough to watch the pipeline.
-  const options = useMemo(
-    () => ({
-      harness: true,
-      memory: romData ? { [`${CPU}.imem`]: romData } : undefined,
-      speed: 10,
-    }),
-    [romData],
-  );
+  // `debug_addr` is an input port the debugger scans, as a JTAG probe would.
+  // The program is part of what the simulation is built from: a new program
+  // opens a new session at cycle 0, as loading a program does on real
+  // hardware. Its path is the instruction memory's node in the CPU.
+  const options = useMemo(() => ({ memory: romData ? { imem: romData } : undefined }), [romData]);
   const sim = useSimulation(RV32I_CPU, options);
   const { state, actions } = sim;
-  const { isRunning, setIsRunning } = useAutoRun(sim);
+  // Run executes 10 cycles a second, slow enough to watch the pipeline.
+  const { isRunning, setIsRunning } = useAutoRun(sim, 100);
 
   const compile = useCallback(
     async (source: string, language: string) => {

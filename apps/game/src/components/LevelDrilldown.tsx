@@ -1,12 +1,10 @@
 /**
  * The drilldown.
  *
- * Double-clicking the badge on a level opens its circuit in
- * `CompositeInspectorDialog`, the same inspector the canvas opens when you
- * double-click a composite component, so it arrives with a full-size canvas,
- * breadcrumbs and nested drill-down already working. It's a view of a
- * simulation of the circuit, harnessed as on the level page, with its inputs
- * at 0: the inspector shows values but has no switches.
+ * Double-clicking the badge on a level opens its circuit in a dialog of its
+ * own: a full-size `CircuitCanvas` of a simulation of the circuit, drawn as on
+ * the level page, with its switches live. Double-clicking a component inside
+ * opens the canvas's own drill-down, with breadcrumbs, as anywhere else.
  *
  * The component renders nothing until then. It is mounted on hover rather than
  * on open purely to warm the compile: you have to hover a badge before you can
@@ -23,13 +21,9 @@
  */
 
 import type { CircuitIR } from '@simten/core/internal';
-import {
-  CompositeInspectorDialog,
-  type InspectorFrame,
-  useDetectTheme,
-} from '@simten/react/canvas';
-import { useSimulation } from '@simten/react/sandbox';
-import { useCallback, useEffect, useState } from 'react';
+import { CircuitCanvas, ClockControls, useSimulation } from '@simten/react';
+import { XIcon } from 'lucide-react';
+import { useCallback, useEffect } from 'react';
 import { SOLUTIONS } from '../game/solutions';
 import type { Level } from '../game/types';
 
@@ -37,14 +31,20 @@ interface LevelDrilldownProps {
   level: Level;
   /** The player's source for this level, when they have opened it. */
   draft?: string;
-  /** Whether the inspector is open. False means this is only prefetching. */
+  /** Whether the dialog is open. False means this is only prefetching. */
   expanded?: boolean;
   onCloseExpanded?: () => void;
 }
 
+/**
+ * Whether the canvas's own drill-down is open over this dialog. It closes
+ * itself on Escape, a level at a time, so the key isn't this dialog's then.
+ */
+const canvasInspectorOpen = () =>
+  document.querySelector('button[aria-label="Close inspector"]') !== null;
+
 export function LevelDrilldown({ level, draft, expanded, onCloseExpanded }: LevelDrilldownProps) {
   const source = draft ?? SOLUTIONS[level.id];
-  const theme = useDetectTheme();
 
   // `select` is a picker over the compiled circuits, not a name; the default
   // takes the last circuit defined. Same shape the level page uses.
@@ -54,56 +54,28 @@ export function LevelDrilldown({ level, draft, expanded, onCloseExpanded }: Leve
     [level.target],
   );
 
-  const preview = useSimulation({ source, circuit: select }, { harness: true });
+  const preview = useSimulation({ source, circuit: select });
   const { state } = preview;
-  const compileError = preview.compileError?.message ?? state.error;
+  const compileError = state.compileError?.message ?? state.error;
 
-  /**
-   * The inspector's drill-down stack. Seeded with this level's circuit when
-   * expanded, then owned by the dialog; pushing goes deeper into a composite,
-   * popping comes back out, and an empty stack is what "closed" means to it.
-   */
-  const [stack, setStack] = useState<InspectorFrame[]>([]);
+  const onClose = useCallback(() => onCloseExpanded?.(), [onCloseExpanded]);
 
-  // The harness wraps a circuit with ports as node `dut`, so that's the frame's
-  // path in the session. A self-contained circuit (no ports) isn't wrapped:
-  // it is the session's top level, path ''.
-  const target = state.circuitName
-    ? (state.definitions?.resolveCircuit(state.circuitName) ?? null)
-    : null;
-  const harnessed = state.circuit !== null && state.circuit.name !== state.circuitName;
   useEffect(() => {
-    if (expanded && target) {
-      setStack([
-        {
-          componentName: target.name,
-          componentDef: target,
-          nodeLabel: level.title,
-          path: harnessed ? 'dut' : '',
-        },
-      ]);
-    } else {
-      setStack([]);
-    }
-  }, [expanded, target, harnessed, level.title]);
+    if (!expanded) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !canvasInspectorOpen()) onClose();
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [expanded, onClose]);
 
-  const onPushLevel = useCallback((frame: InspectorFrame) => {
-    setStack((s) => [...s, frame]);
-  }, []);
-
-  const onPopLevel = useCallback(() => setStack((s) => s.slice(0, -1)), []);
-  const onNavigate = useCallback((index: number) => setStack((s) => s.slice(0, index + 1)), []);
-
-  const onClose = useCallback(() => {
-    setStack([]);
-    onCloseExpanded?.();
-  }, [onCloseExpanded]);
+  if (!expanded) return null;
 
   // Reachable now that this draws drafts: a level left mid-thought does not
   // compile, and inspecting it is a perfectly reasonable thing to do. Says so
   // rather than opening to nothing, which is indistinguishable from a broken
   // double-click.
-  if (expanded && compileError) {
+  if (compileError) {
     return (
       <div className="fixed inset-x-0 bottom-6 mx-auto w-fit rounded-lg border border-border bg-card px-4 py-2 text-sm text-muted-foreground">
         {level.title} did not compile: {compileError}
@@ -111,18 +83,42 @@ export function LevelDrilldown({ level, draft, expanded, onCloseExpanded }: Leve
     );
   }
 
-  if (!state.definitions) return null;
+  if (!state.ready) return null;
 
   return (
-    <CompositeInspectorDialog
-      stack={stack}
-      definitions={state.definitions}
-      simulation={preview}
-      theme={theme}
-      onClose={onClose}
-      onPopLevel={onPopLevel}
-      onPushLevel={onPushLevel}
-      onNavigate={onNavigate}
-    />
+    <>
+      {/* Backdrop: clicking outside the panel closes it. Out of the tab order,
+          because the close button and Escape cover the keyboard. */}
+      <button
+        type="button"
+        aria-label="Close"
+        tabIndex={-1}
+        className="fixed inset-0 z-50 cursor-default bg-black/50 animate-in fade-in-0 duration-250"
+        onClick={onClose}
+      />
+      <div className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div
+          role="dialog"
+          aria-label={level.title}
+          className="pointer-events-auto flex h-[88vh] w-full max-w-[1600px] flex-col overflow-hidden rounded-lg border border-border bg-card shadow-xl animate-in fade-in-0 duration-150"
+        >
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <span className="text-sm font-semibold text-foreground">{level.title}</span>
+            <button
+              type="button"
+              onClick={onClose}
+              aria-label="Close"
+              className="rounded p-1 text-muted-foreground hover:bg-muted hover:text-foreground"
+            >
+              <XIcon className="h-5 w-5" />
+            </button>
+          </div>
+          <div className="relative flex-1 overflow-hidden">
+            <CircuitCanvas simulation={preview} />
+            <ClockControls simulation={preview} floating showScrubber />
+          </div>
+        </div>
+      </div>
+    </>
   );
 }

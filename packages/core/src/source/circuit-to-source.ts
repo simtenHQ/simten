@@ -3,7 +3,7 @@
  *
  * Given a `Circuit`, emit a TypeScript string that the editor can compile
  * back into the same circuit (modulo comments and code outside `circuit()`
- * calls). Powers the Fork button on `<CircuitEmbed />`, where the embed has
+ * calls). Powers the Fork button on simten.dev's circuit cards, where the card has
  * a compiled `Circuit` but no original source.
  *
  * Supported:

@@ -7,9 +7,9 @@ import {
   internalsOf,
 } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
-import { CircuitEmbed } from '@simten/react/embed';
-import { useSandboxClient } from '@simten/react/sandbox';
+import { useSandboxClient } from '@simten/react';
 import { useEffect, useState } from 'react';
+import { CircuitCard } from '@/components/CircuitCard';
 
 const FULL_ADDER_SOURCE = `
 const HalfAdder = circuit('HalfAdder', {
@@ -430,7 +430,7 @@ export function PipelineVisualizer() {
               The simulator runs the numeric circuit. Toggle the switches to change inputs, and
               values propagate through the event queue until the circuit stabilizes.
             </p>
-            <CircuitEmbed
+            <CircuitCard
               circuit={buildFromIR(compiled.fullAdder, compiled.circuits)}
               height={280}
               showControls

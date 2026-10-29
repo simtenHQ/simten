@@ -1,7 +1,7 @@
 /**
  * The embed page: one shared circuit, full-bleed, for another site's iframe.
  *
- * The circuit renders with `useSimulation` and `SimulationView` from
+ * The circuit renders with `useSimulation`, `CircuitCanvas` and `ClockControls` from
  * @simten/react (./circuit.tsx): the source compiles and simulates in the
  * sandbox iframe, never here. Nothing in this frame writes anything: forking
  * or saving happens on simten.dev, behind the "Open in Simten" link.

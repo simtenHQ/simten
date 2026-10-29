@@ -1,5 +1,4 @@
-import { CircuitCanvas } from '@simten/react/canvas';
-import { useSimulation } from '@simten/react/sandbox';
+import { CircuitCanvas, useSimulation } from '@simten/react';
 import { PipelinedSortDemo } from '../circuits';
 
 export function PipelineSection() {
@@ -87,16 +86,7 @@ export function PipelineSection() {
             </div>
 
             {/* Circuit canvas */}
-            <CircuitCanvas
-              circuit={sim.state.circuit}
-              definitions={sim.state.definitions ?? undefined}
-              portValues={sim.state.portValues}
-              peripheralState={sim.state.peripheralState}
-              simulation={sim}
-              onToggleNode={sim.actions.toggleNode}
-              onSetNodeValue={sim.actions.setInput}
-              height={400}
-            />
+            <CircuitCanvas simulation={sim} height={400} />
 
             {/* Controls bar */}
             <div className="px-4 py-3 border-t border-gray-200 dark:border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-100 dark:bg-gray-900/90">

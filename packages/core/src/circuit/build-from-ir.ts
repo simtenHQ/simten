@@ -2,7 +2,7 @@
  * Build a Circuit from Circuit IR returned by the sandbox.
  *
  * The sandbox returns plain Circuit IR (JSON-serializable). This function
- * wraps it in a Circuit so it can be passed to CircuitEmbed/CircuitViewer,
+ * wraps it in a Circuit so it can be passed to `useSimulation`,
  * which only needs the circuit IR and its dependency circuits — no closures,
  * no executable code.
  *
@@ -31,7 +31,7 @@ import { makeCircuit } from './internals.js';
  * @param circuit - The main circuit to display
  * @param libraryCircuits - All dependency circuits returned by the sandbox
  * @param behaviors - Behavior to attach to primitives, by name
- * @returns A Circuit suitable for CircuitEmbed / CircuitViewer
+ * @returns A Circuit suitable for `useSimulation`
  */
 export function buildFromIR(
   circuit: CircuitIR,

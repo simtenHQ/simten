@@ -1,0 +1,6 @@
+// Typecheck-only config: the sources plus the tests.
+{
+  "extends": "./tsconfig.json",
+  "include": ["src/**/*.ts", "src/**/*.tsx"],
+  "exclude": ["node_modules"]
+}
