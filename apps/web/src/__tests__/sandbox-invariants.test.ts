@@ -13,8 +13,8 @@ import { join } from 'node:path';
 
 const APP_SRC = join(__dirname, '..');
 const EMBED_SRC = join(__dirname, '../../../../packages/embed/src');
-// packages/ui is where useSandbox itself lives, so it is the package most
-// likely to grow a violation, and it was not being scanned.
+// packages/ui holds the editor and the React hooks over the sandbox, so it is
+// the package most likely to grow a violation.
 const UI_SRC = join(__dirname, '../../../../packages/ui/src');
 // The game runs player code too, through the same sandbox.
 const GAME_SRC = join(__dirname, '../../../game/src');

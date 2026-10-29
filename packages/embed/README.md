@@ -38,35 +38,22 @@ function App() {
 
 The circuit compiles, simulates, and renders in the browser. Users can toggle switches, see values propagate, and interact with the simulation.
 
-### useCircuitSimulator — custom layouts
+### Custom layouts
+
+To build your own UI around a simulation, use `useSimulation` from `@simten/ui/sandbox`. It runs the circuit in the same sandbox and gives you its state and actions:
 
 ```tsx
-import { useCircuitSimulator } from '@simten/embed'
-import { circuit, bit } from '@simten/core/circuit'
-import { Xor, And } from '@simten/core/std'
-
-const HalfAdder = circuit('HalfAdder', {
-  inputs: { a: bit, b: bit },
-  outputs: { sum: bit, carry: bit },
-  nodes: { xor1: Xor, and1: And },
-  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
-    inputs.a.to(xor1.a, and1.a),
-    inputs.b.to(xor1.b, and1.b),
-    xor1.out.to(outputs.sum),
-    and1.out.to(outputs.carry),
-  ],
-})
+import { useSimulation } from '@simten/ui/sandbox'
 
 function MyComponent() {
-  const sim = useCircuitSimulator(HalfAdder)
+  const { state, actions } = useSimulation(HalfAdder, { harness: true })
 
-  // sim.ready, sim.error, sim.circuit
-  // sim.inputs, sim.outputs, sim.portValues
-  // sim.setNode(), sim.toggleNode(), sim.tick(), sim.reset()
+  // state.portValues, state.cycle, state.error
+  // actions.setInput(), actions.tick(), actions.reset()
 }
 ```
 
-Build your own UI around the simulator. Each hook instance has its own isolated component library — multiple embeds on the same page won't interfere.
+See [Building custom UIs](https://simten.dev/docs/building-custom-uis) for the full set.
 
 ## Props
 
@@ -89,12 +76,11 @@ Build your own UI around the simulator. Each hook instance has its own isolated 
 
 ## How it works
 
-1. The `Circuit` is elaborated (composites flattened to primitives)
-2. A simulator engine evaluates the netlist
-3. ReactFlow renders the circuit as interactive nodes and edges
-4. The layout engine computes positions when no `layout` prop is provided (lazy-loaded, SSR-safe)
+1. The `Circuit` is sent to a sandbox (a hidden cross-origin iframe), which simulates it in a Web Worker
+2. ReactFlow renders the circuit as interactive nodes and edges
+3. The layout engine computes positions when no `layout` prop is provided (lazy-loaded, SSR-safe)
 
-Each `useCircuitSimulator` call creates its own component library instance. Sub-circuits are registered into that instance during elaboration. No global state is shared between embeds.
+Each simulation has its own compile in the sandbox, so circuits on the same page don't share definitions or state.
 
 ## Type-safe layouts
 

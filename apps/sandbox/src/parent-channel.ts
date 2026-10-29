@@ -6,7 +6,8 @@
  * reports the parent's origin up front (`location.ancestorOrigins`, Chromium
  * and Safari) that origin is required from the first message; elsewhere it is
  * pinned on the first message from the parent window. The page side
- * (`useSandbox.ts`) checks the sandbox's origin and source the same way.
+ * (`iframeTransport` in `@simten/sandbox`) checks the sandbox's origin and
+ * source the same way.
  */
 
 interface ParentChannel {

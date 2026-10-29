@@ -23,7 +23,7 @@
  *   worker-src  blob: data:       Monaco's language workers.
  *   frame-src   the sandbox, the iframe that runs circuit code. It is the
  *               origin the build points at (VITE_SANDBOX_ORIGIN, as in
- *               packages/ui/src/sandbox/useSandbox.ts), by default
+ *               packages/sandbox/src/sandbox-client.ts), by default
  *               sandbox.simtenusercontent.dev.
  *               embed.simten.dev  the live preview in the Share dialog's Embed tab.
  *               www.youtube.com   the video in the Breakout post.

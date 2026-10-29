@@ -41,6 +41,6 @@ export {
   executeJsCode,
   stripTypes,
 } from './source/execute.js';
-export { getStdLibrary, stdBehaviorsFor } from './std/library.js';
+export { getStdLibrary } from './std/library.js';
 export { slugify } from './verify/test-name.js';
 export { exportVerilogFromIR } from './verilog/exporter.js';

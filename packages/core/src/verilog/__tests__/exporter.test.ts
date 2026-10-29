@@ -11,7 +11,7 @@ import { bit, bus, circuit } from '../../circuit/index.js';
 import { internalsOf } from '../../circuit/internals.js';
 import type { BitType, BusType, CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
 import { And, DFlipFlop, LogicNot, Or, RAM, Register, ROM, Xor } from '../../std/index.js';
-import { getStdLibrary, stdBehaviorsFor } from '../../std/library.js';
+import { getStdLibrary } from '../../std/library.js';
 import { checkSynthesizable, exportVerilog, exportVerilogFromIR } from '../exporter.js';
 
 describe('exportVerilog', () => {
@@ -347,8 +347,7 @@ describe("a user primitive's own behavior", () => {
 
 describe('an export from IR alone', () => {
   // LogicNot has no hand-written mapping, so its Verilog comes only from the
-  // behavior passed in. The page has IR only and gets std's behavior from
-  // `stdBehaviorsFor`.
+  // behavior passed in.
   const top = (not: Circuit<{ a: BusType }, { out: BitType }>) =>
     circuit('NotTop', {
       inputs: { a: bus(8) },
@@ -356,27 +355,12 @@ describe('an export from IR alone', () => {
       nodes: { n: not },
       connect: ({ inputs, outputs, nodes: { n } }) => [inputs.a.to(n.a), n.out.to(outputs.out)],
     });
-  const exportIR = (built: Circuit, userNames: string[] = []) => {
-    const { definitions } = libraryOf(built);
-    const behaviors = stdBehaviorsFor(definitions, new Set(userNames));
-    return exportVerilogFromIR(internalsOf(built).ir, { definitions, behaviors });
-  };
 
   it("translates std's own primitive with std's behavior", () => {
-    expect(exportIR(top(LogicNot())).unsupported).toBeUndefined();
-  });
-
-  it('reports a user primitive named like a std one instead of using std logic', () => {
-    const MyNot = circuit('LogicNot', {
-      inputs: { a: bus(8) },
-      outputs: { out: bit },
-      eval: ({ a }) => ({ out: a & 1 }),
-    });
-    expect(exportIR(top(MyNot)).unsupported).toEqual({ LogicNot: ['n'] });
-  });
-
-  it("gives no std behavior to a name the user's source defines", () => {
-    expect(exportIR(top(LogicNot()), ['LogicNot']).unsupported).toEqual({ LogicNot: ['n'] });
+    const built = top(LogicNot());
+    expect(
+      exportVerilogFromIR(internalsOf(built).ir, libraryOf(built)).unsupported,
+    ).toBeUndefined();
   });
 
   it('reports a primitive with no behavior rather than borrowing std', () => {
