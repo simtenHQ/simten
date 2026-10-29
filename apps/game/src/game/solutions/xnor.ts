@@ -1,6 +1,6 @@
 /** Reference solution for `xnor`. Proven by `__tests__/levels.test.ts`. */
 
-import { circuit } from '@simten/core/circuit';
+import { circuit } from '@simten/core';
 import { Led, Not, Switch, Xor } from '@simten/core/std';
 
 export const Xnor1 = circuit('Xnor1', {

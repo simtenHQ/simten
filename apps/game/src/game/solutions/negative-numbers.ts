@@ -1,6 +1,6 @@
 /** Reference solution for `negative-numbers`. Proven by `__tests__/levels.test.ts`. */
 
-import { circuit } from '@simten/core/circuit';
+import { circuit } from '@simten/core';
 import { Combiner, HexDisplay, Input, Or, Splitter, Xor } from '@simten/core/std';
 
 // Flip and add one, worked out per bit: everything up to and including the

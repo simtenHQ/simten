@@ -3,9 +3,14 @@
  *
  * Share links and game drafts store circuit *source*, so anything that source
  * names is a contract with every player who saved it: `circuit`, `bit`, `bus`,
- * every std component name and its port names, and the `@simten/core/circuit`
+ * every std component name and its port names, and the `@simten/core`
  * and `@simten/core/std` import paths. Renaming or removing any of these
  * breaks saved circuits. Everything else may change before 1.0.
+ *
+ * Decision 0010 removed `@simten/core/circuit` from this list. Saved source
+ * that uses it needs no migration: the sandbox strips import lines before
+ * running source, and the code editor keeps the path as an alias of
+ * `@simten/core` (react's code-editor/__tests__/old-import-path.test.ts).
  *
  * `frozen-surface.json` is the committed record of that surface. This test
  * fails if anything listed there disappears. Adding a component or a port
@@ -81,7 +86,7 @@ async function importEntry(path: string): Promise<Record<string, unknown>> {
 }
 
 async function currentSurface(frozen: FrozenSurface): Promise<FrozenSurface> {
-  const circuitModule = await importEntry('@simten/core/circuit');
+  const circuitModule = await importEntry('@simten/core');
   const stdModule = await importEntry('@simten/core/std');
 
   const std: Record<string, ComponentSurface> = {};

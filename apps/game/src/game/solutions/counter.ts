@@ -1,6 +1,6 @@
 /** Reference solution for `counter`. Proven by `__tests__/levels.test.ts`. */
 
-import { circuit } from '@simten/core/circuit';
+import { circuit } from '@simten/core';
 import { DFlipFlop, Led, Nand } from '@simten/core/std';
 
 export const Counter2 = circuit('Counter2', {

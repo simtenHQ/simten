@@ -21,7 +21,6 @@ const src = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 const ENTRIES = [
   'index.ts',
-  'circuit/index.ts',
   'std/index.ts',
   'verify/index.ts',
   'verilog/index.ts',

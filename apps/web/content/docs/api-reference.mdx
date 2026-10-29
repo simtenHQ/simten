@@ -8,7 +8,7 @@ description: How to define circuits using the circuit() builder and standard lib
 Circuits are defined in TypeScript using the `circuit()` builder:
 
 ```typescript
-import { circuit, bus, bit } from '@simten/core/circuit'
+import { circuit, bus, bit } from '@simten/core'
 import { Xor, And } from '@simten/core/std'
 
 const HalfAdder = circuit('HalfAdder', {
@@ -32,7 +32,7 @@ const HalfAdder = circuit('HalfAdder', {
 | `bus(N)` | N-bit wide bus | `number` (unsigned, max 32 bits) |
 
 ```typescript
-import { bus, bit } from '@simten/core/circuit'
+import { bus, bit } from '@simten/core'
 
 const MyCircuit = circuit('MyCircuit', {
   inputs:  { addr: bus(16), enable: bit },

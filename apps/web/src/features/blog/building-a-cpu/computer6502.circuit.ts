@@ -10,7 +10,7 @@
  * Same machine as the `6502-computer` example in the circuit editor.
  */
 
-import { bit, bus, circuit } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core';
 import { Console, DualPortRAM, MOS6502_Core, ROM } from '@simten/core/std';
 
 /** Places a cc65 binary (16 KB, linked for $C000) at its addresses in ROM. */

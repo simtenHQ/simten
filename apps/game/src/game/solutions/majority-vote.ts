@@ -1,6 +1,6 @@
 /** Reference solution for `majority-vote`. Proven by `__tests__/levels.test.ts`. */
 
-import { circuit } from '@simten/core/circuit';
+import { circuit } from '@simten/core';
 import { And, Led, Or, Switch } from '@simten/core/std';
 
 // a and b together carry it, and otherwise c needs one of them. Four gates is

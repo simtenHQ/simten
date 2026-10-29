@@ -1,6 +1,6 @@
 /** Reference solution for `making-a-component`. Proven by `__tests__/levels.test.ts`. */
 
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core';
 import { Xor } from '@simten/core/std';
 
 export const Xor2 = circuit('Xor2', {

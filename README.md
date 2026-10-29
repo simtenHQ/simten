@@ -36,7 +36,7 @@ component can be opened up on the canvas to show what it's made of.
 ## Example
 
 ```typescript
-import { circuit, bit } from '@simten/core/circuit'
+import { circuit, bit } from '@simten/core'
 import { Xor, And } from '@simten/core/std'
 
 const HalfAdder = circuit('HalfAdder', {

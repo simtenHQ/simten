@@ -11,7 +11,7 @@
 import { readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { bit, bus, circuit } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core';
 import { Constant, RV32I_Core as RV32I_CoreDef } from '@simten/core/std';
 import { exportVerilog } from '@simten/core/verilog';
 

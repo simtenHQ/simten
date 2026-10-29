@@ -1,6 +1,6 @@
 /** Reference solution for `subtractor`. Proven by `__tests__/levels.test.ts`. */
 
-import { bit, bus, circuit } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core';
 import { And, Combiner, HexDisplay, Input, Led, Not, Or, Splitter, Xor } from '@simten/core/std';
 
 const HalfAdder = circuit('HalfAdder', {

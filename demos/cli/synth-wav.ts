@@ -13,8 +13,7 @@
  */
 
 import { writeFileSync } from 'node:fs';
-import { simulate } from '@simten/core';
-import { bit, bus, circuit } from '@simten/core/circuit';
+import { bit, bus, circuit, simulate } from '@simten/core';
 import {
   Adder,
   BitSlice,

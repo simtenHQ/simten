@@ -1,4 +1,4 @@
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core';
 import {
   elaborate,
   internalsOf,

@@ -5,7 +5,7 @@
  * full quarter-round that powers TLS encryption across the internet.
  */
 
-import { bus, circuit } from '@simten/core/circuit';
+import { bus, circuit } from '@simten/core';
 import {
   Adder,
   BusOr,

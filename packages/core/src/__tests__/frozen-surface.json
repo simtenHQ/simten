@@ -1,5 +1,5 @@
 {
-  "importPaths": ["@simten/core/circuit", "@simten/core/std"],
+  "importPaths": ["@simten/core", "@simten/core/std"],
   "circuitApi": ["bit", "bus", "circuit"],
   "std": {
     "Adder": {

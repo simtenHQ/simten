@@ -1,4 +1,4 @@
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core';
 import { And, DFlipFlop, Or, Xor } from '@simten/core/std';
 import { createFileRoute, Link } from '@tanstack/react-router';
 import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';

@@ -16,7 +16,7 @@ function simulateTool(): Handler {
 }
 
 const ROM_READER = `
-import { bus, circuit } from '@simten/core/circuit';
+import { bus, circuit } from '@simten/core';
 import { ROM } from '@simten/core/std';
 
 export const RomReader = circuit('RomReader', {

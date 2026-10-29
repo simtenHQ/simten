@@ -5,7 +5,7 @@
  * starting from a single compare-and-swap primitive.
  */
 
-import { bus, circuit } from '@simten/core/circuit';
+import { bus, circuit } from '@simten/core';
 import { Comparator, Constant, HexDisplay, Input, Mux, Register } from '@simten/core/std';
 import type { BlogCircuit } from '../types';
 

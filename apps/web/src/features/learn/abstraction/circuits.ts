@@ -10,7 +10,7 @@
  * a features/learn/_shared/ module. For now the page is self-contained.
  */
 
-import { bit, bus, circuit } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core';
 import {
   And,
   Combiner8to8,

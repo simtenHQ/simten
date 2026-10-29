@@ -35,9 +35,11 @@ import { registerSimtenSnippets } from './snippets';
 /**
  * Importable `@simten/core` subpaths. The bundle is a flat aggregate of all of
  * them, registered below as the bare `@simten/core` module — but circuit source
- * imports from subpaths (`@simten/core/circuit`, `@simten/core/std`, ...), which
- * the bundle doesn't declare. Without help those resolve only via network type
- * acquisition of the published package: slow, and broken offline. Re-export the
+ * imports from subpaths (`@simten/core/std`, ...), which the bundle doesn't
+ * declare. Without help those resolve only via network type acquisition of the
+ * published package: slow, and broken offline. `circuit` hasn't been a subpath
+ * since decision 0010; it stays here as an alias, so drafts saved with
+ * `@simten/core/circuit` still type-check. Re-export the
  * bundle under each subpath so they resolve deterministically. Over-broad on
  * exports (every subpath appears to export everything), but correct for every
  * symbol that actually exists.

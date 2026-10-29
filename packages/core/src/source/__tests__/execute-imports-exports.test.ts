@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { executeJsCode, stripExports, stripImports } from '../execute.js';
+import { simulate } from '../../simulator/simulate.js';
+import { executeCircuitCode, executeJsCode, stripExports, stripImports } from '../execute.js';
 
 describe('stripExports', () => {
   it('drops the export keyword but keeps the declaration', () => {
@@ -17,9 +18,29 @@ describe('stripExports', () => {
 });
 
 describe('executeJsCode tolerates real import + export (new Function chokepoint)', () => {
-  it('collects an exported circuit whose file carries imports', () => {
+  it('runs source that imports the builder from @simten/core/circuit (decision 0010)', () => {
+    // Drafts and share links saved before 0010 use the removed path. Import
+    // lines are stripped before source runs, so the path itself never matters.
     const code = `
       import { circuit, bit } from '@simten/core/circuit';
+      import { Not } from '@simten/core/std';
+      export const Inv = circuit('Inv', {
+        inputs: { a: bit }, outputs: { y: bit }, nodes: { n: Not },
+        connect: ({ inputs, outputs, nodes: { n } }) => [inputs.a.to(n.in), n.out.to(outputs.y)],
+      });
+    `;
+    const result = executeCircuitCode(code);
+    expect(result.error).toBeNull();
+    const [inv] = result.exported;
+    expect(inv?.name).toBe('Inv');
+    const sim = simulate(inv);
+    sim.set({ a: 1 });
+    expect(sim.get('y')).toBe(0);
+  });
+
+  it('collects an exported circuit whose file carries imports', () => {
+    const code = `
+      import { circuit, bit } from '@simten/core';
       import { Not } from '@simten/core/std';
       export const Inv = circuit('Inv', {
         inputs: { a: bit }, outputs: { y: bit }, nodes: { n: Not },
