@@ -531,7 +531,7 @@ export function useSimulation(
         const before = new Map(paths.map((path) => [path, written.current.get(path)]));
         for (const path of paths) written.current.set(path, values[path]);
         try {
-          await s.setInputs(values);
+          await s.set(values);
         } catch (e) {
           restoreWritten(written.current, values, before);
           throw e;
@@ -550,7 +550,7 @@ export function useSimulation(
           const now = written.current.get(path) ?? s.getState().ports.get(`${path}.out`);
           const next = now === 1 ? 0 : 1;
           written.current.set(path, next);
-          return s.setInput(path, next);
+          return s.set({ [path]: next });
         }),
       tick: (count = 1) => withSession(undefined, (s) => s.tick(count)),
       reset: () => withSession(undefined, (s) => s.reset()),

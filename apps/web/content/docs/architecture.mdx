@@ -181,7 +181,9 @@ A `set` marks the logic dirty and the next read settles it, so `get` after `set`
 
 Each returns `false`, and changes nothing, when there is nothing to step to. Snapshots carry the top-level inputs and Switch/Input values, so a rewind puts the switches back too.
 
-Internal nodes are reached through `nodesOf(sim)` in `@simten/core/internal`: `set(path, value)` writes a node by dotted path, `ports()` reads every port value, `peripherals()` reads the state of screens, consoles and the memories wired to them, and `advance(n)` followed by `record()` ticks in slices and records the whole run as one step.
+`sim.set` takes the circuit's inputs as a person at the board sees them: input ports by name and Switch and Input nodes by path (`d`, `cpu.kbd`), all written before the circuit settles. A key that names anything else, or both a port and a Switch, throws. `simulate(top, { memory })` loads memory contents by node path before cycle 0.
+
+Simten's own code reaches other internal nodes through `nodesOf(sim)` in `@simten/core/internal`: `set(path, value)` writes any node by dotted path, `ports()` reads every port value, `peripherals()` reads the state of screens, consoles and the memories wired to them, and `advance(n)` followed by `record()` ticks in slices and records the whole run as one step.
 
 ### Auto-run
 
@@ -194,9 +196,9 @@ The engine takes top-level inputs and nodes separately. `engine.setInput(name, v
 - **Switch/Input/Button** → sets `arguments.value` (combinational)
 - **ROM/RAM/Register** → sets sequential state directly
 
-A name that isn't one of the two throws, and an input name isn't a node path. `Simulation.set` drives inputs; `nodesOf(sim).set` writes nodes. ROM data written with `setNode` persists across reset (like real hardware, where flash survives a power cycle).
+A name that isn't one of the two throws, and an input name isn't a node path. `Simulation.set` resolves each key to one or the other; `nodesOf(sim).set` writes nodes. ROM data written with `setNode` persists across reset (like real hardware, where flash survives a power cycle).
 
-In the browser, the page can only set Switch and Input nodes (`SimulationClient.setInput`). A program goes into memory when its session opens (`memory` in `open`'s options).
+In the browser, the page can only set input ports and Switch and Input nodes (`SimulationClient.set`, the same rules as `Simulation.set`). A program goes into memory when its session opens (`memory` in `open`'s options).
 
 ## Packages
 

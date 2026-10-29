@@ -14,22 +14,12 @@
  * which was the half that was already right.
  */
 
-import { bit, circuit } from '@simten/core/circuit';
-import { internalsOf } from '@simten/core/internal';
-import { Led, Not, Switch } from '@simten/core/std';
-import { SandboxClient, type SandboxTransport } from '@simten/sandbox';
-import { SessionHost } from '@simten/sandbox/host';
-import type { SandboxMessage, SessionRequest } from '@simten/sandbox/protocol';
-import { describe, expect, it } from 'vitest';
+import { SimulationClient } from '@simten/sandbox';
+import { inProcessSandbox } from '@simten/sandbox/host';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import { grade } from '../grade';
 import { LEVELS } from '../levels';
-import {
-  RuntimeFailure,
-  readOutputs,
-  resolveOutput,
-  sandboxRuntime,
-  splitInputs,
-} from '../runtime';
+import { readOutputs, resolveOutput, sandboxRuntime } from '../runtime';
 import { SOLUTIONS } from '../solutions';
 import { localRuntime } from './local-runtime';
 
@@ -83,69 +73,42 @@ describe('resolveOutput spans both circuit shapes', () => {
   });
 });
 
-describe('splitInputs', () => {
-  const ported = internalsOf(
-    circuit('Ported', {
-      inputs: { a: bit },
-      outputs: { out: bit },
-      nodes: { inv: Not },
-      connect: ({ inputs, outputs, nodes: { inv } }) => [
-        inputs.a.to(inv.in),
-        inv.out.to(outputs.out),
-      ],
-    }),
-  ).ir;
-  const selfContained = internalsOf(
-    circuit('SelfContained', {
-      nodes: { a: Switch, inv: Not, out: Led },
-      connect: ({ nodes: { a, inv, out } }) => [a.out.to(inv.in), inv.out.to(out.in)],
-    }),
-  ).ir;
-
-  it('sends a port name to the ports', () => {
-    expect(splitInputs(ported, { a: 1 })).toEqual({ ports: { a: 1 }, nodes: {} });
-  });
-
-  it('sends a Switch name to the nodes', () => {
-    expect(splitInputs(selfContained, { a: 1 })).toEqual({ ports: {}, nodes: { a: 1 } });
-  });
-
-  it('throws for a name that is neither, rather than driving nothing', () => {
-    expect(() => splitInputs(ported, { b: 1 })).toThrow(RuntimeFailure);
-    expect(() => splitInputs(ported, { b: 1 })).toThrow('`Ported` has no input port or node `b`');
-  });
+afterEach(() => {
+  vi.restoreAllMocks();
 });
 
-/** A session host in this process, through a transport that structured-clones like postMessage. */
-function inProcess(sent: SessionRequest[] = []): SandboxTransport {
-  let host: SessionHost | null = null;
-  return {
-    connect(receive) {
-      host = new SessionHost({
-        post: (message) => {
-          if (message.type === 'progressed') return;
-          const copy = structuredClone(message) as SandboxMessage;
-          setTimeout(() => receive(copy), 0);
-        },
-      });
-      setTimeout(() => receive({ type: 'ready' }), 0);
-    },
-    send(request) {
-      sent.push(request);
-      const copy = structuredClone(request);
-      setTimeout(() => host?.handle(copy), 0);
-    },
-    close() {
-      host = null;
-    },
-  };
-}
+describe('inputs', () => {
+  const PORTED = `
+const Ported = circuit('Ported', {
+  inputs: { a: bit },
+  outputs: { out: bit },
+  nodes: { inv: Not },
+  connect: ({ inputs, outputs, nodes: { inv } }) => [inputs.a.to(inv.in), inv.out.to(outputs.out)],
+})`;
+
+  it('drives a port, and refuses a name that is neither a port nor a Switch, in both runtimes', async () => {
+    const sandbox = inProcessSandbox();
+    try {
+      for (const runtime of [localRuntime(), sandboxRuntime(sandbox)]) {
+        const { circuits } = await runtime.compile(PORTED);
+        await runtime.select(circuits[0]);
+        expect(await runtime.evaluate({ a: 1 }, ['out'])).toEqual({ out: 0 });
+        await expect(runtime.evaluate({ b: 1 }, ['out'])).rejects.toThrow(
+          "has no input port, Switch or Input named 'b'",
+        );
+        await runtime.close();
+      }
+    } finally {
+      sandbox.dispose();
+    }
+  });
+});
 
 describe('sandboxRuntime', () => {
   // The browser grades through the sandbox; levels.test.ts proves every level
   // on the local runtime. This ties the two together.
   it('grades every level the same as the local runtime', { timeout: 60_000 }, async () => {
-    const sandbox = new SandboxClient({ transport: inProcess() });
+    const sandbox = inProcessSandbox();
     try {
       for (const level of LEVELS) {
         for (const source of [SOLUTIONS[level.id], level.stub]) {
@@ -163,31 +126,31 @@ describe('sandboxRuntime', () => {
   // switches one request at a time let d = 0 land while en was still 1, and
   // the latch followed it. The grader now writes them in one request.
   it('passes the d-latch reference solution, whose vectors change two switches at once', async () => {
-    const sent: SessionRequest[] = [];
-    const sandbox = new SandboxClient({ transport: inProcess(sent) });
+    const sandbox = inProcessSandbox();
+    const set = vi.spyOn(SimulationClient.prototype, 'set');
     try {
       const level = LEVELS.find((l) => l.id === 'd-latch');
       if (!level) throw new Error('no d-latch level');
       const remote = await grade(sandboxRuntime(sandbox), level, SOLUTIONS[level.id]);
       expect(remote.status).toBe('pass');
-      const writes = sent.filter((r) => r.type === 'set-input');
-      expect(writes).toHaveLength(level.vectors.length);
+      expect(set).toHaveBeenCalledTimes(level.vectors.length);
     } finally {
       sandbox.dispose();
     }
   });
 
   it('frees its compile and session when grading ends', async () => {
-    const sent: SessionRequest[] = [];
-    const sandbox = new SandboxClient({ transport: inProcess(sent) });
+    const sandbox = inProcessSandbox();
+    const open = vi.spyOn(sandbox, 'open');
+    const release = vi.spyOn(sandbox, 'release');
+    const close = vi.spyOn(SimulationClient.prototype, 'close');
     try {
       const level = LEVELS[0];
       const verdict = await grade(sandboxRuntime(sandbox), level, SOLUTIONS[level.id]);
       expect(verdict.status).toBe('pass');
-      const types = sent.map((r) => r.type);
-      expect(types.filter((t) => t === 'open')).toHaveLength(1);
-      expect(types).toContain('close');
-      expect(types).toContain('release');
+      expect(open).toHaveBeenCalledTimes(1);
+      expect(close).toHaveBeenCalled();
+      expect(release).toHaveBeenCalled();
     } finally {
       sandbox.dispose();
     }

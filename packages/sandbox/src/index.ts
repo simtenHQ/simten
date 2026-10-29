@@ -11,8 +11,9 @@
  * sim.get('count');
  * ```
  *
- * The protocol is in `@simten/sandbox/protocol`; the sandbox's own side (the
- * worker's session host and the iframe's relay) is in `@simten/sandbox/host`.
+ * The sandbox's own side (the worker's session host and the iframe's relay)
+ * is in `@simten/sandbox/host`, with `inProcessSandbox()` for tests. The
+ * messages between them are internal.
  */
 
 export { SandboxError, type SandboxErrorCode } from './errors.js';

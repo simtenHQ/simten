@@ -2,7 +2,7 @@
  * Why a sandbox call failed:
  *
  * - `failed`: the sandbox ran the request and it threw (a compile error, an
- *   unknown name, a `setInput` on something that isn't an input).
+ *   unknown name, a `set` on something that isn't an input).
  * - `timed-out`: the worker went 5 seconds without a word while this request
  *   was the oldest one waiting, so the relay restarted it.
  * - `restarted`: the request was waiting when the worker was restarted for

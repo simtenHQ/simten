@@ -15,6 +15,8 @@ export type {
   CircuitMeta,
   ConnectContext,
   ConnectionDef,
+  Control,
+  InputKey,
   NodeEntry,
   PortMap,
   PortValues,

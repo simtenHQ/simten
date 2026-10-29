@@ -185,14 +185,14 @@ describe('exact names', () => {
   it('set throws for a name that is not a top-level input, listing the inputs', () => {
     const sim: Simulation = simulate(Passthrough);
     expect(() => sim.set({ dd: 1 })).toThrow(
-      "set('dd'): SimPassthrough has no input named 'dd'. Its inputs: d, we",
+      "set('dd'): SimPassthrough has no input port, Switch or Input named 'dd'. Its inputs: d, we",
     );
-    expect(() => sim.set({ reg: 1 })).toThrow(/no input named 'reg'/);
+    expect(() => sim.set({ reg: 1 })).toThrow("set('reg'): 'reg' is a Register, not an input.");
   });
 
   it('a set with one unknown name writes none of them', () => {
     const sim: Simulation = simulate(Passthrough);
-    expect(() => sim.set({ we: 1, dd: 1 })).toThrow(/no input named 'dd'/);
+    expect(() => sim.set({ we: 1, dd: 1 })).toThrow(/named 'dd'/);
     expect(sim.get('inverted')).toBe(1);
   });
 
@@ -211,10 +211,10 @@ describe('exact names', () => {
     expect(() => nodesOf(sim).set('nope', 1)).toThrow('setNode: "nope" is not a node path.');
   });
 
-  it('set takes top-level input names only, and nodesOf(sim).set node paths only', () => {
+  it('set takes inputs, not other nodes, and nodesOf(sim).set node paths only', () => {
     const sim: Simulation = simulate(Wrapped);
-    // A node path is not an input name, even when the node exists.
-    expect(() => sim.set({ 'inner.reg': 1 })).toThrow(/no input named 'inner.reg'/);
+    // A register is not an input, even by its exact path.
+    expect(() => sim.set({ 'inner.reg': 1 })).toThrow("'inner.reg' is a Register, not an input");
     // A top-level input name is not a node path.
     expect(() => nodesOf(sim).set('en', 1)).toThrow('setNode: "en" is not a node path.');
     sim.set({ en: 1 });

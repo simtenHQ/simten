@@ -35,16 +35,35 @@ export interface Snapshot {
 export interface SimulateOptions {
   /** Cycles of history kept for stepBack/stepForward/seek. Default 0: off. */
   history?: number;
+  /**
+   * Memory contents by node path (`imem`, `cpu.rom`), loaded before cycle 0.
+   * They survive `reset`, as flash does. A new program is a new simulation.
+   */
+  memory?: Record<string, MemoryContents>;
 }
 
-export interface Simulation<Ins extends PortMap = PortMap, Outs extends PortMap = PortMap> {
+/**
+ * A circuit simulation. `Keys` are what `set` takes: the circuit's input port
+ * names and the paths of its Switch and Input nodes.
+ */
+export interface Simulation<
+  Ins extends PortMap = PortMap,
+  Outs extends PortMap = PortMap,
+  Keys extends string = keyof Ins & string,
+> {
   /** True if the circuit has state (registers, memories). */
   readonly isSequential: boolean;
   /** Clock cycles since the start or the last reset. */
   readonly cycle: number;
 
-  /** Drive top-level input ports. Outputs read afterwards are settled. Unknown names throw. */
-  set(values: Partial<{ [K in keyof Ins]: number }>): void;
+  /**
+   * Drive the circuit's inputs: input ports by name, and Switch and Input
+   * nodes by path (`d`, `cpu.kbd`). Every value is written before the circuit
+   * settles, so outputs read afterwards see them all at once. A key that is
+   * neither, that names any other node, or that names both a port and a
+   * Switch throws, and then nothing is written.
+   */
+  set(values: Partial<Record<Keys, number>>): void;
   /** Read one top-level output port. Unknown names throw. */
   get<K extends keyof Outs & string>(name: K): number;
   /** Read every top-level output port. */
@@ -52,7 +71,11 @@ export interface Simulation<Ins extends PortMap = PortMap, Outs extends PortMap 
 
   /** Advance `count` rising clock edges (default 1). On a combinational circuit, settles. */
   tick(count?: number): void;
-  /** Back to cycle 0. Memory contents loaded at build time survive, as flash does. */
+  /**
+   * The reset line: back to cycle 0, registers to their initial values, history
+   * restarted. Memory contents survive, as flash does, and inputs and switches
+   * stay where they are.
+   */
   reset(): void;
 
   /** Where the history cursor is. `{ length: 0, index: -1 }` when history is off. */
@@ -118,8 +141,17 @@ export function createSimulation(
     outputNames: circuit.outputs.map((p) => p.name),
     peripheralNodes: () => peripheralBusNodes(flat, library.definitions),
     primitiveTypes: () => new Map(flat.nodes.map((n) => [n.id, n.primitiveType])),
+    isControl: (type) =>
+      CONTROLS.has(type) && !!library.definitions.resolveCircuit(type)?.metadata?.interactiveArg,
   });
   nodesBySimulation.set(simulation, simulation.nodes);
+  const memory = Object.entries(options?.memory ?? {});
+  if (memory.length > 0) {
+    for (const [path, contents] of memory) simulation.nodes.set(path, contents);
+    // Cycle 0 and the start of history are with the program in place, and
+    // `reset` comes back to it.
+    simulation.reset();
+  }
   return simulation;
 }
 
@@ -128,6 +160,11 @@ export function createSimulation(
 // ============================================================================
 
 const TOP = '__top__';
+/** The components `set` writes by path: what a person at the board could change. */
+const CONTROLS = new Set(['Switch', 'Input']);
+
+/** One write `set` resolved a key to. */
+type InputWrite = { port: string; value: number } | { path: string; value: number };
 
 interface EngineSimulationOptions {
   isSequential: boolean;
@@ -137,6 +174,8 @@ interface EngineSimulationOptions {
   outputNames: readonly string[];
   peripheralNodes: () => ReadonlySet<string>;
   primitiveTypes: () => ReadonlyMap<string, string>;
+  /** Whether nodes of this primitive type are Switches or Inputs. */
+  isControl: (primitiveType: string) => boolean;
 }
 
 class EngineSimulation implements Simulation {
@@ -153,6 +192,7 @@ class EngineSimulation implements Simulation {
   private peripheralNodes: ReadonlySet<string> | null = null;
   private readonly findPrimitiveTypes: () => ReadonlyMap<string, string>;
   private primitiveTypes: ReadonlyMap<string, string> | null = null;
+  private readonly isControlType: (primitiveType: string) => boolean;
 
   private cycleCount = 0;
   /** An input changed since the logic last settled. Reads settle first. */
@@ -170,6 +210,7 @@ class EngineSimulation implements Simulation {
     this.outputNameSet = new Set(options.outputNames);
     this.findPeripheralNodes = options.peripheralNodes;
     this.findPrimitiveTypes = options.primitiveTypes;
+    this.isControlType = options.isControl;
 
     engine.runCombinational();
     this.startHistory();
@@ -183,10 +224,7 @@ class EngineSimulation implements Simulation {
         return this.engine.getPortValues();
       },
       peripherals: () => this.peripherals(),
-      primitiveOf: (path) => {
-        this.primitiveTypes ??= this.findPrimitiveTypes();
-        return this.primitiveTypes.get(path);
-      },
+      primitiveOf: (path) => this.primitiveOf(path),
     };
   }
 
@@ -199,15 +237,14 @@ class EngineSimulation implements Simulation {
   }
 
   set(values: Partial<Record<string, number>>): void {
-    const entries = Object.entries(values);
-    // Check every name before writing any, so a typo leaves the inputs as they were.
-    for (const [name] of entries) {
-      if (!this.inputNames.has(name)) {
-        throw new Error(this.unknownPortMessage('set', name, 'input', [...this.inputNames]));
-      }
+    // Resolve every key before writing any, so a typo leaves the inputs as they were.
+    const writes: InputWrite[] = [];
+    for (const [key, value] of Object.entries(values)) {
+      if (value !== undefined) writes.push(this.resolveInput(key, value));
     }
-    for (const [name, value] of entries) {
-      if (value !== undefined) this.engine.setInput(name, value);
+    for (const write of writes) {
+      if ('port' in write) this.engine.setInput(write.port, write.value);
+      else this.engine.setNode(write.path, write.value);
     }
     this.dirty = true;
   }
@@ -262,6 +299,37 @@ class EngineSimulation implements Simulation {
     this.engine.runCombinational();
     this.cycleCount = saved.cycleCount;
     this.dirty = false;
+  }
+
+  private primitiveOf(path: string): string | undefined {
+    this.primitiveTypes ??= this.findPrimitiveTypes();
+    return this.primitiveTypes.get(path);
+  }
+
+  /**
+   * What `set` writes for `key`: the input port of that name, or the Switch or
+   * Input node at that path. Exactly one must match.
+   */
+  private resolveInput(key: string, value: number): InputWrite {
+    const isPort = this.inputNames.has(key);
+    const type = this.primitiveOf(key);
+    const isControl = type !== undefined && this.isControlType(type);
+    if (isPort && isControl) {
+      throw new Error(
+        `set('${key}'): ${this.circuitName} has both an input port and a ${type} named '${key}', so the key is ambiguous. Rename one of them.`,
+      );
+    }
+    if (isPort) return { port: key, value };
+    if (isControl) return { path: key, value };
+    if (type !== undefined) {
+      throw new Error(
+        `set('${key}'): '${key}' is a ${type}, not an input. Only input ports and Switch and Input nodes can be set; load a memory's contents with the memory option.`,
+      );
+    }
+    const names = [...this.inputNames].join(', ') || '(none)';
+    throw new Error(
+      `set('${key}'): ${this.circuitName} has no input port, Switch or Input named '${key}'. Its inputs: ${names}`,
+    );
   }
 
   private unknownPortMessage(

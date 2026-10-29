@@ -51,6 +51,9 @@ const UNEXPORTED_HELPERS: Record<string, string> = {
   CoreOuts: "a std CPU core's output ports, written out once",
   B: 'shorthand for BusType in a std CPU file',
   Bit: 'shorthand for BitType in a std CPU file',
+  ControlPaths: "the Switch and Input paths in a composite's node types, for InputKey",
+  IsControl: 'whether a node type is a Switch or an Input, for ControlPaths',
+  Depth: 'how deep ControlPaths looks',
 };
 
 /** Exported types no value's signature uses, and why they are still public. */

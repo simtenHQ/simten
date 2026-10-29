@@ -23,7 +23,8 @@ Nothing has been released since these grew, so this is the cheapest time to chan
 - **`CodeEditor` is the input.** It's Monaco with Simten's autocomplete and error markers, and it knows nothing about simulations. Its entry is `@simten/react/code-editor` (renamed from `./monaco`), kept separate so the canvas never pulls in Monaco. Wiring it up is two lines: `useSimulation({ source })`, and `diagnostics` from `compileError`.
 - **Cards are app code.** The blog's card and Fork button move to `apps/web`, and the embed page's card to `apps/embed-page`. `CircuitEmbed` and `EmbedCard` leave the library. The zero-code way to show a circuit on any page is the iframe embed.
 - **`useSimulation` returns `{ state, actions }` and takes only how the simulation starts.**
-  - Options: `initialInputs` (where the switches sit at power-on, which `reset` returns to), `memory` (contents by node path, so a new program is a new run) and `history` (entries kept, 0 for none).
+  - Options: `initialInputs` (where the switches sit at power-on), `memory` (contents by node path, so a new program is a new run) and `history` (entries kept, 0 for none).
+  - `reset()` is the reset line, in core, the sandbox and the hook: registers and history go back to the start, memory contents stay, and switches and inputs stay where they are. `initialInputs` applies once, when the simulation opens. An app's "start over" is `set(initialInputs)` then `reset()`.
   - `state` is what the simulation is doing now: `outputs` by name, `portValues`, `cycle`, `isRunning`, `speed`, `ready`, `error`, `compileError` and `history`.
   - `actions` is what you can tell it to do:
     - inputs: `set({ a: 1, d: 0 })` for anything a person at the board could change, and `toggle(name)` to flip one 1-bit input or switch;

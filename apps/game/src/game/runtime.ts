@@ -40,8 +40,8 @@ export interface GradeRuntime {
    * implementations disagree silently: grading read `undefined` for every
    * output and scored it 0, which passes any row that expects 0.
    *
-   * A name resolves against either circuit shape; see `splitInputs` and
-   * `resolveOutput`.
+   * An input name is a top-level input port or a Switch or Input node, as the
+   * simulator's `set` resolves it; an output name is resolved by `resolveOutput`.
    */
   evaluate(inputs: Record<string, number>, outputs: string[]): Promise<Record<string, number>>;
   /** Free what the grading held. `grade` calls it when it's done, pass or fail. */
@@ -50,32 +50,6 @@ export interface GradeRuntime {
 
 /** How the sandbox namespaces a top-level port. Mirrors core's TOP_LEVEL_NODE. */
 const TOP_LEVEL_PREFIX = '__top__.';
-
-/** A vector's inputs, split by what each name drives. */
-interface SplitInputs {
-  /** Top-level input ports of the circuit, by port name. */
-  ports: Record<string, number>;
-  /** Nodes of the circuit (a Switch in a self-contained level), by node id. */
-  nodes: Record<string, number>;
-}
-
-/**
- * Sort input signals by the shape the level takes: a signal named `a` is either
- * a top-level input port of `target` or a node with that id. Ports win, as for
- * outputs. The simulator takes exact names only, so this is where a bare level
- * signal becomes one or the other.
- */
-export function splitInputs(target: CircuitIR, inputs: Record<string, number>): SplitInputs {
-  const portNames = new Set(target.inputs.map((p) => p.name));
-  const nodeIds = new Set(target.nodes.map((n) => n.id));
-  const split: SplitInputs = { ports: {}, nodes: {} };
-  for (const [name, value] of Object.entries(inputs)) {
-    if (portNames.has(name)) split.ports[name] = value;
-    else if (nodeIds.has(name)) split.nodes[name] = value;
-    else throw new RuntimeFailure(`\`${target.name}\` has no input port or node \`${name}\``);
-  }
-  return split;
-}
 
 /**
  * Find one output signal in a bag of port values.
@@ -132,11 +106,10 @@ export function sandboxRuntime(sandbox: SandboxClient): GradeRuntime {
       if (!session || !selected) {
         throw new RuntimeFailure('select() was not called before evaluate()');
       }
-      const { ports, nodes } = splitInputs(selected, inputs);
-      // One request for the whole vector: written one at a time, a latch would
-      // see the switches change in order and could follow a value it should hold.
-      if (Object.keys(nodes).length > 0) await session.setInputs(nodes);
-      if (Object.keys(ports).length > 0) await session.set(ports);
+      // One request for the whole vector, ports and switches alike: written one
+      // at a time, a latch would see the switches change in order and could
+      // follow a value it should hold.
+      await session.set(inputs);
       await session.tick();
       return readOutputs(Object.fromEntries(session.getState().ports), outputs);
     },

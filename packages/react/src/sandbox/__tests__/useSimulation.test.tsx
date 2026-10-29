@@ -1,9 +1,9 @@
 // @vitest-environment jsdom
 
 /**
- * `useSimulation` against a real session host, in-process: the client talks to
- * a `SessionHost` through a transport that structured-clones every message,
- * as postMessage would. No iframe, no worker, no relay.
+ * `useSimulation` against a real session host, in-process
+ * (`inProcessSandbox()`): every message is structured-cloned, as postMessage
+ * would. No iframe, no worker, no relay.
  */
 
 import { bit, circuit } from '@simten/core/circuit';
@@ -19,7 +19,7 @@ import {
   type UseSimulationOptions,
   useSimulation,
 } from '../useSimulation';
-import { inProcessClient } from './in-process';
+import { loggedSandbox } from './logged-sandbox';
 
 const COUNTER = `
 const Counter = circuit('Counter', {
@@ -67,9 +67,9 @@ afterEach(() => {
 });
 
 function newClient(options?: { slowFirstCompile?: boolean }) {
-  const { client, transport } = inProcessClient(options);
-  clients.push(client);
-  return { client, transport };
+  const logged = loggedSandbox(options);
+  clients.push(logged.client);
+  return logged;
 }
 
 function render(
@@ -92,7 +92,7 @@ function render(
     },
     { wrapper, initialProps: { source, options } },
   );
-  return { hook, transport: sandbox.current.transport, sandbox, errors };
+  return { hook, calls: sandbox.current.calls, sandbox, errors };
 }
 
 describe('useSimulation', () => {
@@ -173,13 +173,13 @@ describe('useSimulation', () => {
   });
 
   it('starts a run asked for before the session opened', async () => {
-    const { hook, transport } = render({ source: COUNTER }, { debounceMs: 0 });
+    const { hook, calls } = render({ source: COUNTER }, { debounceMs: 0 });
     act(() => {
       void hook.result.current.actions.run(60);
     });
     await waitFor(() => expect(hook.result.current.state.isRunning).toBe(true));
     expect(hook.result.current.state.speed).toBe(60);
-    expect(transport.sent.some((r) => r.type === 'run')).toBe(true);
+    expect(calls).toContain('run');
     await act(async () => {
       await hook.result.current.actions.pause();
     });
@@ -187,18 +187,17 @@ describe('useSimulation', () => {
   });
 
   it('closes its session and frees its compile when it unmounts', async () => {
-    const { hook, transport } = render(AndGate);
+    const { hook, calls } = render(AndGate);
     await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
     hook.unmount();
     await waitFor(() => {
-      const types = transport.sent.map((r) => r.type);
-      expect(types).toContain('close');
-      expect(types).toContain('release');
+      expect(calls).toContain('close');
+      expect(calls).toContain('release');
     });
   });
 
   it("doesn't reopen for memory that is equal by value", async () => {
-    const { hook, transport } = render(
+    const { hook, calls } = render(
       { source: ROM_READER },
       { debounceMs: 0, memory: { rom: { 0: 0x11 } } },
     );
@@ -216,7 +215,7 @@ describe('useSimulation', () => {
     });
     expect(hook.result.current.client).toBe(session);
     expect(hook.result.current.state.cycle).toBe(2);
-    expect(transport.sent.filter((r) => r.type === 'open')).toHaveLength(1);
+    expect(calls.filter((c) => c === 'open')).toHaveLength(1);
   });
 
   it("toggles from the last write, not a pushed state that hasn't caught up", async () => {
@@ -274,23 +273,22 @@ describe('useSimulation', () => {
   });
 
   it('drops a compile that finishes after a newer one started', async () => {
-    const { hook, transport } = render(
+    const { hook, calls } = render(
       { source: COUNTER },
       { debounceMs: 0 },
       { slowFirstCompile: true },
     );
     // The second source goes out before the first compile has answered.
-    await waitFor(() => expect(transport.sent.map((r) => r.type)).toContain('compile'));
+    await waitFor(() => expect(calls).toContain('compile'));
     hook.rerender({ source: { source: ROM_READER }, options: { debounceMs: 0 } });
     await waitFor(() => expect(hook.result.current.state.circuit?.name).toBe('RomReader'));
     // The first compile answers late, after RomReader opened, and is let go unopened.
-    await waitFor(() => expect(transport.sent.map((r) => r.type)).toContain('release'));
+    await waitFor(() => expect(calls).toContain('release'));
     await act(async () => {
       await new Promise((r) => setTimeout(r, 100));
     });
-    const types = transport.sent.map((r) => r.type);
-    expect(types.filter((t) => t === 'compile')).toHaveLength(2);
-    expect(types.filter((t) => t === 'open')).toHaveLength(1);
+    expect(calls.filter((c) => c === 'compile')).toHaveLength(2);
+    expect(calls.filter((c) => c === 'open')).toHaveLength(1);
     expect(hook.result.current.state.circuit?.name).toBe('RomReader');
   });
 
@@ -313,7 +311,7 @@ describe('useSimulation', () => {
     await waitFor(() => expect(hook.result.current.client).not.toBe(first));
     await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
     expect(errors).toEqual([]);
-    expect(sandbox.current.transport.sent.filter((r) => r.type === 'open')).toHaveLength(1);
+    expect(sandbox.current.calls.filter((c) => c === 'open')).toHaveLength(1);
   });
 });
 

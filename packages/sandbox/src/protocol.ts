@@ -10,6 +10,11 @@
  * are in `protocol-legacy.ts`.
  *
  * Request types are verbs, response types are past tense, kebab-case.
+ *
+ * The format is internal (decision 0010): pages use the clients, hosts use
+ * `@simten/sandbox/host`. It is still exported as `@simten/sandbox/protocol`
+ * because the sandbox app's legacy slot handlers need its types; that export
+ * goes at the release, with them (#424).
  */
 
 import type { CircuitIR, MemoryContents, PeripheralValue } from '@simten/core/internal';
@@ -81,12 +86,26 @@ export type SessionRequest =
       circuit: string;
       options?: VerilogExportOptions;
     }
-  | { id: string; type: 'set'; session: SessionId; values: Record<string, number> }
+  | {
+      id: string;
+      type: 'set';
+      session: SessionId;
+      /**
+       * Values by input port name or by the path of a Switch or Input node, as
+       * core's `Simulation.set` takes them. All are written before the circuit
+       * settles; if any key doesn't resolve, none are.
+       */
+      values: Record<string, number>;
+    }
   | {
       id: string;
       type: 'set-input';
       session: SessionId;
-      /** Values by node path. All are written before the circuit settles. */
+      /**
+       * Values by Switch or Input node path. Kept: pages deployed before
+       * decision 0010 send this instead of `set`; removed at the release, with
+       * the slot messages (#424).
+       */
       values: Record<string, number>;
     }
   | { id: string; type: 'tick'; session: SessionId; count: number }
@@ -104,7 +123,16 @@ export type SessionRequest =
       count: number;
       inputs?: Record<string, number>;
     }
-  | { id: string; type: 'scan'; session: SessionId; path: string; port: string; count: number }
+  | {
+      id: string;
+      type: 'scan';
+      session: SessionId;
+      /** The input to drive: a port name or a Switch or Input path, as `set` takes. */
+      path: string;
+      /** The port-map key to read after each value. */
+      port: string;
+      count: number;
+    }
   | { id: string; type: 'close'; session: SessionId };
 
 /** Why a request failed. `timed-out` and `restarted` come from the relay's watchdog. */
