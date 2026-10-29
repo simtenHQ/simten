@@ -71,7 +71,7 @@ const SLICE_FRAME_RATE = 30;
 const PROBE_CYCLES = 16;
 /** At most one `progressed` heartbeat per this many ms. */
 const HEARTBEAT_MS = 1000;
-/** Primitives `set-input` (and `scan`) may write: what a person at the board could change. */
+/** Primitives `set-input` may write: what a person at the board could change. */
 const INPUT_COMPONENTS = new Set(['Switch', 'Input']);
 
 /** A callback queued to run as soon as the event loop has handled what's waiting. */
@@ -285,6 +285,8 @@ interface AutoRun {
 interface HostSession {
   id: SessionId;
   simulation: Simulation;
+  /** Where the inputs start, by `set` key. `reset` puts them back here. */
+  initialInputs: Record<string, number> | null;
   nodes: SimulationNodes;
   library: Library;
   /** Running estimate of one cycle's cost, for slicing; null until the first measurement. */
@@ -298,6 +300,25 @@ interface Opened {
   simulation: Simulation;
   ir: CircuitIR;
   library: Library;
+  initialInputs: Record<string, number> | null;
+}
+
+/**
+ * The starting inputs `set` can write. A harness gives each input port the
+ * circuit reads a Switch or Input named after it, and none to a port nothing
+ * reads, so a value for one of those has nothing to set and is dropped.
+ */
+function startingInputs(
+  request: Request<'open'>,
+  target: CircuitIR,
+  ir: CircuitIR,
+): Record<string, number> | null {
+  const given = Object.entries(request.initialInputs ?? {});
+  if (given.length === 0) return null;
+  if (!request.harness || ir === target) return Object.fromEntries(given);
+  const ports = new Set(target.inputs.map((p) => p.name));
+  const nodes = new Set(ir.nodes.map((n) => n.id));
+  return Object.fromEntries(given.filter(([key]) => !ports.has(key) || nodes.has(key)));
 }
 
 /** A Simulation of `target`, with std underneath for the harness's switches and displays. */
@@ -315,17 +336,21 @@ function openSimulation(target: Openable, request: Request<'open'>): Opened {
     behaviors: new Map([...std.behaviors, ...target.library.behaviors]),
   };
   // The harness's `dut` node is the target, by name.
-  const ir = request.harness
-    ? autoHarness(target.ir, definitions, request.initialInputs)
-    : target.ir;
-  const simulation = createSimulation(ir, library, { history: request.history });
-  if (!request.harness && request.initialInputs) simulation.set(request.initialInputs);
-  const nodes = nodesOf(simulation);
-  for (const [path, contents] of Object.entries(request.memory ?? {})) nodes.set(path, contents);
-  // Start from cycle 0 with the inputs and memory in place: history begins
-  // here, and the memory is what `reset` goes back to.
-  if (request.memory || request.initialInputs) simulation.reset();
-  return { simulation, ir, library };
+  const ir = request.harness ? autoHarness(target.ir, definitions) : target.ir;
+  // The memory is in place from cycle 0, and `reset` goes back to it.
+  const simulation = createSimulation(ir, library, {
+    history: request.history,
+    memory: request.memory,
+  });
+  const initialInputs = startingInputs(request, target.ir, ir);
+  if (initialInputs) startFrom(simulation, initialInputs);
+  return { simulation, ir, library, initialInputs };
+}
+
+/** Cycle 0 with the inputs at `initialInputs`: history begins here. */
+function startFrom(simulation: Simulation, initialInputs: Record<string, number>): void {
+  simulation.set(initialInputs);
+  simulation.reset();
 }
 
 export class SessionHost {
@@ -466,8 +491,9 @@ export class SessionHost {
       case 'set':
         simulation.set(request.values);
         return this.updated(session);
+      // Kept for pages deployed before decision 0010; removed at the release (#424).
       case 'set-input':
-        this.setInputs(session, request.values);
+        this.setLegacyInputs(session, request.values);
         return this.updated(session);
       case 'tick':
         await this.slicedTick(session, request.id, request.count);
@@ -485,7 +511,8 @@ export class SessionHost {
       case 'seek':
         return this.updated(session, simulation.seek(request.index));
       case 'reset':
-        simulation.reset();
+        if (session.initialInputs) startFrom(simulation, session.initialInputs);
+        else simulation.reset();
         return this.updated(session);
       case 'sample':
         return this.sample(session, request);
@@ -504,10 +531,11 @@ export class SessionHost {
       throw new HostError(`Session '${request.session}' is already open.`);
     }
     const target = await this.findCircuit(request.compile, request.circuit);
-    const { simulation, ir, library } = openSimulation(target, request);
+    const { simulation, ir, library, initialInputs } = openSimulation(target, request);
     const session: HostSession = {
       id: request.session,
       simulation,
+      initialInputs,
       nodes: nodesOf(simulation),
       library,
       msPerCycle: null,
@@ -541,12 +569,12 @@ export class SessionHost {
   }
 
   /**
-   * Write every path, then let the next read settle the circuit once, as
-   * `set` does for names. A vector that changes two switches at once must not
-   * be seen half-applied. Every path is checked before any is written, so a
-   * bad one leaves the inputs as they were.
+   * The legacy `set-input`: write every path, then let the next read settle
+   * the circuit once. Every path is checked before any is written, so a bad
+   * one leaves the inputs as they were. `set` does the same for ports and
+   * paths alike. Removed at the release (#424).
    */
-  private setInputs(session: HostSession, values: Record<string, number>): void {
+  private setLegacyInputs(session: HostSession, values: Record<string, number>): void {
     const entries = Object.entries(values);
     for (const [path] of entries) this.requireInput(session, path, 'setInput');
     for (const [path, value] of entries) session.nodes.set(path, value);
@@ -649,13 +677,15 @@ export class SessionHost {
     return { type: 'sampled', samples, state: this.snapshotState(session) };
   }
 
-  /** Drive `path` through 0..count-1, settling each time, and read `port`. Doesn't tick. */
+  /**
+   * Drive the input `path` (a port name or a Switch or Input path, as `set`
+   * takes) through 0..count-1, settling each time, and read `port`. Doesn't tick.
+   */
   private scan(session: HostSession, request: Request<'scan'>): Reply {
-    this.requireInput(session, request.path, 'scan');
     this.requirePort(session, request.port, 'scan');
     const values = new Array<number>(Math.max(0, Math.floor(request.count))).fill(0);
     for (let i = 0; i < values.length; i++) {
-      session.nodes.set(request.path, i);
+      session.simulation.set({ [request.path]: i });
       values[i] = session.nodes.ports().get(request.port) ?? 0;
     }
     return { type: 'scanned', values };

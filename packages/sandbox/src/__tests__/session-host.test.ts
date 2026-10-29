@@ -102,13 +102,13 @@ describe('set and tick', () => {
     expect(res.state.ports.get('__top__.sum')).toBe(5);
   });
 
-  it('rejects an unknown input name', async () => {
+  it('rejects a node that is not an input', async () => {
     const { call } = await openCounter();
     const res = expectType(
       await call({ type: 'set', session: 's1', values: { reg: 1 } }),
       'failed',
     );
-    expect(res.error).toMatch(/no input named 'reg'/);
+    expect(res.error).toMatch(/'reg' is a Register, not an input/);
   });
 
   it('answers requests for a closed session with failed', async () => {
@@ -349,7 +349,77 @@ async function openLatch() {
   return host;
 }
 
-describe('set-input', () => {
+describe('set', () => {
+  it('writes Switch paths before the circuit settles, as set-input did (#521)', async () => {
+    const { call } = await openLatch();
+    const res = expectType(
+      await call({ type: 'set', session: 's1', values: { d: 0, en: 0 } }),
+      'updated',
+    );
+    expect(res.state.ports.get('q.in')).toBe(1);
+  });
+
+  it('writes nothing when one key is not an input', async () => {
+    const { call } = await openLatch();
+    const res = expectType(
+      await call({ type: 'set', session: 's1', values: { d: 0, n1: 1 } }),
+      'failed',
+    );
+    expect(res.error).toMatch(/^set\('n1'\): 'n1' is a Nand, not an input/);
+    const after = expectType(
+      await call({ type: 'set', session: 's1', values: { en: 0 } }),
+      'updated',
+    );
+    expect(after.state.ports.get('q.in')).toBe(1);
+  });
+
+  it('writes a port and a Switch in one request', async () => {
+    const { call } = startHost();
+    await call({
+      type: 'compile',
+      compile: 'c1',
+      source: `
+const Gate = circuit('Gate', {
+  inputs: { a: bit },
+  outputs: { y: bit },
+  nodes: { sw: Switch, g: And },
+  connect: ({ inputs, outputs, nodes: { sw, g } }) => [inputs.a.to(g.a), sw.out.to(g.b), g.out.to(outputs.y)],
+})`,
+    });
+    await call({ type: 'open', session: 's1', compile: 'c1', circuit: 'Gate', history: 0 });
+    const res = expectType(
+      await call({ type: 'set', session: 's1', values: { a: 1, sw: 1 } }),
+      'updated',
+    );
+    expect(res.state.ports.get('__top__.y')).toBe(1);
+  });
+
+  it("writes a harnessed circuit's inputs by port name", async () => {
+    const { call } = await openCounter(10, { harness: true });
+    expectType(await call({ type: 'set', session: 's1', values: { en: 1 } }), 'updated');
+    const res = expectType(await call({ type: 'tick', session: 's1', count: 2 }), 'updated');
+    expect(res.state.ports.get('count.in')).toBe(2);
+  });
+
+  it('puts the inputs back at initialInputs on reset', async () => {
+    const { call } = startHost();
+    await call({ type: 'compile', compile: 'c1', source: D_LATCH });
+    await call({
+      type: 'open',
+      session: 's1',
+      compile: 'c1',
+      circuit: 'DLatch',
+      history: 5,
+      initialInputs: { d: 1, en: 1 },
+    });
+    await call({ type: 'set', session: 's1', values: { d: 0 } });
+    const res = expectType(await call({ type: 'reset', session: 's1' }), 'updated');
+    expect(res.state.ports.get('d.out')).toBe(1);
+    expect(res.state.ports.get('q.in')).toBe(1);
+  });
+});
+
+describe('set-input (pages deployed before decision 0010)', () => {
   it('writes every path before the circuit settles', async () => {
     const { call } = await openLatch();
     // d and en fall together, so the latch holds the 1 it had.
@@ -447,6 +517,15 @@ describe('scan and sample', () => {
       'scanned',
     );
     expect(res.values).toEqual([10, 11, 12, 13]);
+  });
+
+  it('scan takes a Switch path, as set does', async () => {
+    const { call } = await openLatch();
+    const res = expectType(
+      await call({ type: 'scan', session: 's1', path: 'd', port: 'q.in', count: 2 }),
+      'scanned',
+    );
+    expect(res.values).toEqual([0, 1]);
   });
 
   it('sample returns a port after every tick, as one history step', async () => {

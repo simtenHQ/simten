@@ -305,6 +305,51 @@ export interface Circuit<
   readonly [__nodes]?: Ns;
 }
 
+/** Marks Switch and Input, the components a person at the board can set. Type-level only. */
+declare const __control: unique symbol;
+
+/** `C`, marked as a component `set` can write by path. Nothing is added at runtime. */
+export type Control<C extends Circuit> = C & { readonly [__control]?: true };
+
+/** Whether a node type is a Switch or an Input. */
+type IsControl<T> = typeof __control extends keyof T ? true : false;
+
+/** How many levels of nodes `ControlPaths` looks into. Deeper Switches are reached by a string path. */
+type Depth = [never, 0, 1, 2, 3, 4];
+
+/**
+ * The paths of the Switch and Input nodes in `Ns`, a composite's node types:
+ * `d` at the top, `cpu.kbd` one level down. An array of nodes is expanded as
+ * the builder does, `n0`, `n1`, … A primitive's nodes are an open record, which
+ * gives nothing.
+ */
+type ControlPaths<Ns, D extends number = 4> = [D] extends [never]
+  ? never
+  : string extends keyof Ns
+    ? never
+    : {
+        [K in keyof Ns & string]: Ns[K] extends readonly (infer E)[]
+          ?
+              | (IsControl<E> extends true ? `${K}${number}` : never)
+              | (E extends Circuit<PortMap, PortMap, infer Inner>
+                  ? `${K}${number}.${ControlPaths<Inner, Depth[D]>}`
+                  : never)
+          :
+              | (IsControl<Ns[K]> extends true ? K : never)
+              | (Ns[K] extends Circuit<PortMap, PortMap, infer Inner>
+                  ? `${K}.${ControlPaths<Inner, Depth[D]>}`
+                  : never);
+      }[keyof Ns & string];
+
+/**
+ * What `set` takes for a circuit: its input port names, and the paths of the
+ * Switch and Input nodes inside it. A circuit whose type isn't known gives `string`.
+ */
+export type InputKey<C extends Circuit> =
+  C extends Circuit<infer Ins, PortMap, infer Ns>
+    ? (keyof Ins & string) | ControlPaths<Ns>
+    : string;
+
 // ============================================================================
 // Component config (generic)
 // ============================================================================
