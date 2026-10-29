@@ -1,4 +1,4 @@
-import { CircuitEmbed } from '@simten/embed';
+import { CircuitEmbed } from '@simten/react/embed';
 import { AES_CIRCUITS } from '../circuits';
 
 export function SubBytesSection() {

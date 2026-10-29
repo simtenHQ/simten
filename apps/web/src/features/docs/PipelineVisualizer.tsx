@@ -7,8 +7,8 @@ import {
   internalsOf,
 } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
-import { CircuitEmbed } from '@simten/embed';
-import { useSandboxClient } from '@simten/ui/sandbox';
+import { CircuitEmbed } from '@simten/react/embed';
+import { useSandboxClient } from '@simten/react/sandbox';
 import { useEffect, useState } from 'react';
 
 const FULL_ADDER_SOURCE = `

@@ -24,9 +24,8 @@ const repoRoot = resolve(__dirname, '..');
 
 const PACKAGE_JSONS = [
   'packages/core/package.json',
-  'packages/ui/package.json',
-  'packages/embed/package.json',
   'packages/mcp/package.json',
+  'packages/react/package.json',
   'packages/sandbox/package.json',
 ];
 

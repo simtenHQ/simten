@@ -1,5 +1,5 @@
 import type { FlatPortValueMap } from '@simten/core/internal';
-import { CircuitEmbed } from '@simten/embed';
+import { CircuitEmbed } from '@simten/react/embed';
 import { useState } from 'react';
 import { computeActiveRow, TruthTable } from '@/components/TruthTable';
 import { HalfAdder } from '../circuits';

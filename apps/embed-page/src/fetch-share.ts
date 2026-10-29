@@ -8,7 +8,7 @@
  * the page calls the share missing.
  */
 
-import { isShareHash } from '@simten/ui/share';
+import { isShareHash } from '@simten/react/share';
 
 type ShareResult =
   | { kind: 'found'; source: string }

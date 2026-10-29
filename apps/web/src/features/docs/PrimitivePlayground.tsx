@@ -2,7 +2,7 @@ import type { Circuit } from '@simten/core/circuit';
 import type { PortDescriptor } from '@simten/core/internal';
 import { internalsOf } from '@simten/core/internal';
 import { STDLIB_CIRCUITS } from '@simten/core/std';
-import { CircuitEmbed } from '@simten/embed';
+import { CircuitEmbed } from '@simten/react/embed';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 // All stdlib Circuit objects (singletons + materialized factory defaults).

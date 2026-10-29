@@ -1,5 +1,5 @@
 import { env } from 'cloudflare:workers';
-import { loadShare, validateShareHash } from '@simten/ui/share';
+import { loadShare, validateShareHash } from '@simten/react/share';
 import { createServerFn } from '@tanstack/react-start';
 import { getRequestHeader } from '@tanstack/react-start/server';
 import { createShare, validateShareInput } from './store';

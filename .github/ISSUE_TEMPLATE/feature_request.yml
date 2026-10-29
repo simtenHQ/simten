@@ -9,8 +9,8 @@ body:
       label: Which package or app?
       options:
         - "@simten/core"
-        - "@simten/ui"
-        - "@simten/embed"
+        - "@simten/sandbox"
+        - "@simten/react"
         - "@simten/mcp"
         - apps/web
         - apps/compiler

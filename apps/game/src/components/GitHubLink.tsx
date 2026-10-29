@@ -2,7 +2,7 @@
  * GitHub mark, linking to the repo.
  *
  * A copy of the web app's, for the same reason `DesktopOnly` is a copy: the two
- * apps deploy separately, it is a dozen lines, and a `@simten/ui` export would
+ * apps deploy separately, it is a dozen lines, and a `@simten/react` export would
  * put site chrome in a package whose job is circuit UI. Keep the icon and the
  * classes identical to `apps/web/src/components/SiteNavLinks.tsx`.
  */

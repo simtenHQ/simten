@@ -53,24 +53,26 @@ Circuit code runs in an isolated sandbox. See [Security Architecture](/docs/secu
 ```
 @simten/core       ← headless engine (no UI)
        ↑
-@simten/ui         ← visual components (nodes, canvas, editor)
+@simten/sandbox    ← runs circuits in the sandbox from any page, no framework
        ↑
-@simten/embed      ← batteries-included wrapper + web components
+@simten/react      ← React components and hooks
 ```
 
 | Package | Description |
 |---------|-------------|
 | `@simten/core` | TypeScript builder, compiler, validator, simulator engine, `Simulation`, Verilog export |
-| `@simten/ui` | Canonical node components, shared canvas, ELK layout, `ClockControls`, the `useSimulation` hook (`@simten/ui/sandbox`), and the [Monaco code editor](/docs/code-editor) (`@simten/ui/monaco`) |
-| `@simten/embed` | `CircuitEmbed` convenience wrapper and the `<circuit-embed>` web component |
+| `@simten/sandbox` | `SandboxClient` and `SimulationClient`: compile and simulate in the sandbox iframe from any page |
+| `@simten/react` | `CircuitEmbed` (`@simten/react/embed`), the `useSimulation` hook (`@simten/react/sandbox`), the canvas and node components, `ClockControls`, and the [Monaco code editor](/docs/code-editor) (`@simten/react/monaco`) |
 | `@simten/mcp` | MCP server for Claude Code integration |
+
+Not using React? See [Using Simten without React](/docs/without-react).
 
 ## Embed a circuit
 
 Drop an interactive circuit into any React app:
 
 ```tsx
-import { CircuitEmbed } from '@simten/embed';
+import { CircuitEmbed } from '@simten/react/embed';
 import { circuit, bit } from '@simten/core/circuit';
 import { Xor, And } from '@simten/core/std';
 
@@ -93,7 +95,7 @@ The embed auto-wraps the circuit with switches for inputs and LEDs for outputs.
 
 Here's that exact code running live:
 
-import { CircuitEmbed } from '@simten/embed'
+import { CircuitEmbed } from '@simten/react/embed'
 import { circuit, bit } from '@simten/core/circuit'
 import { Xor, And } from '@simten/core/std'
 

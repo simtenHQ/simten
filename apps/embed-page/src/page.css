@@ -1,6 +1,6 @@
 /* The page around the circuit: full-bleed, the embed's own background, and a
-   status line while the share loads. The circuit's styles come with
-   @simten/embed. */
+   status line while the share loads. The circuit's styles come from
+   @simten/react/styles.css. */
 
 :root {
   color-scheme: light dark;
@@ -34,6 +34,10 @@ body {
 
 #embed {
   position: relative;
+  height: 100%;
+}
+
+.circuit {
   height: 100%;
 }
 

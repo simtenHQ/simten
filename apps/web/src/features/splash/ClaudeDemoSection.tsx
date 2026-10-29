@@ -9,7 +9,7 @@
 import type { Circuit } from '@simten/core/circuit';
 import { bit, circuit } from '@simten/core/circuit';
 import { And, DFlipFlop, Not, Or, Xor } from '@simten/core/std';
-import { CircuitEmbed, type CircuitEmbedHandle } from '@simten/embed';
+import { CircuitEmbed, type CircuitEmbedHandle } from '@simten/react/embed';
 import { Link } from '@tanstack/react-router';
 import {
   forwardRef,

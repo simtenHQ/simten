@@ -9,7 +9,7 @@
  * The page retries (see `fetch-share.ts`).
  */
 
-import { isShareHash, loadShare, type ShareKV } from '@simten/ui/share';
+import { isShareHash, loadShare, type ShareKV } from '@simten/react/share';
 
 export interface Env {
   CIRCUIT_SHARES: ShareKV;

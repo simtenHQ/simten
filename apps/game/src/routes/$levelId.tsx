@@ -3,23 +3,22 @@
  */
 
 import { type CircuitIR, elaborate } from '@simten/core/internal';
-import { ErrorDisplay } from '@simten/embed';
-import { CircuitCanvas } from '@simten/ui/canvas';
-import { ClockControls } from '@simten/ui/editor/components';
+import { CircuitCanvas, ClockControls } from '@simten/react/canvas';
+import { ErrorDisplay } from '@simten/react/embed';
 import {
   buildGlobalsFor,
   preloadMonaco,
   registerSimtenThemes,
   SIMTEN_DARK,
   SimtenCodeEditor,
-} from '@simten/ui/monaco';
+} from '@simten/react/monaco';
 import {
   ResizableHandle,
   ResizablePanel,
   ResizablePanelGroup,
   usePanelRef,
-} from '@simten/ui/primitives/resizable';
-import { useSandboxClient, useSimulation } from '@simten/ui/sandbox';
+} from '@simten/react/primitives/resizable';
+import { useSandboxClient, useSimulation } from '@simten/react/sandbox';
 import { createFileRoute, Link, notFound } from '@tanstack/react-router';
 import { Network, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

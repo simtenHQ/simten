@@ -77,8 +77,8 @@ function PrivacyPage() {
             machine and does not phone home.
           </li>
           <li>
-            No telemetry from the embed library (<code>@simten/embed</code> /{' '}
-            <code>&lt;CircuitEmbed /&gt;</code>); it does not call back to simten.dev when loaded on
+            No telemetry from the React components (<code>@simten/react</code> /{' '}
+            <code>&lt;CircuitEmbed /&gt;</code>); they do not call back to simten.dev when loaded on
             third-party sites.
           </li>
           <li>

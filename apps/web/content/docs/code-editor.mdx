@@ -3,20 +3,20 @@ title: Code Editor
 description: Drop a Monaco editor with full IntelliSense for circuit source into your own app, and turn that source into a live simulation.
 ---
 
-`@simten/ui/monaco` is the Monaco editor that powers `simten.dev/circuit`, packaged for your own apps. It gives circuit source typed completions and hovers for the Simten stdlib, plus automatic type acquisition so third-party imports (`react`, `zod`, …) resolve to real types instead of `any`.
+`@simten/react/monaco` is the Monaco editor that powers `simten.dev/circuit`, packaged for your own apps. It gives circuit source typed completions and hovers for the Simten stdlib, plus automatic type acquisition so third-party imports (`react`, `zod`, …) resolve to real types instead of `any`.
 
-Pair it with the compile hooks in `@simten/embed` and you have the whole "editor with a live circuit next to it" experience.
+Pair it with `useSimulation` from `@simten/react/sandbox` and you have the whole "editor with a live circuit next to it" experience.
 
 ```bash
-pnpm add @simten/ui @monaco-editor/react
+pnpm add @simten/react @monaco-editor/react
 ```
 
-`@monaco-editor/react` and `monaco-editor` are **optional** peers: only this subpath needs them, so every other `@simten/ui` import stays Monaco-free. pnpm (v8+) and npm (v7+) install peers automatically, so that one command is usually enough. Monaco itself is loaded from a CDN at runtime, not bundled.
+`@monaco-editor/react` and `monaco-editor` are **optional** peers: only this subpath needs them, so every other `@simten/react` import stays Monaco-free. pnpm (v8+) and npm (v7+) install peers automatically, so that one command is usually enough. Monaco itself is loaded from a CDN at runtime, not bundled.
 
 ## Quick start
 
 ```tsx
-import { SimtenCodeEditor } from '@simten/ui/monaco';
+import { SimtenCodeEditor } from '@simten/react/monaco';
 
 <SimtenCodeEditor value={source} onChange={setSource} />;
 ```
@@ -51,7 +51,7 @@ A diagnostic with `line < 1` (a whole-file error) still carries a message for yo
 ### Themes
 
 ```tsx
-import { SimtenCodeEditor, registerSimtenThemes, SIMTEN_DARK, SIMTEN_LIGHT } from '@simten/ui/monaco';
+import { SimtenCodeEditor, registerSimtenThemes, SIMTEN_DARK, SIMTEN_LIGHT } from '@simten/react/monaco';
 
 <SimtenCodeEditor
   value={source}
@@ -75,15 +75,15 @@ editor.current?.setValue(example.code);
 
 ## Source → live circuit
 
-The editor produces a string. To turn that string into a running simulation, use `useSimulation` from `@simten/ui/sandbox`. User code compiles and runs in the sandbox iframe, never the main frame. Put a [`SandboxProvider`](/docs/security) high up so every simulation on the page shares one sandbox; without one, each `useSimulation` makes its own.
+The editor produces a string. To turn that string into a running simulation, use `useSimulation` from `@simten/react/sandbox`. User code compiles and runs in the sandbox iframe, never the main frame. Put a [`SandboxProvider`](/docs/security) high up so every simulation on the page shares one sandbox; without one, each `useSimulation` makes its own.
 
 ### useSimulation
 
 Source in, a running simulation out.
 
 ```tsx
-import { CircuitCanvas } from '@simten/ui/canvas';
-import { SandboxProvider, useSimulation } from '@simten/ui/sandbox';
+import { CircuitCanvas } from '@simten/react/canvas';
+import { SandboxProvider, useSimulation } from '@simten/react/sandbox';
 
 function Playground() {
   const [source, setSource] = useState(SEED);
@@ -132,7 +132,7 @@ useSimulation({ source, circuit: 'FullAdder' });
 To compile once and read the result, ask the sandbox client directly:
 
 ```tsx
-import { useSandboxClient } from '@simten/ui/sandbox';
+import { useSandboxClient } from '@simten/react/sandbox';
 
 const sandbox = useSandboxClient();
 useEffect(() => {
@@ -151,7 +151,7 @@ Outside React, `SandboxClient` from `@simten/sandbox` does the same.
 If you already have a Monaco instance (a collaborative editor with a [Yjs](https://github.com/yjs/yjs) binding, say, whose source of truth is a `Y.Text` rather than a `value`/`onChange`), use the headless primitives and keep your own `<Editor>`:
 
 ```tsx
-import { setupSimtenIntellisense, useTypeAcquisition } from '@simten/ui/monaco';
+import { setupSimtenIntellisense, useTypeAcquisition } from '@simten/react/monaco';
 
 useTypeAcquisition(source, monaco); // resolves third-party imports
 

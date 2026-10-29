@@ -18,7 +18,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@simten/ui/primitives/dialog';
+} from '@simten/react/primitives/dialog';
 import type { Level } from '../game/types';
 
 /**

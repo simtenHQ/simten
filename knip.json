@@ -60,15 +60,6 @@
         "src/std/__tests__/mos6502/*.ts"
       ]
     },
-    "packages/embed": {
-      "entry": [
-        "src/index.ts",
-        "src/components/nodes/index.ts",
-        "src/canvas/index.ts",
-        "src/webcomponent/index.ts"
-      ],
-      "ignoreDependencies": ["serve"]
-    },
     "packages/mcp": {
       "entry": [
         "src/index.ts",
@@ -78,32 +69,25 @@
         "scripts/*.mjs"
       ]
     },
-    "packages/sandbox": {
-      "entry": ["src/index.ts", "src/protocol.ts", "src/host.ts"]
-    },
-    "packages/ui": {
+    "packages/react": {
       "entry": [
-        "src/index.ts",
-        "src/editor/index.ts",
-        "src/editor/stores/index.ts",
-        "src/editor/types/index.ts",
-        "src/editor/components/index.ts",
-        "src/editor/hooks/index.ts",
+        "src/canvas/index.ts",
+        "src/embed/index.ts",
         "src/monaco/index.ts",
         "src/nodes/index.ts",
-        "src/canvas/index.ts",
-        "src/waveform/WaveformViewer.tsx",
         "src/sandbox/index.ts",
         "src/share/index.ts",
+        "src/waveform/WaveformViewer.tsx",
         "src/primitives/{tooltip,resizable,sheet,dialog,button}.tsx",
         "scripts/*.mjs"
-      ],
-      "ignoreDependencies": ["tailwindcss"]
+      ]
+    },
+    "packages/sandbox": {
+      "entry": ["src/index.ts", "src/protocol.ts", "src/host.ts"]
     }
   },
   "ignoreIssues": {
     "apps/web/src/components/Logo.tsx": ["exports"],
-    "packages/embed/src/types.ts": ["types"],
     "packages/core/src/import/primitives.ts": ["exports"]
   }
 }

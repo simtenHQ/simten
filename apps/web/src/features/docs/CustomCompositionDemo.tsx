@@ -10,8 +10,8 @@
 import { bit, circuit } from '@simten/core/circuit';
 import type { FlatPortValueMap } from '@simten/core/internal';
 import { And, Xor } from '@simten/core/std';
-import { CircuitEmbed } from '@simten/embed';
-import { useSimulation } from '@simten/ui/sandbox';
+import { CircuitEmbed } from '@simten/react/embed';
+import { useSimulation } from '@simten/react/sandbox';
 import { useState } from 'react';
 import { computeActiveRow, TruthTable } from '@/components/TruthTable';
 import { readPortBit } from '@/lib/port-values';
