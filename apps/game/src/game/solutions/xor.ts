@@ -1,6 +1,6 @@
 /** Reference solution for `xor`. Proven by `__tests__/levels.test.ts`. */
 
-import { circuit } from '@simten/core/circuit';
+import { circuit } from '@simten/core';
 import { And, Led, Nand, Or, Switch } from '@simten/core/std';
 
 export const Xor1 = circuit('Xor1', {

@@ -5,7 +5,7 @@
  * each hop as postMessage would.
  */
 
-import { bit, bus, circuit } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core';
 import { And } from '@simten/core/std';
 import { afterEach, describe, expect, it } from 'vitest';
 import { SandboxError } from '../errors.js';

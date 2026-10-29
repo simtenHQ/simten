@@ -29,7 +29,7 @@ import { z } from 'zod';
 const DESCRIPTION = `Start here when the user is new to simten, asks what it is, or wants a demo. With no arguments: a short orientation plus the menu of bundled example circuits (Snake, a RISC-V computer, a systolic array, an ALU, ...). With example:"<id>": writes that example to circuits/<id>.circuit.ts, ready for show_circuit — works in an empty folder, no setup or install needed. If the user asked for a specific circuit of their own, skip this tool and build it.`;
 
 // Names injected by the editor/check scope that a written file must import
-// from @simten/core/circuit instead. `circuit` is always used; the rest are
+// from @simten/core instead. `circuit` is always used; the rest are
 // included when the source references them.
 const BUILDER_NAMES = ['circuit', 'bit', 'bus', 'reg', 'mem'];
 
@@ -59,7 +59,7 @@ export function materializeExample(example: Example): string {
 
   const header = [
     `// ${example.title} — bundled simten example ("${example.id}").`,
-    `import { ${builders.join(', ')} } from '@simten/core/circuit';`,
+    `import { ${builders.join(', ')} } from '@simten/core';`,
     ...(parts.length ? [`import {\n  ${parts.join(', ')},\n} from '@simten/core/std';`] : []),
   ].join('\n');
 

@@ -1,6 +1,6 @@
 /** Reference solution for `wider-gates`. Proven by `__tests__/levels.test.ts`. */
 
-import { circuit } from '@simten/core/circuit';
+import { circuit } from '@simten/core';
 import { And, Led, Or, Switch } from '@simten/core/std';
 
 // Pairs first, then the pairs together: two levels deep rather than three.

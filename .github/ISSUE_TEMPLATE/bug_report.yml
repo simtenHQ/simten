@@ -15,7 +15,7 @@ body:
       description: Which part of Simten is misbehaving?
       options:
         - Simulator engine (@simten/core/internal)
-        - Circuit IR / builder (@simten/core/circuit)
+        - Circuit IR / builder (@simten/core)
         - Standard library primitive (@simten/core/std)
         - Verilog exporter (@simten/core/verilog)
         - Canvas, clock controls or React hooks (@simten/react)
@@ -47,7 +47,7 @@ body:
         For editor/embed bugs, a screen recording or screenshot helps.
       render: typescript
       placeholder: |
-        import { circuit, bit } from '@simten/core/circuit'
+        import { circuit, bit } from '@simten/core'
         import { And } from '@simten/core/std'
 
         const Repro = circuit('Repro', { ... })

@@ -9,7 +9,7 @@
  * demo picker was deleted along with it.
  */
 
-import { bit, bus, circuit } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core';
 import {
   Adder,
   Console as ConsolePrimitive,

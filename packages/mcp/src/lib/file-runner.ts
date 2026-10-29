@@ -10,9 +10,10 @@
  *   as they always have for check_circuit and simulate_circuit. The circuits a
  *   file builds have to come from the same copy that simulates them, and the
  *   project need not have installed it.
- * - `@simten/core` and `@simten/core/circuit` get file-collector's `circuit`,
- *   which records every circuit the files build. A file need not export its
- *   circuits, the same as for source text.
+ * - `@simten/core` gets file-collector's `circuit`, which records every
+ *   circuit the files build. A file need not export its circuits, the same as
+ *   for source text. A file that still imports the builder from
+ *   `@simten/core/circuit`, which decision 0010 removed, gets the same.
  */
 
 import { readFileSync, realpathSync } from 'node:fs';
@@ -55,8 +56,13 @@ export async function resolve(specifier, context, nextResolve) {
       file.startsWith('file:') && file.endsWith('.ts') && !file.includes('/node_modules/') && !isOwn(file);
     return isProjectTs ? { ...resolved, url: file, format: 'module' } : resolved;
   }
-  const resolved = await nextResolve(specifier, { ...context, parentURL: options.anchor });
-  if (specifier !== '@simten/core' && specifier !== '@simten/core/circuit') return resolved;
+  // The builder's old entry, removed by decision 0010, is @simten/core itself.
+  const builder = specifier === '@simten/core' || specifier === '@simten/core/circuit';
+  const resolved = await nextResolve(builder ? '@simten/core' : specifier, {
+    ...context,
+    parentURL: options.anchor,
+  });
+  if (!builder) return resolved;
   const shim =
     'export * from ' + JSON.stringify(resolved.url) + ';\\n' +
     'export { circuit } from ' + JSON.stringify(options.collector) + ';\\n';

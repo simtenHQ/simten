@@ -1,4 +1,4 @@
-import { bit, bus, circuit } from '@simten/core/circuit';
+import { bit, bus, circuit } from '@simten/core';
 import {
   Constant,
   MemBusMux,

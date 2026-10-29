@@ -1,5 +1,5 @@
 // Shared DUT for the harness fixtures — exported so testbenches can import it.
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core';
 import { And, Xor } from '@simten/core/std';
 
 export const HalfAdder = circuit('HalfAdder', {

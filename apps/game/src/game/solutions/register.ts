@@ -1,6 +1,6 @@
 /** Reference solution for `register`. Proven by `__tests__/levels.test.ts`. */
 
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core';
 import {
   And,
   Combiner,

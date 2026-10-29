@@ -7,7 +7,7 @@
  * /learn-page modules. Keeps the docs page reproducible in isolation.
  */
 
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core';
 import { circuitToSource } from '@simten/core/internal';
 import { And, Xor } from '@simten/core/std';
 import { useSimulation } from '@simten/react';

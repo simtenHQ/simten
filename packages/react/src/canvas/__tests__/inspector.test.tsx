@@ -9,8 +9,7 @@
  * Sessions run against an in-process session host (no iframe, no worker).
  */
 
-import { simulate } from '@simten/core';
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit, simulate } from '@simten/core';
 import {
   type CircuitDefinitions,
   type CircuitIR,

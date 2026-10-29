@@ -6,8 +6,7 @@
  * - circuit: The actual Circuit for simulation
  */
 
-import type { Circuit } from '@simten/core/circuit';
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, type Circuit, circuit } from '@simten/core';
 import { And, DFlipFlop, Nand, Not, Or, Xor } from '@simten/core/std';
 
 export interface CircuitDefinition {

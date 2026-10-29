@@ -48,7 +48,7 @@ This server's instructions are truncated by clients at ~2KB, so the full referen
 - **Don't weaken the oracle to pass** — the \`independence_basis\` makes that visible. Lead with what you checked, against what, at what tier.
 
 ## Writing circuits
-Write each circuit as a standalone TS module: \`import { circuit, bit, bus } from '@simten/core/circuit'\`, stdlib from \`@simten/core/std\`, and **\`export\`** the top-level circuit so a testbench can import it. Don't write import-free code.
+Write each circuit as a standalone TS module: \`import { circuit, bit, bus } from '@simten/core'\`, stdlib from \`@simten/core/std\`, and **\`export\`** the top-level circuit so a testbench can import it. Don't write import-free code.
 
 ## Canvas & trust
 \`show_circuit\` is the only tool that paints; the canvas is a one-way **viewer** (it displays/simulates what you push and sends nothing back). \`show_circuit\` is also the ONLY thing that updates the canvas — editing the \`.circuit.ts\` does NOT auto-update the browser; re-call \`show_circuit\` to repaint (at a verify pass, not during tight iteration). The web editor is a sandbox **view** of the file: the file you edit is the source of truth; in-browser edits are local experiments. \`verify_circuit\` runs the testbench on the host via \`tsx\` (full node/npm, your trust level — like \`npm test\`); open unfamiliar or shared circuits in the sandboxed web \`/circuit\` editor, not locally.

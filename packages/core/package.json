@@ -22,7 +22,6 @@
   "sideEffects": false,
   "exports": {
     ".": "./src/index.ts",
-    "./circuit": "./src/circuit/index.ts",
     "./std": "./src/std/index.ts",
     "./verify": "./src/verify/index.ts",
     "./verilog": "./src/verilog/index.ts",
@@ -37,10 +36,6 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
-      },
-      "./circuit": {
-        "types": "./dist/circuit/index.d.ts",
-        "import": "./dist/circuit/index.js"
       },
       "./std": {
         "types": "./dist/std/index.d.ts",

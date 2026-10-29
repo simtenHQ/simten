@@ -1,6 +1,6 @@
 /** Reference solution for `half-adder`. Proven by `__tests__/levels.test.ts`. */
 
-import { circuit } from '@simten/core/circuit';
+import { circuit } from '@simten/core';
 import { And, Led, Switch, Xor } from '@simten/core/std';
 
 export const HalfAdder = circuit('HalfAdder', {

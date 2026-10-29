@@ -1,6 +1,6 @@
 /** Reference solution for `parity`. Proven by `__tests__/levels.test.ts`. */
 
-import { circuit } from '@simten/core/circuit';
+import { circuit } from '@simten/core';
 import { Led, Switch, Xor } from '@simten/core/std';
 
 // XOR is on for an odd number of ones, and stays that way when chained.

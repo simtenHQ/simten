@@ -1,6 +1,6 @@
 /** Reference solution for `decoder`. Proven by `__tests__/levels.test.ts`. */
 
-import { circuit } from '@simten/core/circuit';
+import { circuit } from '@simten/core';
 import { And, Led, Nor, Switch } from '@simten/core/std';
 
 // y0 and y3 are one gate each. y1 is "a0 on, a1 off", which is the same as

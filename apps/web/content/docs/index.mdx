@@ -72,7 +72,7 @@ Not using React? See [Using Simten without React](/docs/without-react).
 Drop an interactive circuit into any React app:
 
 ```tsx
-import { circuit, bit } from '@simten/core/circuit';
+import { circuit, bit } from '@simten/core';
 import { Xor, And } from '@simten/core/std';
 
 const HalfAdder = circuit('HalfAdder', {
@@ -110,7 +110,7 @@ Not a React page? Open the circuit in the editor and use Share → Embed for an 
 Here's that circuit running live, in the card simten.dev puts around its circuits:
 
 import { CircuitCard } from '../../src/components/CircuitCard'
-import { circuit, bit } from '@simten/core/circuit'
+import { circuit, bit } from '@simten/core'
 import { Xor, And } from '@simten/core/std'
 
 export const HalfAdder = circuit('HalfAdder', {

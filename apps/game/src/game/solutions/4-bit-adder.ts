@@ -1,6 +1,6 @@
 /** Reference solution for `4-bit-adder`. Proven by `__tests__/levels.test.ts`. */
 
-import { bit, circuit } from '@simten/core/circuit';
+import { bit, circuit } from '@simten/core';
 import { And, Combiner, HexDisplay, Input, Led, Or, Splitter, Xor } from '@simten/core/std';
 
 const HalfAdder = circuit('HalfAdder', {

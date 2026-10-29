@@ -1,6 +1,6 @@
 /** Reference solution for `multiplexer`. Proven by `__tests__/levels.test.ts`. */
 
-import { circuit } from '@simten/core/circuit';
+import { circuit } from '@simten/core';
 import { And, Led, Switch, Xor } from '@simten/core/std';
 
 // out = a XOR (sel AND (a XOR b)). With sel off the AND is 0 and a passes

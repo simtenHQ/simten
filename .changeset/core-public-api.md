@@ -2,9 +2,9 @@
 '@simten/core': minor
 ---
 
-Renames and a defined public API (#416). Behaviour is unchanged. The names saved circuits use (`circuit`, `bit`, `bus`, every std component and port, `@simten/core/circuit`, `@simten/core/std`) are unchanged too.
+Renames and a defined public API (#416). Behaviour is unchanged. The names saved circuits use (`circuit`, `bit`, `bus`, every std component and port, `@simten/core/std`) are unchanged too.
 
-Public entry points: `@simten/core` (`circuit`, `bit`, `bus`, `reg`, `mem`, `simulate` and the builder types), `/circuit`, `/std`, `/verify`, `/verilog` and `/examples`. Everything else moved to `@simten/core/internal`, which is for Simten's own packages and has no stability promise.
+Public entry points: `@simten/core` (`circuit`, `bit`, `bus`, `reg`, `mem`, `simulate` and the builder types), `/std`, `/verify`, `/verilog` and `/examples`. Everything else moved to `@simten/core/internal`, which is for Simten's own packages and has no stability promise.
 
 | Old | New |
 |---|---|

@@ -8,7 +8,7 @@
   "excludeFolders": ["**/__tests__", "**/__fixtures__", "**/dist", "node_modules"],
   "excludeFiles": ["TERMS.md", "PRIVACY.md", "SECURITY.md", "CHANGELOG.md"],
   "rules": [
-    "Import circuit, bit and bus from '@simten/core/circuit', and standard components from '@simten/core/std'.",
+    "Import circuit, bit and bus from '@simten/core', and standard components from '@simten/core/std'.",
     "Export the top-level circuit from each module.",
     "Use singleton components bare (nodes: { g: And }) and call parameterized ones (Register({ width: 16 }), or Register() for defaults).",
     "In connect, wire a circuit's own inputs and outputs directly (a.to(x.a), x.out.to(result)); node ports use their port names (x.out, x.a).",

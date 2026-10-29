@@ -1,6 +1,6 @@
 /** Reference solution for `and`. Proven by `__tests__/levels.test.ts`. */
 
-import { circuit } from '@simten/core/circuit';
+import { circuit } from '@simten/core';
 import { Led, Nand, Switch } from '@simten/core/std';
 
 export const And2 = circuit('And2', {
