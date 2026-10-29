@@ -357,16 +357,22 @@ describe('inputs by name', () => {
     expect(hook.result.current.state.error).toMatch(/ambiguous/);
   });
 
-  it('starts at initialInputs and goes back there on reset', async () => {
+  it('starts at initialInputs, and reset leaves a flipped switch where it is', async () => {
     const { hook } = render({ source: COUNTER }, { initialInputs: { en: 1 } });
     await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
     await act(async () => {
       await hook.result.current.actions.tick(2);
-      await hook.result.current.actions.set({ en: 0 });
+    });
+    expect(hook.result.current.state.outputs).toEqual({ count: 2 });
+    await act(async () => {
+      await hook.result.current.actions.toggle('en');
       await hook.result.current.actions.reset();
       await hook.result.current.actions.tick(3);
     });
-    expect(hook.result.current.state.outputs).toEqual({ count: 3 });
+    // en stayed off through the reset, so the counter didn't count.
+    expect(hook.result.current.state.cycle).toBe(3);
+    expect(hook.result.current.state.outputs).toEqual({ count: 0 });
+    expect(hook.result.current.state.portValues?.get('en.out')).toBe(0);
   });
 
   it('types set, toggle and outputs from a circuit built on the page', async () => {

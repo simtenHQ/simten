@@ -52,7 +52,7 @@ The circuit is sent to a sandbox (a hidden iframe on another origin), which simu
 const { state, actions } = useSimulation(HalfAdder, { initialInputs: { a: 1 }, history: 200 })
 ```
 
-It takes a circuit built on the page, or source text: `useSimulation({ source })`, which compiles in the sandbox. The options say how the simulation starts: `initialInputs` (where the switches sit at power-on; `reset` returns to them), `memory` (contents by node path, loaded before cycle 0) and `history` (entries kept, 0 for none). Changing one starts a new run at cycle 0.
+It takes a circuit built on the page, or source text: `useSimulation({ source })`, which compiles in the sandbox. The options say how the simulation starts: `initialInputs` (where the switches sit at power-on; `reset` is the reset line and leaves them where they are), `memory` (contents by node path, loaded before cycle 0) and `history` (entries kept, 0 for none). Changing one starts a new run at cycle 0.
 
 `state` is what the simulation is doing now: `outputs` by name, `cycle`, `isRunning`, `speed`, `ready`, `error`, `compileError`, `history`, and `portValues` for tooling.
 
@@ -77,7 +77,7 @@ To build your own UI, read `state` and call `actions` from your components. See 
 |---|---|
 | `CircuitCanvas` | `simulation`, and how it looks: `height`, `theme`, `layout`, `focus`, `draggable`, `autoLayout`, `onLoadMemory` |
 | `ClockControls` | `simulation`, `showSpeed`, `showScrubber`, `floating`, `chromeless`, `pulseRun` |
-| `WaveformViewer` | `simulation`, `onClose`: the inputs and outputs over the cycles it has seen |
+| `WaveformViewer` | `simulation`, `onClose`: the inputs and outputs over the cycles it has seen, with Save VCD for GTKWave |
 
 Double-clicking a component on the canvas opens its insides as a live view of the same simulation, with breadcrumbs.
 

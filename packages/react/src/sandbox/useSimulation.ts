@@ -57,7 +57,7 @@ export type SimulationSource = Circuit | SourceText;
 
 /** How a simulation starts. A change to any of these starts a new one at cycle 0. */
 export interface UseSimulationOptions<Keys extends string = string> {
-  /** Where the inputs sit at power-on, by the keys `set` takes. `reset` returns to them. */
+  /** Where the inputs sit at power-on, by the keys `set` takes. `reset` doesn't move them. */
   initialInputs?: Partial<Record<Keys, number>>;
   /** Memory contents by node path (`imem`, `cpu.rom`), loaded before cycle 0. A new program is a new run. */
   memory?: Record<string, MemoryContents>;
@@ -130,7 +130,11 @@ export interface SimulationActions<Keys extends string = string> {
   /** Auto-run in the sandbox at `speed` cycles per second (default: the current `state.speed`). */
   run(speed?: number): Promise<void>;
   pause(): Promise<void>;
-  /** Back to cycle 0, with the inputs at `initialInputs`. Memory contents stay. */
+  /**
+   * The reset line: back to cycle 0, registers and history to the start.
+   * Memory contents stay, and so do the inputs. To start over from power-on,
+   * `set(initialInputs)` then `reset()`.
+   */
   reset(): Promise<void>;
   stepBack(): Promise<boolean>;
   stepForward(): Promise<boolean>;
@@ -625,12 +629,8 @@ export function useSimulation(
         pendingRun.current = null;
         return withSession(undefined, ({ session: s }) => s.pause());
       },
-      // The session puts the inputs back at their starting values.
-      reset: () =>
-        withSession(undefined, async ({ session: s }) => {
-          written.current.clear();
-          await s.reset();
-        }),
+      // The inputs stay where they are, so what was written still stands.
+      reset: () => withSession(undefined, ({ session: s }) => s.reset()),
       // History puts switches back where they were, so the pushed state is
       // their value again once a move lands.
       stepBack: () => withSession(false, ({ session: s }) => moved(s.stepBack())),
