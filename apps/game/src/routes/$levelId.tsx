@@ -2,13 +2,6 @@
  * A level: brief, code and circuit side by side, laid out like simten.dev/circuit.
  */
 
-import { ErrorDisplay } from '@simten/app-kit/error-display';
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-  usePanelRef,
-} from '@simten/app-kit/primitives/resizable';
 import { type CircuitIR, elaborate } from '@simten/core/internal';
 import { CircuitCanvas, ClockControls, useSandboxClient, useSimulation } from '@simten/react';
 import {
@@ -18,6 +11,13 @@ import {
   registerSimtenThemes,
   SIMTEN_DARK,
 } from '@simten/react/code-editor';
+import { ErrorDisplay } from '@simten/shared/error-display';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+  usePanelRef,
+} from '@simten/shared/primitives/resizable';
 import { createFileRoute, Link, notFound } from '@tanstack/react-router';
 import { Network, RotateCcw } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';

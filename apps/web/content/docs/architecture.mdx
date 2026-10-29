@@ -217,7 +217,7 @@ In the browser, the page can only set input ports and Switch and Input nodes (`S
 | `@simten/react` | React: `useSimulation`, `SandboxProvider`, `CircuitCanvas`, `ClockControls`, `WaveformViewer`, and the code editor. Depends on core and sandbox. |
 | `@simten/mcp` | MCP server for Claude Code integration |
 
-The library gives you data, input and output, and the apps arrange them (decision 0010). The cards around circuits on simten.dev, the embed page's view and the game's dialogs are app code; what the apps share (UI primitives, share links, the Fork button, the theme) is in `@simten/app-kit`, a private workspace package that isn't published.
+The library gives you data, input and output, and the apps arrange them (decision 0010). The cards around circuits on simten.dev, the embed page's view and the game's dialogs are app code; what the apps share (UI primitives, share links, the Fork button, the theme) is in `@simten/shared`, a private workspace package that isn't published.
 
 The split follows Sandpack's `sandpack-client` and `sandpack-react`: everything that isn't React lives in core and sandbox, so a Vue or Svelte layer would sit on `@simten/sandbox` the same way. A page that isn't an app embeds the iframe from Share → Embed and needs no package. See [Using Simten without React](/docs/without-react).
 

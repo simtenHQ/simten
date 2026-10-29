@@ -1,4 +1,4 @@
-import type { ShareKV } from '@simten/app-kit/share';
+import type { ShareKV } from '@simten/shared/share';
 import { describe, expect, it } from 'vitest';
 import { type Env, handleRequest } from '../index';
 

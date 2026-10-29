@@ -10,7 +10,7 @@
  * meaning, so letting a player rearrange it only lets them break it.
  */
 
-import { CompositeBadge } from '@simten/app-kit/composite-badge';
+import { CompositeBadge } from '@simten/shared/composite-badge';
 import { Link } from '@tanstack/react-router';
 import {
   Background,

@@ -1,5 +1,5 @@
 /**
- * @simten/app-kit/theme.css: design tokens, for the apps, which use Tailwind.
+ * @simten/shared/theme.css: design tokens, for the apps, which use Tailwind.
  *
  * The apps and @simten/react's components are written with `bg-card`,
  * `border-border`, `text-muted-foreground` and friends. Those resolve to the
@@ -12,9 +12,9 @@
  * the components use, since Tailwind v4 does not scan workspace packages:
  *
  *   @import "tailwindcss";
- *   @import "@simten/app-kit/theme.css";
+ *   @import "@simten/shared/theme.css";
  *   @source "../../../packages/react/src/**\/*.tsx";
- *   @source "../../../packages/app-kit/src/**\/*.tsx";
+ *   @source "../../../packages/shared/src/**\/*.tsx";
  *
  * A page that doesn't use Tailwind imports `@simten/react/styles.css` instead:
  * the library's classes, already compiled, with the same theme as variables.

@@ -70,7 +70,7 @@ packages/
   core/              ← circuit IR, simulator, stdlib, Verilog exporter
   sandbox/           ← runs circuits in the sandbox iframe from any page, no framework
   react/             ← React components and hooks (useSimulation, canvas, clock controls, code editor)
-  app-kit/           ← private: what the apps share (UI primitives, share links, Fork, theme)
+  shared/            ← private: what the apps share (UI primitives, share links, Fork, theme)
   mcp/               ← MCP server for Claude Code integration
 hardware/ulx3s/      ← FPGA bitstream build pipeline
 

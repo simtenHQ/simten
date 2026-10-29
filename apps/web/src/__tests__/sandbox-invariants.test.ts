@@ -15,8 +15,8 @@ const APP_SRC = join(__dirname, '..');
 // packages/react holds the canvas and the React hooks over the sandbox, so it
 // is the package most likely to grow a violation.
 const REACT_SRC = join(__dirname, '../../../../packages/react/src');
-// packages/app-kit is code every app runs in its own frame.
-const APP_KIT_SRC = join(__dirname, '../../../../packages/app-kit/src');
+// packages/shared is code every app runs in its own frame.
+const APP_KIT_SRC = join(__dirname, '../../../../packages/shared/src');
 // The embed page renders shared source text, through the same sandbox.
 const EMBED_PAGE_SRC = join(__dirname, '../../../embed-page/src');
 // The game runs player code too, through the same sandbox.

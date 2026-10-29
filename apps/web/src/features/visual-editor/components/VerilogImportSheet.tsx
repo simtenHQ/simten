@@ -20,7 +20,7 @@
 
 'use client';
 
-import { Button } from '@simten/app-kit/primitives/button';
+import { Button } from '@simten/shared/primitives/button';
 import {
   Sheet,
   SheetClose,
@@ -28,7 +28,7 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from '@simten/app-kit/primitives/sheet';
+} from '@simten/shared/primitives/sheet';
 import { FileInput, Loader2, X } from 'lucide-react';
 import { useCallback, useMemo, useRef, useState } from 'react';
 import {

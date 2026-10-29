@@ -1,5 +1,5 @@
-import { TooltipProvider } from '@simten/app-kit/primitives/tooltip';
 import { CircuitCanvas } from '@simten/react';
+import { TooltipProvider } from '@simten/shared/primitives/tooltip';
 import { useMemo } from 'react';
 import { useSystolicSimulator } from './useSystolicSimulator';
 

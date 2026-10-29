@@ -7,13 +7,6 @@
 
 'use client';
 
-import { Button } from '@simten/app-kit/primitives/button';
-import {
-  ResizableHandle,
-  ResizablePanel,
-  ResizablePanelGroup,
-} from '@simten/app-kit/primitives/resizable';
-import { TooltipProvider } from '@simten/app-kit/primitives/tooltip';
 import type { CircuitIR, MemoryContents } from '@simten/core/internal';
 import { CircuitCanvas, ClockControls, useSimulation, WaveformViewer } from '@simten/react';
 import {
@@ -23,6 +16,13 @@ import {
   SIMTEN_DARK,
   SIMTEN_LIGHT,
 } from '@simten/react/code-editor';
+import { Button } from '@simten/shared/primitives/button';
+import {
+  ResizableHandle,
+  ResizablePanel,
+  ResizablePanelGroup,
+} from '@simten/shared/primitives/resizable';
+import { TooltipProvider } from '@simten/shared/primitives/tooltip';
 import { Download, Loader2, Share2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SiteHeader } from '@/components/SiteHeader';
