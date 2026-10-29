@@ -244,7 +244,7 @@ function rebuildBehaviors(sources: Record<string, BehaviorSource>): Map<string, 
 }
 
 /**
- * A compile of a circuit built on the page (blog, docs, `<CircuitEmbed>`): its
+ * A compile of a circuit built on the page (blog, docs, `useSimulation(circuit)`): its
  * IR, its dependencies' IR and their behavior as text. Self-contained: it
  * doesn't borrow from any other compile.
  */

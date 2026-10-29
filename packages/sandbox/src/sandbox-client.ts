@@ -55,7 +55,7 @@ export interface Compiled {
 /** A circuit is chosen by the name given to `circuit(...)`. */
 export type SessionSource =
   | { compiled: Compiled; circuit: string }
-  /** A circuit built on the page (blog, docs, `<CircuitEmbed>`), sent as IR plus behavior as text. */
+  /** A circuit built on the page (blog, docs, `useSimulation(circuit)`), sent as IR plus behavior as text. */
   | { circuit: Circuit };
 
 export interface OpenOptions {

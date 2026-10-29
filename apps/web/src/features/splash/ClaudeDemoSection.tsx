@@ -854,7 +854,7 @@ const HeroBrowserWindow = forwardRef<HeroBrowserWindowHandle, { canvasReady?: bo
       [],
     );
 
-    // CircuitEmbed only mounts once the parent has confirmed the
+    // The card only mounts once the parent has confirmed the
     // column-collapse animation finished (canvasReady=true), so React
     // Flow measures at the final expanded width on its very first
     // render instead of reflowing during the animation. The fade-in
@@ -940,7 +940,7 @@ export function ClaudeDemoSection({ onComplete, autoPlay = false }: ClaudeDemoSe
   const [demoComplete, setDemoComplete] = useState(false);
   const [expanded, setExpanded] = useState(false);
   // Gates the canvas mount inside HeroBrowserWindow: stays false until
-  // the column-collapse animation has finished, so CircuitEmbed measures
+  // the column-collapse animation has finished, so the card measures
   // at its final (expanded) width on first render rather than mounting
   // at the narrow build-phase width and then reflowing partway through
   // the collapse animation.
@@ -1063,7 +1063,7 @@ export function ClaudeDemoSection({ onComplete, autoPlay = false }: ClaudeDemoSe
   //   → trigger column-collapse animation (expanded=true, CSS handles
   //     the transition over COLLAPSE_MS)
   //   → after the animation completes, mount the canvas (canvasReady=true)
-  //     so CircuitEmbed measures at its final width on first render.
+  //     so the card measures at its final width on first render.
   // Both timers cancel on unmount or when demoComplete resets (e.g.
   // user clicks "Try another demo" mid-run).
   useEffect(() => {

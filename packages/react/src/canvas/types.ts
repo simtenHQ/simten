@@ -63,7 +63,7 @@ export interface MetadataState {
 
 /**
  * Public layout prop type. Maps a node's label (or id, as fallback) to its
- * position on the canvas. Pass to CircuitCanvas / CircuitEmbed via the
+ * position on the canvas. Pass to CircuitCanvas via the
  * `layout` prop to bypass the runtime layout engine entirely.
  *
  * When parameterised by a `Circuit`, the keys are constrained at compile

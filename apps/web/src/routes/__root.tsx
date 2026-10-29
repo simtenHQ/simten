@@ -16,7 +16,7 @@ import { ThemeProvider } from '../components/ThemeProvider';
 
 import appCss from '../styles.css?url';
 
-// Bridge the TanStack Start server fn to the CircuitEmbed Fork button via
+// Bridge the TanStack Start server fn to the circuit cards' Fork button via
 // context. Every Fork click goes through KV → short `/circuit/s/<hash>` URLs.
 const shareCircuitFn = (source: string) => shareCircuit({ data: { source } });
 

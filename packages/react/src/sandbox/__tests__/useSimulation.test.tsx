@@ -251,7 +251,7 @@ describe('useSimulation', () => {
     expect(hook.result.current.state.portValues?.get('s.out')).toBe(0);
   });
 
-  it('toggles from a value written by setInputs that is still in flight', async () => {
+  it('toggles from a value written by set that is still in flight', async () => {
     const { hook } = render(AndGate);
     await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
     const { actions } = hook.result.current;
@@ -262,7 +262,7 @@ describe('useSimulation', () => {
     expect(hook.result.current.state.outputs).toEqual({ y: 0 });
   });
 
-  it('forgets a rejected setInputs, so a toggle flips from the real value', async () => {
+  it('forgets a rejected set, so a toggle flips from the real value', async () => {
     const { hook } = render(AndGate);
     await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
     const { actions } = hook.result.current;

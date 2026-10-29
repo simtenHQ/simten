@@ -3,9 +3,9 @@
 // Generates src/code-editor/generated/core-types.gen.ts — the `@simten/core` type
 // payloads inlined as string constants, ready to hand to Monaco's addExtraLib.
 //
-// Only @simten/react/monaco imports the output, and it costs every other subpath
-// nothing: `sideEffects: false` plus subpath exports keep it out of any bundle
-// that doesn't pull in the editor.
+// Only @simten/react/code-editor imports the output, and it costs the rest of
+// the package nothing: subpath exports keep it out of any bundle that doesn't
+// pull in the editor.
 //
 // Why codegen rather than importing the .d.ts files directly:
 //

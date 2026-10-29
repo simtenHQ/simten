@@ -6,7 +6,7 @@
  * rather than in the JS type of the value.
  *
  * There are no boolean boundaries left. Not in `StateFieldValue`, not in
- * `PrimitiveState`, not in a primitive's options, not in `CircuitEmbed`'s
+ * `PrimitiveState`, not in a primitive's options, not in a card's
  * props. Every one that existed turned out to be a bug vector rather than an
  * ergonomic win — `sim.set()` converted numbers *to* booleans, `DFlipFlop`
  * stored boolean state, embed surfaced boolean outputs — so the "accept a

@@ -102,7 +102,7 @@ function Claim() {
 // the heavy demo gallery. Modeled on Vercel/Linear/Anthropic landing bento
 // grids: each cell is title + one-line description + subtle arrow link +
 // a visual area at the bottom. Visuals are placeholder boxes for now; the
-// plan is to drop in real little mockups (stripped CircuitEmbed, waveform
+// plan is to drop in real little mockups (stripped circuit cards, waveform
 // timeline, terminal snippet, code snippet, etc.) cell-by-cell once the
 // layout is approved.
 // ============================================================================
@@ -1008,7 +1008,7 @@ function SnakeCard() {
         )}
       </div>
 
-      {/* Info strip, matches CircuitEmbed */}
+      {/* Info strip, matches the circuit cards */}
       <div className="border-t border-border px-4 py-3 flex items-end justify-between gap-4">
         <div>
           <div className="text-[13px] font-semibold text-foreground">Snake</div>
