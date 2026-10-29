@@ -19,7 +19,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@simten/app-kit/primitives/dialog';
+} from '@simten/shared/primitives/dialog';
 import { Link } from '@tanstack/react-router';
 import { ALL_GATES, gatesGainedAfter } from '../game/levels';
 import type { Level } from '../game/types';

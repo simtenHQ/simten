@@ -42,7 +42,7 @@
         "projects/snake/{parity-check,playable-check,fault-check}.ts"
       ]
     },
-    "packages/app-kit": {
+    "packages/shared": {
       "entry": [
         "src/primitives/*.tsx",
         "src/share/index.ts",

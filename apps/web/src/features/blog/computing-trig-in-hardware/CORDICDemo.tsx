@@ -1,5 +1,5 @@
-import { TooltipProvider } from '@simten/app-kit/primitives/tooltip';
 import { CircuitCanvas } from '@simten/react';
+import { TooltipProvider } from '@simten/shared/primitives/tooltip';
 import { useCORDICSimulator } from './useCORDICSimulator';
 
 const CORDIC_LAYOUT: Record<string, { x: number; y: number }> = {
