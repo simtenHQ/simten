@@ -58,7 +58,7 @@ describe('compile and open', () => {
     expect(res.error).toBe("No circuit named 'Nope' in this compile. Its circuits: Add");
   });
 
-  it('opens the circuit harnessed', async () => {
+  it('still harnesses the circuit for pages deployed before #531', async () => {
     const { opened } = await openCounter(10, { harness: true });
     expect(opened.circuit.name).toBe('CounterDemo');
     expect(opened.circuit.nodes.map((n) => n.componentRef).sort()).toEqual([
@@ -414,13 +414,6 @@ const Gate = circuit('Gate', {
     expect(res.state.ports.get('__top__.y')).toBe(1);
   });
 
-  it("writes a harnessed circuit's inputs by port name", async () => {
-    const { call } = await openCounter(10, { harness: true });
-    expectType(await call({ type: 'set', session: 's1', values: { en: 1 } }), 'updated');
-    const res = expectType(await call({ type: 'tick', session: 's1', count: 2 }), 'updated');
-    expect(res.state.ports.get('count.in')).toBe(2);
-  });
-
   it('starts at initialInputs, and reset leaves the inputs where they are', async () => {
     const { call } = startHost();
     await call({ type: 'compile', compile: 'c1', source: D_LATCH });
@@ -495,7 +488,7 @@ describe('set-input (pages deployed before decision 0010)', () => {
     expect(res.state.ports.get('q.in')).toBe(0);
   });
 
-  it('writes a Switch of a harnessed circuit', async () => {
+  it('writes a Switch of a harnessed circuit, for pages deployed before #531', async () => {
     const { call } = await openCounter(10, { harness: true });
     expectType(await call({ type: 'set-input', session: 's1', values: { en: 1 } }), 'updated');
     const res = expectType(await call({ type: 'tick', session: 's1', count: 2 }), 'updated');
@@ -534,11 +527,10 @@ describe('scan and sample', () => {
       compile: 'c1',
       circuit: 'Add',
       history: 0,
-      harness: true,
       initialInputs: { b: 10 },
     });
     const res = expectType(
-      await call({ type: 'scan', session: 's1', path: 'a', port: 'dut.sum', count: 4 }),
+      await call({ type: 'scan', session: 's1', path: 'a', port: '__top__.sum', count: 4 }),
       'scanned',
     );
     expect(res.values).toEqual([10, 11, 12, 13]);

@@ -53,7 +53,7 @@ const HalfAdder = circuit('HalfAdder', {
   ],
 });
 
-/** Switches and lamps around a HalfAdder named `ha`: no ports, so nothing to harness. */
+/** Switches and lamps around a HalfAdder named `ha`: no ports, so it is drawn as it is. */
 const Bench = circuit('Bench', {
   nodes: { a: Switch, b: Switch, ha: HalfAdder, s: Led, c: Led },
   connect: ({ nodes: { a, b, ha, s, c } }) => [

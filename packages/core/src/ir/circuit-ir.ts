@@ -177,13 +177,11 @@ export interface Node {
   outputs: PortInstance[];
   clocks: ClockInstance[];
   /**
-   * Scaffolding the harness added, not something the author wrote.
-   *
-   * `autoHarness` gives a ported circuit switches and leds so there is
-   * something to click, naming each after the port it drives. That makes them
-   * easy to mistake for the author's own nodes: a switch labelled `a` with a
-   * port labelled `out` reads as `a.out`, when `a` in the source is the port
-   * itself. Marked here so a renderer can treat them as the rig they are.
+   * A control or indicator the canvas draws for one of the circuit's own
+   * ports, not a node the author wrote. It is named after the port, so a
+   * switch labelled `a` with a pin labelled `out` would read as `a.out` when
+   * `a` in the source is the port itself. Marked so the renderer can leave its
+   * pins unlabelled.
    */
   harness?: boolean;
 }

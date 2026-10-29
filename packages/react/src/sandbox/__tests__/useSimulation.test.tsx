@@ -55,7 +55,7 @@ const AndGate = circuit('AndGate', {
   ],
 });
 
-/** A lamp wired to a switch inside the circuit: no ports, so nothing to harness. */
+/** A lamp wired to a switch inside the circuit: no ports, so it is drawn as it is. */
 const SwitchBoard = circuit('SwitchBoard', {
   nodes: { s: Switch, g: And },
   connect: ({ nodes: { s, g } }) => [s.out.to(g.a, g.b)],
@@ -121,14 +121,13 @@ function render(
 }
 
 describe('useSimulation', () => {
-  it('compiles a circuit built on the page, harnesses it and flips its switches', async () => {
+  it('compiles a circuit built on the page and sets its inputs', async () => {
     const { hook } = render(AndGate);
     await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
     const { state } = hook.result.current;
-    expect(state.circuit?.name).toBe('AndGateDemo');
-    // Export and the game's drilldown need the circuit, not its harness.
+    // The session runs the circuit itself (#531): no harness.
+    expect(state.circuit?.name).toBe('AndGate');
     expect(state.circuitName).toBe('AndGate');
-    expect(state.definitions?.resolveCircuit('Switch')).toBeDefined();
     expect(state.outputs).toEqual({ y: 0 });
 
     await act(async () => {
@@ -136,7 +135,7 @@ describe('useSimulation', () => {
       await hook.result.current.actions.toggle('b');
     });
     expect(hook.result.current.state.outputs).toEqual({ y: 1 });
-    expect(hook.result.current.state.portValues?.get('y.in')).toBe(1);
+    expect(hook.result.current.state.portValues?.get('__top__.y')).toBe(1);
   });
 
   it('simulates source text and keeps the last good session after a failed compile', async () => {
@@ -258,7 +257,7 @@ describe('useSimulation', () => {
     await act(async () => {
       await Promise.all([actions.set({ a: 1, b: 1 }), actions.toggle('a')]);
     });
-    expect(hook.result.current.state.portValues?.get('a.out')).toBe(0);
+    expect(hook.result.current.state.portValues?.get('__top__.a')).toBe(0);
     expect(hook.result.current.state.outputs).toEqual({ y: 0 });
   });
 
@@ -275,7 +274,7 @@ describe('useSimulation', () => {
     await act(async () => {
       await actions.toggle('a');
     });
-    expect(hook.result.current.state.portValues?.get('a.out')).toBe(0);
+    expect(hook.result.current.state.portValues?.get('__top__.a')).toBe(0);
   });
 
   it('keeps a later write when an earlier one to the same path is rejected', async () => {
@@ -291,7 +290,7 @@ describe('useSimulation', () => {
       // a = 0 is still in flight, so the toggle must flip from it, not from 1.
       await Promise.all([later, actions.toggle('a')]);
     });
-    expect(hook.result.current.state.portValues?.get('a.out')).toBe(1);
+    expect(hook.result.current.state.portValues?.get('__top__.a')).toBe(1);
   });
 
   it('drops a compile that finishes after a newer one started', async () => {
@@ -340,8 +339,7 @@ describe('inputs by name', () => {
       await hook.result.current.actions.set({ a: 1, sw: 1 });
     });
     expect(hook.result.current.state.outputs).toEqual({ y: 1 });
-    // The harness is the session's business: the Switch is under `dut` there.
-    expect(hook.result.current.state.portValues?.get('dut.sw.out')).toBe(1);
+    expect(hook.result.current.state.portValues?.get('sw.out')).toBe(1);
     await act(async () => {
       await hook.result.current.actions.toggle('sw');
     });
@@ -372,7 +370,7 @@ describe('inputs by name', () => {
     // en stayed off through the reset, so the counter didn't count.
     expect(hook.result.current.state.cycle).toBe(3);
     expect(hook.result.current.state.outputs).toEqual({ count: 0 });
-    expect(hook.result.current.state.portValues?.get('en.out')).toBe(0);
+    expect(hook.result.current.state.portValues?.get('__top__.en')).toBe(0);
   });
 
   it('types set, toggle and outputs from a circuit built on the page', async () => {

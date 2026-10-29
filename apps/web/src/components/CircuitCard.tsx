@@ -23,9 +23,10 @@ import { useTheme } from '@/components/ThemeProvider';
 type Position = { x: number; y: number };
 
 /**
- * Node positions for a circuit drawn in its harness: its input ports'
- * switches, its outputs' lamps, and the circuit itself as `dut`. A circuit
- * without ports isn't wrapped, so its own nodes are placed.
+ * Node positions. A circuit with ports is drawn with a switch on each input
+ * port and a lamp on each output, named after the ports, around the circuit
+ * itself as `dut`. A circuit without ports is drawn as it is, so its own nodes
+ * are placed.
  */
 type CardLayout<C extends Circuit> =
   C extends Circuit<infer Ins, infer Outs, infer Ns>

@@ -71,7 +71,11 @@ export type SessionRequest =
       compile: CompileId;
       /** The name given to `circuit(...)`. */
       circuit: string;
-      /** Wrap the circuit in Switch/Input and Led/HexDisplay nodes. */
+      /**
+       * Wrap the circuit in Switch/Input and Led/HexDisplay nodes. Kept: pages
+       * deployed before #531 send it; removed at the release (#424). The canvas
+       * now draws a circuit's ports itself.
+       */
       harness?: boolean;
       initialInputs?: Record<string, number>;
       /** Cycles of history. */
@@ -154,7 +158,7 @@ export type SessionResponse =
       id: string;
       type: 'opened';
       session: SessionId;
-      /** The simulated circuit, harnessed if asked for. */
+      /** The simulated circuit (harnessed for pages that still ask for one). */
       circuit: CircuitIR;
       isSequential: boolean;
       state: SessionUpdate;

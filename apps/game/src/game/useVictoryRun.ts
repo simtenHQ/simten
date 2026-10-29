@@ -2,7 +2,7 @@
  * The moment a level is solved.
  *
  * Rather than asserting "correct", it drives the player's own circuit through
- * the truth table one row at a time: the harness switches flip, the LED
+ * the truth table one row at a time: the input switches flip, the LED
  * lights, and each row ticks off as it passes. The proof is the machine
  * running, which is the thing they actually built.
  *

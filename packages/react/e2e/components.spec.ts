@@ -75,7 +75,7 @@ test.describe('CircuitCanvas and ClockControls', () => {
 
     await basic.getByRole('button', { name: 'Swap circuit' }).click();
 
-    // Two nodes now: a switch and a lamp, and no harness because the circuit
+    // Two nodes now: a switch and a lamp, and no port controls because the circuit
     // declares no ports.
     await expect(basic.locator('.react-flow__node')).toHaveCount(2, { timeout: 10_000 });
     expect(before).not.toBe(2);

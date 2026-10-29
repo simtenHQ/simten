@@ -91,9 +91,9 @@ function binaryToROM(base64: string): MemoryContents {
   return contents;
 }
 
-/** Read one of the CPU's 32-bit outputs, off the display the canvas draws for it. */
+/** Read one of the CPU's 32-bit output ports. */
 function readOutput(portValues: ReadonlyMap<string, number> | null, name: string): number | null {
-  const val = portValues?.get(`${name}.in`);
+  const val = portValues?.get(`__top__.${name}`);
   return val === undefined ? null : val >>> 0;
 }
 
@@ -189,7 +189,7 @@ export function useRV32IDebugger() {
     if (!state.ready) return;
     let cancelled = false;
     (async () => {
-      const values = await actions.scan('debug_addr', 'debug_value.in', 32);
+      const values = await actions.scan('debug_addr', '__top__.debug_value', 32);
       if (cancelled || values.length === 0) return;
       const map = new Map<number, number>();
       for (let i = 0; i < values.length; i++) map.set(i, values[i] >>> 0);

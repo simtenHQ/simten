@@ -4,16 +4,19 @@
  *   const sim = useSimulation(HalfAdder);
  *   <CircuitCanvas simulation={sim} />
  *
- * It shows its own loading and error states. Clicking a switch, or typing into
- * a number input, calls the simulation's actions. Double-clicking a composite
- * opens its insides as a live view of the same simulation, with breadcrumbs.
- * Everything else here is how it looks.
+ * It shows its own loading and error states. A circuit with ports is drawn
+ * with a switch or number input on each input port and a lamp or display on
+ * each output, around the circuit as one box (`ports-view.ts`). Clicking a
+ * switch, or typing into a number input, calls the simulation's actions.
+ * Double-clicking a composite opens its insides as a live view of the same
+ * simulation, with breadcrumbs. Everything else here is how it looks.
  */
 
-import { type ReactElement, useCallback } from 'react';
+import { type ReactElement, useCallback, useMemo } from 'react';
 import type { UseSimulationResult } from '../sandbox/useSimulation';
 import { CanvasError } from './CanvasError';
 import { FlowCanvas } from './FlowCanvas';
+import { hasPorts, portsView, portsViewValues, withPortParts } from './ports-view';
 
 export interface CircuitCanvasProps {
   /** What `useSimulation` returned. */
@@ -24,8 +27,8 @@ export interface CircuitCanvasProps {
   theme?: 'light' | 'dark';
   /**
    * Node positions by label (or id), to skip the layout engine. A circuit with
-   * ports is drawn inside a harness: its ports' switches and lamps are named
-   * after the ports, and the circuit itself is the node `dut`.
+   * ports is drawn with its ports' switches and lamps named after the ports,
+   * and the circuit itself as the node `dut`.
    */
   layout?: Record<string, { x: number; y: number }>;
   /** Dim every node but these, by label. */
@@ -57,6 +60,28 @@ export function CircuitCanvas({
   onLoadMemory,
 }: CircuitCanvasProps): ReactElement {
   const { state, actions } = simulation;
+  const { circuit, definitions, portValues } = state;
+  // What's drawn: the circuit with its ports around it, read in the same terms.
+  const drawn = useMemo(
+    () => (circuit && hasPorts(circuit) ? portsView(circuit) : circuit),
+    [circuit],
+  );
+  const drawnValues = useMemo(
+    () =>
+      circuit && portValues && hasPorts(circuit)
+        ? portsViewValues(circuit, portValues)
+        : portValues,
+    [circuit, portValues],
+  );
+  const drawnDefinitions = useMemo(
+    () => (definitions ? withPortParts(definitions) : undefined),
+    [definitions],
+  );
+  // The drill-down reads the drawing's values too, so `dut` opens on its insides.
+  const viewed = useMemo(
+    () => ({ ...simulation, state: { ...state, portValues: drawnValues } }),
+    [simulation, state, drawnValues],
+  );
   // Stable, so the canvas doesn't redraw every node on each render.
   const toggle = useCallback((path: string) => void actions.toggle(path), [actions]);
   const setValue = useCallback(
@@ -88,13 +113,13 @@ export function CircuitCanvas({
 
   return (
     <FlowCanvas
-      circuit={state.circuit}
-      definitions={state.definitions ?? undefined}
-      portValues={state.portValues}
+      circuit={drawn}
+      definitions={drawnDefinitions}
+      portValues={drawnValues}
       peripheralState={state.peripheralState}
-      simulation={simulation}
-      // Node ids on the canvas are the keys `set` takes: a port's switch is
-      // named after the port, and a circuit without ports isn't wrapped.
+      simulation={viewed}
+      // Top-level node ids are the keys `set` takes: a port's switch is named
+      // after the port, and a circuit without ports is drawn as it is.
       onToggleNode={toggle}
       onSetNodeValue={setValue}
       onLoadMemory={onLoadMemory}
