@@ -15,7 +15,7 @@
  *   worker-src  blob: data:      Monaco's language workers.
  *   frame-src   the sandbox, the iframe that runs player code. It is the
  *               origin the build points at (VITE_SANDBOX_ORIGIN, as in
- *               packages/ui/src/sandbox/useSandbox.ts), by default
+ *               packages/sandbox/src/sandbox-client.ts), by default
  *               sandbox.simtenusercontent.dev.
  * Dropping 'unsafe-inline' and adding a report endpoint are tracked in #464.
  */

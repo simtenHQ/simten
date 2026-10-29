@@ -12,13 +12,18 @@
  * started; the oldest in-flight request fails `timed-out`, the rest
  * `restarted`.
  *
- * Replay. The relay remembers the last successful compile per slot (slot
- * protocol), every live compile by id and every open session's `open`
- * request. After a restart it replays them into the new worker, compiles
+ * Replay. The relay remembers every live compile by id and every open
+ * session's `open` request, and the last successful compile per slot for the
+ * slot messages. After a restart it replays them into the new worker, compiles
  * first, sessions at cycle 0 with history cleared and auto-run off. One that
  * hangs again is dropped and replay starts over on a fresh worker. Then each
  * reopened session gets a pushed `updated` frame and the page gets one
  * `restarted` message naming the reopened and dropped sessions.
+ *
+ * Slot replay (`slotCompiles`, `rememberSlot`, `replaySlotCompiles` and the
+ * slot `error` reply on a restart) is for the slot messages. Kept: published
+ * @simten/embed 0.5.x / @simten/ui 0.15.x send these; removed at the release
+ * with the sandbox.simten.dev route (decision 0008, #424).
  */
 
 import type {
@@ -44,7 +49,7 @@ export interface RelayOptions {
   /** Start a worker. Everything it sends goes to `receive`. */
   startWorker(receive: (message: WorkerResponse) => void): RelayWorker;
   /** Send to the page. */
-  respond(message: SandboxMessage): void;
+  respond(message: SandboxMessage | SandboxResponse): void;
   /** Silence allowed while the worker owes something. Default 5000. */
   timeoutMs?: number;
 }
@@ -150,7 +155,7 @@ export function createRelay(options: RelayOptions): Relay {
     trackRunning(message, request);
     if (request) remember(request, message);
     rearm();
-    options.respond(message as SandboxMessage);
+    options.respond(message as SandboxMessage | SandboxResponse);
   }
 
   function trackRunning(message: WorkerResponse, request: WorkerRequest | undefined) {

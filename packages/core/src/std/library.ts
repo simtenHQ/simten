@@ -10,7 +10,6 @@
 
 import {
   type Behavior,
-  type BehaviorTable,
   definitionKey,
   emptyLibrary,
   type Library,
@@ -19,7 +18,6 @@ import {
 import type { Circuit } from '../circuit/builder-types.js';
 import { sameDefinition } from '../circuit/circuit.js';
 import { internalsOf } from '../circuit/internals.js';
-import type { CircuitDefinitions, CircuitIR } from '../ir/circuit-ir.js';
 import { STDLIB_CIRCUITS } from './index.js';
 import { Combiner, Splitter } from './routing.js';
 
@@ -57,51 +55,27 @@ export function getStdLibrary(): Library {
   return cached;
 }
 
-/**
- * What a primitive's IR says about which circuit it is, widths aside: a
- * factory's specializations differ in their widths and nowhere else.
- */
-function shapeKey(ir: CircuitIR): string {
-  return JSON.stringify([
-    ir.implementation,
-    ir.inputs.map((p) => p.name),
-    ir.outputs.map((p) => p.name),
-    ir.clocks.map((c) => c.name),
-    ir.state.map((s) => [s.name, s.stateType.kind]),
-    ir.metadata,
-  ]);
-}
-
-/** Std's IR and behavior for one primitive name. */
-interface StdPrimitive {
-  ir: CircuitIR;
-  behavior: Behavior;
-}
-
 /** `Splitter_4w`, `Combiner_16w`: a bit splitter or combiner of one width. */
 const PER_WIDTH = /^(Splitter|Combiner)_([1-9]\d?)w$/;
-const perWidth = new Map<string, StdPrimitive>();
+const perWidth = new Map<string, Behavior>();
 
 /**
- * Std's primitive of this name, if std has one. Splitter and Combiner register
- * one primitive per width (`Splitter_4w`), and the library holds only the
- * default width, so the others are built on first use.
+ * Std's behavior for the primitive of this name, if std has one. Splitter and
+ * Combiner register one primitive per width (`Splitter_4w`), and the library
+ * holds only the default width, so the others are built on first use.
  */
-function stdPrimitive(name: string): StdPrimitive | undefined {
-  const std = getStdLibrary();
-  const ir = std.definitions.resolveCircuit(name);
-  const behavior = std.behaviors.get(name);
-  if (ir && behavior) return { ir, behavior };
+function stdBehavior(name: string): Behavior | undefined {
+  const behavior = getStdLibrary().behaviors.get(name);
+  if (behavior) return behavior;
   const bits = PER_WIDTH.exec(name);
   if (!bits) return undefined;
   let built = perWidth.get(name);
   if (!built) {
     const width = Number(bits[2]);
-    const internals = internalsOf(
+    built = internalsOf(
       bits[1] === 'Splitter' ? Splitter({ width }) : Combiner({ width }),
-    );
-    if (!internals.behavior) return undefined;
-    built = { ir: internals.ir, behavior: internals.behavior };
+    ).behavior;
+    if (!built) return undefined;
     perWidth.set(name, built);
   }
   return built;
@@ -121,28 +95,7 @@ function stdPrimitive(name: string): StdPrimitive | undefined {
  */
 export function isStdBehavior(name: string, behavior: Behavior | undefined): boolean {
   if (!behavior) return false;
-  const std = stdPrimitive(name)?.behavior;
+  const std = stdBehavior(name);
   if (!std) return false;
   return behavior === std || definitionKey(behavior) === definitionKey(std);
-}
-
-/**
- * Std's behavior for the primitives in `definitions` that are std's own, for a
- * caller that has IR but no behavior (the editor page's Verilog export). A
- * primitive is std's when the user's source didn't define it (`userNames`) and
- * its IR matches std's definition of that name, widths aside. Anything else
- * gets no behavior, so it exports as unsupported rather than as std's logic.
- */
-export function stdBehaviorsFor(
-  definitions: CircuitDefinitions,
-  userNames: ReadonlySet<string>,
-): BehaviorTable {
-  const behaviors = new Map<string, Behavior>();
-  for (const name of definitions.getAllPrimitiveNames()) {
-    if (userNames.has(name)) continue;
-    const ir = definitions.resolveCircuit(name);
-    const std = stdPrimitive(name);
-    if (ir && std && shapeKey(ir) === shapeKey(std.ir)) behaviors.set(name, std.behavior);
-  }
-  return behaviors;
 }

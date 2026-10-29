@@ -2,8 +2,12 @@
  * A behavior function that never returns must not freeze the page or the
  * sandbox, and a long request that keeps working must not be taken for one.
  * Builds the sandbox, serves it on :4310 and a bare parent page on :4311,
- * then drives it in headless Chromium: first with the slot messages
- * `useSandbox` sends, then with the session messages of `@simten/sandbox`.
+ * then drives it in headless Chromium: first with the slot messages, then
+ * with the session messages of `@simten/sandbox`.
+ *
+ * The slot checks stay while the sandbox answers slot messages. Kept: published
+ * @simten/embed 0.5.x / @simten/ui 0.15.x send these; removed at the release
+ * with the sandbox.simten.dev route (decision 0008, #424).
  *
  *   pnpm --filter @simten/sandbox-app test:e2e
  */
@@ -18,7 +22,7 @@ const APP = join(import.meta.dirname, '..');
 const SANDBOX = 'http://localhost:4310';
 const PARENT_PORT = 4311;
 
-// Same transport as useSandbox, minus React.
+// The same iframe and origin checks as `iframeTransport` in `@simten/sandbox`.
 const PARENT_HTML = `<!doctype html><meta charset="utf-8"><body><script>
 const SANDBOX = ${JSON.stringify(SANDBOX)};
 const iframe = document.createElement('iframe');
@@ -351,6 +355,10 @@ try {
     (await send({ type: 'compile', compile: 'fib', source: FIBONACCI })).type === 'compiled',
   );
   await send({ type: 'open', session: 'fib-1', compile: 'fib', circuit: 'Fibonacci', history: 10 });
+  // set-input takes `values` only. The single { path, value } form fails, and
+  // the worker keeps answering.
+  const oldSetInput = await send({ type: 'set-input', session: 'fib-1', path: 'reg_a', value: 1 });
+  check('the single set-input form fails', oldSetInput.type === 'failed', show(oldSetInput));
   // The exporter is a chunk of its own, fetched on the first export: it must
   // load under the sandbox's CSP.
   const exported = await send({ type: 'export', compile: 'fib', circuit: 'Fibonacci' });

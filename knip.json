@@ -94,7 +94,6 @@
         "src/canvas/index.ts",
         "src/waveform/WaveformViewer.tsx",
         "src/sandbox/index.ts",
-        "src/sandbox/protocol.ts",
         "src/share/index.ts",
         "src/primitives/{tooltip,resizable,sheet,dialog,button}.tsx",
         "scripts/*.mjs"

@@ -328,15 +328,6 @@ function openSimulation(target: Openable, request: Request<'open'>): Opened {
   return { simulation, ir, library };
 }
 
-/**
- * The paths and values a `set-input` writes. The old `{ path, value }` form
- * becomes a one-entry record, so both forms take the same path through the
- * host. The old form goes in #417 PR 8.
- */
-function inputValues(request: Request<'set-input'>): Record<string, number> {
-  return 'values' in request ? request.values : { [request.path]: request.value };
-}
-
 export class SessionHost {
   private readonly post: (message: HostMessage) => void;
   private readonly execute: (source: string) => ExecuteResult | Promise<ExecuteResult>;
@@ -476,7 +467,7 @@ export class SessionHost {
         simulation.set(request.values);
         return this.updated(session);
       case 'set-input':
-        this.setInputs(session, inputValues(request));
+        this.setInputs(session, request.values);
         return this.updated(session);
       case 'tick':
         await this.slicedTick(session, request.id, request.count);

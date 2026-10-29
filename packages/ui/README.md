@@ -23,12 +23,12 @@ npm install @simten/ui @simten/core react react-dom
 | `@simten/ui/editor/stores` | Zustand stores backing the editor |
 | `@simten/ui/editor/components` | `ClockControls`, `CircuitTabBar`, `CircuitSelector`, `SignalOutputPanel` |
 | `@simten/ui/waveform` | `WaveformViewer` for VCD playback |
-| `@simten/ui/sandbox` | Cross-origin sandbox primitives for running untrusted circuit code |
+| `@simten/ui/sandbox` | `useSimulation` and `SandboxProvider`: simulate a circuit in the cross-origin sandbox |
 | `@simten/ui/share` | Encode/decode share links |
 
 Each subpath has its own entry point with full TypeScript types — pick the smallest set you need.
 
-Looking for `useCircuitSimulator`? It lives in **[`@simten/embed`](https://www.npmjs.com/package/@simten/embed)**, alongside `builtFromIR`.
+Looking for `CircuitEmbed`? It lives in **[`@simten/embed`](https://www.npmjs.com/package/@simten/embed)**.
 
 ## The code editor
 

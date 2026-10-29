@@ -28,8 +28,6 @@ packages/core/src/std/networking.ts (anonymous)
 packages/core/src/std/networking.ts (anonymous)
 packages/core/src/verilog/exporter.ts emitFlatModule
 packages/core/src/verilog/testbench-gen.ts generateTestbench
-packages/embed/src/hooks/useCircuitCompiler.ts (anonymous)
-packages/embed/src/hooks/useCircuitSimulator.ts initSandbox
 packages/mcp/src/lib/vcd-format.ts formatSignals
 packages/mcp/src/lib/vcd-parser.ts handleDirective
 packages/mcp/src/lib/vcd-parser.ts parseVcd

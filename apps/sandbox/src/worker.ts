@@ -1,13 +1,13 @@
 /**
  * Sandbox worker. Runs all user code and owns all simulation state.
  *
- * Two protocols share it until the old one is deleted (#417, PR 8):
- *
  * - Session requests (they name a `session` or a `compile`) go to the
  *   `SessionHost` from `@simten/sandbox/host`: compiles and sessions by id,
  *   history and the auto-run loop in here, large ticks in slices.
- * - Slot requests (the rest) are handled below, as before: one simulator per
- *   slot, history kept as snapshots for the page to name.
+ * - Slot requests (the rest, `protocol-legacy.ts`) are handled below: one
+ *   simulator per slot, history kept as snapshots for the page to name. Kept:
+ *   published @simten/embed 0.5.x / @simten/ui 0.15.x send these; removed at
+ *   the release with the sandbox.simten.dev route (decision 0008, #424).
  *
  * `main.ts` only relays messages and watches for silence: if the worker owes
  * an answer or frames and says nothing for 5s, it's terminated, a new one is
@@ -72,7 +72,8 @@ const GENERATION = Number(self.name) || 0;
 let nextSnapshotId = GENERATION * 2 ** 32 + 1;
 
 // ============================================================================
-// Slots
+// Slots. Kept: published @simten/embed 0.5.x / @simten/ui 0.15.x send these;
+// removed at the release with the sandbox.simten.dev route (decision 0008, #424).
 // ============================================================================
 
 /**
