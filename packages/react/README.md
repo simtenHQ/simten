@@ -77,7 +77,7 @@ To build your own UI, read `state` and call `actions` from your components. See 
 |---|---|
 | `CircuitCanvas` | `simulation`, and how it looks: `height`, `theme`, `layout`, `focus`, `draggable`, `autoLayout`, `onLoadMemory` |
 | `ClockControls` | `simulation`, `showSpeed`, `showScrubber`, `floating`, `chromeless`, `pulseRun` |
-| `WaveformViewer` | `simulation`, `onClose`: the inputs and outputs over the cycles it has seen |
+| `WaveformViewer` | `simulation`, `onClose`: the inputs and outputs over the cycles it has seen, with Save VCD for GTKWave |
 
 Double-clicking a component on the canvas opens its insides as a live view of the same simulation, with breadcrumbs.
 

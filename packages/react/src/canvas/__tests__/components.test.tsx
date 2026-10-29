@@ -156,6 +156,7 @@ describe('WaveformViewer', () => {
     }
     await screen.findByText(/cycles 0 to 3/);
     for (const name of ['en', 'step', 'count']) expect(screen.getByText(name)).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Save VCD' })).toBeTruthy();
     // Ticking back through history moves the cursor and keeps the trace.
     await act(async () => {
       await sim?.actions.stepBack();

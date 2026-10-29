@@ -9,6 +9,9 @@
  * displays). Auto-run reports about 30 times a second, so a fast run skips
  * cycles and each value is held until the next report. Going back in history
  * moves the cursor without redrawing; a reset starts the trace again.
+ *
+ * Save VCD downloads what's on screen as a `.vcd` file for GTKWave or any
+ * other waveform viewer.
  */
 
 import type { CircuitIR } from '@simten/core/internal';
@@ -22,6 +25,7 @@ import {
   useState,
 } from 'react';
 import type { UseSimulationResult } from '../sandbox/useSimulation';
+import { toVcd } from './vcd';
 
 export interface WaveformViewerProps {
   /** What `useSimulation` returned. */
@@ -36,6 +40,7 @@ interface Signal {
   key: string;
   name: string;
   isInput: boolean;
+  width: number;
   values: number[];
 }
 
@@ -44,17 +49,40 @@ const WINDOW = 256;
 const CONTROLS = new Set(['Switch', 'Input']);
 const INDICATORS = new Set(['Led', 'HexDisplay', 'Output']);
 
-/** The circuit's inputs and outputs, as `portValues` keys: the session's top-level controls and indicators. */
-function signalsOf(circuit: CircuitIR): { key: string; name: string; isInput: boolean }[] {
+type PortType = CircuitIR['inputs'][number]['portType'];
+const widthOf = (type: PortType | undefined) => (type?.kind === 'bus' ? type.width : 1);
+
+/** The circuit's inputs and outputs, as `portValues` keys: its ports, and its top-level controls and indicators. */
+function signalsOf(circuit: CircuitIR): Omit<Signal, 'values'>[] {
   const inputs = circuit.nodes
     .filter((n) => CONTROLS.has(n.componentRef))
-    .map((n) => ({ key: `${n.id}.out`, name: n.label ?? n.id, isInput: true }));
+    .map((n) => ({
+      key: `${n.id}.out`,
+      name: n.label ?? n.id,
+      isInput: true,
+      width: widthOf(n.outputs[0]?.portType),
+    }));
   const outputs = circuit.nodes
     .filter((n) => INDICATORS.has(n.componentRef))
-    .map((n) => ({ key: `${n.id}.in`, name: n.label ?? n.id, isInput: false }));
+    .map((n) => ({
+      key: `${n.id}.in`,
+      name: n.label ?? n.id,
+      isInput: false,
+      width: widthOf(n.inputs[0]?.portType),
+    }));
   const ports = [
-    ...circuit.inputs.map((p) => ({ key: `__top__.${p.name}`, name: p.name, isInput: true })),
-    ...circuit.outputs.map((p) => ({ key: `__top__.${p.name}`, name: p.name, isInput: false })),
+    ...circuit.inputs.map((p) => ({
+      key: `__top__.${p.name}`,
+      name: p.name,
+      isInput: true,
+      width: widthOf(p.portType),
+    })),
+    ...circuit.outputs.map((p) => ({
+      key: `__top__.${p.name}`,
+      name: p.name,
+      isInput: false,
+      width: widthOf(p.portType),
+    })),
   ];
   return [
     ...inputs,
@@ -304,6 +332,25 @@ export function WaveformViewer({ simulation, onClose }: WaveformViewerProps): Re
           {state.circuitName ?? ''}
           {ticks > 0 && ` — cycles ${first} to ${first + ticks - 1}`}
         </span>
+        {ticks > 0 && (
+          <button
+            type="button"
+            className="wf-btn"
+            onClick={() => {
+              const name = state.circuitName ?? 'circuit';
+              const blob = new Blob([toVcd(name, first, signals)], { type: 'text/plain' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `${name}.vcd`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+            title={`Save ${state.circuitName ?? 'circuit'}.vcd`}
+          >
+            Save VCD
+          </button>
+        )}
         {onClose && (
           <button
             type="button"
