@@ -4,7 +4,7 @@
 
 `SimulationClient` has one `set` for every input (decision 0010). It takes input port names and the paths of Switch and Input nodes, writes them all before the circuit settles, and rejects the whole call if any key doesn't resolve exactly. `setInput` and `setInputs` are removed. `scan` takes the same keys, and its first parameter is now called `input`.
 
-A session's `initialInputs` take the same keys, and `reset` puts the inputs back there.
+A session's `initialInputs` take the same keys. They are where the inputs sit when the session opens; `reset` returns registers and history to the start and leaves the inputs where they are.
 
 `inProcessSandbox()` from `@simten/sandbox/host` is a `SandboxClient` whose sandbox runs in the same process, for tests. It runs circuit code in the test's process, so use it for circuits you trust.
 

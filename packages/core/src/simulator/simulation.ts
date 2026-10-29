@@ -71,7 +71,11 @@ export interface Simulation<
 
   /** Advance `count` rising clock edges (default 1). On a combinational circuit, settles. */
   tick(count?: number): void;
-  /** Back to cycle 0. Memory contents loaded at build time survive, as flash does. */
+  /**
+   * The reset line: back to cycle 0, registers to their initial values, history
+   * restarted. Memory contents survive, as flash does, and inputs and switches
+   * stay where they are.
+   */
   reset(): void;
 
   /** Where the history cursor is. `{ length: 0, index: -1 }` when history is off. */

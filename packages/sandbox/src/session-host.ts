@@ -285,8 +285,6 @@ interface AutoRun {
 interface HostSession {
   id: SessionId;
   simulation: Simulation;
-  /** Where the inputs start, by `set` key. `reset` puts them back here. */
-  initialInputs: Record<string, number> | null;
   nodes: SimulationNodes;
   library: Library;
   /** Running estimate of one cycle's cost, for slicing; null until the first measurement. */
@@ -300,7 +298,6 @@ interface Opened {
   simulation: Simulation;
   ir: CircuitIR;
   library: Library;
-  initialInputs: Record<string, number> | null;
 }
 
 /**
@@ -342,15 +339,14 @@ function openSimulation(target: Openable, request: Request<'open'>): Opened {
     history: request.history,
     memory: request.memory,
   });
+  // Power-on: the inputs start here, and cycle 0 and history begin with them.
+  // `reset` leaves the inputs where they are, as a reset line does.
   const initialInputs = startingInputs(request, target.ir, ir);
-  if (initialInputs) startFrom(simulation, initialInputs);
-  return { simulation, ir, library, initialInputs };
-}
-
-/** Cycle 0 with the inputs at `initialInputs`: history begins here. */
-function startFrom(simulation: Simulation, initialInputs: Record<string, number>): void {
-  simulation.set(initialInputs);
-  simulation.reset();
+  if (initialInputs) {
+    simulation.set(initialInputs);
+    simulation.reset();
+  }
+  return { simulation, ir, library };
 }
 
 export class SessionHost {
@@ -511,8 +507,7 @@ export class SessionHost {
       case 'seek':
         return this.updated(session, simulation.seek(request.index));
       case 'reset':
-        if (session.initialInputs) startFrom(simulation, session.initialInputs);
-        else simulation.reset();
+        simulation.reset();
         return this.updated(session);
       case 'sample':
         return this.sample(session, request);
@@ -531,11 +526,10 @@ export class SessionHost {
       throw new HostError(`Session '${request.session}' is already open.`);
     }
     const target = await this.findCircuit(request.compile, request.circuit);
-    const { simulation, ir, library, initialInputs } = openSimulation(target, request);
+    const { simulation, ir, library } = openSimulation(target, request);
     const session: HostSession = {
       id: request.session,
       simulation,
-      initialInputs,
       nodes: nodesOf(simulation),
       library,
       msPerCycle: null,

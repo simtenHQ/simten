@@ -401,21 +401,26 @@ const Gate = circuit('Gate', {
     expect(res.state.ports.get('count.in')).toBe(2);
   });
 
-  it('puts the inputs back at initialInputs on reset', async () => {
+  it('starts at initialInputs, and reset leaves the inputs where they are', async () => {
     const { call } = startHost();
     await call({ type: 'compile', compile: 'c1', source: D_LATCH });
-    await call({
-      type: 'open',
-      session: 's1',
-      compile: 'c1',
-      circuit: 'DLatch',
-      history: 5,
-      initialInputs: { d: 1, en: 1 },
-    });
+    const opened = expectType(
+      await call({
+        type: 'open',
+        session: 's1',
+        compile: 'c1',
+        circuit: 'DLatch',
+        history: 5,
+        initialInputs: { d: 1, en: 1 },
+      }),
+      'opened',
+    );
+    expect(opened.state.ports.get('d.out')).toBe(1);
+    // Flip a switch, then reset: a reset line doesn't move the switches.
     await call({ type: 'set', session: 's1', values: { d: 0 } });
     const res = expectType(await call({ type: 'reset', session: 's1' }), 'updated');
-    expect(res.state.ports.get('d.out')).toBe(1);
-    expect(res.state.ports.get('q.in')).toBe(1);
+    expect(res.state.ports.get('d.out')).toBe(0);
+    expect(res.state.cycle).toBe(0);
   });
 });
 
