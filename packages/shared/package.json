@@ -1,5 +1,5 @@
 {
-  "name": "@simten/app-kit",
+  "name": "@simten/shared",
   "version": "0.0.0",
   "private": true,
   "description": "What simten.dev, the game and the embed page share: UI primitives, share links, the Fork button and the theme. Never published.",

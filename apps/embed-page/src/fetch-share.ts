@@ -8,7 +8,7 @@
  * the page calls the share missing.
  */
 
-import { isShareHash } from '@simten/app-kit/share';
+import { isShareHash } from '@simten/shared/share';
 
 type ShareResult =
   | { kind: 'found'; source: string }

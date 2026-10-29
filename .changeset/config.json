@@ -8,7 +8,7 @@
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
   "ignore": [
-    "@simten/app-kit",
+    "@simten/shared",
     "@simten/compiler",
     "@simten/demos",
     "@simten/embed-page",

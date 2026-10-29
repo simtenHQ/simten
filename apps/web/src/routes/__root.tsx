@@ -1,4 +1,4 @@
-import { ShareCircuitProvider } from '@simten/app-kit/fork';
+import { ShareCircuitProvider } from '@simten/shared/fork';
 import {
   createRootRoute,
   HeadContent,

@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@monaco-editor/react": "^4.7.0",
-    "@simten/app-kit": "workspace:*",
+    "@simten/shared": "workspace:*",
     "@simten/core": "workspace:*",
     "@simten/react": "workspace:*",
     "@simten/sandbox": "workspace:*",

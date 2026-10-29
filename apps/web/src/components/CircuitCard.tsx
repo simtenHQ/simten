@@ -8,7 +8,6 @@
  * `SimulationCard` instead.
  */
 
-import { ForkButton } from '@simten/app-kit/fork';
 import type { Circuit, InputKey } from '@simten/core';
 import { circuitToSource } from '@simten/core/internal';
 import {
@@ -17,6 +16,7 @@ import {
   type UseSimulationResult,
   useSimulation,
 } from '@simten/react';
+import { ForkButton } from '@simten/shared/fork';
 import type { CSSProperties, ReactElement } from 'react';
 import { useTheme } from '@/components/ThemeProvider';
 

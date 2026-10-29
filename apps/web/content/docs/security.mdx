@@ -213,7 +213,7 @@ The served content is just the public editor bundle (no secrets); path requests 
 
 ## Automated invariant tests
 
-To prevent accidental re-introduction of unsafe code execution patterns in the main frame, the test suite includes invariant checks that scan all source files in `apps/web/src`, `apps/game/src`, `apps/embed-page/src`, `packages/react/src` and `packages/app-kit/src`:
+To prevent accidental re-introduction of unsafe code execution patterns in the main frame, the test suite includes invariant checks that scan all source files in `apps/web/src`, `apps/game/src`, `apps/embed-page/src`, `packages/react/src` and `packages/shared/src`:
 
 - No `new Function(` calls: the underlying primitive behind all dynamic code execution
 - No imports of `executeCircuitCode` or `executeJsCode`: the core functions that call `new Function()`

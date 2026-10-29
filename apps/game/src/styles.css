@@ -8,14 +8,14 @@
  */
 
 @import 'tailwindcss';
-@import '@simten/app-kit/theme.css';
+@import '@simten/shared/theme.css';
 @import 'tw-animate-css';
 
 /* Tailwind v4 does not scan linked workspace packages, so the utility classes
    inside @simten/react's canvas and node components would never be emitted and
    every node renders collapsed. */
 @source "../../../packages/react/src/**/*.tsx";
-@source "../../../packages/app-kit/src/**/*.tsx";
+@source "../../../packages/shared/src/**/*.tsx";
 @source "./**/*.{ts,tsx}";
 
 /* Served from this app's own public/; a separate origin needs its own copy. */
