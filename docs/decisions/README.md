@@ -13,4 +13,4 @@ Short records of choices that shape the codebase: what was decided, what was rej
 | [0007](0007-server-side-toolchains.md) | Yosys, iverilog, nextpnr and gcc in containers | Accepted |
 | [0008](0008-sandbox-domain.md) | The sandbox on its own domain | Accepted |
 | [0009](0009-simulation-runtime.md) | One simulation, run in the sandbox | Accepted |
-| [0010](0010-public-surface.md) | The public surface: data, input and output in the library; presentation in the apps | Proposed |
+| [0010](0010-public-surface.md) | The public surface: data, input and output in the library; presentation in the apps | Accepted |

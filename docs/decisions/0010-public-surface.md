@@ -1,6 +1,6 @@
 # 0010. The public surface: data, input and output in the library; presentation in the apps
 
-**Status:** Proposed. Lands before the first release after #418.
+**Status:** Accepted. Lands before the first release after #418.
 
 ## Context
 
@@ -60,6 +60,7 @@ Nothing has been released since these grew, so this is the cheapest time to chan
   - `<SandboxProvider>` with no client gives its subtree a sandbox of its own: a heavy demo gets its own core, and a hang there doesn't restart the rest of the page.
   - It's context, not an option on `useSimulation`, because it has to reach hooks inside components you don't control, such as a component under test. The getting-started docs don't mention it. simten.dev and the game drop their root providers, because the default does the same thing.
 - **This refines 0009 for circuits inside one React app.** 0009 rejected one sandbox shared by every embed on a page, because of cross-talk and shared failure between independent embeds. Independent embeds on other sites are now iframes from Share → Embed, each a separate page with its own sandbox, so that rule still holds for them. Inside one app, the circuits belong to one developer, and the measurement favours sharing.
+- **The message format is internal.** Users get a client, a host gets `@simten/sandbox/host`, and tests get `inProcessSandbox()` from `/host`, a client wired to a host in the same process. Nothing outside the package handles raw messages, so the protocol can change without breaking anyone. `@simten/sandbox/protocol` stays exported only until the release, because the sandbox app's legacy slot handlers need its types, and it goes in the same change that deletes them.
 - **Everything else that's exported has a stated reason:**
   - `@simten/core/internal`, `/bundle` and `/editor-globals` are published because Simten's other packages need them at runtime. They carry no stability promise.
   - `@simten/core/examples` is published because the MCP's `get_started` serves it.
@@ -75,7 +76,7 @@ The surface after this:
 | `@simten/core/std` | the standard components |
 | `@simten/core/verify`, `/verilog`, `/examples` | testbenches, Verilog export and import, example circuits |
 | `@simten/sandbox` | `SandboxClient`, `SimulationClient`, `SandboxError` |
-| `@simten/sandbox/protocol`, `/host` | the message types, the worker side |
+| `@simten/sandbox/host` | the worker side (`SessionHost`, `createRelay`) and `inProcessSandbox()` for tests |
 | `@simten/react` | `useSimulation`, `SandboxProvider`, `useSandboxClient`, `CircuitCanvas`, `ClockControls`, `WaveformViewer` |
 | `@simten/react/code-editor` | `CodeEditor` |
 | `@simten/react/styles.css` | the stylesheet |
