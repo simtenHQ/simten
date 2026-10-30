@@ -176,14 +176,6 @@ export interface Node {
   inputs: PortInstance[];
   outputs: PortInstance[];
   clocks: ClockInstance[];
-  /**
-   * A control or indicator the canvas draws for one of the circuit's own
-   * ports, not a node the author wrote. It is named after the port, so a
-   * switch labelled `a` with a pin labelled `out` would read as `a.out` when
-   * `a` in the source is the port itself. Marked so the renderer can leave its
-   * pins unlabelled.
-   */
-  harness?: boolean;
 }
 
 // ============================================================================

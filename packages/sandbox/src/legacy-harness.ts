@@ -27,6 +27,12 @@ import {
   TOP_LEVEL_NODE,
 } from '@simten/core/internal';
 
+/**
+ * Canvases from before #531 read `harness` to leave a port's switch or lamp
+ * unlabelled. The IR no longer has the field, so it's added here for them.
+ */
+type HarnessNode = Node & { harness?: boolean };
+
 /** A port reference belongs to the circuit's own edge, not to a child node. */
 const isCircuitPort = (nodeId: string) => nodeId === '' || nodeId === TOP_LEVEL_NODE;
 
@@ -57,7 +63,7 @@ export function autoHarness(
 
   const harnessName = `${circuit.name}Demo`;
 
-  const nodes: Node[] = [];
+  const nodes: HarnessNode[] = [];
   const connections: Connection[] = [];
   let connId = 0;
 
