@@ -86,7 +86,8 @@ const Gated = circuit('Gated', {
   ],
 });
 
-/** A port and a Switch with the same name. */
+/** A port and a Switch with the same name, which `circuit()` rejects (#545). */
+const CLASH = `
 const Clash = circuit('Clash', {
   inputs: { a: bit },
   outputs: { y: bit },
@@ -96,7 +97,8 @@ const Clash = circuit('Clash', {
     a.out.to(g.b),
     g.out.to(outputs.y),
   ],
-});
+})
+`;
 
 const clients: SandboxClient[] = [];
 afterEach(() => {
@@ -419,13 +421,13 @@ describe('inputs by name', () => {
     expect(hook.result.current.state.outputs).toEqual({ y: 0 });
   });
 
-  it('says a key that names both a port and a Switch is ambiguous', async () => {
-    const { hook } = render(Clash);
-    await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
-    await act(async () => {
-      await hook.result.current.actions.set({ a: 1 });
-    });
-    expect(hook.result.current.state.error).toMatch(/ambiguous/);
+  it('reports a port and a Switch with the same name as a compile error', async () => {
+    const { hook } = render({ source: CLASH });
+    await waitFor(() =>
+      expect(hook.result.current.state.compileError?.message).toMatch(
+        /Input port 'a' and Switch node 'a' share a name/,
+      ),
+    );
   });
 
   it('starts at initialInputs, and reset leaves a flipped switch where it is', async () => {
