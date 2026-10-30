@@ -11,9 +11,15 @@ import { type CircuitDefinitions, type CircuitIR, TOP_LEVEL_NODE } from '../ir/c
 /** The components `set` writes by path: what a person at the board could change. */
 const CONTROLS = new Set(['Switch', 'Input']);
 
+/** Whether `ir` is the Switch or Input primitive. */
+export function isControlCircuit(ir: CircuitIR): boolean {
+  return CONTROLS.has(ir.name) && !!ir.metadata?.interactiveArg;
+}
+
 /** Whether nodes of primitive type `type` are Switches or Inputs. */
 export function isControlType(type: string, definitions: CircuitDefinitions): boolean {
-  return CONTROLS.has(type) && !!definitions.resolveCircuit(type)?.metadata?.interactiveArg;
+  const ir = definitions.resolveCircuit(type);
+  return ir !== undefined && isControlCircuit(ir);
 }
 
 /**
@@ -59,8 +65,10 @@ const list = (names: Iterable<string>) => [...names].join(', ') || '(none)';
 /**
  * What `name` names for `method`. One name must mean one thing: a port and a
  * Switch or Input with the same name is ambiguous, for `set` as for `get`, so
- * a toggle never reads one and writes the other. A node that isn't a Switch
- * or Input, or a name that is nothing, throws.
+ * a toggle never reads one and writes the other. `circuit()` rejects that
+ * clash when the circuit is defined; the check here covers IR that didn't
+ * come through it (an import, or IR built by hand). A node that isn't a
+ * Switch or Input, or a name that is nothing, throws.
  */
 export function resolveKey(method: 'set' | 'get', name: string, scope: KeyScope): ResolvedKey {
   const isInput = scope.inputs.has(name);

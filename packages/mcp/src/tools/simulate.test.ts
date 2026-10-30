@@ -125,11 +125,11 @@ describe('simulate_circuit inputs', () => {
     expect(result.content[0].text).toContain("inputs: set('lamp'): 'lamp' is a Led, not an input");
   });
 
-  it('rejects a key that names both a port and a Switch', async () => {
+  it('rejects a circuit with a port and a Switch of the same name', async () => {
     const source = LATCH.replace('nodes: { en: Switch', 'nodes: { a: Switch, en: Switch');
     const result = await simulateTool()({ source, ticks: 1, inputs: { a: 1 } });
     expect(result.isError).toBe(true);
-    expect(result.content[0].text).toContain('ambiguous');
+    expect(result.content[0].text).toContain("Input port 'a' and Switch node 'a' share a name");
   });
 
   it('takes numbers only', async () => {

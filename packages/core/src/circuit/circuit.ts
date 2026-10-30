@@ -33,6 +33,7 @@ import type {
   StateBlock,
 } from '../ir/circuit-ir.js';
 import { checkMemoryContents } from '../ir/memory-contents.js';
+import { isControlCircuit } from '../simulator/input-keys.js';
 import { type Behavior, type BehaviorFn, definitionKey, NO_EVAL } from './behavior.js';
 import { isMemDecl, isRegDecl, type MemDecl, normalizePortType } from './bit-bus.js';
 import type {
@@ -364,6 +365,7 @@ function buildCircuit(
 
   const nodes = expandNodes(declaredNodes, errors);
   validateConfig(config, ports, declaredNodes, errors);
+  checkControlNames(ports, nodes, errors);
   const defs = evaluateConnect(config, ports, declaredNodes, errors);
   const connectionDefs = validateNetlist(name, defs, ports, nodes, errors);
   const dependencies = collectDependencies(nodes, errors);
@@ -470,6 +472,29 @@ function validateConfig(
   // onTick without state
   if (config.onTick && !config.state) {
     errors.push('.onTick() requires state to be defined');
+  }
+}
+
+/**
+ * `get` and `set` take a top-level port's name and a Switch or Input's path
+ * alike, so a port and a Switch or Input with the same name would make that
+ * key mean two things (#545). Rejected here, where the circuit is written,
+ * rather than at the first `get` or `set`. Only top-level nodes can clash: a
+ * nested node's path has a dot in it, and other node types aren't keys.
+ */
+function checkControlNames(
+  { inputs, outputs }: Ports,
+  nodes: Record<string, Circuit>,
+  errors: string[],
+): void {
+  for (const [nodeId, comp] of Object.entries(nodes)) {
+    const { ir } = internalsOf(comp);
+    if (!isControlCircuit(ir)) continue;
+    if (!inputs.has(nodeId) && !outputs.has(nodeId)) continue;
+    const role = inputs.has(nodeId) ? 'Input' : 'Output';
+    errors.push(
+      `${role} port '${nodeId}' and ${ir.name} node '${nodeId}' share a name, so get('${nodeId}') and set('${nodeId}') can't tell them apart. Rename one of them, e.g. the node to '${nodeId}${ir.name}'.`,
+    );
   }
 }
 
