@@ -1,5 +1,75 @@
 # @simten/mcp
 
+## 0.11.0
+
+### Minor Changes
+
+- c61c0fe: One way to do each thing, the 0010 API, and MCP SDK v2 (#532, #514). Breaking for clients that pass the old parameters.
+
+  The server moves to `@modelcontextprotocol/server` 2.x. It serves protocol revision 2026-07-28 to clients that ask for it, with cache hints on `tools/list`, and the 2025 revisions to everything else. Node 20 or later.
+
+  Tools reject parameters they don't have, so a call with an old name fails with an error naming it instead of being ignored.
+
+  Migration:
+
+  | Before                                                                                   | After                                                                |
+  | ---------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+  | `simulate_circuit({ show: true, reason })`                                               | `show_circuit({ filePath })`. `simulate_circuit` never paints        |
+  | `show_circuit` `memoryData` keys as glob or substring patterns (`"imem"`, `"cpu0*imem"`) | exact node paths (`"imem"`, `"cpu0.imem"`), as in `simulate_circuit` |
+  | `show_circuit` `inputs` values `true` / `false`                                          | `1` / `0`                                                            |
+  | `run_on_fpga` `timeout_ms`, `no_flash`, `wifi_host`, `full_rebuild`                      | `timeoutMs`, `noFlash`, `wifiHost`, `fullRebuild`                    |
+  | `read_waveform`                                                                          | not listed for now                                                   |
+  | `import ... from '@simten/mcp/schemas'`                                                  | removed; nothing used it                                             |
+
+  `inputs` in `simulate_circuit` and `show_circuit` takes what `simulate(top).set()` takes: input port names and the paths of Switch and `Input` nodes, resolved exactly. A key that names anything else, or both a port and a Switch, is an error. `show_circuit` now applies its `inputs` and `memoryData` on the canvas; before, it accepted them and the page ignored them.
+
+  `run_on_fpga` is listed only when the server runs inside a checkout of the Simten repo, where `hardware/ulx3s` exists. Set `SIMTEN_REPO_ROOT` to point at one from elsewhere. `read_waveform` is hidden for now, until the waveform work in #539 settles.
+
+  `get_grammar`'s examples import everything they use and export every circuit, `get_verify_api` covers `set` for switches and `simulate(top, { memory })`, and the server instructions list `get_verify_api` with the other reference tools.
+
+### Patch Changes
+
+- 90126f4: `@simten/core/internal` no longer exports the MCP tool handlers (`traceSource`, `checkCircuit`, `getPrimitivesHandler`, `exportVCD` and their types); they now live in `@simten/mcp`, the only package that used them.
+
+  `simulate_circuit` now loads `memoryData`. Contents are `{ node: { address: value } }`, the node named by its ID or its path inside the circuit, and a name that matches no node is an error. Before this fix the contents were silently dropped, so every memory read 0.
+
+- f5c8869: `circuit`, `bit` and `bus` come from `@simten/core` only: the `@simten/core/circuit` entry is removed (decision 0010, which replaces decision 0003's freeze of that path). A script that builds and simulates needs one import.
+
+  Saved circuits keep working. The browser never resolved the path: the sandbox strips import lines before running source, so share links and game drafts that use it still run, and the code editor keeps `@simten/core/circuit` as an alias of `@simten/core`, so they still type-check. The MCP's `check_circuit` and `simulate_circuit` still load a file that uses it. A Node project that runs circuit files with `tsx` changes one import.
+
+  The MCP teaches the new path: its instructions, `get_grammar`, and the files `get_started` writes.
+
+  | Before                                                     | After                                              |
+  | ---------------------------------------------------------- | -------------------------------------------------- |
+  | `import { circuit, bit, bus } from '@simten/core/circuit'` | `import { circuit, bit, bus } from '@simten/core'` |
+
+- 43115fb: Drop the unused `zod-to-json-schema` dependency.
+- 38feb78: `Simulation.get` and `set` take only the circuit's own top-level port names, and unknown port names now throw instead of reading 0. Node writes through `nodesOf(sim).set` need the exact node path.
+
+  `simulate_circuit` reports an `inputs` name that isn't a top-level input as an error, and `memoryData` keys must be exact node paths.
+
+- f4c5153: Follows the `@simten/core` renames (#416). The `get_grammar` text now lives in this package, and the verify guide imports `simulate` from `@simten/core` instead of `@simten/core/sim`.
+- 3cb6ede: check_circuit and simulate_circuit now load a circuit file as a real module, the same way verify_circuit loads a testbench, so a file that imports a sub-circuit or a helper from a sibling file works in all three tools. Before, those two tools stripped the imports and failed with errors like "HalfAdder is not defined". A file still needs no project setup for these tools, and an error in it now comes back with its file, line and column. Source text passed as `source`, and a file with no imports at all, still run in-process as before.
+- f2c1ec7: Update `@modelcontextprotocol/sdk` to 1.32 and `zod` to 4.6 to pick up security fixes, and drop the unused `zod-to-json-schema` dependency. Tool schemas and validation are unchanged.
+- Updated dependencies [4f74855]
+- Updated dependencies [d730bbf]
+- Updated dependencies [c7e5768]
+- Updated dependencies [90126f4]
+- Updated dependencies [6052ee8]
+- Updated dependencies [f5c8869]
+- Updated dependencies [f4c5153]
+- Updated dependencies [38feb78]
+- Updated dependencies [f7a6a51]
+- Updated dependencies [1377bd3]
+- Updated dependencies [d3031cb]
+- Updated dependencies [25966b0]
+- Updated dependencies [fdf488d]
+- Updated dependencies [4f74855]
+- Updated dependencies [5dc1429]
+- Updated dependencies [2dbad6f]
+- Updated dependencies [4f74855]
+  - @simten/core@0.23.0
+
 ## 0.10.0
 
 ### Minor Changes
