@@ -21,7 +21,7 @@ const outside = mkdtempSync(join(tmpdir(), 'simten-mcp-outside-'));
 afterAll(() => rmSync(outside, { recursive: true, force: true }));
 
 const TIMEOUT = 60_000;
-const REPO_ONLY = ['read_waveform', 'run_on_fpga'];
+const REPO_ONLY = ['run_on_fpga'];
 const EVERYWHERE = [
   'check_circuit',
   'get_grammar',
@@ -105,7 +105,7 @@ describe('over stdio', () => {
   );
 
   it(
-    'lists run_on_fpga and read_waveform only inside the Simten repo',
+    'lists run_on_fpga only inside the Simten repo, and read_waveform nowhere',
     async () => {
       const inside = await withClient(repoRoot, { pin: '2026-07-28' }, toolNames);
       expect(inside).toEqual([...EVERYWHERE, ...REPO_ONLY].sort());

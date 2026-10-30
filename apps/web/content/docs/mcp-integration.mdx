@@ -53,7 +53,7 @@ Once the MCP server is registered, your assistant has access to these tools:
 
 `simulate_circuit` and `show_circuit` start a run the same way. `inputs` maps input port names, or the paths of Switch and `Input` nodes, to numbers, as `simulate(top).set()` takes them. `memoryData` maps exact node paths to `{ address: value }` contents, as `simulate(top, { memory })` does. A key or path that doesn't resolve is an error.
 
-Inside a checkout of the Simten repo, the server also registers `run_on_fpga` (build, flash and capture a project on a ULX3S board) and `read_waveform` (query an iverilog VCD over a cycle window). Both work on files under `hardware/ulx3s`, so they aren't listed anywhere else.
+Inside a checkout of the Simten repo, the server also registers `run_on_fpga` (build, flash and capture a project on a ULX3S board). It works on files under `hardware/ulx3s`, so it isn't listed anywhere else.
 
 `get_grammar`, `list_components`, and `get_verify_api` exist because clients cap an MCP server's instructions *and each tool description* at 2 KB, too small to inline the circuit API, the component catalog, or the testbench-writing guide. The assistant calls these on demand to get the authoritative part names, signatures, and `simulate()` API rather than guessing.
 

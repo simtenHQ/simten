@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { handleReadWaveform } from './read_waveform.js';
+import { toolOf } from '../__tests__/tools.js';
+import { handleReadWaveform, registerReadWaveformTool } from './read_waveform.js';
 
 const FIX = (name: string) => resolve(__dirname, '../__fixtures__/vcd', name);
 
@@ -140,5 +141,26 @@ describe('handleReadWaveform — output cap exceeded is success, not error', () 
     // tb.clk has hundreds of transitions in [0,100] — far above 200 cap.
     // (Cap may not trigger if the VCD has fewer cycles; spot-check it parsed.)
     expect(p.signals[0].resolved).toBe('tb.clk');
+  });
+});
+
+// Not registered by the server until #539; the registration still has to work.
+describe('read_waveform registration', () => {
+  const call = toolOf((server) => registerReadWaveformTool(server, '/'));
+
+  it('takes camelCase parameters and answers through the handler', async () => {
+    const r = await call({
+      vcdPath: FIX('synthetic-clock.vcd'),
+      signals: ['a'],
+      cycleRange: [0, 4],
+    });
+    expect(r.isError).toBeUndefined();
+    expect(parsePayload(r).cycle_range).toEqual([0, 4]);
+  });
+
+  it('rejects the old snake_case names', async () => {
+    await expect(
+      call({ vcd_path: FIX('synthetic-clock.vcd'), signals: ['a'], cycle_range: [0, 4] }),
+    ).rejects.toThrow();
   });
 });

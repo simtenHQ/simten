@@ -43,7 +43,7 @@ The server needs Node.js 20 or later. It serves MCP protocol revision 2026-07-28
 - `inputs`: `{ key: number }`. A key is an input port name or the path of a Switch or `Input` node (`"d"`, `"cpu.kbd"`), as `simulate(top).set()` takes it. Keys resolve exactly; a key that names anything else, or both a port and a Switch, is an error.
 - `memoryData`: `{ nodePath: { address: value } }`, loaded before cycle 0 as `simulate(top, { memory })` does. A path that names no node is an error.
 
-Inside a checkout of the Simten repo the server also registers `run_on_fpga`, which builds, flashes and captures a project on a ULX3S board, and `read_waveform`, which queries an iverilog VCD over a cycle window. Both work on files under `hardware/ulx3s`, so the server leaves them out anywhere else. It counts as inside the repo when the working directory, or a folder above it, holds `hardware/ulx3s/run_on_fpga.ts` and a `package.json` named `simten`. `SIMTEN_REPO_ROOT` points it at a checkout explicitly.
+Inside a checkout of the Simten repo the server also registers `run_on_fpga`, which builds, flashes and captures a project on a ULX3S board. It works on files under `hardware/ulx3s`, so the server leaves it out anywhere else. It counts as inside the repo when the working directory, or a folder above it, holds `hardware/ulx3s/run_on_fpga.ts` and a `package.json` named `simten`. `SIMTEN_REPO_ROOT` points it at a checkout explicitly.
 
 ## Writing circuits
 

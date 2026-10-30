@@ -9,7 +9,6 @@ import { McpServer } from '@modelcontextprotocol/server';
 import pkg from '../package.json' with { type: 'json' };
 import { registerCheckTool } from './tools/check.js';
 import { registerGetStartedTool } from './tools/get_started.js';
-import { registerReadWaveformTool } from './tools/read_waveform.js';
 import { registerReferenceTools } from './tools/reference.js';
 import { registerRunOnFpgaTool } from './tools/run_on_fpga.js';
 import { registerSetupTool } from './tools/setup.js';
@@ -57,8 +56,10 @@ const TOOLS_LIST_TTL_MS = 60 * 60 * 1000;
 interface SimtenServerOptions {
   /**
    * The Simten repo root, when the server runs inside a checkout. Only then
-   * are `run_on_fpga` and `read_waveform` registered: they work on projects
-   * and VCDs under `hardware/ulx3s`, which an npm install doesn't have.
+   * is `run_on_fpga` registered: it works on projects under `hardware/ulx3s`,
+   * which an npm install doesn't have. (`read_waveform` is the same kind of
+   * tool, and is not registered at all until #539 settles how waveforms are
+   * shown.)
    */
   repoRoot: string | null;
 }
@@ -81,7 +82,6 @@ export function createSimtenServer({ repoRoot }: SimtenServerOptions): McpServer
   registerReferenceTools(server);
   if (repoRoot) {
     registerRunOnFpgaTool(server, repoRoot);
-    registerReadWaveformTool(server, repoRoot);
   }
 
   // The local studio is VIEWER-ONLY: the MCP pushes circuits to the browser for

@@ -1,7 +1,7 @@
 /**
  * Locate the Simten repo, for the tools that only work inside it.
  *
- * `run_on_fpga` and `read_waveform` drive projects and read VCDs under
+ * `run_on_fpga` and `read_waveform` (unregistered for now, #539) drive projects and read VCDs under
  * `hardware/ulx3s`, which exist only in a checkout of the Simten repo. The
  * server registers them only when it finds one, so an npm user's assistant
  * never lists tools it can't use.

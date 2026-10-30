@@ -110,14 +110,6 @@ Buses wider than 32 bits are the other thing worth knowing about before you impo
 [Buses wider than 32 bits don't simulate](#buses-wider-than-32-bits-dont-simulate) below. It is why
 `picorv32` needs `ENABLE_COUNTERS=0` to run, and why bit-serial designs like SERV sail through.
 
-## VCD parsing
-
-### `$dumpoff` not handled per spec
-
-The MCP VCD parser (`packages/mcp/src/lib/vcd-parser.ts`) does not yet drive all signals to `x` on `$dumpoff`. Most simulators we trace from (including our own) do not emit `$dumpoff`, so this is rarely observable, but VCD files produced by Icarus Verilog or commercial tools with `$dumpoff` directives will read back missing the `x` transitions.
-
-**How to recognize it:** waveforms re-imported via `read_waveform` show the last-known value across a `$dumpoff` window instead of `x`. **Workaround:** none currently; file an issue if this affects your flow.
-
 ## Sim-only primitives (not synthesizable)
 
 Some stdlib primitives exist for visualisation/debugging and are not part of the Verilog export. They simulate fine, but they will be excluded from any synthesized output. They are marked `meta: { synthesizable: false }` in `@simten/core/std`:

@@ -16,11 +16,11 @@ Migration:
 | `show_circuit` `memoryData` keys as glob or substring patterns (`"imem"`, `"cpu0*imem"`) | exact node paths (`"imem"`, `"cpu0.imem"`), as in `simulate_circuit` |
 | `show_circuit` `inputs` values `true` / `false` | `1` / `0` |
 | `run_on_fpga` `timeout_ms`, `no_flash`, `wifi_host`, `full_rebuild` | `timeoutMs`, `noFlash`, `wifiHost`, `fullRebuild` |
-| `read_waveform` `vcd_path`, `test_name`, `cycle_range`, `clock_signal` | `vcdPath`, `testName`, `cycleRange`, `clockSignal` |
+| `read_waveform` | not listed for now |
 | `import ... from '@simten/mcp/schemas'` | removed; nothing used it |
 
 `inputs` in `simulate_circuit` and `show_circuit` takes what `simulate(top).set()` takes: input port names and the paths of Switch and `Input` nodes, resolved exactly. A key that names anything else, or both a port and a Switch, is an error. `show_circuit` now applies its `inputs` and `memoryData` on the canvas; before, it accepted them and the page ignored them.
 
-`run_on_fpga` and `read_waveform` are listed only when the server runs inside a checkout of the Simten repo, where `hardware/ulx3s` exists. Set `SIMTEN_REPO_ROOT` to point at one from elsewhere.
+`run_on_fpga` is listed only when the server runs inside a checkout of the Simten repo, where `hardware/ulx3s` exists. Set `SIMTEN_REPO_ROOT` to point at one from elsewhere. `read_waveform` is hidden for now, until the waveform work in #539 settles.
 
 `get_grammar`'s examples import everything they use and export every circuit, `get_verify_api` covers `set` for switches and `simulate(top, { memory })`, and the server instructions list `get_verify_api` with the other reference tools.
