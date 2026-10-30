@@ -2,23 +2,21 @@
  * Wire colour across a composite boundary.
  *
  * Edges are projected from the unelaborated circuit, where a composite is one
- * node with ports. `portValues` comes from the flattened netlist, where that
- * boundary no longer exists — a `HalfAdder` named `h1` contributes `h1.x1.out`
- * and `h1.a1.out`, and never `h1.carry`.
+ * node with ports. The session's values come from the flattened netlist, where
+ * that boundary no longer exists — a `HalfAdder` named `h1` contributes
+ * `h1.x1.out` and `h1.a1.out`, and never `h1.carry`.
  *
  * So a wire running from one composite into another had neither endpoint in the
  * map and drew as undefined, while the simulation was carrying a 1 along it.
  * Wires touching a primitive escaped, because that side resolved — which is why
  * only *some* composite wires looked dead, and why this needs a case with a
- * composite at BOTH ends to be a real regression test.
+ * composite at BOTH ends to be a real regression test. A wire reads its value
+ * from the key the projection gives it, so the key is what's checked.
  */
 
-import type { CircuitIR, FlatPortValueMap } from '@simten/core/internal';
+import type { CircuitIR } from '@simten/core/internal';
 import { describe, expect, it } from 'vitest';
-import { projectCircuitToReactFlow } from '../circuit-to-flow';
-
-const TRUE = '#22c55e';
-const UNDEFINED = '#cbd5e1';
+import { projectCircuit } from '../circuit-to-flow';
 
 const halfAdder: CircuitIR = {
   name: 'HalfAdder',
@@ -111,23 +109,19 @@ const library = {
   getAllPrimitiveNames: () => ['Xor', 'And'],
 };
 
-const metadata = {
-  components: { h1: { position: { x: 0, y: 0 } }, h2: { position: { x: 200, y: 0 } } },
-} as never;
+const positions = { h1: { x: 0, y: 0 }, h2: { x: 200, y: 0 } };
 
 describe('a wire between two composites', () => {
-  it('is green when the flattened net behind it carries a 1', () => {
+  it('reads the flattened net behind it', () => {
     // Only the internal net exists — exactly what the simulator produces.
-    const portValues: FlatPortValueMap = new Map([['h1.a1.out', 1]]);
-
-    const { edges } = projectCircuitToReactFlow(top, metadata, library, portValues);
+    const { edges } = projectCircuit(top, positions, library);
     expect(edges).toHaveLength(1);
-    expect(edges[0].style?.stroke).toBe(TRUE);
+    expect(edges[0].data?.keys[0]).toBe('h1.a1.out');
   });
 
-  it('stays undefined when nothing behind it has a value', () => {
-    const { edges } = projectCircuitToReactFlow(top, metadata, library, new Map());
-    expect(edges[0].style?.stroke).toBe(UNDEFINED);
+  it('reads the same net in a drill-down at `cpu`', () => {
+    const { edges } = projectCircuit(top, positions, library, 'cpu');
+    expect(edges[0].data?.keys[0]).toBe('cpu.h1.a1.out');
   });
 
   it('reaches through nested composites to the primitive underneath', () => {
@@ -187,13 +181,8 @@ describe('a wire between two composites', () => {
       getAllPrimitiveNames: () => ['And'],
     };
 
-    const { edges } = projectCircuitToReactFlow(
-      nestedTop,
-      metadata,
-      nestedLibrary,
-      new Map([['m1.i1.g.out', 1]]),
-    );
-    expect(edges[0].style?.stroke).toBe(TRUE);
+    const { edges } = projectCircuit(nestedTop, positions, nestedLibrary);
+    expect(edges[0].data?.keys[0]).toBe('m1.i1.g.out');
   });
 
   it('does not hang on a circuit whose ports feed back on themselves', () => {
@@ -210,6 +199,6 @@ describe('a wire between two composites', () => {
     } as unknown as CircuitIR;
 
     const loopLibrary = { ...library, resolveCircuit: () => looped };
-    expect(() => projectCircuitToReactFlow(top, metadata, loopLibrary, new Map())).not.toThrow();
+    expect(() => projectCircuit(top, positions, loopLibrary)).not.toThrow();
   });
 });

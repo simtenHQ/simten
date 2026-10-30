@@ -33,7 +33,5 @@ packages/mcp/src/lib/vcd-parser.ts parseVcd
 packages/mcp/src/lib/vcd-parser.ts processValueRecord
 packages/mcp/src/server/ws-server.ts (anonymous)
 packages/mcp/src/tools/show.ts (anonymous)
-packages/react/src/canvas/FlowCanvas.tsx (anonymous)
-packages/react/src/canvas/circuit-to-flow.ts projectCircuitToNodes
 packages/sandbox/src/legacy-harness.ts autoHarness
 scripts/check-exports.ts checkPackage

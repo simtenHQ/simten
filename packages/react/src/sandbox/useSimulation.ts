@@ -40,6 +40,7 @@ import {
   type SimulationClientState,
 } from '@simten/sandbox';
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react';
+import { useByValue } from '../lib/useByValue.js';
 import { useSandboxClient } from './SandboxProvider.js';
 
 /** Source text, with the circuit to simulate picked by name or by a function. */
@@ -207,22 +208,6 @@ function outputsOf(circuit: CircuitIR, ports: ReadonlyMap<string, number>): Reco
 function zeroOutputs(circuit: Circuit | null): Record<string, number> {
   if (!circuit) return NO_OUTPUTS;
   return Object.fromEntries(Object.keys(circuit.outputs).map((name) => [name, 0]));
-}
-
-/**
- * `value`, or the one returned before if it's equal by value, so a caller
- * passing an inline object doesn't reopen the session on every render.
- */
-function useByValue<T>(value: T): T {
-  const last = useRef<{ seen: T; stable: T; key: string } | null>(null);
-  if (last.current && last.current.seen === value) return last.current.stable;
-  const key = JSON.stringify(value ?? null);
-  if (last.current && last.current.key === key) {
-    last.current.seen = value;
-    return last.current.stable;
-  }
-  last.current = { seen: value, stable: value, key };
-  return value;
 }
 
 /** The session and what it was opened from. */

@@ -11,7 +11,7 @@ export { InputNode } from './InputNode';
 // Logic / structural
 export { LogicGateNode } from './LogicGateNode';
 export { NicFifoNode } from './NicFifoNode';
-export type { NodeData } from './NodeData';
+export type { NodeData, PixelSource } from './NodeData';
 export { NumericInputNode } from './NumericInputNode';
 // Output / display nodes
 export { OutputNode } from './OutputNode';

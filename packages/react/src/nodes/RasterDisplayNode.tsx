@@ -1,3 +1,4 @@
+import { pixelsOf, usePeripheral } from '../canvas/values';
 import { BaseNode } from './BaseNode';
 import type { NodeData } from './NodeData';
 
@@ -7,7 +8,9 @@ interface RasterDisplayNodeProps {
 }
 
 export function RasterDisplayNode({ data, selected }: RasterDisplayNodeProps) {
-  const pixels = (data.__pixels as number[]) ?? new Array(64).fill(0);
+  const width = typeof data.arguments?.width === 'number' ? data.arguments.width : 8;
+  const height = typeof data.arguments?.height === 'number' ? data.arguments.height : 8;
+  const pixels = pixelsOf(usePeripheral(data.path), width * height);
   const GRID_SIZE = 8;
   const PIXEL_SIZE = 16;
   const PIXEL_GAP = 2;
@@ -23,8 +26,6 @@ export function RasterDisplayNode({ data, selected }: RasterDisplayNodeProps) {
       }))}
       className="min-w-[160px]"
       showPortLabels={data.showPortLabels}
-      onPortClick={data.onPortClick}
-      glowUnconnected={data.glowUnconnected}
     >
       <div className="flex flex-col items-center gap-2">
         <div className="px-2 py-1 text-xs font-medium text-[var(--embed-text-primary)]">

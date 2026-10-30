@@ -58,8 +58,8 @@ describe('pin sizing', () => {
   });
 
   it('spaces tall blocks so they do not overlap', () => {
-    const { components } = computeDagreLayout(circuit);
-    const gap = Math.abs(components.upper.position.y - components.lower.position.y);
+    const positions = computeDagreLayout(circuit);
+    const gap = Math.abs(positions.upper.y - positions.lower.y);
     expect(gap).toBeGreaterThanOrEqual(pinColumnHeight(outputs.length));
   });
 });

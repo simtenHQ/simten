@@ -1,34 +1,23 @@
 /**
- * Circuit to React Flow: turns a circuit's IR and layout metadata into the
- * nodes and edges CircuitCanvas draws. No stores, no caches, no globals;
- * explicit params only.
+ * Circuit to React Flow: turns a circuit, its node positions and the
+ * definitions behind it into the nodes and wires the canvas draws. Values are
+ * not part of it. Each node and wire carries the session key it reads its
+ * value from, and reads it when it renders (`values.ts`), so this runs once
+ * per circuit, not once per update.
  */
 
-import type {
-  BitValue,
-  BusValue,
-  CircuitDefinitions,
-  CircuitIR,
-  FlatPortValueMap,
-  PeripheralValue,
-  PortPath,
-} from '@simten/core/internal';
+import { type CircuitDefinitions, type PortPath, TOP_LEVEL_NODE } from '@simten/core/internal';
 import { hasMadeOf } from '@simten/core/std';
 import type { Edge, Node as ReactFlowNode } from '@xyflow/react';
-import type { NodeData } from '../nodes';
-import type { MetadataState } from './types';
-
-const WIRE_COLORS = {
-  TRUE: '#22c55e',
-  FALSE: '#94a3b8',
-  UNDEFINED: '#cbd5e1',
-};
+import type { NodeData, PixelSource } from '../nodes';
+import type { DrawnCircuit, DrawnNode, Positions } from './types';
 
 /** Buses draw heavier than single bits, as on a schematic. Width isn't shown, only bit vs bus. */
 const WIRE_STROKE = { BIT: 2, BUS: 4 };
 
-function portPathKey(path: PortPath): string {
-  return path.nodeId === '' ? `.${path.portName}` : `${path.nodeId}.${path.portName}`;
+/** What a wire reads: its source's value, or when the session has none there, its target's. */
+export interface WireData extends Record<string, unknown> {
+  keys: [string | undefined, string | undefined];
 }
 
 function getNodeTypeForComponent(
@@ -80,374 +69,266 @@ function getNodeTypeForComponent(
   return 'default';
 }
 
-/**
- * Project Circuit nodes to ReactFlow nodes.
- * Pure function — all state passed explicitly.
- */
-function projectCircuitToNodes(
-  circuit: CircuitIR,
-  metadata: MetadataState,
-  definitions: CircuitDefinitions,
-  portValues?: FlatPortValueMap,
-  peripheralState?: ReadonlyMap<string, PeripheralValue>,
-): ReactFlowNode<NodeData>[] {
-  const reactFlowNodes: ReactFlowNode<NodeData>[] = [];
+/** The pin each kind of control or indicator shows the value of. */
+const SHOWS: Record<string, 'out' | 'in'> = {
+  Switch: 'out',
+  Input: 'out',
+  Led: 'in',
+  HexDisplay: 'in',
+  SevenSegment: 'in',
+};
 
+/**
+ * Where the values of one drawn circuit are in its session. `path` is where
+ * the circuit sits in the session: '' for its top level.
+ */
+class SessionKeys {
+  private readonly prefix: string;
+  private readonly byId: Map<string, DrawnNode>;
+
+  constructor(
+    private readonly circuit: DrawnCircuit,
+    private readonly definitions: CircuitDefinitions,
+    private readonly path: string,
+  ) {
+    this.prefix = path ? `${path}.` : '';
+    this.byId = new Map(circuit.nodes.map((n) => [n.id, n]));
+  }
+
+  /** A node's path in the session. */
+  pathOf(node: DrawnNode): string {
+    return node.path ?? `${this.prefix}${node.id}`;
+  }
+
+  /** The session key that holds the value on one end of a wire, if there is one. */
+  of(end: PortPath): string | undefined {
+    const node = this.byId.get(end.nodeId);
+    if (!node) return undefined;
+    if (node.port !== undefined) return this.ofPort(node);
+    const path = this.pathOf(node);
+    // The circuit drawn as one box is the session's top level, whose ports are `__top__`'s.
+    if (path === '') return `${TOP_LEVEL_NODE}.${end.portName}`;
+    return walk(end.portName, node.componentRef, path, this.definitions, new Set());
+  }
+
+  /**
+   * A port's node reads the port. At the session's top level that's
+   * `__top__.<port>`. Inside a composite the port was flattened away, so it
+   * reads the other end of its first wire into the composite's insides.
+   */
+  private ofPort(node: DrawnNode): string | undefined {
+    if (this.path === '') return `${TOP_LEVEL_NODE}.${node.port}`;
+    for (const c of this.circuit.connections) {
+      const other =
+        c.source.nodeId === node.id ? c.target : c.target.nodeId === node.id ? c.source : null;
+      // An input wired straight to an output has no inside to read.
+      if (!other || this.byId.get(other.nodeId)?.port !== undefined) continue;
+      const key = this.of(other);
+      if (key) return key;
+    }
+    return undefined;
+  }
+}
+
+/**
+ * The session key for `port` of the node at `path`, looking through composite
+ * boundaries.
+ *
+ * The drawing shows the unelaborated circuit, where a composite is one node
+ * with ports. The session's values come from the flattened netlist, where that
+ * boundary has been dissolved: a `HalfAdder` named `h1` has `h1.x1.out` and
+ * `h1.a1.out`, and no `h1.carry` at all. So a wire between two composites had
+ * neither end in the map and drew as undefined while the simulation carried a
+ * good 1 along it.
+ *
+ * This walks inward instead: for an output port, to the internal connection
+ * that drives it; for an input port, to one it feeds. It stops at a primitive,
+ * whose ports the session has. Depth is bounded by nesting, and `seen` stops a
+ * malformed circuit from looping forever.
+ */
+function walk(
+  port: string,
+  componentRef: string,
+  path: string,
+  definitions: CircuitDefinitions,
+  seen: Set<string>,
+): string | undefined {
+  const key = `${path}.${port}`;
+  const inner = definitions.resolveCircuit(componentRef);
+  if (!inner || inner.implementation?.kind === 'primitive') return key;
+  if (seen.has(key)) return undefined;
+  seen.add(key);
+
+  // A circuit's own ports use `nodeId: ''` inside its definition. An output is
+  // driven by an internal source; an input drives internal targets.
+  for (const conn of inner.connections) {
+    const end =
+      conn.target.nodeId === '' && conn.target.portName === port
+        ? conn.source
+        : conn.source.nodeId === '' && conn.source.portName === port
+          ? conn.target
+          : null;
+    const node = end && inner.nodes.find((n) => n.id === end.nodeId);
+    if (!end || !node) continue;
+    const found = walk(end.portName, node.componentRef, `${path}.${node.id}`, definitions, seen);
+    if (found) return found;
+  }
+  return undefined;
+}
+
+/**
+ * Where a Screen reads its pixels: the RAM wired to its `dataIn`, or through a
+ * multiplexer, the RAM on the input its select line picks.
+ */
+function pixelSourceOf(
+  screen: DrawnNode,
+  circuit: DrawnCircuit,
+  keys: SessionKeys,
+): PixelSource | undefined {
+  const driver = (nodeId: string, portName: string) => {
+    const conn = circuit.connections.find(
+      (c) => c.target.nodeId === nodeId && c.target.portName === portName,
+    );
+    return conn && circuit.nodes.find((n) => n.id === conn.source.nodeId);
+  };
+  const ram = (node: DrawnNode | undefined) =>
+    node?.componentRef === 'DualPortRAM' ? keys.pathOf(node) : undefined;
+
+  const source = driver(screen.id, 'dataIn');
+  if (source?.componentRef === 'DualPortRAM') return { memory: keys.pathOf(source) };
+  if (source?.componentRef !== 'Mux') return undefined;
+  const select = keys.of({ nodeId: source.id, portName: 'sel' });
+  if (!select) return undefined;
+  return { select, memories: [ram(driver(source.id, 'in0')), ram(driver(source.id, 'in1'))] };
+}
+
+function projectNode(
+  node: DrawnNode,
+  position: { x: number; y: number },
+  circuit: DrawnCircuit,
+  definitions: CircuitDefinitions,
+  keys: SessionKeys,
+): ReactFlowNode<NodeData> | null {
+  const componentDef = definitions.resolveCircuit(node.componentRef);
+  if (!componentDef) return null;
+
+  const isComposite = componentDef.implementation.kind === 'composite';
+  const shows = SHOWS[node.componentRef];
+  const pin = shows === 'out' ? node.outputs[0] : shows === 'in' ? node.inputs[0] : undefined;
+
+  return {
+    id: node.id,
+    type: getNodeTypeForComponent(
+      node.componentRef,
+      node.inputs.length,
+      node.outputs.length,
+      isComposite,
+    ),
+    position,
+    data: {
+      nodeId: node.id,
+      path: keys.pathOf(node),
+      componentRef: node.componentRef,
+      label: node.label,
+      inputCount: node.inputs.length,
+      outputCount: node.outputs.length,
+      inputNames: node.inputs.map((p) => p.name),
+      outputNames: node.outputs.map((p) => p.name),
+      isComposite,
+      // Eval-only primitives with a gate-level reference build can also be
+      // opened. Kept out of `isComposite` so the node still renders as itself.
+      hasReference: !isComposite && hasMadeOf(node.componentRef),
+      arguments: node.arguments,
+      showPortLabels: node.port === undefined,
+      valueKey: pin && keys.of({ nodeId: node.id, portName: pin.name }),
+      pixelSource: node.componentRef === 'Screen' ? pixelSourceOf(node, circuit, keys) : undefined,
+    },
+    selectable: true,
+    deletable: false,
+  };
+}
+
+/**
+ * Consoles and UARTs nested inside composites, drawn as nodes of their own at
+ * the side, so their text shows on the top-level canvas. `paths` are their
+ * session paths.
+ */
+function consoleNodes(paths: readonly string[]): ReactFlowNode<NodeData>[] {
+  return paths.map((path, index) => {
+    const parts = path.split('.');
+    const shortLabel = parts.length > 1 ? parts.slice(-2).join('.') : path;
+    const isUart = path.toLowerCase().includes('uart');
+    return {
+      id: `__virtual_console_${index}`,
+      type: isUart ? 'uartTxNode' : 'consoleNode',
+      position: { x: 600, y: 50 + index * 250 },
+      data: {
+        nodeId: path,
+        path,
+        componentRef: isUart ? 'UART_TX' : 'Console',
+        label: isUart ? `UART (${shortLabel})` : `Console (${shortLabel})`,
+        inputCount: isUart ? 4 : 2,
+        outputCount: 1,
+        inputNames: isUart ? ['addr', 'write_data', 'mem_read', 'mem_write'] : ['data', 'we'],
+        outputNames: isUart ? ['read_data'] : ['text'],
+      },
+      selected: false,
+      selectable: false,
+      deletable: false,
+    };
+  });
+}
+
+export interface Projection {
+  nodes: ReactFlowNode<NodeData>[];
+  edges: Edge<WireData>[];
+}
+
+/**
+ * The nodes and wires for `circuit`, which sits at `path` in its session.
+ * A node without a position isn't drawn. `consoles` are the session paths of
+ * consoles to draw at the side.
+ */
+export function projectCircuit(
+  circuit: DrawnCircuit,
+  positions: Positions,
+  definitions: CircuitDefinitions,
+  path = '',
+  consoles: readonly string[] = [],
+): Projection {
+  const keys = new SessionKeys(circuit, definitions, path);
+
+  const nodes: ReactFlowNode<NodeData>[] = [];
   for (const node of circuit.nodes) {
-    const nodeMetadata = metadata.components[node.id];
-    if (!nodeMetadata) {
+    const position = positions[node.id];
+    if (!position) {
       console.warn(
         `[projection] node '${node.id}' (${node.componentRef}) has no layout metadata, skipping render`,
       );
       continue;
     }
-
-    const componentDef = definitions.resolveCircuit(node.componentRef);
-    if (!componentDef) continue;
-
-    const inputCount = node.inputs.length;
-    const outputCount = node.outputs.length;
-    const inputNames = node.inputs.map((p) => p.name);
-    const outputNames = node.outputs.map((p) => p.name);
-    const isComposite = componentDef.implementation.kind === 'composite';
-    // Eval-only primitives with a gate-level reference build can also be
-    // opened. Kept out of `isComposite` so the node still renders as itself.
-    const hasReference = !isComposite && hasMadeOf(node.componentRef);
-    const nodeType = getNodeTypeForComponent(
-      node.componentRef,
-      inputCount,
-      outputCount,
-      isComposite,
-    );
-
-    let value: boolean | undefined;
-    let numericValue: number | undefined;
-    let width: number | undefined;
-    let pixels: number[] | undefined;
-    let consoleText: string | undefined;
-    let uartText: string | undefined;
-    let nicState: { txCount: number; rxCount: number; draining: boolean } | undefined;
-
-    if (node.componentRef === 'Switch' || node.componentRef === 'Led') {
-      let resolved = false;
-      if (portValues) {
-        if (node.componentRef === 'Led' && node.inputs.length > 0) {
-          const inputKey = portPathKey({ nodeId: node.id, portName: node.inputs[0].name });
-          const portValue = portValues.get(inputKey);
-          if (portValue !== undefined) {
-            value = Boolean(portValue);
-            resolved = true;
-          }
-        } else if (node.componentRef === 'Switch' && node.outputs.length > 0) {
-          const outputKey = portPathKey({ nodeId: node.id, portName: node.outputs[0].name });
-          const portValue = portValues.get(outputKey);
-          if (portValue !== undefined) {
-            value = Boolean(portValue);
-            resolved = true;
-          }
-        }
-      }
-      if (!resolved && 'value' in node.arguments) {
-        value = Boolean(node.arguments.value);
-      }
-    } else if (node.componentRef === 'Input') {
-      width = typeof node.arguments.width === 'number' ? node.arguments.width : 8;
-      let numResolved = false;
-      if (portValues && node.outputs.length > 0) {
-        const outputKey = portPathKey({ nodeId: node.id, portName: node.outputs[0].name });
-        const portValue = portValues.get(outputKey);
-        if (portValue !== undefined && typeof portValue === 'number') {
-          numericValue = portValue;
-          numResolved = true;
-        }
-      }
-      if (!numResolved) {
-        numericValue = typeof node.arguments.value === 'number' ? node.arguments.value : 0;
-      }
-    } else if (node.componentRef === 'HexDisplay' || node.componentRef === 'SevenSegment') {
-      if (portValues && node.inputs.length > 0) {
-        const inputKey = portPathKey({ nodeId: node.id, portName: node.inputs[0].name });
-        const portValue = portValues.get(inputKey);
-        numericValue = typeof portValue === 'number' ? portValue : 0;
-      }
-    } else if (node.componentRef === 'Screen') {
-      const screenW = (node.arguments.width as number) ?? 8;
-      const screenH = (node.arguments.height as number) ?? 8;
-      const totalPixels = screenW * screenH;
-      pixels = new Array(totalPixels).fill(0);
-
-      if (peripheralState && portValues) {
-        const dataInConnection = Array.from(circuit.connections).find(
-          (conn) => conn.target.nodeId === node.id && conn.target.portName === 'dataIn',
-        );
-        if (dataInConnection) {
-          const sourceNode = circuit.nodes.find((n) => n.id === dataInConnection.source.nodeId);
-          if (sourceNode?.componentRef === 'DualPortRAM') {
-            const ramState = peripheralState.get(sourceNode.id);
-            if (ramState instanceof Map) {
-              for (let addr = 0; addr < totalPixels; addr++) {
-                pixels[addr] = ramState.get(addr) ?? 0;
-              }
-            }
-          } else if (sourceNode?.componentRef === 'Mux') {
-            const selKey = portPathKey({ nodeId: sourceNode.id, portName: 'sel' });
-            const selValue = portValues.get(selKey);
-            const selectedInputPort = selValue === 0 ? 'in0' : 'in1';
-            const muxInputConnection = Array.from(circuit.connections).find(
-              (conn) =>
-                conn.target.nodeId === sourceNode.id && conn.target.portName === selectedInputPort,
-            );
-            if (muxInputConnection) {
-              const ramNode = circuit.nodes.find((n) => n.id === muxInputConnection.source.nodeId);
-              if (ramNode?.componentRef === 'DualPortRAM') {
-                const ramState = peripheralState.get(ramNode.id);
-                if (ramState instanceof Map) {
-                  for (let addr = 0; addr < totalPixels; addr++) {
-                    pixels[addr] = ramState.get(addr) ?? 0;
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    } else if (node.componentRef === 'RasterDisplay') {
-      const rasterW = (node.arguments.width as number) ?? 8;
-      const rasterH = (node.arguments.height as number) ?? 8;
-      const rasterPixels = rasterW * rasterH;
-      pixels = new Array(rasterPixels).fill(0);
-      if (peripheralState) {
-        const displayState = peripheralState.get(node.id);
-        if (displayState instanceof Map) {
-          for (let addr = 0; addr < rasterPixels; addr++) {
-            pixels[addr] = displayState.get(addr) ?? 0;
-          }
-        }
-      }
-    } else if (node.componentRef === 'Console') {
-      if (peripheralState) {
-        const consoleState = peripheralState.get(node.id);
-        if (typeof consoleState === 'string') consoleText = consoleState;
-      }
-    } else if (node.componentRef === 'UART_TX') {
-      if (peripheralState) {
-        const uartState = peripheralState.get(node.id);
-        if (typeof uartState === 'string') uartText = uartState;
-      }
-    } else if (node.componentRef === 'NIC_FIFO') {
-      if (peripheralState) {
-        const s = peripheralState.get(node.id);
-        if (s instanceof Map) {
-          const txWp = s.get(0x2000) ?? 0;
-          const txRp = s.get(0x2001) ?? 0;
-          const rxCount = s.get(0x2012) ?? 0;
-          const draining = (s.get(0x2004) ?? 0) !== 0;
-          nicState = { txCount: txWp - txRp, rxCount, draining };
-        }
-      }
-    }
-
-    reactFlowNodes.push({
-      id: node.id,
-      type: nodeType,
-      position: nodeMetadata.position,
-      data: {
-        nodeId: node.id,
-        componentRef: node.componentRef,
-        label: node.label,
-        value,
-        numericValue,
-        width,
-        inputCount,
-        outputCount,
-        inputNames,
-        outputNames,
-        isComposite,
-        hasReference,
-        harness: node.harness,
-        arguments: node.arguments,
-        __pixels: pixels,
-        __consoleText: consoleText,
-        __uartText: uartText,
-        __nicState: nicState,
-      },
-      selectable: true,
-      deletable: false,
-    });
+    const projected = projectNode(node, position, circuit, definitions, keys);
+    if (projected) nodes.push(projected);
   }
+  nodes.push(...consoleNodes(consoles));
 
-  // Surface nested console/UART nodes
-  if (peripheralState) {
-    const existingNodeIds = new Set(reactFlowNodes.map((n) => n.id));
-    let consoleIndex = 0;
-
-    for (const [nodeId, state] of peripheralState.entries()) {
-      if (existingNodeIds.has(nodeId)) continue;
-      if (typeof state === 'string') {
-        const pathParts = nodeId.split('.');
-        const shortLabel = pathParts.length > 1 ? pathParts.slice(-2).join('.') : nodeId;
-        const isUart = nodeId.toLowerCase().includes('uart');
-
-        reactFlowNodes.push({
-          id: `__virtual_console_${consoleIndex}`,
-          type: isUart ? 'uartTxNode' : 'consoleNode',
-          position: { x: 600, y: 50 + consoleIndex * 250 },
-          data: {
-            nodeId,
-            componentRef: isUart ? 'UART_TX' : 'Console',
-            label: isUart ? `UART (${shortLabel})` : `Console (${shortLabel})`,
-            value: undefined,
-            numericValue: undefined,
-            width: undefined,
-            inputCount: isUart ? 4 : 2,
-            outputCount: 1,
-            inputNames: isUart ? ['addr', 'write_data', 'mem_read', 'mem_write'] : ['data', 'we'],
-            outputNames: isUart ? ['read_data'] : ['text'],
-            __consoleText: isUart ? undefined : state,
-            __uartText: isUart ? state : undefined,
-          },
-          selected: false,
-          selectable: false,
-          deletable: false,
-        });
-        consoleIndex++;
-      }
-    }
-  }
-
-  return reactFlowNodes;
-}
-
-/**
- * The value on a port, looking through composite boundaries.
- *
- * Edges are drawn from the *unelaborated* circuit, where a composite is one
- * node with ports. `portValues` comes from the *flattened* netlist, where that
- * boundary has been dissolved — a `HalfAdder` named `h1` contributes
- * `h1.x1.out` and `h1.a1.out`, and no `h1.carry` at all.
- *
- * So a wire between two composites had neither endpoint in the map and rendered
- * as undefined, even while the simulation was carrying a perfectly good 1 along
- * it. Wires touching a primitive escaped the bug, because the primitive's side
- * of the connection did resolve — which is why only *some* composite wires
- * looked dead.
- *
- * This walks inward instead: for an output port, find the internal connection
- * that drives it; for an input port, find one it feeds. Repeat until the path
- * lands on something the flat map knows about. Depth is bounded by nesting, and
- * `seen` stops a malformed circuit from looping forever.
- */
-export function resolvePortValue(
-  path: PortPath,
-  circuit: CircuitIR,
-  definitions: CircuitDefinitions,
-  portValues: FlatPortValueMap,
-  prefix = '',
-  seen = new Set<string>(),
-): BitValue | BusValue | undefined {
-  const key = prefix ? `${prefix}.${portPathKey(path)}` : portPathKey(path);
-  const direct = portValues.get(key);
-  if (direct !== undefined) return direct;
-
-  if (seen.has(key)) return undefined;
-  seen.add(key);
-
-  const node = circuit.nodes.find((n) => n.id === path.nodeId);
-  if (!node) return undefined;
-
-  const inner = definitions.resolveCircuit(node.componentRef);
-  if (!inner || inner.implementation?.kind === 'primitive') return undefined;
-
-  const innerPrefix = prefix ? `${prefix}.${node.id}` : node.id;
-
-  // A circuit's own ports use `nodeId: ''` inside its definition. An output is
-  // driven by an internal source; an input drives internal targets.
-  for (const conn of inner.connections) {
-    if (conn.target.nodeId === '' && conn.target.portName === path.portName) {
-      const value = resolvePortValue(
-        conn.source,
-        inner,
-        definitions,
-        portValues,
-        innerPrefix,
-        seen,
-      );
-      if (value !== undefined) return value;
-    }
-    if (conn.source.nodeId === '' && conn.source.portName === path.portName) {
-      const value = resolvePortValue(
-        conn.target,
-        inner,
-        definitions,
-        portValues,
-        innerPrefix,
-        seen,
-      );
-      if (value !== undefined) return value;
-    }
-  }
-
-  return undefined;
-}
-
-/**
- * Project Circuit connections to ReactFlow edges.
- * Pure function — no hidden state.
- */
-function projectCircuitToEdges(
-  circuit: CircuitIR,
-  definitions: CircuitDefinitions,
-  portValues?: FlatPortValueMap,
-): Edge[] {
-  const edges: Edge[] = [];
-
-  for (const connection of circuit.connections) {
-    let edgeColor = WIRE_COLORS.UNDEFINED;
-    if (portValues) {
-      const value =
-        resolvePortValue(connection.source, circuit, definitions, portValues) ??
-        resolvePortValue(connection.target, circuit, definitions, portValues);
-      if (value !== undefined) {
-        edgeColor = (typeof value === 'boolean' ? value : value !== 0)
-          ? WIRE_COLORS.TRUE
-          : WIRE_COLORS.FALSE;
-      }
-    }
-
-    edges.push({
+  const edges = circuit.connections.map(
+    (connection): Edge<WireData> => ({
       id: connection.id,
-      type: 'orthogonal',
+      type: 'wire',
       source: connection.source.nodeId,
       target: connection.target.nodeId,
       sourceHandle: `out-${connection.source.portName}`,
       targetHandle: `in-${connection.target.portName}`,
+      data: { keys: [keys.of(connection.source), keys.of(connection.target)] },
       style: {
-        stroke: edgeColor,
         strokeWidth: connection.portType.kind === 'bus' ? WIRE_STROKE.BUS : WIRE_STROKE.BIT,
       },
       animated: false,
       selectable: false,
       deletable: false,
-    });
-  }
+    }),
+  );
 
-  return edges;
-}
-
-/**
- * Main projection function — pure, no side effects.
- */
-export function projectCircuitToReactFlow(
-  circuit: CircuitIR | null,
-  metadata: MetadataState,
-  definitions: CircuitDefinitions,
-  portValues?: FlatPortValueMap,
-  peripheralState?: ReadonlyMap<string, PeripheralValue>,
-) {
-  if (!circuit) return { nodes: [], edges: [] };
-
-  return {
-    nodes: projectCircuitToNodes(circuit, metadata, definitions, portValues, peripheralState),
-    edges: projectCircuitToEdges(circuit, definitions, portValues),
-  };
+  return { nodes, edges };
 }

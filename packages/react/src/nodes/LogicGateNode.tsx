@@ -46,8 +46,6 @@ interface LogicGateNodeProps {
 }
 
 export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
-  const value = data.value ?? false;
-
   const inputPorts: PortConfig[] = data.inputNames.map((name, index) => ({
     name,
     index,
@@ -58,7 +56,8 @@ export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
     name,
     index,
     type: 'output',
-    value: value ? 1 : 0,
+    // A gate's pins don't show its value; the wires out of it do.
+    value: 0,
   }));
 
   const renderGateSymbol = () => {
@@ -114,8 +113,6 @@ export function LogicGateNode({ data, selected }: LogicGateNodeProps) {
       selected={selected}
       className="min-w-[60px]"
       showPortLabels={data.showPortLabels}
-      onPortClick={data.onPortClick}
-      glowUnconnected={data.glowUnconnected}
     >
       <div className="relative flex flex-col items-center gap-1">
         {(data.isComposite || data.hasReference) && <CompositeBadge />}
