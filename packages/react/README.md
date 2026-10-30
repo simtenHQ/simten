@@ -63,7 +63,7 @@ It takes a circuit built on the page, or source text: `useSimulation({ source })
 | `set({ a: 1, d: 0 })` | Set inputs: input ports by name, Switch and Input nodes by path. All are written before the circuit settles |
 | `toggle(name)` | Flip one 1-bit input or switch |
 | `tick(n)`, `run(speed)`, `pause()`, `reset()` | The clock |
-| `restart()` | Start over from power-on: a new session at cycle 0, inputs back at `initialInputs` |
+| `restart()` | The power cycle: back to the state the session opened in, cycle 0, inputs at `initialInputs` |
 | `stepBack()`, `stepForward()`, `seek(i)` | History |
 | `scan(input, port, count)`, `sample(port, count)` | Bulk reads that save round trips |
 | `exportVerilog()`, `recompile()` | Verilog from the same compile; compile source text now |

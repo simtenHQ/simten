@@ -26,6 +26,7 @@ await sim.run(1000); // 1000 cycles a second, in the worker
 | Method | What it does |
 |---|---|
 | `run(speed)`, `pause()` | Auto-run in the worker, which pushes about 30 updates a second. |
+| `restart()` | The power cycle: back to the state the session opened in, with the inputs and memory it opened with. `reset` is the reset line and leaves the inputs where they are. |
 | `sample(port, count)` | Tick `count` times and return a port's value after each tick. |
 | `scan(input, port, count)` | Drive an input through `0..count-1` and read a port each time, without ticking. |
 | `close()` | Free the session in the sandbox. |

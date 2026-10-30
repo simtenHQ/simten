@@ -447,7 +447,7 @@ describe('inputs by name', () => {
   });
 
   it('restarts from power-on, where reset settles a latch on the inputs it was left with', async () => {
-    const { hook } = render({ source: SR_LATCH });
+    const { hook, calls } = render({ source: SR_LATCH });
     await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
     const q = () => hook.result.current.state.portValues?.get('q.in');
     expect(q()).toBe(1);
@@ -464,11 +464,13 @@ describe('inputs by name', () => {
     expect(q()).toBe(1);
     expect(hook.result.current.state.cycle).toBe(0);
     expect(hook.result.current.state.portValues?.get('s.out')).toBe(0);
-    // Same compile, so the canvas keeps the circuit it drew.
+    // The same session, power-cycled in the sandbox: the canvas keeps the circuit it drew.
     expect(hook.result.current.state.circuit).toBe(before);
+    expect(calls.filter((c) => c === 'open')).toHaveLength(1);
+    expect(calls).not.toContain('close');
   });
 
-  it('restarts at initialInputs and closes the session it replaces', async () => {
+  it('restarts at initialInputs, in the same session', async () => {
     const { hook, calls } = render({ source: COUNTER }, { initialInputs: { en: 1 } });
     await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
     await act(async () => {
@@ -479,8 +481,8 @@ describe('inputs by name', () => {
     });
     expect(hook.result.current.state.outputs).toEqual({ count: 1 });
     expect(hook.result.current.state.cycle).toBe(1);
-    expect(calls.filter((c) => c === 'open')).toHaveLength(2);
-    expect(calls.filter((c) => c === 'close')).toHaveLength(1);
+    expect(calls.filter((c) => c === 'open')).toHaveLength(1);
+    expect(calls).not.toContain('close');
   });
 
   it('types set, toggle and outputs from a circuit built on the page', async () => {

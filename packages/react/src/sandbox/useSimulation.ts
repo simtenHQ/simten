@@ -137,10 +137,10 @@ export interface SimulationActions<Keys extends string = string> {
    */
   reset(): Promise<void>;
   /**
-   * Start over from power-on: a new session on the same compile, at cycle 0,
-   * in place of this one. Unlike `reset`, the inputs go back to
-   * `initialInputs` too, so a latch built from gates settles as it did when
-   * the circuit opened.
+   * The power cycle: back to the state the session opened in, at cycle 0,
+   * with the inputs at `initialInputs`. Unlike `reset`, this reaches the state
+   * a latch built from gates settled in when the circuit opened. Stops an
+   * auto-run.
    */
   restart(): Promise<void>;
   stepBack(): Promise<boolean>;
@@ -222,35 +222,6 @@ interface Live {
   session: SimulationClient;
   compiled: Compiled;
   name: string;
-  /**
-   * What the session runs, kept from the first session on this compile, so a
-   * restart doesn't hand the canvas a new circuit to lay out again.
-   */
-  circuit: CircuitIR;
-  definitions: CircuitDefinitions;
-}
-
-/**
- * Open a new session on the compile and circuit `live` runs and hand it to
- * `adopt`, for `restart`. If something replaced `live` meanwhile (a recompile,
- * another restart), that one wins: the new session is closed, and a failure to
- * open is no longer news.
- */
-async function reopen(
-  sandbox: SandboxClient | null,
-  live: Live,
-  start: Parameters<SandboxClient['open']>[1],
-  isCurrent: () => boolean,
-  adopt: (next: Live) => void,
-): Promise<void> {
-  if (!sandbox) return;
-  try {
-    const session = await sandbox.open({ compiled: live.compiled, circuit: live.name }, start);
-    if (isCurrent()) adopt({ ...live, session });
-    else session.close().catch(ignore);
-  } catch (e) {
-    if (isCurrent()) throw e;
-  }
 }
 
 export function useSimulation<C extends Circuit>(
@@ -370,40 +341,6 @@ export function useSimulation(
 
   // ── Open ─────────────────────────────────────────────────────────────────
 
-  /** How every session starts. */
-  const start = useMemo(
-    () => ({
-      initialInputs: initialInputs as Record<string, number> | undefined,
-      history,
-      memory,
-    }),
-    [initialInputs, history, memory],
-  );
-  /** For `restart`, which opens a session outside the effect. */
-  const startRef = useRef(start);
-  startRef.current = start;
-
-  /** Make `next` the open session, closing the one it replaces. */
-  const adopt = useCallback(
-    (next: Live) => {
-      const previous = liveRef.current;
-      liveRef.current = next;
-      setLive(next);
-      setActionError(null);
-      setOpenError(null);
-      // Closing also stops the old session's auto-run.
-      previous?.session.close().catch(ignore);
-      releaseExcept(next.compiled);
-      if (pendingRun.current !== null) {
-        next.session.run(pendingRun.current).catch((e: unknown) => {
-          setActionError(e instanceof Error ? e.message : String(e));
-        });
-        pendingRun.current = null;
-      }
-    },
-    [releaseExcept],
-  );
-
   useEffect(() => {
     if (!client || !compiled) return;
     if (compiledIn.current.get(compiled) !== client) return;
@@ -413,7 +350,11 @@ export function useSimulation(
       return;
     }
     const name = target.name;
-    const opening = client.open({ compiled, circuit: name }, start);
+    const start = initialInputs as Record<string, number> | undefined;
+    const opening = client.open(
+      { compiled, circuit: name },
+      { initialInputs: start, history, memory },
+    );
     let cancelled = false;
     opening.then(
       (session) => {
@@ -421,13 +362,21 @@ export function useSimulation(
           session.close().catch(ignore);
           return;
         }
-        adopt({
-          session,
-          compiled,
-          name,
-          circuit: session.circuit,
-          definitions: session.definitions,
-        });
+        const previous = liveRef.current;
+        const next = { session, compiled, name };
+        liveRef.current = next;
+        setLive(next);
+        setActionError(null);
+        setOpenError(null);
+        // Closing also stops the old session's auto-run.
+        previous?.session.close().catch(ignore);
+        releaseExcept(compiled);
+        if (pendingRun.current !== null) {
+          session.run(pendingRun.current).catch((e: unknown) => {
+            setActionError(e instanceof Error ? e.message : String(e));
+          });
+          pendingRun.current = null;
+        }
       },
       (e: unknown) => {
         if (cancelled || (e instanceof SandboxError && e.code === 'closed')) return;
@@ -437,7 +386,7 @@ export function useSimulation(
     return () => {
       cancelled = true;
     };
-  }, [client, compiled, choiceName, start, adopt]);
+  }, [client, compiled, choiceName, initialInputs, history, memory, releaseExcept]);
 
   // Unmount: close the session and free every compile.
   useEffect(
@@ -476,7 +425,7 @@ export function useSimulation(
     return client.onStatusChange(check);
   }, [client]);
 
-  const definitions = useMemo(() => live?.definitions ?? null, [live]);
+  const definitions = useMemo(() => session?.definitions ?? null, [session]);
   const ports = current?.ports ?? null;
   const beforeFirstState = useMemo(() => zeroOutputs(built), [built]);
   const outputs = useMemo(
@@ -506,7 +455,7 @@ export function useSimulation(
   const cycle = current?.cycle ?? 0;
   const isSequential = session?.isSequential ?? false;
   const isRunning = current?.isRunning ?? false;
-  const simulated = live?.circuit ?? null;
+  const simulated = session?.circuit ?? null;
   const circuitName = live?.name ?? null;
   const circuits = compiled?.circuits ?? NO_CIRCUITS;
   // A new object only when something in it changes, so memos that depend on it hold.
@@ -608,16 +557,7 @@ export function useSimulation(
         return withSession(undefined, ({ session: s }) => s.pause());
       },
       reset: () => withSession(undefined, ({ session: s }) => s.reset()),
-      restart: () =>
-        withSession(undefined, (opened) =>
-          reopen(
-            clientRef.current,
-            opened,
-            startRef.current,
-            () => liveRef.current === opened,
-            adopt,
-          ),
-        ),
+      restart: () => withSession(undefined, ({ session: s }) => s.restart()),
       stepBack: () => withSession(false, ({ session: s }) => s.stepBack()),
       stepForward: () => withSession(false, ({ session: s }) => s.stepForward()),
       seek: (index) => withSession(false, ({ session: s }) => s.seek(index)),
@@ -639,7 +579,7 @@ export function useSimulation(
         if (sandbox && source?.trim()) await compile(sandbox, source);
       },
     };
-  }, [compile, adopt]);
+  }, [compile]);
 
   return useMemo(() => ({ state, actions }), [state, actions]);
 }
