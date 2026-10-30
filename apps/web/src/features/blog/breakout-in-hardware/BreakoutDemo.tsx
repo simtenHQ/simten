@@ -1,3 +1,4 @@
+import { GAME_FOCUS_RING } from '@/lib/game-keys';
 import { useBreakoutSimulator } from './useBreakoutSimulator';
 
 const GRID_W = 32;
@@ -51,7 +52,7 @@ function pixelColor(value: number, index: number): string {
 }
 
 export function BreakoutDemo() {
-  const { sim, pixels, isRunning, setIsRunning, stepFrame, handleReset, sendDirection } =
+  const { sim, pixels, isRunning, setIsRunning, stepFrame, handleReset, sendDirection, keyboard } =
     useBreakoutSimulator();
 
   if (sim.state.error) {
@@ -74,7 +75,11 @@ export function BreakoutDemo() {
   }
 
   return (
-    <div className="rounded-xl border border-gray-700/50 bg-gray-100 dark:bg-gray-900/80 overflow-hidden">
+    <section
+      {...keyboard.props}
+      aria-label="Breakout game. Focus it, then use the left and right arrows to move the paddle."
+      className={`rounded-xl border border-gray-700/50 bg-gray-100 dark:bg-gray-900/80 overflow-hidden ${GAME_FOCUS_RING}`}
+    >
       {/* Keyboard instructions */}
       <div className="hidden sm:flex px-4 py-3 border-b border-gray-700/50 items-center gap-3">
         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -128,7 +133,10 @@ export function BreakoutDemo() {
       {/* Controls bar */}
       <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-100 dark:bg-gray-900/90">
         <button
-          onClick={() => setIsRunning(!isRunning)}
+          onClick={() => {
+            keyboard.focus();
+            setIsRunning(!isRunning);
+          }}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
             isRunning
               ? 'bg-amber-600 hover:bg-amber-500 text-gray-900 dark:text-white'
@@ -154,6 +162,6 @@ export function BreakoutDemo() {
           Cycle {sim.state.cycle.toLocaleString()}
         </span>
       </div>
-    </div>
+    </section>
   );
 }

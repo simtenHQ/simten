@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { GAME_FOCUS_RING } from '@/lib/game-keys';
 import { useSnakeSimulator } from './useSnakeSimulator';
 
 const GRID_SIZE = 8;
@@ -56,8 +57,17 @@ function DPad({ onDirection }: { onDirection: (code: number) => void }) {
 }
 
 export function SnakeDemo() {
-  const { sim, pixels, isRunning, setIsRunning, speed, setSpeed, handleReset, sendDirection } =
-    useSnakeSimulator();
+  const {
+    sim,
+    pixels,
+    isRunning,
+    setIsRunning,
+    speed,
+    setSpeed,
+    handleReset,
+    sendDirection,
+    keyboard,
+  } = useSnakeSimulator();
 
   if (sim.state.error) {
     return (
@@ -79,7 +89,11 @@ export function SnakeDemo() {
   }
 
   return (
-    <div className="rounded-xl border border-gray-700/50 bg-gray-100 dark:bg-gray-900/80 overflow-hidden">
+    <section
+      {...keyboard.props}
+      aria-label="Snake game. Focus it, then use the arrow keys to steer."
+      className={`rounded-xl border border-gray-700/50 bg-gray-100 dark:bg-gray-900/80 overflow-hidden ${GAME_FOCUS_RING}`}
+    >
       {/* Keyboard instructions, hidden on mobile */}
       <div className="hidden sm:flex px-4 py-3 border-b border-gray-700/50 items-center gap-3">
         <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
@@ -133,7 +147,10 @@ export function SnakeDemo() {
       {/* Controls bar */}
       <div className="px-4 py-3 border-t border-gray-700/50 flex flex-wrap items-center gap-3 bg-gray-100 dark:bg-gray-900/90">
         <button
-          onClick={() => setIsRunning(!isRunning)}
+          onClick={() => {
+            keyboard.focus();
+            setIsRunning(!isRunning);
+          }}
           className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
             isRunning
               ? 'bg-amber-600 hover:bg-amber-500 text-gray-900 dark:text-white'
@@ -170,6 +187,6 @@ export function SnakeDemo() {
           Cycle {sim.state.cycle.toLocaleString()}
         </span>
       </div>
-    </div>
+    </section>
   );
 }

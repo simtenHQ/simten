@@ -20,6 +20,7 @@ import { CodeWithHovers } from '@/features/splash/CodeWithHovers';
 // Route + Page
 // ============================================================================
 
+import { GAME_FOCUS_RING } from '@/lib/game-keys';
 import { pageHead, softwareApplicationLd } from '@/lib/seo';
 
 export const Route = createFileRoute('/')({
@@ -876,12 +877,12 @@ const PONG_PX = 12;
 const PONG_GAP = 1;
 
 function PongCard() {
-  const { sim, pixels, isRunning, setIsRunning, sendLeftDirection, sendRightDirection } =
+  const { sim, pixels, isRunning, setIsRunning, sendLeftDirection, sendRightDirection, keyboard } =
     usePongSimulator();
   const total = PONG_GRID * PONG_PX + (PONG_GRID - 1) * PONG_GAP;
 
-  // Tap a key code into both paddles' keyboard inputs. Codes match the values
-  // usePongSimulator listens for on the global keydown.
+  // Tap a key code into both paddles' keyboard inputs. Codes match the ones
+  // usePongSimulator sends for W and S.
   const sendKey = useCallback(
     (code: number) => {
       sendLeftDirection(code);
@@ -896,7 +897,11 @@ function PongCard() {
   );
 
   return (
-    <div className="flex flex-col rounded-lg border border-border overflow-hidden bg-card">
+    <section
+      {...keyboard.props}
+      aria-label="Pong game. Focus it, then use W and S or the up and down arrows to move the paddles."
+      className={`flex flex-col rounded-lg border border-border overflow-hidden bg-card ${GAME_FOCUS_RING}`}
+    >
       <div className="h-[320px] sm:h-[360px] flex items-center justify-center bg-black p-4 sm:p-6">
         {sim.state.ready ? (
           <svg
@@ -930,7 +935,10 @@ function PongCard() {
           </div>
           <div className="flex items-center gap-1.5 mt-2">
             <button
-              onClick={() => setIsRunning(!isRunning)}
+              onClick={() => {
+                keyboard.focus();
+                setIsRunning(!isRunning);
+              }}
               disabled={!sim.state.ready}
               className={`px-4 py-1.5 rounded-md text-xs font-semibold shadow-sm transition-colors disabled:opacity-40 ${
                 isRunning
@@ -963,12 +971,12 @@ function PongCard() {
           Read post →
         </Link>
       </div>
-    </div>
+    </section>
   );
 }
 
 function SnakeCard() {
-  const { sim, pixels, isRunning, setIsRunning, sendDirection } = useSnakeSimulator();
+  const { sim, pixels, isRunning, setIsRunning, sendDirection, keyboard } = useSnakeSimulator();
   const total = GRID * PX + (GRID - 1) * GAP;
 
   // Set default direction to right once ready
@@ -981,7 +989,11 @@ function SnakeCard() {
   }, [sim.state.ready, sendDirection]);
 
   return (
-    <div className="flex flex-col rounded-lg border border-border overflow-hidden bg-card">
+    <section
+      {...keyboard.props}
+      aria-label="Snake game. Focus it, then use the arrow keys to steer."
+      className={`flex flex-col rounded-lg border border-border overflow-hidden bg-card ${GAME_FOCUS_RING}`}
+    >
       {/* Preview: square so the grid fills the card at any width */}
       <div className="h-[320px] sm:h-[360px] flex items-center justify-center bg-black p-4 sm:p-6">
         {sim.state.ready ? (
@@ -1017,7 +1029,10 @@ function SnakeCard() {
           </div>
           <div className="flex items-center gap-1.5 mt-2">
             <button
-              onClick={() => setIsRunning(!isRunning)}
+              onClick={() => {
+                keyboard.focus();
+                setIsRunning(!isRunning);
+              }}
               disabled={!sim.state.ready}
               className={`px-4 py-1.5 rounded-md text-xs font-semibold shadow-sm transition-colors disabled:opacity-40 ${
                 isRunning
@@ -1053,6 +1068,6 @@ function SnakeCard() {
           Try in the editor →
         </Link>
       </div>
-    </div>
+    </section>
   );
 }

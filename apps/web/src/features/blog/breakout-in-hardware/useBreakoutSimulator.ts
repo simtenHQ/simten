@@ -1,12 +1,14 @@
 import { useSimulation } from '@simten/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAutoRun } from '@/lib/auto-run';
+import { useGameKeys } from '@/lib/game-keys';
 import { Breakout } from './circuits';
 
 const PIXELS = 512; // 32x16 combinational raster readout
 // ms between game ticks. The ball moves every 4 ticks and the paddle every 2,
 // so a smaller value = faster play. ~35ms → ball ≈ 7 cells/s, paddle ≈ 14.
 const TICK_MS = 35;
+const PADDLE_KEYS: Record<string, number> = { ArrowLeft: 75, ArrowRight: 77 };
 export function useBreakoutSimulator() {
   // `scan_addr`, `keyboard` and `game_en` are input ports the page sets by
   // name. The canvas draws each output as a display, which `scan` reads.
@@ -37,28 +39,24 @@ export function useBreakoutSimulator() {
   }, [state.ready, actions]);
 
   // Paddle input on the top-level `keyboard` bus: 75 = left, 77 = right, 0 = released.
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      const keyMap: Record<string, number> = { ArrowLeft: 75, ArrowRight: 77 };
-      const code = keyMap[e.key];
-      if (code !== undefined) {
-        e.preventDefault();
+  // Live while the demo has focus.
+  const keys = useMemo(
+    () => ({
+      down: (key: string) => {
+        const code = PADDLE_KEYS[key];
+        if (code === undefined) return false;
         void actions.set({ keyboard: code });
-      }
-    };
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
-        e.preventDefault();
+        return true;
+      },
+      up: (key: string) => {
+        if (PADDLE_KEYS[key] === undefined) return false;
         void actions.set({ keyboard: 0 });
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [actions]);
+        return true;
+      },
+    }),
+    [actions],
+  );
+  const keyboard = useGameKeys(keys);
 
   // The sandbox runs the game a step at a time. When a step lands in a wall
   // redraw (the fill FSM, high on `is_filling`, after a death or at power-on),
@@ -96,5 +94,6 @@ export function useBreakoutSimulator() {
     stepFrame,
     handleReset,
     sendDirection,
+    keyboard,
   };
 }

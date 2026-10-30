@@ -1,6 +1,7 @@
 import type { PeripheralValue } from '@simten/core/internal';
 import { useSimulation } from '@simten/react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useGameKeys } from '@/lib/game-keys';
 import { PongSimple } from './circuits';
 
 /** The framebuffer is 16x16, one byte per pixel. */
@@ -21,6 +22,16 @@ function framebuffer(peripherals: ReadonlyMap<string, PeripheralValue>): number[
 
 /** The switches that run the game, on from the start. */
 const ENABLES = ['phaseEnable', 'updateEnable', 'writeEnable'];
+
+/** Each key's code on its paddle's keyboard input; 0 is released. */
+const PADDLE_KEYS: Record<string, number> = {
+  w: 17,
+  W: 17,
+  s: 31,
+  S: 31,
+  ArrowUp: 72,
+  ArrowDown: 80,
+};
 
 export function usePongSimulator() {
   const sim = useSimulation(PongSimple);
@@ -69,53 +80,27 @@ export function usePongSimulator() {
     [nodeIds, actions],
   );
 
-  // Keyboard listener: W/S drive the left paddle, arrows the right
-  useEffect(() => {
-    if (!state.ready) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case 'w':
-        case 'W':
-          sendLeftDirection(17);
-          break;
-        case 's':
-        case 'S':
-          sendLeftDirection(31);
-          break;
-        case 'ArrowUp':
-          e.preventDefault();
-          sendRightDirection(72);
-          break;
-        case 'ArrowDown':
-          e.preventDefault();
-          sendRightDirection(80);
-          break;
-      }
+  // Keyboard, while the demo has focus: W/S drive the left paddle, arrows the right
+  const keys = useMemo(() => {
+    const paddle = (key: string) => {
+      const code = PADDLE_KEYS[key];
+      if (code === undefined) return undefined;
+      return { send: key.startsWith('Arrow') ? sendRightDirection : sendLeftDirection, code };
     };
-
-    const handleKeyUp = (e: KeyboardEvent) => {
-      switch (e.key) {
-        case 'w':
-        case 'W':
-        case 's':
-        case 'S':
-          sendLeftDirection(0);
-          break;
-        case 'ArrowUp':
-        case 'ArrowDown':
-          sendRightDirection(0);
-          break;
-      }
+    return {
+      down: (key: string) => {
+        const hit = paddle(key);
+        hit?.send(hit.code);
+        return hit !== undefined;
+      },
+      up: (key: string) => {
+        const hit = paddle(key);
+        hit?.send(0);
+        return hit !== undefined;
+      },
     };
-
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
-    };
-  }, [state.ready, sendLeftDirection, sendRightDirection]);
+  }, [sendLeftDirection, sendRightDirection]);
+  const keyboard = useGameKeys(keys);
 
   // Pong has no frame sync, so the page asks for whole 14-cycle frames; a worker-run frame lands mid-draw and tears.
   useEffect(() => {
@@ -146,5 +131,6 @@ export function usePongSimulator() {
     handleReset,
     sendLeftDirection,
     sendRightDirection,
+    keyboard,
   };
 }
