@@ -7,8 +7,11 @@
  */
 
 import { describe, expect, it } from 'vitest';
+import { libraryOf } from '../../circuit/behavior.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import { Input, Led, Nand, Register, ROM, Switch } from '../../std/index.js';
+import { primitivePaths } from '../input-keys.js';
 import { simulate } from '../simulate.js';
 import { nodesOf, type Simulation } from '../simulation.js';
 
@@ -46,6 +49,16 @@ const Clash = circuit('SetClash', {
     a.out.to(g.b),
     g.out.to(outputs.y),
   ],
+});
+
+/**
+ * An output and a Switch with the same name. The builder allows it, so `get`
+ * and `set` refuse the name rather than read one and write the other.
+ */
+const OutputClash = circuit('SetOutputClash', {
+  outputs: { y: bit },
+  nodes: { y: Switch, g: Nand },
+  connect: ({ outputs, nodes: { y, g } }) => [y.out.to(g.a, g.b), g.out.to(outputs.y)],
 });
 
 const outputs = (sim: { read(): Record<string, number> }) => sim.read();
@@ -138,6 +151,27 @@ describe('get', () => {
   it('rejects a key that names both a port and a Switch', () => {
     const sim = simulate(Clash);
     expect(() => sim.get('a')).toThrow("get('a'): SetClash has both an input port and a Switch");
+  });
+
+  it('rejects a name that is both an output and a Switch, as set does, so a toggle reads what it writes', () => {
+    const sim = simulate(OutputClash);
+    expect(() => sim.get('y')).toThrow(
+      "get('y'): SetOutputClash has both an output port and a Switch named 'y', so the key is ambiguous. Rename one of them.",
+    );
+    expect(() => sim.set({ y: 1 } as never)).toThrow(
+      "set('y'): SetOutputClash has both an output port and a Switch named 'y'",
+    );
+  });
+});
+
+describe('primitivePaths', () => {
+  it('walks the IR to the node paths and types a simulation has', () => {
+    const sim = simulate(Board);
+    const library = libraryOf(Board);
+    const paths = primitivePaths(internalsOf(Board).ir, library.definitions);
+    expect(paths.get('latch.d')).toBe('Switch');
+    expect(paths.get('kbd')).toBe('Input');
+    for (const [path, type] of paths) expect(nodesOf(sim).primitiveOf(path)).toBe(type);
   });
 });
 

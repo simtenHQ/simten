@@ -9,7 +9,15 @@
  * `set(...)` then `tick()` without awaiting the first is safe.
  */
 
-import type { CircuitDefinitions, CircuitIR, PeripheralValue } from '@simten/core/internal';
+import {
+  type CircuitDefinitions,
+  type CircuitIR,
+  isControlType,
+  type KeyScope,
+  type PeripheralValue,
+  primitivePaths,
+  resolveKey,
+} from '@simten/core/internal';
 import { SandboxError } from './errors.js';
 import type { SessionId, SessionRequest, SessionResponse, SessionUpdate } from './protocol.js';
 
@@ -58,7 +66,6 @@ interface OpenedSession {
 
 /** Auto-run frames per second; the worker pushes one `updated` per frame. */
 const FRAME_RATE = 30;
-const TOP = '__top__';
 const NO_PERIPHERALS: ReadonlyMap<string, PeripheralValue> = new Map();
 
 function fromUpdate(
@@ -85,7 +92,8 @@ export class SimulationClient {
   readonly isSequential: boolean;
 
   private readonly channel: SessionChannel;
-  private readonly outputNames: ReadonlySet<string>;
+  /** What the names `get` takes refer to, resolved as core's `Simulation` resolves them. */
+  private readonly keys: KeyScope;
   private readonly listeners = new Set<() => void>();
   private readonly stopListening: () => void;
   private state: SimulationClientState;
@@ -96,7 +104,18 @@ export class SimulationClient {
     this.definitions = opened.definitions;
     this.isSequential = opened.isSequential;
     this.channel = channel;
-    this.outputNames = new Set(opened.circuit.outputs.map((p) => p.name));
+    let primitives: ReadonlyMap<string, string> | null = null;
+    this.keys = {
+      circuitName: opened.circuit.name,
+      inputs: new Set(opened.circuit.inputs.map((p) => p.name)),
+      outputs: new Set(opened.circuit.outputs.map((p) => p.name)),
+      // Walked on the first read that needs it.
+      primitives: () => {
+        primitives ??= primitivePaths(opened.circuit, opened.definitions);
+        return primitives;
+      },
+      isControl: (type) => isControlType(type, opened.definitions),
+    };
     this.state = fromUpdate(opened.state, 'open', null);
     this.stopListening = channel.listen((event) => this.onEvent(event));
   }
@@ -122,15 +141,13 @@ export class SimulationClient {
     return this.state.history;
   }
 
-  /** Read one top-level output from the last state. Unknown names throw. */
+  /**
+   * Read from the last state, as `Simulation.get` does: an output port, an
+   * input port, or a Switch or Input by path. Any other name throws.
+   */
   get(name: string): number {
-    if (!this.outputNames.has(name)) {
-      const names = [...this.outputNames].join(', ') || '(none)';
-      throw new Error(
-        `get('${name}'): ${this.circuit.name} has no output named '${name}'. Its outputs: ${names}`,
-      );
-    }
-    return this.state.ports.get(`${TOP}.${name}`) ?? 0;
+    const { key } = resolveKey('get', name, this.keys);
+    return this.state.ports.get(key) ?? 0;
   }
 
   /**
