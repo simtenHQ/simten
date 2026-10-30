@@ -17,8 +17,9 @@
  * canvas draws its ports.
  *
  * A failed compile sets `state.compileError` and leaves the last good session
- * running. Source text recompiles 50 ms after it stops changing; the first
- * compile goes at once.
+ * running, and so does a circuit that compiles but fails to open (an eval that
+ * throws as it first settles, say): both are mistakes in the circuit. Source
+ * text recompiles 50 ms after it stops changing; the first compile goes at once.
  *
  * The sandbox is the page-wide one, or the nearest `SandboxProvider`'s.
  */
@@ -75,11 +76,14 @@ export interface CompileDiagnostic {
 export interface SimulationState<Outs extends string = string> {
   /** A session is open and has reported its state. */
   ready: boolean;
-  /** Fatal: the sandbox didn't load, the circuit failed to open, or an action failed. */
+  /** Fatal: the sandbox didn't load or an action failed. */
   error: string | null;
   /** Non-fatal: the sandbox restarted this session at cycle 0. */
   notice: string | null;
-  /** The last compile's error; null on success. The last good session keeps running. */
+  /**
+   * Why the last compile failed, or why its circuit failed to open; null on
+   * success. The last good session keeps running.
+   */
   compileError: CompileDiagnostic | null;
 
   /** The circuit's outputs by name. */
@@ -281,6 +285,8 @@ export function useSimulation(
 
   const [compiled, setCompiled] = useState<Compiled | null>(null);
   const [compileError, setCompileError] = useState<CompileDiagnostic | null>(null);
+  /** Why the last session failed to open, cleared when one opens. */
+  const [openError, setOpenError] = useState<CompileDiagnostic | null>(null);
   const [live, setLive] = useState<Live | null>(null);
   /** The open session for the stable actions, which can't read `live` without changing identity. */
   const liveRef = useRef<Live | null>(null);
@@ -396,6 +402,7 @@ export function useSimulation(
         written.current.clear();
         setLive(next);
         setActionError(null);
+        setOpenError(null);
         // Closing also stops the old session's auto-run.
         previous?.session.close().catch(ignore);
         releaseExcept(compiled);
@@ -408,7 +415,7 @@ export function useSimulation(
       },
       (e: unknown) => {
         if (cancelled || (e instanceof SandboxError && e.code === 'closed')) return;
-        setActionError(e instanceof Error ? e.message : String(e));
+        setOpenError(diagnosticOf(e));
       },
     );
     return () => {
@@ -472,12 +479,14 @@ export function useSimulation(
     [historyLength, historyIndex],
   );
 
+  // A circuit that compiles but won't open is reported like one that won't compile.
+  const circuitError = useMemo(() => compileError ?? openError, [compileError, openError]);
   const closedBySandbox = current?.status === 'closed' ? current.notice : null;
   const state: SimulationState = {
     ready: current !== null && current.status !== 'closed',
     error: unavailable ?? actionError ?? closedBySandbox,
     notice: current?.status === 'restarted' ? current.notice : actionNotice,
-    compileError,
+    compileError: circuitError,
     outputs,
     portValues: ports && ports.size > 0 ? ports : null,
     peripheralState: current?.peripherals ?? NO_PERIPHERALS,
