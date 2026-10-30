@@ -71,6 +71,8 @@ const SLICE_FRAME_RATE = 30;
 const PROBE_CYCLES = 16;
 /** At most one `progressed` heartbeat per this many ms. */
 const HEARTBEAT_MS = 1000;
+/** Where a node's ports put the circuit's own ports, as in `nodePath.port`. */
+const TOP = '__top__';
 /** Primitives `set-input` may write: what a person at the board could change. */
 const INPUT_COMPONENTS = new Set(['Switch', 'Input']);
 
@@ -287,6 +289,8 @@ interface HostSession {
   simulation: Simulation;
   nodes: SimulationNodes;
   library: Library;
+  /** The input port names of the circuit it runs, read back from `__top__`. */
+  inputs: ReadonlySet<string>;
   /** Running estimate of one cycle's cost, for slicing; null until the first measurement. */
   msPerCycle: number | null;
   run: AutoRun | null;
@@ -488,6 +492,9 @@ export class SessionHost {
       case 'set':
         simulation.set(request.values);
         return this.updated(session);
+      case 'toggle':
+        this.toggle(session, request.name);
+        return this.updated(session);
       // Kept for pages deployed before decision 0010; removed at the release (#424).
       case 'set-input':
         this.setLegacyInputs(session, request.values);
@@ -533,6 +540,7 @@ export class SessionHost {
       simulation,
       nodes: nodesOf(simulation),
       library,
+      inputs: new Set(ir.inputs.map((p) => p.name)),
       msPerCycle: null,
       run: null,
       closed: false,
@@ -561,6 +569,22 @@ export class SessionHost {
       history: { ...simulation.history },
       isRunning: session.run !== null,
     };
+  }
+
+  /**
+   * Flip `name` from the value the simulation holds now, not one the page
+   * last saw: the page's copy lags writes still in flight. A key `set` would
+   * reject is rejected the same way, and nothing is written.
+   */
+  private toggle(session: HostSession, name: string): void {
+    const ports = session.nodes.ports();
+    const now = session.inputs.has(name) ? ports.get(`${TOP}.${name}`) : ports.get(`${name}.out`);
+    try {
+      session.simulation.set({ [name]: now === 1 ? 0 : 1 });
+    } catch (e) {
+      const message = e instanceof Error ? e.message : String(e);
+      throw new HostError(message.replace(/^set\(/, 'toggle('));
+    }
   }
 
   /**

@@ -437,6 +437,63 @@ const Gate = circuit('Gate', {
   });
 });
 
+describe('toggle', () => {
+  it('flips a port and a Switch from the value the session holds', async () => {
+    const { call } = await openLatch();
+    const off = expectType(await call({ type: 'toggle', session: 's1', name: 'd' }), 'updated');
+    expect(off.state.ports.get('d.out')).toBe(0);
+    const { call: callCounter } = await openCounter();
+    const on = expectType(
+      await callCounter({ type: 'toggle', session: 's1', name: 'en' }),
+      'updated',
+    );
+    expect(on.state.ports.get('__top__.en')).toBe(1);
+  });
+
+  it('flips twice when two are sent without waiting, so a double click ends where it started', async () => {
+    const { call } = await openLatch();
+    const first = call({ type: 'toggle', session: 's1', name: 'd' });
+    const second = call({ type: 'toggle', session: 's1', name: 'd' });
+    expect(expectType(await first, 'updated').state.ports.get('d.out')).toBe(0);
+    expect(expectType(await second, 'updated').state.ports.get('d.out')).toBe(1);
+  });
+
+  it('rejects a node that is not an input, as set does, and writes nothing', async () => {
+    const { call } = await openLatch();
+    const res = expectType(await call({ type: 'toggle', session: 's1', name: 'n1' }), 'failed');
+    expect(res.error).toMatch(/^toggle\('n1'\): 'n1' is a Nand, not an input/);
+    const missing = expectType(
+      await call({ type: 'toggle', session: 's1', name: 'nope' }),
+      'failed',
+    );
+    expect(missing.error).toMatch(/^toggle\('nope'\)/);
+    const after = expectType(await call({ type: 'set', session: 's1', values: {} }), 'updated');
+    expect(after.state.ports.get('d.out')).toBe(1);
+  });
+
+  it('flips from where reset and history leave the input', async () => {
+    const { call } = await openCounter(10);
+    await call({ type: 'toggle', session: 's1', name: 'en' });
+    await call({ type: 'tick', session: 's1', count: 1 });
+    await call({ type: 'toggle', session: 's1', name: 'en' });
+    await call({ type: 'tick', session: 's1', count: 1 });
+    // History puts the input back where it was at that step: on.
+    await call({ type: 'step-back', session: 's1' });
+    const fromPast = expectType(
+      await call({ type: 'toggle', session: 's1', name: 'en' }),
+      'updated',
+    );
+    expect(fromPast.state.ports.get('__top__.en')).toBe(0);
+    // Reset leaves the input where it is, so the next toggle turns it back on.
+    await call({ type: 'reset', session: 's1' });
+    const afterReset = expectType(
+      await call({ type: 'toggle', session: 's1', name: 'en' }),
+      'updated',
+    );
+    expect(afterReset.state.ports.get('__top__.en')).toBe(1);
+  });
+});
+
 describe('set-input (pages deployed before decision 0010)', () => {
   it('writes every path before the circuit settles', async () => {
     const { call } = await openLatch();

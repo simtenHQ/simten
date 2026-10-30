@@ -219,6 +219,20 @@ describe('useSimulation', () => {
     expect(hook.result.current.actions).toBe(actions);
   });
 
+  it('returns the same result while nothing has changed, so memos on it hold (#409)', async () => {
+    const { hook } = render(SwitchBoard);
+    await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
+    const before = hook.result.current;
+    hook.rerender({ source: SwitchBoard, options: undefined });
+    expect(hook.result.current).toBe(before);
+    expect(hook.result.current.state).toBe(before.state);
+    await act(async () => {
+      await before.actions.toggle('s');
+    });
+    expect(hook.result.current.state).not.toBe(before.state);
+    expect(hook.result.current.actions).toBe(before.actions);
+  });
+
   it('starts a run asked for before the session opened', async () => {
     const { hook, calls } = render({ source: COUNTER });
     act(() => {
@@ -260,7 +274,7 @@ describe('useSimulation', () => {
     expect(calls.filter((c) => c === 'open')).toHaveLength(1);
   });
 
-  it("toggles from the last write, not a pushed state that hasn't caught up", async () => {
+  it("toggles in the sandbox, not from a pushed state that hasn't caught up", async () => {
     const { hook } = render(SwitchBoard);
     await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
     const { actions } = hook.result.current;
@@ -280,6 +294,31 @@ describe('useSimulation', () => {
     });
     expect(hook.result.current.state.portValues?.get('__top__.a')).toBe(0);
     expect(hook.result.current.state.outputs).toEqual({ y: 0 });
+  });
+
+  it('reports a toggle of anything but an input as an error', async () => {
+    const { hook } = render(AndGate);
+    await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
+    await act(async () => {
+      await hook.result.current.actions.toggle('g' as never);
+    });
+    expect(hook.result.current.state.error).toMatch(/^toggle\('g'\): 'g' is a And, not an input/);
+  });
+
+  it('toggles from where stepping back left the input', async () => {
+    const { hook } = render({ source: COUNTER });
+    await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
+    const { actions } = hook.result.current;
+    await act(async () => {
+      await actions.toggle('en');
+      await actions.tick();
+      await actions.toggle('en');
+      await actions.tick();
+      // Back to the step where en was on: the toggle turns it off.
+      await actions.stepBack();
+      await actions.toggle('en');
+    });
+    expect(hook.result.current.state.portValues?.get('__top__.en')).toBe(0);
   });
 
   it('forgets a rejected set, so a toggle flips from the real value', async () => {

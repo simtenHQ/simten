@@ -143,6 +143,16 @@ export class SimulationClient {
     await this.update({ type: 'set', values });
   }
 
+  /**
+   * Flip one input (a port name or a Switch or Input path, as `set` takes)
+   * between 0 and 1. The sandbox reads the value it holds, so toggles sent
+   * back to back without awaiting each flip in turn. Rejects, writing
+   * nothing, for a key `set` would reject.
+   */
+  async toggle(name: string): Promise<void> {
+    await this.update({ type: 'toggle', name });
+  }
+
   /** Advance `count` rising clock edges (default 1), recorded as one history step. */
   async tick(count = 1): Promise<void> {
     await this.update({ type: 'tick', count });
