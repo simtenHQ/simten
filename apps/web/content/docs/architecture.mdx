@@ -214,7 +214,7 @@ In the browser, the page can only set input ports and Switch and Input nodes (`S
 |---------|-------------|
 | `@simten/core` | TypeScript builder, compiler, validator, simulator engine, `Simulation`, environmental state, Verilog export. No UI dependencies. |
 | `@simten/sandbox` | The sandbox without React: `SandboxClient` and `SimulationClient` for pages, and the worker's session host, the iframe's relay and `inProcessSandbox()` for tests. Depends on core. |
-| `@simten/react` | React: `useSimulation`, `SandboxProvider`, `CircuitCanvas`, `ClockControls`, `WaveformViewer`, and the code editor. Depends on core and sandbox. |
+| `@simten/react` | React: `useSimulation`, `SandboxProvider`, `CircuitCanvas`, `ClockControls`, and the code editor. Depends on core and sandbox. |
 | `@simten/mcp` | MCP server for Claude Code integration |
 
 The library gives you data, input and output, and the apps arrange them (decision 0010). The cards around circuits on simten.dev, the embed page's view and the game's dialogs are app code; what the apps share (UI primitives, share links, the Fork button, the theme) is in `@simten/shared`, a private workspace package that isn't published.
@@ -265,7 +265,7 @@ The editor holds the source text and passes it to `useSimulation`. The canvas dr
 | `@simten/core/internal` | `elaborate`, `createEngine`, `createSimulation`, `nodesOf`, `SimulatorEngine`, the IR types (`CircuitIR`), a built circuit's internals (`internalsOf`), libraries of definitions and behavior (`libraryOf`), `executeCircuitCode`, `captureEnvironmentalState`, `restoreEnvironmentalState`: for Simten's own packages, no stability promise |
 | `@simten/sandbox` | `SandboxClient`, `SimulationClient`: the sandbox from any page, no framework |
 | `@simten/sandbox/host` | The worker side (`SessionHost`, `createRelay`) and `inProcessSandbox()` for tests |
-| `@simten/react` | `useSimulation`, `SandboxProvider`, `useSandboxClient`, `CircuitCanvas`, `ClockControls`, `WaveformViewer` |
+| `@simten/react` | `useSimulation`, `SandboxProvider`, `useSandboxClient`, `CircuitCanvas`, `ClockControls` |
 | `@simten/react/code-editor` | `CodeEditor`, `setupSimtenIntellisense`, `useTypeAcquisition`, `registerSimtenThemes`: Monaco with circuit IntelliSense. See [Code Editor](/docs/code-editor) |
 | `@simten/react/styles.css` | The stylesheet, with the theme as CSS variables |
 
