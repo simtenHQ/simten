@@ -395,14 +395,22 @@ async function runCheck(browser: Browser, name: string, check: Check): Promise<b
   }
 }
 
-let servers: ChildProcess[] = [];
+const servers: ChildProcess[] = [];
 process.on('exit', () => stopAll(servers));
 
 if (!args.has('--no-build')) buildApps(['sandbox', 'game', 'web'], env);
-servers = [serveApp('sandbox', 4300, env), serveApp('web', 4301, env), serveApp('game', 4302, env)];
 let failed = 0;
 try {
-  await Promise.all([waitForUrl(SANDBOX), waitForUrl(WEB), waitForUrl(GAME)]);
+  // One at a time: each preview takes the first free inspector port from 9229,
+  // so two starting together can both pick the same one and the second crashes.
+  for (const [app, port, url] of [
+    ['sandbox', 4300, SANDBOX],
+    ['web', 4301, WEB],
+    ['game', 4302, GAME],
+  ] as const) {
+    servers.push(serveApp(app, port, env));
+    await waitForUrl(url);
+  }
   const browser = await chromium.launch();
   for (const [name, check] of CHECKS) {
     if (!(await runCheck(browser, name, check))) failed++;
