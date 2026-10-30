@@ -437,6 +437,93 @@ const Gate = circuit('Gate', {
   });
 });
 
+describe('toggle', () => {
+  it('flips a port and a Switch from the value the session holds', async () => {
+    const { call } = await openLatch();
+    const off = expectType(await call({ type: 'toggle', session: 's1', name: 'd' }), 'updated');
+    expect(off.state.ports.get('d.out')).toBe(0);
+    const { call: callCounter } = await openCounter();
+    const on = expectType(
+      await callCounter({ type: 'toggle', session: 's1', name: 'en' }),
+      'updated',
+    );
+    expect(on.state.ports.get('__top__.en')).toBe(1);
+  });
+
+  it('flips twice when two are sent without waiting, so a double click ends where it started', async () => {
+    const { call } = await openLatch();
+    const first = call({ type: 'toggle', session: 's1', name: 'd' });
+    const second = call({ type: 'toggle', session: 's1', name: 'd' });
+    expect(expectType(await first, 'updated').state.ports.get('d.out')).toBe(0);
+    expect(expectType(await second, 'updated').state.ports.get('d.out')).toBe(1);
+  });
+
+  it("rejects a node that is not an input, with core's message, and writes nothing", async () => {
+    const { call } = await openLatch();
+    const res = expectType(await call({ type: 'toggle', session: 's1', name: 'n1' }), 'failed');
+    expect(res.error).toBe(
+      "get('n1'): 'n1' is a Nand, not a port, Switch or Input. Only ports and Switch and Input nodes can be read.",
+    );
+    const missing = expectType(
+      await call({ type: 'toggle', session: 's1', name: 'nope' }),
+      'failed',
+    );
+    expect(missing.error).toMatch(
+      /^get\('nope'\): DLatch has no port, Switch or Input named 'nope'/,
+    );
+    const after = expectType(await call({ type: 'set', session: 's1', values: {} }), 'updated');
+    expect(after.state.ports.get('d.out')).toBe(1);
+  });
+
+  it('refuses a bus, an input port or an Input node, and writes nothing', async () => {
+    const { call } = startHost();
+    await call({
+      type: 'compile',
+      compile: 'c1',
+      source: `${ADDER}
+const Keyed = circuit('Keyed', {
+  outputs: { y: bus(8) },
+  nodes: { kbd: Input(), add: Add },
+  connect: ({ outputs, nodes: { kbd, add } }) => [kbd.out.to(add.a), add.sum.to(outputs.y)],
+})`,
+    });
+    await call({ type: 'open', session: 's1', compile: 'c1', circuit: 'Add', history: 0 });
+    await call({ type: 'set', session: 's1', values: { a: 5 } });
+    const port = expectType(await call({ type: 'toggle', session: 's1', name: 'a' }), 'failed');
+    expect(port.error).toBe(
+      "toggle('a'): 'a' is 8 bits wide. toggle flips one bit; use set for a bus.",
+    );
+    const after = expectType(await call({ type: 'set', session: 's1', values: {} }), 'updated');
+    expect(after.state.ports.get('__top__.a')).toBe(5);
+
+    await call({ type: 'open', session: 's2', compile: 'c1', circuit: 'Keyed', history: 0 });
+    const node = expectType(await call({ type: 'toggle', session: 's2', name: 'kbd' }), 'failed');
+    expect(node.error).toMatch(/^toggle\('kbd'\): 'kbd' is 8 bits wide/);
+  });
+
+  it('flips from where reset and history leave the input', async () => {
+    const { call } = await openCounter(10);
+    await call({ type: 'toggle', session: 's1', name: 'en' });
+    await call({ type: 'tick', session: 's1', count: 1 });
+    await call({ type: 'toggle', session: 's1', name: 'en' });
+    await call({ type: 'tick', session: 's1', count: 1 });
+    // History puts the input back where it was at that step: on.
+    await call({ type: 'step-back', session: 's1' });
+    const fromPast = expectType(
+      await call({ type: 'toggle', session: 's1', name: 'en' }),
+      'updated',
+    );
+    expect(fromPast.state.ports.get('__top__.en')).toBe(0);
+    // Reset leaves the input where it is, so the next toggle turns it back on.
+    await call({ type: 'reset', session: 's1' });
+    const afterReset = expectType(
+      await call({ type: 'toggle', session: 's1', name: 'en' }),
+      'updated',
+    );
+    expect(afterReset.state.ports.get('__top__.en')).toBe(1);
+  });
+});
+
 describe('set-input (pages deployed before decision 0010)', () => {
   it('writes every path before the circuit settles', async () => {
     const { call } = await openLatch();

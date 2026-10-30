@@ -58,7 +58,7 @@ THE simulate() HANDLE
   s.set({ a: 1, en: 0 });            // drive inputs (numbers): input port names AND Switch/Input node paths
   s.tick();                          // advance one rising clock edge (sequential circuits)
   s.tick(n);                         // advance n edges
-  s.get('portName');                 // read an output port's settled value
+  s.get('portName');                 // read a port's settled value; also takes the Switch/Input paths set takes
   s.read();                          // every output, as { portName: value }
   s.reset();                         // the reset line: cycle 0, registers to initial values; memory and inputs stay
   // Nothing to clean up: a simulation is plain objects.

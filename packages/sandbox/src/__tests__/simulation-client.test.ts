@@ -6,7 +6,7 @@
  */
 
 import { bit, bus, circuit } from '@simten/core';
-import { And } from '@simten/core/std';
+import { And, Switch } from '@simten/core/std';
 import { afterEach, describe, expect, it } from 'vitest';
 import { SandboxError } from '../errors.js';
 import type { SessionRequest, WorkerRequest } from '../protocol.js';
@@ -122,7 +122,9 @@ describe('SimulationClient', () => {
     expect(sim.cycle).toBe(0);
     await sim.reset();
     expect(sim.history).toEqual({ length: 1, index: 0 });
-    expect(() => sim.get('nope')).toThrow("get('nope'): Counter has no output named 'nope'");
+    expect(() => sim.get('nope')).toThrow(
+      "get('nope'): Counter has no port, Switch or Input named 'nope'. Its inputs: en. Its Switches and Inputs: (none). Its outputs: count",
+    );
   });
 
   it('keeps one state object between updates and tells subscribers about each', async () => {
@@ -183,6 +185,27 @@ describe('SimulationClient', () => {
     ]);
   });
 
+  it('get reads inputs and Switches from the last state, by the names set takes', async () => {
+    const { client } = startSandbox();
+    const sim = await openCounter(client);
+    expect(sim.get('en')).toBe(1);
+    expect(sim.get('count')).toBe(0);
+    expect(() => sim.get('reg')).toThrow(
+      "get('reg'): 'reg' is a Register, not a port, Switch or Input.",
+    );
+
+    const compiled = await client.compile(D_LATCH);
+    const latch = await client.open({ compiled, circuit: 'DLatch' });
+    await latch.set({ d: 1 });
+    expect(latch.get('d')).toBe(1);
+    expect(latch.get('en')).toBe(0);
+    await latch.toggle('en');
+    expect(latch.get('en')).toBe(1);
+    expect(() => latch.get('nope')).toThrow(
+      "get('nope'): DLatch has no port, Switch or Input named 'nope'. Its inputs: (none). Its Switches and Inputs: d, en. Its outputs: (none)",
+    );
+  });
+
   it('streams auto-run frames to subscribers and stops on pause', async () => {
     const { client } = startSandbox();
     const sim = await openCounter(client);
@@ -241,6 +264,26 @@ describe('SandboxClient', () => {
     await sim.set({ a: 21, x: 1, z: 1 });
     expect(sim.get('y')).toBe(42);
     expect(sim.get('both')).toBe(1);
+    expect(sim.get('x')).toBe(1);
+  });
+
+  it('get reads a Switch nested in a circuit built on the page', async () => {
+    const { client } = startSandbox();
+    const Panel = circuit('Panel', {
+      outputs: { y: bit },
+      nodes: { sw: Switch, g: And },
+      connect: ({ outputs, nodes: { sw, g } }) => [sw.out.to(g.a, g.b), g.out.to(outputs.y)],
+    });
+    const Board = circuit('Board', {
+      outputs: { y: bit },
+      nodes: { panel: Panel },
+      connect: ({ outputs, nodes: { panel } }) => [panel.y.to(outputs.y)],
+    });
+    const sim = await client.open({ circuit: Board }, { history: 0 });
+    await sim.toggle('panel.sw');
+    expect(sim.get('panel.sw')).toBe(1);
+    expect(sim.get('y')).toBe(1);
+    expect(() => sim.get('panel.g')).toThrow("get('panel.g'): 'panel.g' is a And");
   });
 
   it('exports with the compile’s behavior', async () => {

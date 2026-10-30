@@ -15,10 +15,17 @@
 import type { Library } from '../circuit/behavior.js';
 import type { PortMap } from '../circuit/builder-types.js';
 import { isSequentialCircuit } from '../circuit/is-sequential.js';
-import type { CircuitDefinitions, CircuitIR, MemoryContents } from '../ir/circuit-ir.js';
+import {
+  type CircuitDefinitions,
+  type CircuitIR,
+  type MemoryContents,
+  type PortType,
+  TOP_LEVEL_NODE,
+} from '../ir/circuit-ir.js';
 import { memoryContentsShapeError, memoryContentsToMap } from '../ir/memory-contents.js';
 import { elaborate } from './elaboration.js';
 import { createEngine } from './engine.js';
+import { isControlType, type KeyScope, type ResolvedKey, resolveKey } from './input-keys.js';
 import type { FlatCircuit, SimulatorEngine, SimulatorSnapshot } from './types.js';
 
 // ============================================================================
@@ -64,8 +71,11 @@ export interface Simulation<
    * Switch throws, and then nothing is written.
    */
   set(values: Partial<Record<Keys, number>>): void;
-  /** Read one top-level output port. Unknown names throw. */
-  get<K extends keyof Outs & string>(name: K): number;
+  /**
+   * Read an output port, an input port, or a Switch or Input by path: what
+   * `read` returns, and anything `set` can write. Any other name throws.
+   */
+  get<K extends (keyof Outs & string) | Keys>(name: K): number;
   /** Read every top-level output port. */
   read(): { [K in keyof Outs]: number };
 
@@ -114,6 +124,8 @@ export interface SimulationNodes {
   peripherals(): ReadonlyMap<string, PeripheralValue>;
   /** The primitive type of the node at `path` (`'Switch'`, `'Register'`), or undefined when no node has that path. */
   primitiveOf(path: string): string | undefined;
+  /** What `get` takes `name` to mean, and its width in bits. Throws as `get` does. */
+  resolve(name: string): ResolvedKey & { width: number };
 }
 
 const nodesBySimulation = new WeakMap<Simulation, SimulationNodes>();
@@ -141,8 +153,8 @@ export function createSimulation(
     outputNames: circuit.outputs.map((p) => p.name),
     peripheralNodes: () => peripheralBusNodes(flat, library.definitions),
     primitiveTypes: () => new Map(flat.nodes.map((n) => [n.id, n.primitiveType])),
-    isControl: (type) =>
-      CONTROLS.has(type) && !!library.definitions.resolveCircuit(type)?.metadata?.interactiveArg,
+    isControl: (type) => isControlType(type, library.definitions),
+    portWidths: () => portWidthsOf(flat),
   });
   nodesBySimulation.set(simulation, simulation.nodes);
   const memory = Object.entries(options?.memory ?? {});
@@ -159,12 +171,18 @@ export function createSimulation(
 // Implementation
 // ============================================================================
 
-const TOP = '__top__';
-/** The components `set` writes by path: what a person at the board could change. */
-const CONTROLS = new Set(['Switch', 'Input']);
-
-/** One write `set` resolved a key to. */
-type InputWrite = { port: string; value: number } | { path: string; value: number };
+/** Every top-level port's and node output's width in bits, keyed as the port map is. */
+function portWidthsOf(flat: FlatCircuit): Map<string, number> {
+  const bits = (t: PortType) => (t.kind === 'bus' ? t.width : 1);
+  const widths = new Map<string, number>();
+  for (const p of [...flat.topLevelInputs, ...flat.topLevelOutputs]) {
+    widths.set(`${TOP_LEVEL_NODE}.${p.name}`, bits(p.portType));
+  }
+  for (const node of flat.nodes) {
+    for (const p of node.outputs) widths.set(`${node.id}.${p.name}`, bits(p.portType));
+  }
+  return widths;
+}
 
 interface EngineSimulationOptions {
   isSequential: boolean;
@@ -176,6 +194,7 @@ interface EngineSimulationOptions {
   primitiveTypes: () => ReadonlyMap<string, string>;
   /** Whether nodes of this primitive type are Switches or Inputs. */
   isControl: (primitiveType: string) => boolean;
+  portWidths: () => ReadonlyMap<string, number>;
 }
 
 class EngineSimulation implements Simulation {
@@ -184,7 +203,6 @@ class EngineSimulation implements Simulation {
 
   private readonly engine: SimulatorEngine;
   private readonly historySize: number;
-  private readonly circuitName: string;
   private readonly inputNames: ReadonlySet<string>;
   private readonly outputNames: readonly string[];
   private readonly outputNameSet: ReadonlySet<string>;
@@ -192,7 +210,8 @@ class EngineSimulation implements Simulation {
   private peripheralNodes: ReadonlySet<string> | null = null;
   private readonly findPrimitiveTypes: () => ReadonlyMap<string, string>;
   private primitiveTypes: ReadonlyMap<string, string> | null = null;
-  private readonly isControlType: (primitiveType: string) => boolean;
+  /** What the names `set` and `get` take refer to. */
+  private readonly keys: KeyScope;
 
   private cycleCount = 0;
   /** An input changed since the logic last settled. Reads settle first. */
@@ -204,17 +223,23 @@ class EngineSimulation implements Simulation {
     this.engine = engine;
     this.isSequential = options.isSequential;
     this.historySize = options.historySize;
-    this.circuitName = options.circuitName;
     this.inputNames = new Set(options.inputNames);
     this.outputNames = options.outputNames;
     this.outputNameSet = new Set(options.outputNames);
     this.findPeripheralNodes = options.peripheralNodes;
     this.findPrimitiveTypes = options.primitiveTypes;
-    this.isControlType = options.isControl;
+    this.keys = {
+      circuitName: options.circuitName,
+      inputs: this.inputNames,
+      outputs: this.outputNameSet,
+      primitives: () => this.primitiveTypesOf(),
+      isControl: options.isControl,
+    };
 
     engine.runCombinational();
     this.startHistory();
 
+    let widths: ReadonlyMap<string, number> | null = null;
     this.nodes = {
       set: (path, value) => this.setNode(path, value),
       advance: (count) => this.advance(count),
@@ -225,6 +250,11 @@ class EngineSimulation implements Simulation {
       },
       peripherals: () => this.peripherals(),
       primitiveOf: (path) => this.primitiveOf(path),
+      resolve: (name) => {
+        const resolved = resolveKey('get', name, this.keys);
+        widths ??= options.portWidths();
+        return { ...resolved, width: widths.get(resolved.key) ?? 1 };
+      },
     };
   }
 
@@ -238,28 +268,27 @@ class EngineSimulation implements Simulation {
 
   set(values: Partial<Record<string, number>>): void {
     // Resolve every key before writing any, so a typo leaves the inputs as they were.
-    const writes: InputWrite[] = [];
+    const writes: Array<{ input: ResolvedKey; value: number }> = [];
     for (const [key, value] of Object.entries(values)) {
-      if (value !== undefined) writes.push(this.resolveInput(key, value));
+      if (value !== undefined) writes.push({ input: resolveKey('set', key, this.keys), value });
     }
-    for (const write of writes) {
-      if ('port' in write) this.engine.setInput(write.port, write.value);
-      else this.engine.setNode(write.path, write.value);
+    for (const { input, value } of writes) {
+      if (input.kind === 'port') this.engine.setInput(input.name, value);
+      else if (input.kind === 'path') this.engine.setNode(input.path, value);
     }
     this.dirty = true;
   }
 
   get(name: string): number {
-    if (!this.outputNameSet.has(name)) {
-      throw new Error(this.unknownPortMessage('get', name, 'output', this.outputNames));
-    }
-    return this.nodes.ports().get(`${TOP}.${name}`) ?? 0;
+    const { key } = resolveKey('get', name, this.keys);
+    return this.nodes.ports().get(key) ?? 0;
   }
 
   read(): Record<string, number> {
     const portValues = this.nodes.ports();
     const result: Record<string, number> = {};
-    for (const name of this.outputNames) result[name] = portValues.get(`${TOP}.${name}`) ?? 0;
+    for (const name of this.outputNames)
+      result[name] = portValues.get(`${TOP_LEVEL_NODE}.${name}`) ?? 0;
     return result;
   }
 
@@ -301,45 +330,13 @@ class EngineSimulation implements Simulation {
     this.dirty = false;
   }
 
-  private primitiveOf(path: string): string | undefined {
+  private primitiveTypesOf(): ReadonlyMap<string, string> {
     this.primitiveTypes ??= this.findPrimitiveTypes();
-    return this.primitiveTypes.get(path);
+    return this.primitiveTypes;
   }
 
-  /**
-   * What `set` writes for `key`: the input port of that name, or the Switch or
-   * Input node at that path. Exactly one must match.
-   */
-  private resolveInput(key: string, value: number): InputWrite {
-    const isPort = this.inputNames.has(key);
-    const type = this.primitiveOf(key);
-    const isControl = type !== undefined && this.isControlType(type);
-    if (isPort && isControl) {
-      throw new Error(
-        `set('${key}'): ${this.circuitName} has both an input port and a ${type} named '${key}', so the key is ambiguous. Rename one of them.`,
-      );
-    }
-    if (isPort) return { port: key, value };
-    if (isControl) return { path: key, value };
-    if (type !== undefined) {
-      throw new Error(
-        `set('${key}'): '${key}' is a ${type}, not an input. Only input ports and Switch and Input nodes can be set; load a memory's contents with the memory option.`,
-      );
-    }
-    const names = [...this.inputNames].join(', ') || '(none)';
-    throw new Error(
-      `set('${key}'): ${this.circuitName} has no input port, Switch or Input named '${key}'. Its inputs: ${names}`,
-    );
-  }
-
-  private unknownPortMessage(
-    method: string,
-    name: string,
-    kind: string,
-    valid: readonly string[],
-  ): string {
-    const names = valid.length > 0 ? valid.join(', ') : '(none)';
-    return `${method}('${name}'): ${this.circuitName} has no ${kind} named '${name}'. Its ${kind}s: ${names}`;
+  private primitiveOf(path: string): string | undefined {
+    return this.primitiveTypesOf().get(path);
   }
 
   private setNode(path: string, value: number | MemoryContents): void {

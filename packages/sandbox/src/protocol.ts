@@ -103,6 +103,17 @@ export type SessionRequest =
     }
   | {
       id: string;
+      type: 'toggle';
+      session: SessionId;
+      /**
+       * An input port name or a Switch or Input path, as `set` takes. The
+       * worker reads its value and writes 0 if it was 1, else 1, so toggles
+       * sent back to back each flip what the one before left.
+       */
+      name: string;
+    }
+  | {
+      id: string;
       type: 'set-input';
       session: SessionId;
       /**

@@ -488,6 +488,12 @@ export class SessionHost {
       case 'set':
         simulation.set(request.values);
         return this.updated(session);
+      // Read and write in one step here, where the value lives: the page's
+      // copy lags writes still in flight.
+      case 'toggle':
+        this.requireBit(session, request.name);
+        simulation.set({ [request.name]: simulation.get(request.name) === 1 ? 0 : 1 });
+        return this.updated(session);
       // Kept for pages deployed before decision 0010; removed at the release (#424).
       case 'set-input':
         this.setLegacyInputs(session, request.values);
@@ -561,6 +567,16 @@ export class SessionHost {
       history: { ...simulation.history },
       isRunning: session.run !== null,
     };
+  }
+
+  /** A toggle flips one bit, so a bus is refused rather than set to 0 or 1. */
+  private requireBit(session: HostSession, name: string): void {
+    const { width } = session.nodes.resolve(name);
+    if (width !== 1) {
+      throw new HostError(
+        `toggle('${name}'): '${name}' is ${width} bits wide. toggle flips one bit; use set for a bus.`,
+      );
+    }
   }
 
   /**

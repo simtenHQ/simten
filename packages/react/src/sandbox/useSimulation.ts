@@ -73,7 +73,7 @@ export interface CompileDiagnostic {
   column: number;
 }
 
-/** What the simulation is doing now. A new object on every update. */
+/** What the simulation is doing now. A new object when anything in it changes. */
 export interface SimulationState<Outs extends string = string> {
   /** A session is open and has reported its state. */
   ready: boolean;
@@ -215,24 +215,6 @@ interface Live {
   session: SimulationClient;
   compiled: Compiled;
   name: string;
-  /** The circuit's input port names, which read back from `__top__`. */
-  ports: ReadonlySet<string>;
-}
-
-/**
- * Undo a rejected write's entries in `written`: each key goes back to what was
- * remembered `before`, unless a later write has replaced the value since.
- */
-function restoreWritten(
-  written: Map<string, number>,
-  values: Record<string, number>,
-  before: Map<string, number | undefined>,
-): void {
-  for (const [key, value] of before) {
-    if (written.get(key) !== values[key]) continue;
-    if (value === undefined) written.delete(key);
-    else written.set(key, value);
-  }
 }
 
 export function useSimulation<C extends Circuit>(
@@ -281,13 +263,6 @@ export function useSimulation(
   const speedRef = useRef(speed);
   /** A `run` called before the session opened (a demo that starts running on mount); it starts when it does. */
   const pendingRun = useRef<number | null>(null);
-  /**
-   * Values written with `set` since the session last moved through history,
-   * by the caller's key. `toggle` reads these first: the pushed state lags
-   * behind writes still in flight, so a fast double click would otherwise flip
-   * from the same stale value twice.
-   */
-  const written = useRef(new Map<string, number>());
 
   /** Every compile this hook holds in the sandbox, so each is released once nothing needs it. */
   const held = useRef(new Set<Compiled>());
@@ -381,10 +356,8 @@ export function useSimulation(
           return;
         }
         const previous = liveRef.current;
-        const ports = new Set(target.inputs.map((p) => p.name));
-        const next = { session, compiled, name, ports };
+        const next = { session, compiled, name };
         liveRef.current = next;
-        written.current.clear();
         setLive(next);
         setActionError(null);
         setOpenError(null);
@@ -467,24 +440,56 @@ export function useSimulation(
   // A circuit that compiles but won't open is reported like one that won't compile.
   const circuitError = useMemo(() => compileError ?? openError, [compileError, openError]);
   const closedBySandbox = current?.status === 'closed' ? current.notice : null;
-  const state: SimulationState = {
-    ready: current !== null && current.status !== 'closed',
-    error: unavailable ?? actionError ?? closedBySandbox,
-    notice: current?.status === 'restarted' ? current.notice : actionNotice,
-    compileError: circuitError,
-    outputs,
-    portValues: ports && ports.size > 0 ? ports : null,
-    peripheralState: current?.peripherals ?? NO_PERIPHERALS,
-    cycle: current?.cycle ?? 0,
-    isSequential: session?.isSequential ?? false,
-    isRunning: current?.isRunning ?? false,
-    speed,
-    history: historyView,
-    circuit: session?.circuit ?? null,
-    circuitName: live?.name ?? null,
-    circuits: compiled?.circuits ?? NO_CIRCUITS,
-    definitions,
-  };
+  const ready = current !== null && current.status !== 'closed';
+  const error = unavailable ?? actionError ?? closedBySandbox;
+  const notice = current?.status === 'restarted' ? current.notice : actionNotice;
+  const portValues = ports && ports.size > 0 ? ports : null;
+  const peripheralState = current?.peripherals ?? NO_PERIPHERALS;
+  const cycle = current?.cycle ?? 0;
+  const isSequential = session?.isSequential ?? false;
+  const isRunning = current?.isRunning ?? false;
+  const simulated = session?.circuit ?? null;
+  const circuitName = live?.name ?? null;
+  const circuits = compiled?.circuits ?? NO_CIRCUITS;
+  // A new object only when something in it changes, so memos that depend on it hold.
+  const state = useMemo(
+    (): SimulationState => ({
+      ready,
+      error,
+      notice,
+      compileError: circuitError,
+      outputs,
+      portValues,
+      peripheralState,
+      cycle,
+      isSequential,
+      isRunning,
+      speed,
+      history: historyView,
+      circuit: simulated,
+      circuitName,
+      circuits,
+      definitions,
+    }),
+    [
+      ready,
+      error,
+      notice,
+      circuitError,
+      outputs,
+      portValues,
+      peripheralState,
+      cycle,
+      isSequential,
+      isRunning,
+      speed,
+      historyView,
+      simulated,
+      circuitName,
+      circuits,
+      definitions,
+    ],
+  );
 
   // ── Actions ──────────────────────────────────────────────────────────────
 
@@ -505,12 +510,6 @@ export function useSimulation(
       }
     }
 
-    async function moved(move: Promise<boolean>): Promise<boolean> {
-      const result = await move;
-      written.current.clear();
-      return result;
-    }
-
     function report(e: unknown): void {
       const message = e instanceof Error ? e.message : String(e);
       if (e instanceof SandboxError) {
@@ -525,41 +524,19 @@ export function useSimulation(
       setActionError(message);
     }
 
-    /**
-     * Remember each value before sending it, for `toggle`; see `written`. A
-     * rejected write changed nothing in the sandbox, so put back what was
-     * remembered before it, unless a later write has replaced the value since.
-     */
-    function set(values: Partial<Record<string, number>>): Promise<void> {
-      return withSession(undefined, async ({ session: s }) => {
-        const given: Record<string, number> = {};
-        for (const [key, value] of Object.entries(values)) {
-          if (value !== undefined) given[key] = value;
-        }
-        const before = new Map(Object.keys(given).map((key) => [key, written.current.get(key)]));
-        for (const [key, value] of Object.entries(given)) written.current.set(key, value);
-        try {
-          await s.set(given);
-        } catch (e) {
-          restoreWritten(written.current, given, before);
-          throw e;
-        }
-      });
-    }
-
     return {
-      set,
-      toggle: (name) => {
-        const opened = liveRef.current;
-        if (!opened) return Promise.resolve();
-        // A Switch only changes when the page writes it, so the last write is
-        // its value; the pushed state may not have caught up yet.
-        const ports = opened.session.getState().ports;
-        const now =
-          written.current.get(name) ??
-          (opened.ports.has(name) ? ports.get(`${TOP}.${name}`) : ports.get(`${name}.out`));
-        return set({ [name]: now === 1 ? 0 : 1 });
-      },
+      set: (values) =>
+        withSession(undefined, ({ session: s }) => {
+          const given: Record<string, number> = {};
+          for (const [key, value] of Object.entries(values)) {
+            if (value !== undefined) given[key] = value;
+          }
+          return s.set(given);
+        }),
+      // The sandbox flips the value it holds: the state pushed here lags
+      // writes still in flight, so a fast double click would flip the same
+      // stale value twice.
+      toggle: (name) => withSession(undefined, ({ session: s }) => s.toggle(name)),
       tick: (count = 1) => withSession(undefined, ({ session: s }) => s.tick(count)),
       run: (next) => {
         const runSpeed = next ?? speedRef.current;
@@ -572,13 +549,10 @@ export function useSimulation(
         pendingRun.current = null;
         return withSession(undefined, ({ session: s }) => s.pause());
       },
-      // The inputs stay where they are, so what was written still stands.
       reset: () => withSession(undefined, ({ session: s }) => s.reset()),
-      // History puts switches back where they were, so the pushed state is
-      // their value again once a move lands.
-      stepBack: () => withSession(false, ({ session: s }) => moved(s.stepBack())),
-      stepForward: () => withSession(false, ({ session: s }) => moved(s.stepForward())),
-      seek: (index) => withSession(false, ({ session: s }) => moved(s.seek(index))),
+      stepBack: () => withSession(false, ({ session: s }) => s.stepBack()),
+      stepForward: () => withSession(false, ({ session: s }) => s.stepForward()),
+      seek: (index) => withSession(false, ({ session: s }) => s.seek(index)),
       scan: (input, port, count) => withSession([], ({ session: s }) => s.scan(input, port, count)),
       sample: (port, count, inputs) =>
         withSession([], ({ session: s }) =>
@@ -599,5 +573,5 @@ export function useSimulation(
     };
   }, [compile]);
 
-  return { state, actions };
+  return useMemo(() => ({ state, actions }), [state, actions]);
 }
