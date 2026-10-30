@@ -157,6 +157,27 @@ describe('useSimulation', () => {
     expect(hook.result.current.state.cycle).toBe(3);
   });
 
+  it('reports a circuit that compiles but fails to open as a compile error, and keeps the last session', async () => {
+    const { hook } = render({ source: COUNTER });
+    await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
+
+    const throws = `const Boom = circuit('Boom', {
+      inputs: { a: bit },
+      outputs: { y: bit },
+      eval: () => { throw new Error('boom on settle') },
+    })`;
+    hook.rerender({ source: { source: throws }, options: undefined });
+    await waitFor(() =>
+      expect(hook.result.current.state.compileError?.message).toMatch(/boom on settle/),
+    );
+    expect(hook.result.current.state.error).toBeNull();
+    expect(hook.result.current.state.circuitName).toBe('Counter');
+
+    // Fixed: the error goes with the session that opens.
+    hook.rerender({ source: { source: COUNTER }, options: undefined });
+    await waitFor(() => expect(hook.result.current.state.compileError).toBeNull());
+  });
+
   it('reports a write to anything but an input as an error instead of throwing', async () => {
     const { hook } = render({ source: COUNTER });
     await waitFor(() => expect(hook.result.current.state.ready).toBe(true));

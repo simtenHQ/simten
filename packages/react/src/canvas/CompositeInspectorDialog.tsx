@@ -6,8 +6,9 @@
  * comes from the component's definition; values come from the main session's
  * port map by dotted path (the simulation is flattened, so an instance `ha1`
  * already has `ha1.*` ports in it). So the inspector shows the same cycle as
- * the canvas behind it and keeps moving while auto-run is on. Nothing in it
- * writes to the circuit: boundary ports are indicators, not switches.
+ * the canvas behind it and keeps moving while auto-run is on. Its switches
+ * are indicators, not controls; the one thing it writes is a program loaded
+ * onto a memory inside, which goes to the page as on the canvas.
  *
  * The one thing not in the main session is a primitive's gate-level reference
  * build (`MADE_OF`). That runs as a second session in the same sandbox while
@@ -21,19 +22,21 @@ import React, { useCallback, useEffect, useMemo } from 'react';
 import type { NodeData } from '../nodes';
 import type { UseSimulationResult } from '../sandbox/useSimulation';
 import { ClockControls } from './ClockControls';
-import { createDrillDownViewCircuit, scopePortValues } from './drill-down-view';
+import { createDrillDownViewCircuit } from './drill-down-view';
 import { resolveDrillTarget } from './drill-target';
 import { FlowCanvas } from './FlowCanvas';
 import type { InspectorFrame } from './types';
 import { useReferenceSession } from './useReferenceSession';
+import { type CanvasActions, useValueStore, type ValueStore } from './values';
 
 // ── Inner canvas for a single inspector level ──
 
 interface InspectorCanvasProps {
   frame: InspectorFrame;
   definitions: CircuitDefinitions;
-  /** The port map of the session this frame reads, or null before it has one. */
-  sessionPorts: ReadonlyMap<string, number> | null;
+  /** The values of the session this frame reads. */
+  values: ValueStore;
+  actions: CanvasActions;
   onPushLevel: (frame: InspectorFrame) => void;
   theme?: 'light' | 'dark';
 }
@@ -41,7 +44,8 @@ interface InspectorCanvasProps {
 function InspectorCanvas({
   frame,
   definitions: pageDefinitions,
-  sessionPorts,
+  values,
+  actions,
   onPushLevel,
   theme = 'dark',
 }: InspectorCanvasProps) {
@@ -55,29 +59,21 @@ function InspectorCanvas({
     [frame.componentDef],
   );
 
-  const portValues = useMemo(
-    () =>
-      sessionPorts ? scopePortValues(sessionPorts, frame.path, viewCircuit, definitions) : null,
-    [sessionPorts, frame.path, viewCircuit, definitions],
-  );
-
   const handleNodeDoubleClick = useCallback(
     (nodeData: NodeData) => {
-      if (!nodeData.isComposite && !nodeData.hasReference) return;
-      const next = resolveDrillTarget(nodeData, definitions, frame.path);
+      const next = resolveDrillTarget(nodeData, definitions);
       if (next) onPushLevel(next);
     },
-    [definitions, frame.path, onPushLevel],
+    [definitions, onPushLevel],
   );
 
-  // No onToggleNode or onSetNodeValue: the boundary switches and inputs render
-  // as indicators, and nothing here writes to the circuit.
   return (
     <FlowCanvas
       circuit={viewCircuit}
       definitions={definitions}
-      portValues={portValues}
-      peripheralState={null}
+      path={frame.path}
+      values={values}
+      actions={actions}
       onNodeDoubleClick={handleNodeDoubleClick}
       theme={theme}
       height="100%"
@@ -139,8 +135,12 @@ function InspectorBreadcrumb({ stack, onNavigate, theme = 'dark' }: BreadcrumbPr
 interface CompositeInspectorDialogProps {
   stack: InspectorFrame[];
   definitions: CircuitDefinitions;
-  /** The simulation the canvas is showing. Null draws structure with no values. */
-  simulation: UseSimulationResult | null;
+  /** The simulation the canvas is showing. */
+  simulation: UseSimulationResult;
+  /** Its values, as the canvas reads them. */
+  values: ValueStore;
+  /** What the canvas does when a program is loaded onto a memory. */
+  loadMemory?: CanvasActions['loadMemory'];
   theme?: 'light' | 'dark';
   onClose: () => void;
   onPopLevel: () => void;
@@ -152,6 +152,8 @@ export function CompositeInspectorDialog({
   stack,
   definitions,
   simulation,
+  values,
+  loadMemory,
   theme = 'dark',
   onClose,
   onPopLevel,
@@ -196,9 +198,11 @@ export function CompositeInspectorDialog({
   // and FullAdders, never of another primitive with a build (made-of.test.ts).
   // Every frame from it up reads its session; the frames below read the main one.
   const referenceFrame = stack.find((frame) => frame.reference) ?? null;
-  const mainPorts = simulation?.state.portValues ?? null;
-  const reference = useReferenceSession(referenceFrame, mainPorts);
-  const sessionPorts = referenceFrame ? reference.ports : mainPorts;
+  const reference = useReferenceSession(referenceFrame, simulation.state.portValues);
+  const referenceValues = useValueStore(reference.ports);
+  // A memory inside a reference build isn't in the page's session, so nothing loads there.
+  const mainActions = useMemo(() => ({ loadMemory }), [loadMemory]);
+  const noActions = useMemo(() => ({}), []);
 
   if (!isOpen || !topFrame) return null;
 
@@ -265,13 +269,14 @@ export function CompositeInspectorDialog({
               <InspectorCanvas
                 frame={topFrame}
                 definitions={definitions}
-                sessionPorts={sessionPorts}
+                values={referenceFrame ? referenceValues : values}
+                actions={referenceFrame ? noActions : mainActions}
                 onPushLevel={onPushLevel}
                 theme={theme}
               />
             </div>
             {/* The main session's clock, since the modal covers the canvas's own controls. */}
-            {simulation && <ClockControls simulation={simulation} floating showScrubber />}
+            <ClockControls simulation={simulation} floating showScrubber />
             {reference.error && (
               <div className="absolute inset-x-0 bottom-3 mx-auto w-fit rounded bg-red-950/80 px-3 py-1.5 text-xs text-red-200">
                 The reference build didn't run: {reference.error}

@@ -29,8 +29,6 @@ export function RegisterNode({ data, selected }: RegisterNodeProps) {
       selected={selected}
       className="min-w-[100px]"
       showPortLabels={data.showPortLabels}
-      onPortClick={data.onPortClick}
-      glowUnconnected={data.glowUnconnected}
     >
       <div className="relative flex flex-col items-center gap-2">
         {(data.isComposite || data.hasReference) && <CompositeBadge />}

@@ -8,9 +8,8 @@
  */
 
 import dagre from '@dagrejs/dagre';
-import type { CircuitIR } from '@simten/core/internal';
 import { pinColumnHeight, pinLabelGutter } from '../nodes/BaseNode';
-import type { MetadataState } from './types';
+import type { DrawnCircuit, DrawnNode, Positions } from './types';
 
 /** Node size constants by component type. Used to feed dagre. */
 const NODE_DIMENSIONS: Record<string, { width: number; height: number }> = {
@@ -44,12 +43,12 @@ const TITLE_CHAR_WIDTH = 7;
  * the same sums `BaseNode` uses, so a 9-output block isn't laid out as if it
  * were 80px tall and then drawn on top of its neighbour.
  */
-function nodeDimensions(node: CircuitIR['nodes'][number]) {
+function nodeDimensions(node: DrawnNode) {
   const base = getDimensions(node.componentRef);
   const pins = Math.max(node.inputs.length, node.outputs.length);
   const height = Math.max(base.height, pinColumnHeight(pins));
-  // Harness switches and LEDs never show pin labels.
-  if (node.harness) return { width: base.width, height };
+  // A port's switch or lamp shows no pin labels.
+  if (node.port !== undefined) return { width: base.width, height };
   const title = Math.max((node.label ?? node.id).length, node.componentRef.length);
   const labelled =
     pinLabelGutter(node.inputs.map((p) => p.name)) +
@@ -58,35 +57,19 @@ function nodeDimensions(node: CircuitIR['nodes'][number]) {
   return { width: Math.max(base.width, labelled), height };
 }
 
-export interface DagreLayoutOptions {
-  /** Layout direction. "LR" = left-to-right (default), "TB" = top-to-bottom. */
-  direction?: 'LR' | 'TB' | 'RL' | 'BT';
-  /** Inter-node spacing in the same rank. */
-  nodeSpacing?: number;
-  /** Spacing between ranks. */
-  rankSpacing?: number;
-}
-
 /**
- * Compute dagre layout for a circuit. Returns a MetadataState with node
- * positions in top-left coordinates.
+ * Compute dagre layout for a circuit, left to right. Returns node positions by
+ * id, in top-left coordinates.
  *
  * Synchronous — dagre.layout() does no I/O. Callers can use the result
  * immediately on first render.
  */
-export function computeDagreLayout(
-  circuit: CircuitIR,
-  options?: DagreLayoutOptions,
-): MetadataState {
-  const direction = options?.direction ?? 'LR';
-  const nodeSpacing = options?.nodeSpacing ?? 60;
-  const rankSpacing = options?.rankSpacing ?? 90;
-
+export function computeDagreLayout(circuit: DrawnCircuit): Positions {
   const g = new dagre.graphlib.Graph();
   g.setGraph({
-    rankdir: direction,
-    nodesep: nodeSpacing,
-    ranksep: rankSpacing,
+    rankdir: 'LR',
+    nodesep: 60,
+    ranksep: 90,
     marginx: 20,
     marginy: 20,
   });
@@ -113,19 +96,13 @@ export function computeDagreLayout(
   // Synchronous; no I/O.
   dagre.layout(g);
 
-  const metadata: MetadataState = { components: {}, connections: {} };
+  const positions: Positions = {};
   for (const node of circuit.nodes) {
     const laid = g.node(node.id);
     if (!laid) continue;
     // Dagre returns center; convert to top-left.
-    metadata.components[node.id] = {
-      id: node.id,
-      position: {
-        x: laid.x - laid.width / 2,
-        y: laid.y - laid.height / 2,
-      },
-    };
+    positions[node.id] = { x: laid.x - laid.width / 2, y: laid.y - laid.height / 2 };
   }
 
-  return metadata;
+  return positions;
 }

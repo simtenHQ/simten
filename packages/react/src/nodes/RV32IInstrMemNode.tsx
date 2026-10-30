@@ -4,13 +4,14 @@
  * Renders RV32I instruction memory with:
  * - Drag-and-drop binary file loading
  * - Inline code editor with compile button (calls /api/compile)
- * - Uses onLoadMemory callback to write data via engine.setNode()
+ * - Loads the program through the canvas's `loadMemory`, by the node's path
  */
 
 'use client';
 
 import type React from 'react';
 import { useCallback, useRef, useState } from 'react';
+import { useCanvasActions } from '../canvas/values';
 import { BaseNode, type PortConfig } from './BaseNode';
 import type { NodeData } from './NodeData';
 
@@ -77,6 +78,8 @@ export function RV32IInstrMemNode({ data, selected }: RV32IInstrMemNodeProps) {
   const [loadedFilename, setLoadedFilename] = useState<string | null>(null);
   const [loadedSize, setLoadedSize] = useState(0);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { loadMemory } = useCanvasActions();
+  const path = data.path;
 
   const inputPorts: PortConfig[] = data.inputNames.map((name, index) => ({
     name,
@@ -98,9 +101,9 @@ export function RV32IInstrMemNode({ data, selected }: RV32IInstrMemNodeProps) {
       }
       setLoadedFilename(filename);
       setLoadedSize(binary.length);
-      data.onLoadMemory?.(memoryMap);
+      loadMemory?.(path, memoryMap);
     },
-    [data.onLoadMemory],
+    [loadMemory, path],
   );
 
   const handleFileLoad = useCallback(
@@ -153,9 +156,9 @@ export function RV32IInstrMemNode({ data, selected }: RV32IInstrMemNodeProps) {
       e.stopPropagation();
       setLoadedFilename(null);
       setLoadedSize(0);
-      data.onLoadMemory?.(new Map());
+      loadMemory?.(path, new Map());
     },
-    [data.onLoadMemory],
+    [loadMemory, path],
   );
 
   const handleCompile = useCallback(async () => {
@@ -218,8 +221,6 @@ export function RV32IInstrMemNode({ data, selected }: RV32IInstrMemNodeProps) {
         selected={selected}
         className="min-w-[140px]"
         showPortLabels={data.showPortLabels}
-        onPortClick={data.onPortClick}
-        glowUnconnected={data.glowUnconnected}
       >
         <div className="flex flex-col items-center gap-2">
           {/* Label */}

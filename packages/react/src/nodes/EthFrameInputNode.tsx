@@ -29,8 +29,6 @@ export function EthFrameInputNode({ data, selected }: EthFrameInputNodeProps) {
       selected={selected}
       className="min-w-[120px]"
       showPortLabels={data.showPortLabels}
-      onPortClick={data.onPortClick}
-      glowUnconnected={data.glowUnconnected}
     >
       <div className="flex flex-col items-center gap-2">
         <div className="px-2 py-1 text-xs font-medium text-[var(--embed-text-primary)]">

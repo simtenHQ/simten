@@ -36,10 +36,12 @@ import { loggedSandbox } from '../../sandbox/__tests__/logged-sandbox';
 import { SandboxProvider } from '../../sandbox/SandboxProvider';
 import { type UseSimulationResult, useSimulation } from '../../sandbox/useSimulation';
 import { CompositeInspectorDialog } from '../CompositeInspectorDialog';
-import { createDrillDownViewCircuit, scopePortValues } from '../drill-down-view';
+import { projectCircuit } from '../circuit-to-flow';
+import { createDrillDownViewCircuit } from '../drill-down-view';
 import { resolveDrillTarget } from '../drill-target';
 import type { InspectorFrame } from '../types';
 import { useReferenceSession } from '../useReferenceSession';
+import { CanvasContext, useValueStore } from '../values';
 
 const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
@@ -79,9 +81,11 @@ function nodeData(
   nodeId: string,
   componentRef: string,
   args: Record<string, unknown> = {},
+  path = nodeId,
 ): NodeData {
   return {
     nodeId,
+    path,
     componentRef,
     label: nodeId,
     inputCount: 0,
@@ -116,7 +120,24 @@ beforeAll(() => {
   } as unknown as typeof DOMMatrixReadOnly;
 });
 
-describe('scopePortValues', () => {
+/** The value each node and wire of the drill-down view of HalfAdder at `path` reads from `ports`. */
+function drillDownValues(ports: ReadonlyMap<string, number>, path: string) {
+  const view = createDrillDownViewCircuit(HALF_ADDER);
+  const positions = Object.fromEntries(view.nodes.map((n) => [n.id, { x: 0, y: 0 }]));
+  const primitives = {
+    resolveCircuit: (name: string) =>
+      ({ implementation: { kind: 'primitive' }, name }) as unknown as CircuitIR,
+    getAllPrimitiveNames: () => [],
+  };
+  const { nodes, edges } = projectCircuit(view, positions, primitives, path);
+  const read = (key: string | undefined) => (key === undefined ? undefined : ports.get(key));
+  return {
+    node: (id: string) => read(nodes.find((n) => n.id === id)?.data.valueKey),
+    wire: (from: string) => read(edges.find((e) => e.source === from)?.data?.keys[0]),
+  };
+}
+
+describe('a drill-down view', () => {
   it('reads the inside of `ha` and its dissolved boundary from the flat map', () => {
     const sim = simulate(Bench);
     const nodes = nodesOf(sim);
@@ -125,44 +146,40 @@ describe('scopePortValues', () => {
     // Flattening dissolves the composite's own ports.
     expect(ports.has('ha.a')).toBe(false);
 
-    const view = createDrillDownViewCircuit(HALF_ADDER);
-    const scoped = scopePortValues(ports, 'ha', view, definitionsOf(HALF_ADDER));
-    expect(scoped.get('x.out')).toBe(1);
-    expect(scoped.get('n.out')).toBe(0);
-    expect(scoped.get('__boundary_in_a.out')).toBe(1);
-    expect(scoped.get('__boundary_in_b.out')).toBe(0);
-    expect(scoped.get('__boundary_out_sum.in')).toBe(1);
-    expect(scoped.get('__boundary_out_carry.in')).toBe(0);
+    const view = drillDownValues(ports, 'ha');
+    expect(view.wire('x')).toBe(1);
+    expect(view.wire('n')).toBe(0);
+    expect(view.node('__boundary_in_a')).toBe(1);
+    expect(view.node('__boundary_in_b')).toBe(0);
+    expect(view.node('__boundary_out_sum')).toBe(1);
+    expect(view.node('__boundary_out_carry')).toBe(0);
   });
 
   it("reads a session's own ports at its top level", () => {
     const sim = simulate(HalfAdder);
     sim.set({ a: 1, b: 1 });
-    const view = createDrillDownViewCircuit(HALF_ADDER);
-    const scoped = scopePortValues(nodesOf(sim).ports(), '', view, definitionsOf(HALF_ADDER));
-    expect(scoped.get('__boundary_in_a.out')).toBe(1);
-    expect(scoped.get('__boundary_out_sum.in')).toBe(0);
-    expect(scoped.get('__boundary_out_carry.in')).toBe(1);
+    const view = drillDownValues(nodesOf(sim).ports(), '');
+    expect(view.node('__boundary_in_a')).toBe(1);
+    expect(view.node('__boundary_out_sum')).toBe(0);
+    expect(view.node('__boundary_out_carry')).toBe(1);
   });
 });
 
 describe('drill paths', () => {
-  it('gives a canvas node its id as the path, and a nested node its dotted path', () => {
+  it("opens a composite at the node's path in the session", () => {
     const definitions = definitionsOf(HALF_ADDER);
     expect(resolveDrillTarget(nodeData('ha', 'HalfAdder'), definitions)?.path).toBe('ha');
-    expect(resolveDrillTarget(nodeData('ha', 'HalfAdder'), definitions, 'dut')?.path).toBe(
-      'dut.ha',
-    );
+    const nested = nodeData('ha', 'HalfAdder', {}, 'cpu.ha');
+    expect(resolveDrillTarget(nested, definitions)?.path).toBe('cpu.ha');
   });
 
   it('roots a reference build in its own session, fed from the primitive', () => {
     const frame = resolveDrillTarget(
-      nodeData('add', 'Adder', { width: 4 }),
+      nodeData('add', 'Adder', { width: 4 }, 'cpu.add'),
       definitionsOf(),
-      'dut',
     );
     expect(frame?.path).toBe('');
-    expect(frame?.reference?.instance).toBe('dut.add');
+    expect(frame?.reference?.instance).toBe('cpu.add');
     expect(frame?.reference?.circuit.name).toBe('Adder4_madeOf');
   });
 });
@@ -172,6 +189,7 @@ describe('CompositeInspectorDialog', () => {
   function Inspector({ onSimulation }: { onSimulation: (s: UseSimulationResult) => void }) {
     const simulation = useSimulation(Bench);
     onSimulation(simulation);
+    const values = useValueStore(simulation.state.portValues);
     const definitions = simulation.state.definitions;
     if (!definitions) return null;
     const stack: InspectorFrame[] = [
@@ -183,6 +201,7 @@ describe('CompositeInspectorDialog', () => {
         stack={stack}
         definitions={definitions}
         simulation={simulation}
+        values={values}
         onClose={noop}
         onPopLevel={noop}
         onPushLevel={noop}
@@ -218,19 +237,23 @@ describe('CompositeInspectorDialog', () => {
 describe('a bus boundary port', () => {
   // Wide boundary inputs render as NumericInputNode, which edits on click.
   // In the inspector there's no handler to write with, so it's a reading.
-  function renderNumeric(onValueChange?: (value: number) => void) {
+  function renderNumeric(set?: (path: string, value: number) => void) {
     const data: NodeData = {
-      ...nodeData('__boundary_in_addr', 'Input'),
+      ...nodeData('__boundary_in_addr', 'Input', { width: 32, value: 7 }),
       label: 'addr',
-      width: 32,
-      numericValue: 7,
       outputNames: ['out'],
-      onValueChange,
+      valueKey: 'addr.out',
+    };
+    const values = {
+      get: () => ({ ports: null, peripherals: new Map() }),
+      subscribe: () => () => {},
     };
     render(
-      <ReactFlowProvider>
-        <NumericInputNode data={data} />
-      </ReactFlowProvider>,
+      <CanvasContext.Provider value={{ values, actions: { set } }}>
+        <ReactFlowProvider>
+          <NumericInputNode data={data} />
+        </ReactFlowProvider>
+      </CanvasContext.Provider>,
     );
     fireEvent.click(screen.getByText('7'));
   }
@@ -247,7 +270,10 @@ describe('a bus boundary port', () => {
 });
 
 describe('useReferenceSession', () => {
-  const adder = resolveDrillTarget(nodeData('add', 'Adder', { width: 4 }), definitionsOf(), 'dut');
+  const adder = resolveDrillTarget(
+    nodeData('add', 'Adder', { width: 4 }, 'dut.add'),
+    definitionsOf(),
+  );
   if (!adder) throw new Error('Adder has a reference build');
 
   function renderReference(client: SandboxClient) {

@@ -1,5 +1,6 @@
 import type React from 'react';
 import { useCallback, useState } from 'react';
+import { useCanvasActions, useNodeValue } from '../canvas/values';
 import { BaseNode, type PortConfig } from './BaseNode';
 import type { NodeData } from './NodeData';
 
@@ -9,14 +10,15 @@ interface NumericInputNodeProps {
 }
 
 export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
-  const value = data.numericValue ?? 0;
-  const width = data.width ?? 8;
+  const value = useNodeValue(data) ?? 0;
+  const width = typeof data.arguments?.width === 'number' ? data.arguments.width : 8;
   // 2**width, not (1 << width): JS `<<` is signed 32-bit, so `1 << 31` is negative
   // and `1 << 32` wraps to 1 — clamping every wide input to 0. Cap at 32-bit.
   const maxValue = 2 ** Math.min(width, 32) - 1;
 
   // Nothing to write to (the inspector's boundary ports): a reading, not a field.
-  const editable = data.onValueChange !== undefined;
+  const { set } = useCanvasActions();
+  const editable = set !== undefined;
   const [isEditingValue, setIsEditingValue] = useState(false);
   const [editValue, setEditValue] = useState(value.toString());
   const [displayMode, setDisplayMode] = useState<'dec' | 'hex'>('dec');
@@ -41,14 +43,14 @@ export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
           : parseInt(trimmed, 10);
         if (isNaN(parsed)) parsed = 0;
         parsed = Math.max(0, Math.min(maxValue, parsed));
-        data.onValueChange?.(parsed);
+        set?.(data.path, parsed);
         setIsEditingValue(false);
       } else if (e.key === 'Escape') {
         e.preventDefault();
         setIsEditingValue(false);
       }
     },
-    [editValue, maxValue, data],
+    [editValue, maxValue, set, data.path],
   );
 
   const toggleDisplayMode = useCallback((e: React.MouseEvent) => {
@@ -77,8 +79,6 @@ export function NumericInputNode({ data, selected }: NumericInputNodeProps) {
       selected={selected}
       className="min-w-[100px]"
       showPortLabels={data.showPortLabels}
-      onPortClick={data.onPortClick}
-      glowUnconnected={data.glowUnconnected}
     >
       <div className="flex flex-col items-center gap-2">
         <div className="px-2 py-1 text-xs font-medium text-[var(--embed-text-primary)]">

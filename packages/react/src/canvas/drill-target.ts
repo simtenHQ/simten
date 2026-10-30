@@ -45,13 +45,9 @@ function layer(base: CircuitDefinitions, extra: Map<string, CircuitIR>): Circuit
   };
 }
 
-/** A child's dotted path under `parent`, or the node id itself at a session's top level. */
-const childPath = (parent: string, nodeId: string) => (parent ? `${parent}.${nodeId}` : nodeId);
-
 /**
  * Resolve the frame a double-click should push, or null if the node is a leaf.
- * `parentPath` is the path of the frame the node was clicked in: empty on the
- * canvas itself, whose node ids are already paths in its session.
+ * The frame opens at the node's path in the session it was clicked in.
  *
  * Composites win over reference builds: if a user has defined their own Adder
  * with real structure, that structure is the truth and should be what opens.
@@ -59,11 +55,9 @@ const childPath = (parent: string, nodeId: string) => (parent ? `${parent}.${nod
 export function resolveDrillTarget(
   nodeData: NodeData,
   definitions: CircuitDefinitions,
-  parentPath = '',
 ): InspectorFrame | null {
-  const { componentRef } = nodeData;
+  const { componentRef, path } = nodeData;
   const nodeLabel = nodeData.label ?? componentRef;
-  const path = childPath(parentPath, nodeData.nodeId);
 
   const componentDef = definitions.resolveCircuit(componentRef);
   if (componentDef?.implementation.kind === 'composite' && componentDef.nodes.length > 0) {

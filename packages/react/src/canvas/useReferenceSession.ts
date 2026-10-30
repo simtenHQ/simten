@@ -13,6 +13,7 @@
  * doesn't offer `MADE_OF` to source text.
  */
 
+import { TOP_LEVEL_NODE } from '@simten/core/internal';
 import { SandboxError, type SimulationClient } from '@simten/sandbox';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { useSandboxClient } from '../sandbox/SandboxProvider';
@@ -76,8 +77,10 @@ export function useReferenceSession(
   useEffect(() => {
     if (!session || !mainPorts || instance === undefined) return;
     const changed: Record<string, number> = {};
+    // A primitive drawn as the session's top level has its inputs under `__top__`.
+    const at = instance || TOP_LEVEL_NODE;
     for (const port of session.circuit.inputs) {
-      const value = mainPorts.get(`${instance}.${port.name}`);
+      const value = mainPorts.get(`${at}.${port.name}`);
       if (value === undefined || sent.current.get(port.name) === value) continue;
       changed[port.name] = value;
       sent.current.set(port.name, value);

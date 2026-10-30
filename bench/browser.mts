@@ -17,7 +17,7 @@ import { readFileSync, writeFileSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { cpus } from 'node:os';
 import { join } from 'node:path';
-import { type Browser, chromium, type Page } from '@playwright/test';
+import { type Browser, type CDPSession, chromium, type Page } from '@playwright/test';
 // The root package doesn't depend on core; the catalog is data only, so import it by path.
 import { EXAMPLES } from '../packages/core/src/examples/catalog.ts';
 import { buildApps, serveApp, siteEnv, stopAll, waitForUrl } from '../scripts/local-site.mts';
@@ -103,15 +103,27 @@ async function stepMs(page: Page): Promise<number> {
   return median(times);
 }
 
-/** Auto-run at full speed: ticks per second, and the page's frame rate meanwhile. */
-async function autoRun(page: Page): Promise<{ ticks: number; fps: number }> {
+/** Main-thread busy time so far, in ms: every task the renderer ran, from Chrome's own counter. */
+async function mainThreadMs(cdp: CDPSession): Promise<number> {
+  const { metrics } = await cdp.send('Performance.getMetrics');
+  return (metrics.find((m) => m.name === 'TaskDuration')?.value ?? 0) * 1000;
+}
+
+/**
+ * Auto-run at full speed: ticks per second, the page's frame rate meanwhile,
+ * and how long the main thread was busy per frame.
+ */
+async function autoRun(page: Page): Promise<{ ticks: number; fps: number; busy: number }> {
   await readyEditor(page);
   const speed = page.locator('input[aria-label="Simulation speed"]');
   await speed.focus();
   await speed.press('End');
   await page.locator('button[aria-label="Run"]').click();
   await page.waitForTimeout(1000);
-  return page.evaluate(`(async () => {
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send('Performance.enable');
+  const before = await mainThreadMs(cdp);
+  const run = (await page.evaluate(`(async () => {
     const cycle = () => Number(${CYCLE}.textContent);
     const c0 = cycle();
     const t0 = performance.now();
@@ -125,8 +137,10 @@ async function autoRun(page: Page): Promise<{ ticks: number; fps: number }> {
       requestAnimationFrame(frame);
     });
     const secs = (performance.now() - t0) / 1000;
-    return { ticks: Math.round((cycle() - c0) / secs), fps: Math.round(frames / secs) };
-  })()`);
+    return { ticks: Math.round((cycle() - c0) / secs), fps: Math.round(frames / secs), frames };
+  })()`)) as { ticks: number; fps: number; frames: number };
+  const busy = (await mainThreadMs(cdp)) - before;
+  return { ticks: run.ticks, fps: run.fps, busy: busy / run.frames };
 }
 
 async function levelLoadMs(page: Page): Promise<number> {
@@ -141,6 +155,9 @@ async function levelLoadMs(page: Page): Promise<number> {
 
 const EDITOR_6502 = `${WEB}/circuit?example=6502-computer`;
 const EDITOR_RV32I = `${WEB}/circuit?example=rv32i-computer`;
+const EDITOR_SNAKE = `${WEB}/circuit?example=snake`;
+/** The editor example with the most wires on its canvas, most of them into composites. */
+const EDITOR_RULE30 = `${WEB}/circuit?example=rule30`;
 
 // The sandbox transport with nothing on top: requests by id, and every
 // message the sandbox pushes unasked kept in `window.pushed`.
@@ -218,20 +235,24 @@ const SCENARIOS: { url: string; run: (p: Page) => Promise<Record<string, number>
   { url: `${GAME}/nand`, run: async (p) => ({ 'level load (nand), ms': await levelLoadMs(p) }) },
   { url: EDITOR_6502, run: async (p) => ({ 'editor load (6502), ms': await readyEditor(p) }) },
   { url: EDITOR_6502, run: async (p) => ({ 'step (6502), ms': await stepMs(p) }) },
-  {
-    url: EDITOR_6502,
-    run: async (p) => {
+  ...(
+    [
+      ['6502', EDITOR_6502],
+      ['rv32i', EDITOR_RV32I],
+      ['snake', EDITOR_SNAKE],
+      ['rule30', EDITOR_RULE30],
+    ] as const
+  ).map(([name, url]) => ({
+    url,
+    run: async (p: Page) => {
       const r = await autoRun(p);
-      return { 'auto-run (6502), ticks/s': r.ticks, 'auto-run (6502), fps': r.fps };
+      return {
+        [`auto-run (${name}), ticks/s`]: r.ticks,
+        [`auto-run (${name}), fps`]: r.fps,
+        [`auto-run (${name}), main thread ms/frame`]: r.busy,
+      };
     },
-  },
-  {
-    url: EDITOR_RV32I,
-    run: async (p) => {
-      const r = await autoRun(p);
-      return { 'auto-run (rv32i), ticks/s': r.ticks, 'auto-run (rv32i), fps': r.fps };
-    },
-  },
+  })),
   // Last: it holds the CPU flat out for a while, which would slow the load
   // timings that come after it.
   { url: PARENT, run: rv32iMax },
@@ -281,7 +302,7 @@ try {
       const diff = before
         ? ` (${value >= before ? '+' : ''}${(((value - before) / before) * 100).toFixed(1)}%)`
         : '';
-      console.log(`${name.padEnd(28)} ${String(value).padStart(8)}${diff}`);
+      console.log(`${name.padEnd(40)} ${String(value).padStart(8)}${diff}`);
     }
   }
   await browser.close();

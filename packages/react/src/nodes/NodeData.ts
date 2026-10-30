@@ -1,15 +1,14 @@
 /**
- * NodeData interface for embed node components.
- * Extracted from the editor's old projection utility.
- * No store dependencies — all interaction via callbacks.
+ * What a node on the canvas is: built from the circuit once, not from its
+ * values. A node reads its value from the canvas's store by `valueKey`, and
+ * clicks go to the canvas's actions by `path` (`canvas/values.ts`).
  */
 export interface NodeData extends Record<string, unknown> {
   nodeId: string;
+  /** Where the node is in the session: what `set` and loading a program take, and its peripheral's key. */
+  path: string;
   componentRef: string;
   label?: string;
-  value?: boolean;
-  numericValue?: number;
-  width?: number;
   inputCount: number;
   outputCount: number;
   inputNames: string[];
@@ -21,17 +20,15 @@ export interface NodeData extends Record<string, unknown> {
    * Deliberately separate from `isComposite`, which selects the node type.
    */
   hasReference?: boolean;
-  /** A port's switch or lamp the canvas added, not a node the author wrote. */
-  harness?: boolean;
   arguments?: Record<string, unknown>;
-  __pixels?: number[];
-  __consoleText?: string;
-  __uartText?: string;
-  __nicState?: { txCount: number; rxCount: number; draining: boolean };
-  onToggle?: () => void;
-  onValueChange?: (value: number) => void;
-  onLoadMemory?: (data: Map<number, number>) => void;
   showPortLabels?: boolean;
-  onPortClick?: (portName: string, portType: 'input' | 'output') => void;
-  glowUnconnected?: boolean;
+  /** The session key a switch, lamp, number input or display shows. */
+  valueKey?: string;
+  /**
+   * Where a Screen reads its pixels: the memory wired to it, or through a
+   * multiplexer, the memory its select line picks.
+   */
+  pixelSource?: PixelSource;
 }
+
+export type PixelSource = { memory: string } | { select: string; memories: [string?, string?] };

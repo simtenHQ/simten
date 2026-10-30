@@ -1,3 +1,4 @@
+import { useNodeValue } from '../canvas/values';
 import { cn } from '../lib/utils';
 import { BaseNode, type PortConfig } from './BaseNode';
 import { CompositeBadge } from './CompositeBadge';
@@ -9,8 +10,9 @@ interface OutputNodeProps {
 }
 
 export function OutputNode({ data, selected }: OutputNodeProps) {
-  const value = data.value ?? false;
-  const numericValue = data.numericValue ?? 0;
+  const reading = useNodeValue(data);
+  const value = reading !== undefined && reading !== 0;
+  const numericValue = reading ?? 0;
 
   const inputPorts: PortConfig[] = data.inputNames.map((name, index) => ({
     name,
@@ -87,8 +89,6 @@ export function OutputNode({ data, selected }: OutputNodeProps) {
       selected={selected}
       className="min-w-[80px]"
       showPortLabels={data.showPortLabels}
-      onPortClick={data.onPortClick}
-      glowUnconnected={data.glowUnconnected}
     >
       <div className="relative">
         {(data.isComposite || data.hasReference) && <CompositeBadge />}

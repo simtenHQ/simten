@@ -1,7 +1,11 @@
 /**
- * FlowCanvas: the canvas itself, drawn with React Flow from props. Internal:
- * `CircuitCanvas` draws a simulation with it, and the drill-down inspector
- * draws each level with it.
+ * FlowCanvas: draws a circuit with React Flow. Internal: `CircuitCanvas`
+ * draws a simulation with it, and the drill-down draws each level with it.
+ *
+ * It draws and reports double-clicks, and holds no simulation. The nodes and
+ * wires are built from the circuit alone (`circuit-to-flow.ts`) and read their
+ * values from `values` as they render, so an update re-renders only the nodes
+ * whose value changed (`values.ts`).
  */
 
 import {
@@ -20,14 +24,11 @@ import {
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 
-import type {
-  CircuitDefinitions,
-  CircuitIR,
-  FlatPortValueMap,
-  PeripheralValue,
-} from '@simten/core/internal';
-import React, {
+import type { CircuitDefinitions } from '@simten/core/internal';
+import type React from 'react';
+import {
   type CSSProperties,
+  memo,
   useCallback,
   useLayoutEffect,
   useMemo,
@@ -35,16 +36,15 @@ import React, {
   useState,
 } from 'react';
 import type { NodeData } from '../nodes';
-import type { UseSimulationResult } from '../sandbox/useSimulation';
-import { CompositeInspectorDialog } from './CompositeInspectorDialog';
-import { projectCircuitToReactFlow } from './circuit-to-flow';
-import { resolveDrillTarget } from './drill-target';
+import { type Projection, projectCircuit } from './circuit-to-flow';
+import { type Change, classifyChange, type Shape } from './classify-change';
+import { computeDagreLayout } from './dagre-layout';
 import { useDetectTheme } from './hooks/useDetectTheme';
 import { useIsMobile } from './hooks/useIsMobile';
 import { cleanCircuitLabels } from './label-utils';
 import { EDGE_TYPES, NODE_TYPES } from './node-types';
-import type { CircuitLayout, InspectorFrame, MetadataState } from './types';
-import { useLayout } from './useLayout';
+import type { CircuitLayout, DrawnCircuit, Positions } from './types';
+import { type CanvasActions, CanvasContext, type ValueStore } from './values';
 
 function CanvasControls() {
   const { fitView, zoomIn, zoomOut } = useReactFlow();
@@ -99,18 +99,17 @@ function CanvasControls() {
 }
 
 interface FlowCanvasProps {
-  circuit?: CircuitIR | null;
-  definitions?: CircuitDefinitions;
-  portValues?: FlatPortValueMap | null;
-  /** Screens, consoles, UARTs and the memories behind them, by node path. */
-  peripheralState?: ReadonlyMap<string, PeripheralValue> | null;
-  /**
-   * The simulation this canvas shows, for the built-in drill-down inspector:
-   * it reads its values and drives its clock. `circuit` should be the
-   * simulation's own circuit, so the canvas's node ids are paths in it.
-   * Without one the inspector draws structure only.
-   */
-  simulation?: UseSimulationResult | null;
+  circuit: DrawnCircuit | null;
+  /** What the circuit's components are. Nothing is drawn without them. */
+  definitions: CircuitDefinitions | null;
+  /** Where `circuit` sits in the session `values` come from: '' for its top level. */
+  path?: string;
+  /** The session's values, which each node reads its own from. */
+  values: ValueStore;
+  /** What clicks on the canvas do. Without them its switches and inputs are indicators. */
+  actions?: CanvasActions;
+  /** Session paths of consoles nested out of sight, drawn at the side. */
+  consoles?: readonly string[];
   draggable?: boolean;
   /**
    * Re-run the layout engine on every structural change, instead of only when
@@ -129,15 +128,11 @@ interface FlowCanvasProps {
   /**
    * Pre-computed node positions keyed by node label (or id, as fallback).
    * When provided, the layout engine is skipped entirely.
-   * When absent, positions are computed by the layout engine on mount.
    */
   layout?: CircuitLayout;
-  onToggleNode?: (nodeId: string) => void;
-  onSetNodeValue?: (nodeId: string, value: number) => void;
-  onLoadMemory?: (nodeId: string, data: Map<number, number>) => void;
   onNodeDoubleClick?: (nodeData: NodeData) => void;
   height?: number | string;
-  focus?: string | string[];
+  focus?: string | readonly string[];
   /** Theme for the canvas. Defaults to the page theme (`html.dark`). */
   theme?: 'light' | 'dark';
   /**
@@ -149,343 +144,191 @@ interface FlowCanvasProps {
   panOnMobile?: boolean;
 }
 
-// Default definitions — created once, reused
-let _defaultDefinitions: CircuitDefinitions | null = null;
-function getDefaultDefinitions(): CircuitDefinitions {
-  if (!_defaultDefinitions) {
-    const circuitMap = new Map<string, CircuitIR>();
-    _defaultDefinitions = {
-      resolveCircuit: (name) => circuitMap.get(name),
-      getAllPrimitiveNames: () =>
-        [...circuitMap.entries()]
-          .filter(([, c]) => c.implementation.kind === 'primitive')
-          .map(([n]) => n),
-      addCircuit: (c: CircuitIR) => {
-        circuitMap.set(c.name, c);
-      },
-    } as CircuitDefinitions & { addCircuit(c: CircuitIR): void };
-  }
-  return _defaultDefinitions;
-}
-
 /** Below this zoom an 11px pin label is too small to read, so the canvas drops them. */
 const PIN_LABEL_MIN_ZOOM = 0.35;
+const NO_ACTIONS: CanvasActions = {};
+const NO_CONSOLES: readonly string[] = [];
+/** How far `focus` fades the nodes outside it. */
+const FOCUS_DIM = 0.15;
 
-function CircuitCanvasInner({
+/** The nodes and wires to draw, and the shape that decides what kind of change they are. */
+interface Drawing extends Projection {
+  shape: Shape;
+}
+
+const NOTHING: Drawing = { nodes: [], edges: [], shape: { name: null, pins: new Map() } };
+
+/** Positions from a `layout` prop: by label, then by id. A node missing from it isn't drawn. */
+function positionsFromLayout(circuit: DrawnCircuit, layout: CircuitLayout): Positions {
+  const positions: Positions = {};
+  for (const node of circuit.nodes) {
+    const position = layout[node.label || node.id] ?? layout[node.id];
+    if (position) positions[node.id] = position;
+  }
+  return positions;
+}
+
+/** Dims every node but those labelled in `focus`, and every wire touching none of them. */
+function dimOutOfFocus(projection: Projection, focus: ReadonlySet<string>): Projection {
+  const focused = new Set(
+    projection.nodes.filter((n) => focus.has(n.data.label ?? n.id)).map((n) => n.id),
+  );
+  const fade = (on: boolean) => ({ opacity: on ? 1 : FOCUS_DIM, transition: 'opacity 0.2s' });
+  return {
+    nodes: projection.nodes.map((n) => ({
+      ...n,
+      style: { ...n.style, ...fade(focused.has(n.id)) },
+    })),
+    edges: projection.edges.map((e) => ({
+      ...e,
+      style: { ...e.style, ...fade(focused.has(e.source) || focused.has(e.target)) },
+    })),
+  };
+}
+
+function shapeOf(name: string, nodes: Projection['nodes']): Shape {
+  return {
+    name,
+    pins: new Map(
+      nodes.map((n) => [n.id, `${n.data.inputNames.join('|')}>${n.data.outputNames.join('|')}`]),
+    ),
+  };
+}
+
+/**
+ * A redrawn node that was already on the canvas keeps what React Flow knows
+ * about it (its measured handles) and, unless the circuit is laid out again,
+ * where it was dragged to.
+ */
+function keepPositions(current: Node[], next: Node[], relayout: boolean): Node[] {
+  const before = new Map(current.map((n) => [n.id, n]));
+  return next.map((node) => {
+    const prev = before.get(node.id);
+    if (!prev) return node;
+    return { ...prev, ...node, position: relayout ? node.position : prev.position };
+  });
+}
+
+export const FlowCanvas = memo(function FlowCanvas({
   circuit,
-  definitions: definitionsProp,
-  portValues,
-  peripheralState,
-  simulation = null,
-  draggable = true,
-  autoLayout = false,
+  definitions,
+  path = '',
+  values,
+  actions = NO_ACTIONS,
+  consoles = NO_CONSOLES,
   layout,
-  onToggleNode,
-  onSetNodeValue,
-  onLoadMemory,
-  onNodeDoubleClick: onNodeDoubleClickProp,
-  height = '100%',
   focus,
+  autoLayout = false,
+  ...view
+}: FlowCanvasProps) {
+  const focusLabels = useMemo(
+    () => (focus === undefined ? null : new Set(typeof focus === 'string' ? [focus] : focus)),
+    [focus],
+  );
+  const drawing = useMemo((): Drawing => {
+    if (!circuit || !definitions) return NOTHING;
+    const cleaned = cleanCircuitLabels(circuit);
+    const positions = layout ? positionsFromLayout(cleaned, layout) : computeDagreLayout(cleaned);
+    const projected = projectCircuit(cleaned, positions, definitions, path, consoles);
+    const drawn = focusLabels ? dimOutOfFocus(projected, focusLabels) : projected;
+    return { ...drawn, shape: shapeOf(cleaned.name, drawn.nodes) };
+  }, [circuit, definitions, path, consoles, layout, focusLabels]);
+
+  // A different circuit starts React Flow over: keyed at the provider, so its
+  // store (handle registry, cached edge routes) goes too. Keying <ReactFlow>
+  // alone kept stale handle ids from the previous circuit, which bent the
+  // wires when a paste-over shared input/output names with it.
+  const [shown, setShown] = useState<{ drawing: Drawing; change: Change; generation: number }>(
+    () => ({ drawing, change: { kind: 'first' }, generation: 0 }),
+  );
+  if (shown.drawing !== drawing) {
+    const change = classifyChange(shown.drawing.shape, drawing.shape, autoLayout);
+    const generation = shown.generation + (change.kind === 'replaced' ? 1 : 0);
+    setShown({ drawing, change, generation });
+  }
+
+  const context = useMemo(() => ({ values, actions }), [values, actions]);
+  return (
+    <CanvasContext.Provider value={context}>
+      <ReactFlowProvider key={shown.generation}>
+        <FlowCanvasInner
+          {...view}
+          drawing={shown.drawing}
+          change={shown.change}
+          focusLabels={focusLabels}
+          empty={!circuit}
+        />
+      </ReactFlowProvider>
+    </CanvasContext.Provider>
+  );
+});
+
+interface FlowCanvasInnerProps
+  extends Pick<
+    FlowCanvasProps,
+    'draggable' | 'onNodeDoubleClick' | 'height' | 'theme' | 'panOnMobile'
+  > {
+  drawing: Drawing;
+  change: Change;
+  focusLabels: ReadonlySet<string> | null;
+  empty: boolean;
+}
+
+function FlowCanvasInner({
+  drawing,
+  change,
+  focusLabels,
+  empty,
+  draggable = true,
+  onNodeDoubleClick,
+  height = '100%',
   theme: themeProp,
   panOnMobile = false,
-  onRequestRemount,
-}: FlowCanvasProps & { onRequestRemount?: () => void }) {
+}: FlowCanvasInnerProps) {
   const detectedTheme = useDetectTheme();
   const theme = themeProp ?? detectedTheme;
   const isMobile = useIsMobile();
   // A boolean, so zooming only re-renders the canvas when it crosses the line.
   const pinLabelsReadable = useStore((s) => s.transform[2] >= PIN_LABEL_MIN_ZOOM);
-  const definitions = definitionsProp ?? getDefaultDefinitions();
 
-  const focusLabels = useMemo(() => {
-    if (!focus) return null;
-    return new Set(Array.isArray(focus) ? focus : [focus]);
-  }, [focus]);
-
-  const cleanedCircuit = useMemo(() => {
-    return circuit ? cleanCircuitLabels(circuit) : null;
-  }, [circuit]);
-
-  // Run engine only when no layout is provided.
-  const { metadata: computedMetadata } = useLayout(layout ? null : cleanedCircuit);
-
-  const metadata = useMemo(() => {
-    if (!cleanedCircuit) return { components: {}, connections: {} } as MetadataState;
-
-    if (!layout) return computedMetadata;
-
-    // Build MetadataState from the user-provided layout. Try label first, fall
-    // back to id. Nodes missing from the layout get no position.
-    const components: Record<string, { id: string; position: { x: number; y: number } }> = {};
-    for (const node of cleanedCircuit.nodes) {
-      const labelKey = node.label || node.id;
-      const pos = layout[labelKey] ?? layout[node.id];
-      if (pos) {
-        components[node.id] = { id: node.id, position: pos };
-      }
-    }
-    return { components, connections: {} } as MetadataState;
-  }, [cleanedCircuit, computedMetadata, layout]);
-
-  const { projectedNodes, projectedEdges } = useMemo(() => {
-    if (!cleanedCircuit) return { projectedNodes: [], projectedEdges: [] };
-    const projected = projectCircuitToReactFlow(
-      cleanedCircuit,
-      metadata,
-      definitions,
-      portValues ?? undefined,
-      peripheralState ?? undefined,
-    );
-
-    const nodesWithHandlers = projected.nodes.map((node) => {
-      const nodeData = node.data as NodeData;
-      const componentRef = nodeData?.componentRef;
-      const data = { ...node.data } as NodeData;
-
-      // Pins are named, except on the harness switches and leds. The harness
-      // names each after the port it drives, so a switch labelled `a` with a
-      // port labelled `out` reads as `a.out` — but `a` in the source is the
-      // port itself, and has no `out`. A switch the author wrote does, and
-      // keeps its label.
-      if (!nodeData?.harness) data.showPortLabels = true;
-
-      if (componentRef === 'Input' && onSetNodeValue) {
-        data.onValueChange = (value: number) => onSetNodeValue(node.id, value);
-      }
-      if (onToggleNode && componentRef === 'Switch') {
-        data.onToggle = () => onToggleNode(node.id);
-      }
-      if (onLoadMemory && (componentRef === 'RV32I_InstrMem' || componentRef === 'DualPortROM')) {
-        data.onLoadMemory = (memData: Map<number, number>) => onLoadMemory(node.id, memData);
-      }
-
-      return { ...node, data };
-    });
-
-    if (focusLabels) {
-      const focusedNodeIds = new Set<string>();
-      for (const node of nodesWithHandlers) {
-        const label = (node.data as NodeData)?.label ?? node.id;
-        if (focusLabels.has(label)) focusedNodeIds.add(node.id);
-      }
-
-      return {
-        projectedNodes: nodesWithHandlers.map((node) => {
-          const label = (node.data as NodeData)?.label ?? node.id;
-          return {
-            ...node,
-            style: {
-              ...node.style,
-              opacity: focusLabels.has(label) ? 1 : 0.15,
-              transition: 'opacity 0.2s',
-            },
-          };
-        }),
-        projectedEdges: projected.edges.map((edge) => ({
-          ...edge,
-          style: {
-            ...edge.style,
-            opacity: focusedNodeIds.has(edge.source) || focusedNodeIds.has(edge.target) ? 1 : 0.15,
-            transition: 'opacity 0.2s',
-          },
-        })),
-      };
-    }
-
-    return {
-      projectedNodes: nodesWithHandlers,
-      projectedEdges: projected.edges,
-    };
-  }, [
-    cleanedCircuit,
-    metadata,
-    definitions,
-    portValues,
-    peripheralState,
-    onToggleNode,
-    onSetNodeValue,
-    onLoadMemory,
-    focusLabels,
-  ]);
-
-  const [nodes, setNodes] = useState<Node[]>([]);
-  const [edges, setEdges] = useState<Edge[]>([]);
-
+  // React Flow's own copy, which it moves nodes in as they're dragged.
+  const [nodes, setNodes] = useState<Node[]>(drawing.nodes);
+  const [edges, setEdges] = useState<Edge[]>(drawing.edges);
   const { fitView } = useReactFlow();
   const updateNodeInternals = useUpdateNodeInternals();
-  const prevCircuitIdRef = useRef<string | null>(null);
-  const prevNodeIdSetRef = useRef<Set<string>>(new Set());
-  const prevPortShapeRef = useRef<Map<string, string>>(new Map());
-  const prevNodeCountRef = useRef<number>(0);
 
+  // A new drawing on the same React Flow: an edit, or the first circuit after none.
+  const applied = useRef(drawing);
   useLayoutEffect(() => {
-    const prevName = prevCircuitIdRef.current;
-    const prevIdSet = prevNodeIdSetRef.current;
-    const prevPortShape = prevPortShapeRef.current;
-
-    const newName = cleanedCircuit?.name ?? null;
-    const newIdSet = new Set(projectedNodes.map((n) => n.id));
-
-    // Per-node port shape signature, computed synchronously so the
-    // updateNodeInternals call below doesn't depend on React's setState
-    // batching to populate change lists.
-    const newPortShape = new Map<string, string>();
-    for (const node of projectedNodes) {
-      const d = node.data as NodeData;
-      const sig = `${(d.inputNames ?? []).join('|')}>${(d.outputNames ?? []).join('|')}`;
-      newPortShape.set(node.id, sig);
+    if (applied.current === drawing) return;
+    applied.current = drawing;
+    // Nodes and edges in the same commit, so React Flow never routes the new
+    // wires against the old nodes.
+    setNodes((current) =>
+      change.kind === 'edited'
+        ? keepPositions(current, drawing.nodes, change.relayout)
+        : drawing.nodes,
+    );
+    setEdges(drawing.edges);
+    if (change.kind !== 'edited') return;
+    // Pins added or removed: React Flow measures handles once, so measure again.
+    if (change.handlesChanged.length > 0) {
+      requestAnimationFrame(() => updateNodeInternals(change.handlesChanged));
     }
-
-    prevCircuitIdRef.current = newName;
-    prevNodeIdSetRef.current = newIdSet;
-    prevPortShapeRef.current = newPortShape;
-
-    const nameChanged = newName !== prevName;
-
-    // Surviving fraction = |prev ∩ new| / max(|prev|, |new|). Topology is
-    // considered "replaced" if less than half the node ids survive on
-    // either side of the change. Using max() makes the signal symmetric:
-    // a small→big swap (e.g. cmd-z restoring a larger circuit) scores
-    // the same as the matching big→small swap, so the position-merge
-    // path doesn't preserve stale dagre positions for the few survivors
-    // while new nodes land in the fresh layout — that mismatch is what
-    // produced overlapping switches on undo. Single/double renames stay
-    // above the threshold so #111's position preservation still applies.
-    // Guards the 0/0 case on first mount — wasBlank handles it.
-    let survived = 0;
-    for (const id of newIdSet) if (prevIdSet.has(id)) survived++;
-    const denom = Math.max(prevIdSet.size, newIdSet.size);
-    const topologyReplaced = denom > 0 && survived / denom < 0.5;
-
-    const fullReset = nameChanged || topologyReplaced;
-
-    // Ids whose port set changed, computed synchronously from the ref.
-    const idsToUpdate: string[] = [];
-    if (!fullReset) {
-      for (const [id, sig] of newPortShape) {
-        const prevSig = prevPortShape.get(id);
-        if (prevSig !== undefined && prevSig !== sig) idsToUpdate.push(id);
-      }
-    }
-
-    const wasBlank = prevNodeCountRef.current === 0;
-    prevNodeCountRef.current = projectedNodes.length;
-
-    // Nodes purely added or purely removed — no rename in the mix. The
-    // preserved positions then belong to a layout computed for a different node
-    // count, while newly projected nodes carry the current one, so mixing the
-    // two put a new node exactly on top of a surviving one (adding an input
-    // landed its switch on the previous input's slot, hiding it entirely).
-    // Take the fresh layout for everything in that case.
-    //
-    // A rename removes an id *and* adds one, so it fails this test and keeps
-    // the preserved positions — which is what #111 asked for.
-    let added = 0;
-    for (const id of newIdSet) if (!prevIdSet.has(id)) added++;
-    let removed = 0;
-    for (const id of prevIdSet) if (!newIdSet.has(id)) removed++;
-    const relayout = autoLayout || (added > 0 && removed === 0) || (removed > 0 && added === 0);
-
-    setNodes((currentNodes) => {
-      const prevById = new Map(currentNodes.map((n) => [n.id, n]));
-      return projectedNodes.map((node) => {
-        const prev = prevById.get(node.id);
-        if (prev && !fullReset) {
-          // Light edit — keep React Flow's internal fields (measured handles)
-          // and the user-dragged position; only refresh data/type from projection.
-          return {
-            ...prev,
-            position: relayout ? node.position : prev.position,
-            type: node.type,
-            data: node.data,
-            selectable: node.selectable,
-            deletable: node.deletable,
-          };
-        }
-        return node;
-      });
-    });
-
-    // Edges must be set in the same commit as nodes so a key-bump remount
-    // mounts the new React Flow with both fresh — otherwise the remount
-    // happens with stale edges still in state and the in-place edge update
-    // arrives on the next render (the bug this fix exists to avoid).
-    setEdges(projectedEdges);
-
-    // Topology replacement: ask the outer wrapper to remount the entire
-    // <ReactFlowProvider>. Keying only <ReactFlow> leaves the provider's
-    // Zustand store intact and stale handle ids from the previous circuit
-    // survive, producing bent wires when paste-over shares node ids with
-    // the previous circuit. Skipped on first mount (prevIdSet empty).
-    if (fullReset && prevIdSet.size > 0) {
-      onRequestRemount?.();
-    } else if (idsToUpdate.length > 0) {
-      // Light edit with handle changes — refresh just those nodes.
-      requestAnimationFrame(() => updateNodeInternals(idsToUpdate));
-    }
-
-    // After a paste-over the remount handles fitView via React Flow's
-    // own `fitView` prop. The remaining cases are wasBlank without a
-    // remount (nodes appeared after an empty state on a stable canvas),
-    // and `relayout` — adding or removing a node re-runs the layout and
-    // changes the diagram's extent, so the old viewport no longer frames
-    // it (adding an input grows the switch column downward until it
-    // leaves the visible area).
-    if (projectedNodes.length > 0 && !fullReset && (wasBlank || relayout)) {
+    // Laid out again: the diagram's extent changed, so the old viewport no
+    // longer frames it (adding an input grew the switch column off the bottom).
+    if (change.relayout && drawing.nodes.length > 0) {
       requestAnimationFrame(() => fitView({ padding: 0.3 }));
     }
-  }, [
-    projectedNodes,
-    projectedEdges,
-    autoLayout,
-    updateNodeInternals,
-    onRequestRemount,
-    fitView,
-    cleanedCircuit?.name,
-  ]);
+  }, [drawing, change, fitView, updateNodeInternals]);
 
   const onNodesChange: OnNodesChange = useCallback((changes) => {
     setNodes((nds) => applyNodeChanges(changes, nds));
   }, []);
 
-  // ── Inspector stack for automatic drill-down ──
-  const [inspectorStack, setInspectorStack] = useState<InspectorFrame[]>([]);
-
-  const pushInspectorLevel = useCallback((frame: InspectorFrame) => {
-    setInspectorStack((prev) => [...prev, frame]);
-  }, []);
-
-  const popInspectorLevel = useCallback(() => {
-    setInspectorStack((prev) => prev.slice(0, -1));
-  }, []);
-
-  const closeInspector = useCallback(() => {
-    setInspectorStack([]);
-  }, []);
-
-  const navigateInspector = useCallback((index: number) => {
-    setInspectorStack((prev) => prev.slice(0, index + 1));
-  }, []);
-
-  // Default double-click handler: opens the inspector for composites. Node ids
-  // here are paths in the simulation, so the root frame's path is the id.
-  const defaultNodeDoubleClick = useCallback(
-    (nodeData: NodeData) => {
-      if (!nodeData.isComposite && !nodeData.hasReference) return;
-      const frame = resolveDrillTarget(nodeData, definitions);
-      if (frame) setInspectorStack([frame]);
-    },
-    [definitions],
-  );
-
-  // Use caller's handler if provided, otherwise use built-in inspector
-  const effectiveNodeDoubleClick = onNodeDoubleClickProp ?? defaultNodeDoubleClick;
-
   const handleNodeDoubleClick = useCallback(
-    (_event: React.MouseEvent, node: Node) => {
-      effectiveNodeDoubleClick(node.data as NodeData);
-    },
-    [effectiveNodeDoubleClick],
+    (_event: React.MouseEvent, node: Node) => onNodeDoubleClick?.(node.data as NodeData),
+    [onNodeDoubleClick],
   );
 
   return (
@@ -510,10 +353,7 @@ function CircuitCanvasInner({
         fitViewOptions={{
           padding: 0.3,
           ...(focusLabels && {
-            nodes: nodes.filter((n) => {
-              const label = (n.data as NodeData)?.label ?? n.id;
-              return focusLabels.has(label as string);
-            }),
+            nodes: nodes.filter((n) => focusLabels.has((n.data as NodeData).label ?? n.id)),
           }),
         }}
         nodesDraggable={draggable && !isMobile}
@@ -539,41 +379,11 @@ function CircuitCanvasInner({
           <CanvasControls />
         </Panel>
       </ReactFlow>
-      {!circuit && (
+      {empty && (
         <div className="absolute inset-0 flex items-center justify-center text-[var(--embed-text-muted)]">
           No circuit
         </div>
       )}
-      {/* Built-in inspector (only when no external onNodeDoubleClick) */}
-      {!onNodeDoubleClickProp && inspectorStack.length > 0 && (
-        <CompositeInspectorDialog
-          stack={inspectorStack}
-          definitions={definitions}
-          simulation={simulation}
-          theme={theme}
-          onClose={closeInspector}
-          onPopLevel={popInspectorLevel}
-          onPushLevel={pushInspectorLevel}
-          onNavigate={navigateInspector}
-        />
-      )}
     </div>
-  );
-}
-
-export function FlowCanvas(props: FlowCanvasProps) {
-  // Keyed at the provider level so a topology-replacement remount also wipes
-  // React Flow's Zustand store (handle registry, cached edge routes). Keying
-  // <ReactFlow> alone leaves the store intact and stale handle ids from the
-  // previous circuit survive, which is what was producing the bent wires
-  // when paste-over shared input/output names with the previous circuit.
-  const [resetGeneration, setResetGeneration] = useState(0);
-  const requestRemount = useCallback(() => {
-    setResetGeneration((g) => g + 1);
-  }, []);
-  return (
-    <ReactFlowProvider key={resetGeneration}>
-      <CircuitCanvasInner {...props} onRequestRemount={requestRemount} />
-    </ReactFlowProvider>
   );
 }

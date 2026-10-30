@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { usePeripheral } from '../canvas/values';
 import { BaseNode } from './BaseNode';
 import type { NodeData } from './NodeData';
 
@@ -8,21 +9,15 @@ interface ConsoleNodeProps {
 }
 
 interface TextOutputNodeProps extends ConsoleNodeProps {
-  /** Key in `data` that holds the text written so far. */
-  textKey: '__consoleText' | '__uartText';
   defaultLabel: string;
   placeholder: string;
 }
 
-function TextOutputNode({
-  data,
-  selected,
-  textKey,
-  defaultLabel,
-  placeholder,
-}: TextOutputNodeProps) {
+function TextOutputNode({ data, selected, defaultLabel, placeholder }: TextOutputNodeProps) {
   const textAreaRef = useRef<HTMLPreElement>(null);
-  const text = (data[textKey] as string) ?? '';
+  // The text written so far, kept by the session under the node's path.
+  const written = usePeripheral(data.path);
+  const text = typeof written === 'string' ? written : '';
 
   useEffect(() => {
     if (textAreaRef.current) {
@@ -44,8 +39,6 @@ function TextOutputNode({
       }))}
       className="min-w-[200px]"
       showPortLabels={data.showPortLabels}
-      onPortClick={data.onPortClick}
-      glowUnconnected={data.glowUnconnected}
     >
       <div className="flex flex-col items-center gap-2">
         <div className="px-2 py-1 text-xs font-medium text-[var(--embed-text-primary)]">
@@ -67,23 +60,11 @@ function TextOutputNode({
 }
 
 export function ConsoleNode(props: ConsoleNodeProps) {
-  return (
-    <TextOutputNode
-      {...props}
-      textKey="__consoleText"
-      defaultLabel="Console"
-      placeholder="// output appears here"
-    />
-  );
+  return <TextOutputNode {...props} defaultLabel="Console" placeholder="// output appears here" />;
 }
 
 export function UartTxNode(props: ConsoleNodeProps) {
   return (
-    <TextOutputNode
-      {...props}
-      textKey="__uartText"
-      defaultLabel="UART TX"
-      placeholder="// UART output appears here"
-    />
+    <TextOutputNode {...props} defaultLabel="UART TX" placeholder="// UART output appears here" />
   );
 }
