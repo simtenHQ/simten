@@ -328,7 +328,7 @@ export function FlowDiagram() {
 
 | Direction | Mechanism | Examples |
 |-----------|-----------|----------|
-| Claude → Browser | WebSocket push | Circuit updates, waveforms, test results |
+| Claude → Browser | WebSocket push | The circuit, with the inputs and memory its run starts from |
 | Browser → Claude | Render acknowledgment | Boolean ack that a pushed circuit rendered |
 
 The browser viewer is intentionally one-way: it accepts nothing actionable back, so a rendered page can't drive Claude or read its state. The MCP server provides tools, not inference; users bring their own Claude subscription. Zero AI API cost for the app developer.

@@ -23,7 +23,7 @@ import {
   ResizablePanelGroup,
 } from '@simten/shared/primitives/resizable';
 import { TooltipProvider } from '@simten/shared/primitives/tooltip';
-import { Download, Loader2, Share2 } from 'lucide-react';
+import { Activity, Download, Loader2, Share2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SiteHeader } from '@/components/SiteHeader';
 import { useTheme } from '@/components/ThemeProvider';
@@ -191,8 +191,8 @@ export function EditorWorkspace({
     { kind: 'idle' } | { kind: 'error'; message: string }
   >({ kind: 'idle' });
 
-  // The waveform panel, opened when the MCP pushes traces. It records this
-  // simulation, the same circuit the MCP pushed with them.
+  // The waveform panel, opened and closed from the toolbar. It records this
+  // simulation while it's open.
   const [waveformOpen, setWaveformOpen] = useState(false);
 
   // Editor handle for imperative get/set of the Monaco source.
@@ -279,7 +279,6 @@ export function EditorWorkspace({
 
   // Studio connection (WebSocket to MCP server)
   const { status: mcpStatus, sendRenderResult } = useMCPConnection({
-    onTraces: useCallback(() => setWaveformOpen(true), []),
     onSource: useCallback(
       (source: string, requestId: string | undefined, run: MCPRunStart) => {
         pendingRenderRef.current = requestId ?? null;
@@ -448,6 +447,18 @@ export function EditorWorkspace({
                   setTimeout(() => void actions.recompile(), 100);
                 }}
               />
+
+              <Button
+                onClick={() => setWaveformOpen((open) => !open)}
+                variant={waveformOpen ? 'secondary' : 'outline'}
+                size="sm"
+                className="gap-2"
+                title={waveformOpen ? 'Close the waveform panel' : 'Show signals over time'}
+                aria-pressed={waveformOpen}
+              >
+                <Activity className="h-4 w-4" />
+                <span className="hidden sm:inline text-xs">Waveform</span>
+              </Button>
 
               <Button
                 onClick={handleExportVerilog}

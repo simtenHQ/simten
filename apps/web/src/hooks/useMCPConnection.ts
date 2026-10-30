@@ -65,8 +65,6 @@ interface MCPCallbacks {
   onFileDeleted?: () => void;
   /** Called when an error message is received */
   onError?: (message: string) => void;
-  /** Called when traces are pushed (no current MCP tool pushes them) */
-  onTraces?: (data: unknown) => void;
   /** Called to get current circuit state for MCP server requests */
   getCircuitState?: () => unknown;
 }
@@ -189,9 +187,6 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
             break;
           case 'error':
             cb.onError?.(msg.message as string);
-            break;
-          case 'traces':
-            cb.onTraces?.(msg.data);
             break;
 
           // Pull model: MCP server is requesting state
