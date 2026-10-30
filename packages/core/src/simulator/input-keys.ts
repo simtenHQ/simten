@@ -6,9 +6,8 @@
  * sandbox.
  */
 
-import type { CircuitDefinitions, CircuitIR } from '../ir/circuit-ir.js';
+import { type CircuitDefinitions, type CircuitIR, TOP_LEVEL_NODE } from '../ir/circuit-ir.js';
 
-const TOP = '__top__';
 /** The components `set` writes by path: what a person at the board could change. */
 const CONTROLS = new Set(['Switch', 'Input']);
 
@@ -73,9 +72,9 @@ export function resolveKey(method: 'set' | 'get', name: string, scope: KeyScope)
       `${method}('${name}'): ${scope.circuitName} has both an ${isInput ? 'input' : 'output'} port and a ${type} named '${name}', so the key is ambiguous. Rename one of them.`,
     );
   }
-  if (isInput) return { kind: 'port', name, key: `${TOP}.${name}` };
+  if (isInput) return { kind: 'port', name, key: `${TOP_LEVEL_NODE}.${name}` };
   if (isControl) return { kind: 'path', path: name, key: `${name}.out` };
-  if (method === 'get' && isOutput) return { kind: 'output', key: `${TOP}.${name}` };
+  if (method === 'get' && isOutput) return { kind: 'output', key: `${TOP_LEVEL_NODE}.${name}` };
   if (type !== undefined) {
     const hint =
       method === 'set'

@@ -15,7 +15,12 @@
 import type { Library } from '../circuit/behavior.js';
 import type { PortMap } from '../circuit/builder-types.js';
 import { isSequentialCircuit } from '../circuit/is-sequential.js';
-import type { CircuitDefinitions, CircuitIR, MemoryContents } from '../ir/circuit-ir.js';
+import {
+  type CircuitDefinitions,
+  type CircuitIR,
+  type MemoryContents,
+  TOP_LEVEL_NODE,
+} from '../ir/circuit-ir.js';
 import { memoryContentsShapeError, memoryContentsToMap } from '../ir/memory-contents.js';
 import { elaborate } from './elaboration.js';
 import { createEngine } from './engine.js';
@@ -162,8 +167,6 @@ export function createSimulation(
 // Implementation
 // ============================================================================
 
-const TOP = '__top__';
-
 interface EngineSimulationOptions {
   isSequential: boolean;
   historySize: number;
@@ -260,7 +263,8 @@ class EngineSimulation implements Simulation {
   read(): Record<string, number> {
     const portValues = this.nodes.ports();
     const result: Record<string, number> = {};
-    for (const name of this.outputNames) result[name] = portValues.get(`${TOP}.${name}`) ?? 0;
+    for (const name of this.outputNames)
+      result[name] = portValues.get(`${TOP_LEVEL_NODE}.${name}`) ?? 0;
     return result;
   }
 
