@@ -437,6 +437,87 @@ const Gate = circuit('Gate', {
   });
 });
 
+describe('restart', () => {
+  /** Two NANDs, each reading the other: it holds, and there's no register for reset to clear. */
+  const SR_LATCH = `
+const Latch = circuit('Latch', {
+  nodes: { s: Switch, r: Switch, n1: Nand, n2: Nand, q: Led },
+  connect: ({ nodes: { s, r, n1, n2, q } }) => [
+    s.out.to(n1.a),
+    r.out.to(n2.b),
+    n1.out.to(n2.a, q.in),
+    n2.out.to(n1.b),
+  ],
+})`;
+
+  it('brings a latch back to power-on, where reset settles it on the inputs it was left with', async () => {
+    const { call } = startHost();
+    await call({ type: 'compile', compile: 'c1', source: SR_LATCH });
+    const opened = expectType(
+      await call({ type: 'open', session: 's1', compile: 'c1', circuit: 'Latch', history: 5 }),
+      'opened',
+    );
+    expect(opened.state.ports.get('q.in')).toBe(1);
+    await call({ type: 'set', session: 's1', values: { s: 1, r: 0 } });
+    const reset = expectType(await call({ type: 'reset', session: 's1' }), 'updated');
+    expect(reset.state.ports.get('q.in')).toBe(0);
+    const restarted = expectType(await call({ type: 'restart', session: 's1' }), 'updated');
+    expect(restarted.session).toBe('s1');
+    expect(restarted.state.ports).toEqual(opened.state.ports);
+  });
+
+  it('goes back to initialInputs, cycle 0 and fresh history', async () => {
+    const { call } = startHost();
+    await call({ type: 'compile', compile: 'c1', source: D_LATCH });
+    const opened = expectType(
+      await call({
+        type: 'open',
+        session: 's1',
+        compile: 'c1',
+        circuit: 'DLatch',
+        history: 5,
+        initialInputs: { d: 1, en: 1 },
+      }),
+      'opened',
+    );
+    await call({ type: 'set', session: 's1', values: { d: 0 } });
+    await call({ type: 'tick', session: 's1', count: 3 });
+    const res = expectType(await call({ type: 'restart', session: 's1' }), 'updated');
+    expect(res.state.ports.get('d.out')).toBe(1);
+    expect(res.state.ports).toEqual(opened.state.ports);
+    expect(res.state.cycle).toBe(0);
+    expect(res.state.history).toEqual(opened.state.history);
+  });
+
+  it('stops an auto-run', async () => {
+    vi.useFakeTimers();
+    try {
+      const clock: HostClock = {
+        now: () => Date.now(),
+        setTimeout: (callback, ms) => setTimeout(callback, ms),
+        clearTimeout: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
+      };
+      const { call, messages } = startHost({ clock });
+      await call({ type: 'compile', compile: 'c1', source: COUNTER });
+      await call({ type: 'open', session: 's1', compile: 'c1', circuit: 'Counter', history: 10 });
+      await call({ type: 'set', session: 's1', values: { en: 1 } });
+      const running = call({ type: 'run', session: 's1', speed: 300, frameRate: 30 });
+      await vi.advanceTimersByTimeAsync(200);
+      await running;
+      const restarting = call({ type: 'restart', session: 's1' });
+      await vi.advanceTimersByTimeAsync(0);
+      const res = expectType(await restarting, 'updated');
+      expect(res.state.isRunning).toBe(false);
+      expect(res.state.cycle).toBe(0);
+      const after = messages.length;
+      await vi.advanceTimersByTimeAsync(500);
+      expect(messages.length).toBe(after);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+});
+
 describe('toggle', () => {
   it('flips a port and a Switch from the value the session holds', async () => {
     const { call } = await openLatch();

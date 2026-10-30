@@ -24,11 +24,12 @@ Nothing has been released since these grew, so this is the cheapest time to chan
 - **Cards are app code.** The blog's card and Fork button move to `apps/web`, and the embed page's card to `apps/embed-page`. `CircuitEmbed` and `EmbedCard` leave the library. The zero-code way to show a circuit on any page is the iframe embed.
 - **`useSimulation` returns `{ state, actions }` and takes only how the simulation starts.**
   - Options: `initialInputs` (where the switches sit at power-on), `memory` (contents by node path, so a new program is a new run) and `history` (entries kept, 0 for none).
-  - `reset()` is the reset line, in core, the sandbox and the hook: registers and history go back to the start, memory contents stay, and switches and inputs stay where they are. `initialInputs` applies once, when the simulation opens. An app's "start over" is `set(initialInputs)` then `reset()`.
+  - `reset()` is the reset line, in core, the sandbox and the hook: registers and history go back to the start, memory contents stay, and switches and inputs stay where they are. `initialInputs` applies once, when the simulation opens.
+  - `restart()` is the power cycle, in the sandbox and the hook: the session goes back to the state it opened in, inputs at `initialInputs`, cycle 0, history empty, memory as loaded. Reset alone can't get there, because a latch built from gates settles from the inputs it's left with (#541).
   - `state` is what the simulation is doing now: `outputs` by name, `portValues`, `cycle`, `isRunning`, `speed`, `ready`, `error`, `compileError` and `history`, and also `notice` (the sandbox restarted the session), `peripheralState` (screens and consoles), `isSequential` (whether there's a clock), and the compiled circuit for the canvas and tooling: `circuit`, `circuitName`, `circuits` and `definitions`.
   - `actions` is what you can tell it to do:
     - inputs: `set({ a: 1, d: 0 })` for anything a person at the board could change, and `toggle(name)` to flip one 1-bit input or switch;
-    - the clock: `tick(n)`, `run(speed)`, `pause()`, `reset()`;
+    - the clock: `tick(n)`, `run(speed)`, `pause()`, `reset()`, `restart()`;
     - history: `stepBack()`, `stepForward()`, `seek(i)`;
     - bulk reads that save round trips: `scan`, which takes an input name or a control path, and `sample`;
     - `exportVerilog()` and `recompile()`.

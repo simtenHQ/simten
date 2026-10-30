@@ -175,8 +175,17 @@ export class SimulationClient {
     await this.update({ type: 'tick', count });
   }
 
+  /** The reset line: cycle 0 and registers cleared; inputs and memory stay. */
   async reset(): Promise<void> {
     await this.update({ type: 'reset' });
+  }
+
+  /**
+   * The power cycle: back to the state the session opened in, inputs and
+   * memory included. Stops an auto-run.
+   */
+  async restart(): Promise<void> {
+    await this.update({ type: 'restart' });
   }
 
   stepBack(): Promise<boolean> {

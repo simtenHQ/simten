@@ -284,6 +284,10 @@ interface AutoRun {
 
 interface HostSession {
   id: SessionId;
+  /** What the session was opened on and with, for `restart`. */
+  target: Openable;
+  request: Request<'open'>;
+  /** Replaced by `restart`. */
   simulation: Simulation;
   nodes: SimulationNodes;
   library: Library;
@@ -516,6 +520,13 @@ export class SessionHost {
       case 'reset':
         simulation.reset();
         return this.updated(session);
+      // Not `reset`: that leaves the inputs where they are, and a latch built
+      // from gates settles from them, so only a new simulation gets back to
+      // the state the session opened in.
+      case 'restart':
+        this.stopRun(session);
+        this.powerOn(session);
+        return this.updated(session);
       case 'sample':
         return this.sample(session, request);
       case 'scan':
@@ -536,6 +547,8 @@ export class SessionHost {
     const { simulation, ir, library } = openSimulation(target, request);
     const session: HostSession = {
       id: request.session,
+      target,
+      request,
       simulation,
       nodes: nodesOf(simulation),
       library,
@@ -551,6 +564,13 @@ export class SessionHost {
       isSequential: simulation.isSequential,
       state: this.snapshotState(session),
     };
+  }
+
+  /** Give the session a new simulation, as `open` built it. */
+  private powerOn(session: HostSession): void {
+    const { simulation } = openSimulation(session.target, session.request);
+    session.simulation = simulation;
+    session.nodes = nodesOf(simulation);
   }
 
   private updated(session: HostSession, moved?: boolean): Reply {

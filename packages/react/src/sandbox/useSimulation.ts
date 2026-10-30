@@ -133,9 +133,16 @@ export interface SimulationActions<Keys extends string = string> {
   /**
    * The reset line: back to cycle 0, registers and history to the start.
    * Memory contents stay, and so do the inputs. To start over from power-on,
-   * `set(initialInputs)` then `reset()`.
+   * `restart()`.
    */
   reset(): Promise<void>;
+  /**
+   * The power cycle: back to the state the session opened in, at cycle 0,
+   * with the inputs at `initialInputs`. Unlike `reset`, this reaches the state
+   * a latch built from gates settled in when the circuit opened. Stops an
+   * auto-run.
+   */
+  restart(): Promise<void>;
   stepBack(): Promise<boolean>;
   stepForward(): Promise<boolean>;
   seek(index: number): Promise<boolean>;
@@ -550,6 +557,7 @@ export function useSimulation(
         return withSession(undefined, ({ session: s }) => s.pause());
       },
       reset: () => withSession(undefined, ({ session: s }) => s.reset()),
+      restart: () => withSession(undefined, ({ session: s }) => s.restart()),
       stepBack: () => withSession(false, ({ session: s }) => s.stepBack()),
       stepForward: () => withSession(false, ({ session: s }) => s.stepForward()),
       seek: (index) => withSession(false, ({ session: s }) => s.seek(index)),
