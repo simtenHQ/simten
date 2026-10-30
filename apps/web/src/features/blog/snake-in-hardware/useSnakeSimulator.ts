@@ -1,7 +1,16 @@
 import { useSimulation } from '@simten/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAutoRun } from '@/lib/auto-run';
+import { useGameKeys } from '@/lib/game-keys';
 import { Snake } from './circuits';
+
+// 2-bit direction encoding: 0=up, 1=right, 2=down, 3=left
+const DIRECTIONS: Record<string, number> = {
+  ArrowUp: 0,
+  ArrowDown: 2,
+  ArrowLeft: 3,
+  ArrowRight: 1,
+};
 
 export function useSnakeSimulator() {
   // `dir` and `scan_addr` are input ports the page sets by name, as a person at
@@ -32,25 +41,19 @@ export function useSnakeSimulator() {
     [actions],
   );
 
-  // Keyboard handling: one set per key, applied before the next tick
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      // 2-bit direction encoding: 0=up, 1=right, 2=down, 3=left
-      const keyMap: Record<string, number> = {
-        ArrowUp: 0,
-        ArrowDown: 2,
-        ArrowLeft: 3,
-        ArrowRight: 1,
-      };
-      const code = keyMap[e.key];
-      if (code !== undefined) {
-        e.preventDefault();
+  // Keyboard, while the demo has focus: one set per key, applied before the next tick
+  const keys = useMemo(
+    () => ({
+      down: (key: string) => {
+        const code = DIRECTIONS[key];
+        if (code === undefined) return false;
         sendDirection(code);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [sendDirection]);
+        return true;
+      },
+    }),
+    [sendDirection],
+  );
+  const keyboard = useGameKeys(keys);
 
   // Reset returns to cycle 0, which changes `state.cycle` and so rescans the screen.
   const handleReset = useCallback(() => {
@@ -67,5 +70,6 @@ export function useSnakeSimulator() {
     setSpeed,
     handleReset,
     sendDirection,
+    keyboard,
   };
 }
