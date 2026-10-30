@@ -81,7 +81,7 @@ The surface after this:
 | `@simten/react` | `useSimulation`, `SandboxProvider`, `useSandboxClient`, `CircuitCanvas`, `ClockControls`, `WaveformViewer` |
 | `@simten/react/code-editor` | `CodeEditor`, the Monaco themes, `preloadMonaco`, `buildGlobalsFor`, `setupSimtenIntellisense`, `useTypeAcquisition` |
 | `@simten/react/styles.css` | the stylesheet |
-| `@simten/mcp` | the `simten-mcp` server, `./schemas` |
+| `@simten/mcp` | the `simten-mcp` server |
 
 ## Rejected
 
