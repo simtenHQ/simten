@@ -10,8 +10,8 @@
  * level's inputs are ports or switches, and a whole row is set in one call, so
  * a latch sees its inputs change together, as the grader writes them.
  *
- * Each run restarts the preview first, so it starts where the grader started:
- * a fresh session at power-on. The preview the player was using could be
+ * Each run restarts the preview first, a power cycle in the sandbox, so it
+ * starts where the grader did: the state a session opens in. The preview the player was using could be
  * anywhere, a counter mid-count after the last run or a latch holding what
  * they last set, and `reset` leaves the switches where they are, so a run
  * from there could disagree with the verdict it is meant to show.
