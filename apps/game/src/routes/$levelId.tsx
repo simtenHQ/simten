@@ -286,7 +286,7 @@ function PlayLevel({ level }: { level: Level }) {
     if (simulated) setCanvasReady(true);
   }, [simulated]);
 
-  const victory = useVictoryRun(level.vectors, actions.set, actions.tick);
+  const victory = useVictoryRun(level.vectors, actions);
 
   // The sandbox runs banned gates anyway, so the canvas keeps showing the last
   // circuit without one. Same check as the grader, so the two never disagree.

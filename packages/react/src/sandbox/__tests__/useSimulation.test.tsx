@@ -44,6 +44,19 @@ const RomReader = circuit('RomReader', {
 })
 `;
 
+/** Two NANDs, each reading the other: it holds, and no register is involved. */
+const SR_LATCH = `
+const Latch = circuit('Latch', {
+  nodes: { s: Switch, r: Switch, n1: Nand, n2: Nand, q: Led },
+  connect: ({ nodes: { s, r, n1, n2, q } }) => [
+    s.out.to(n1.a),
+    r.out.to(n2.b),
+    n1.out.to(n2.a, q.in),
+    n2.out.to(n1.b),
+  ],
+})
+`;
+
 const AndGate = circuit('AndGate', {
   inputs: { a: bit, b: bit },
   outputs: { y: bit },
@@ -431,6 +444,43 @@ describe('inputs by name', () => {
     expect(hook.result.current.state.cycle).toBe(3);
     expect(hook.result.current.state.outputs).toEqual({ count: 0 });
     expect(hook.result.current.state.portValues?.get('__top__.en')).toBe(0);
+  });
+
+  it('restarts from power-on, where reset settles a latch on the inputs it was left with', async () => {
+    const { hook } = render({ source: SR_LATCH });
+    await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
+    const q = () => hook.result.current.state.portValues?.get('q.in');
+    expect(q()).toBe(1);
+    await act(async () => {
+      await hook.result.current.actions.set({ s: 1, r: 0 });
+      await hook.result.current.actions.reset();
+    });
+    // The switches stay where they were, so the latch settles low again.
+    expect(q()).toBe(0);
+    const before = hook.result.current.state.circuit;
+    await act(async () => {
+      await hook.result.current.actions.restart();
+    });
+    expect(q()).toBe(1);
+    expect(hook.result.current.state.cycle).toBe(0);
+    expect(hook.result.current.state.portValues?.get('s.out')).toBe(0);
+    // Same compile, so the canvas keeps the circuit it drew.
+    expect(hook.result.current.state.circuit).toBe(before);
+  });
+
+  it('restarts at initialInputs and closes the session it replaces', async () => {
+    const { hook, calls } = render({ source: COUNTER }, { initialInputs: { en: 1 } });
+    await waitFor(() => expect(hook.result.current.state.ready).toBe(true));
+    await act(async () => {
+      await hook.result.current.actions.tick(2);
+      await hook.result.current.actions.toggle('en');
+      await hook.result.current.actions.restart();
+      await hook.result.current.actions.tick();
+    });
+    expect(hook.result.current.state.outputs).toEqual({ count: 1 });
+    expect(hook.result.current.state.cycle).toBe(1);
+    expect(calls.filter((c) => c === 'open')).toHaveLength(2);
+    expect(calls.filter((c) => c === 'close')).toHaveLength(1);
   });
 
   it('types set, toggle and outputs from a circuit built on the page', async () => {
