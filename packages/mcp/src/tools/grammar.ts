@@ -2,14 +2,14 @@
  * The circuit() API reference returned by the `get_grammar` tool: the builder
  * API plus worked examples, written as a standalone TS module.
  */
-export const GRAMMAR = `// Circuit API — write circuit files as standalone TS modules with imports,
+export const GRAMMAR = `// Circuit API: write circuit files as standalone TS modules with imports,
 // and EXPORT the top-level circuit so a testbench (.verify.ts) can import it.
 // Valid in your editor, runnable with tsx/vitest.
 
 import { circuit, bit, bus } from '@simten/core';
-import { Xor, And, Register, Adder, Constant } from '@simten/core/std';
+import { Adder, And, Constant, Led, Nand, Register, Switch, Xor } from '@simten/core/std';
 
-// Composite circuit — wire stdlib components together (export it):
+// Composite circuit: wire stdlib components together.
 export const HalfAdder = circuit('HalfAdder', {
   inputs:  { a: bit, b: bit },
   outputs: { sum: bit, carry: bit },
@@ -22,8 +22,8 @@ export const HalfAdder = circuit('HalfAdder', {
   ],
 });
 
-// Sequential circuit — Register + Adder feedback loop:
-const Counter = circuit('Counter', {
+// Sequential circuit: a Register + Adder feedback loop.
+export const Counter = circuit('Counter', {
   outputs: { count: bus(8) },
   nodes: {
     reg: Register({ width: 8 }),
@@ -37,15 +37,16 @@ const Counter = circuit('Counter', {
     one.out.to(adder.b),
     zero.out.to(adder.carry_in),
     adder.sum.to(reg.data),
-    we.out.to(reg.we),  // write-enable must be wired — Constant({ value: 1 }) for always-on
+    we.out.to(reg.we),  // write-enable must be wired: Constant({ value: 1 }) for always-on
     reg.q.to(outputs.count),
   ],
 });
 
 // Need N of something? A nodes entry can be an array, expanded to \`n0\`, \`n1\`,
-// … and wired as \`n[i]\`. Ordinary TypeScript — no helper, and \`n[i].a\`
-// autocompletes because an array keeps its element type:
-const ByteNot = circuit('ByteNot', {
+// ... and wired as \`n[i]\`. Ordinary TypeScript, no helper, and \`n[i].a\`
+// autocompletes because an array keeps its element type. A circuit driven by
+// Switch nodes is driven by their paths: simulate(ByteNot).set({ a0: 1 }).
+export const ByteNot = circuit('ByteNot', {
   nodes: {
     a:   Array.from({ length: 8 }, () => Switch),
     n:   Array.from({ length: 8 }, () => Nand),
@@ -58,9 +59,9 @@ const ByteNot = circuit('ByteNot', {
     ]),
 });
 
-// Parameterized components are factory calls — call them with the options
-// you want to specialize:
-const Adder8 = circuit('Adder8', {
+// Parameterized components are factory calls: call them with the options
+// you want to specialize.
+export const Adder8 = circuit('Adder8', {
   inputs:  { a: bus(8), b: bus(8) },
   outputs: { sum: bus(8), carry: bit },
   nodes:   { add: Adder({ width: 8 }) },
@@ -72,8 +73,8 @@ const Adder8 = circuit('Adder8', {
   ],
 });
 
-// Stdlib components import from '@simten/core/std':
+// Stdlib components import from '@simten/core/std' (list_components has them all):
 // And, Or, Not, Xor, Nand, Nor, Adder, Register, Mux, Decoder,
 // ROM, RAM, DFlipFlop, Switch, Led, Input, Output, Constant, ...
-// (circuit/bit/bus/reg/mem come from '@simten/core'.)
+// circuit, bit, bus, reg and mem come from '@simten/core'.
 `;

@@ -2,21 +2,9 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
+import { toolsOf as capture } from '../__tests__/tools.js';
 import { registerSetupTool } from './setup.js';
 import { registerVerifyTool } from './verify.js';
-
-type Handler = (
-  args: Record<string, unknown>,
-) => Promise<{ content: { text: string }[]; isError?: boolean }>;
-
-function capture(register: (s: never) => void): Map<string, Handler> {
-  const tools = new Map<string, Handler>();
-  const server = {
-    tool: (name: string, _d: string, _s: unknown, h: Handler) => tools.set(name, h),
-  };
-  register(server as never);
-  return tools;
-}
 
 describe('setup_project registration', () => {
   it('registers the setup_project tool', () => {

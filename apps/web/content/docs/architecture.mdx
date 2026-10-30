@@ -214,7 +214,7 @@ In the browser, the page can only set input ports and Switch and Input nodes (`S
 |---------|-------------|
 | `@simten/core` | TypeScript builder, compiler, validator, simulator engine, `Simulation`, environmental state, Verilog export. No UI dependencies. |
 | `@simten/sandbox` | The sandbox without React: `SandboxClient` and `SimulationClient` for pages, and the worker's session host, the iframe's relay and `inProcessSandbox()` for tests. Depends on core. |
-| `@simten/react` | React: `useSimulation`, `SandboxProvider`, `CircuitCanvas`, `ClockControls`, `WaveformViewer`, and the code editor. Depends on core and sandbox. |
+| `@simten/react` | React: `useSimulation`, `SandboxProvider`, `CircuitCanvas`, `ClockControls`, and the code editor. Depends on core and sandbox. |
 | `@simten/mcp` | MCP server for Claude Code integration |
 
 The library gives you data, input and output, and the apps arrange them (decision 0010). The cards around circuits on simten.dev, the embed page's view and the game's dialogs are app code; what the apps share (UI primitives, share links, the Fork button, the theme) is in `@simten/shared`, a private workspace package that isn't published.
@@ -265,7 +265,7 @@ The editor holds the source text and passes it to `useSimulation`. The canvas dr
 | `@simten/core/internal` | `elaborate`, `createEngine`, `createSimulation`, `nodesOf`, `SimulatorEngine`, the IR types (`CircuitIR`), a built circuit's internals (`internalsOf`), libraries of definitions and behavior (`libraryOf`), `executeCircuitCode`, `captureEnvironmentalState`, `restoreEnvironmentalState`: for Simten's own packages, no stability promise |
 | `@simten/sandbox` | `SandboxClient`, `SimulationClient`: the sandbox from any page, no framework |
 | `@simten/sandbox/host` | The worker side (`SessionHost`, `createRelay`) and `inProcessSandbox()` for tests |
-| `@simten/react` | `useSimulation`, `SandboxProvider`, `useSandboxClient`, `CircuitCanvas`, `ClockControls`, `WaveformViewer` |
+| `@simten/react` | `useSimulation`, `SandboxProvider`, `useSandboxClient`, `CircuitCanvas`, `ClockControls` |
 | `@simten/react/code-editor` | `CodeEditor`, `setupSimtenIntellisense`, `useTypeAcquisition`, `registerSimtenThemes`: Monaco with circuit IntelliSense. See [Code Editor](/docs/code-editor) |
 | `@simten/react/styles.css` | The stylesheet, with the theme as CSS variables |
 
@@ -277,12 +277,12 @@ The same engine powers two distinct consumption paths. The split is **interactiv
 
 | Path | Where it runs | Has a canvas? | Drives the canvas? | Typical use |
 |------|---------------|---------------|--------------------|-------------|
-| **Sandbox** | Browser worker (editor, `CircuitCanvas`, embed pages) | yes | only via human clicks or MCP actions | live editing, interactive embeds, LLM-driven design |
+| **Sandbox** | Browser worker (editor, `CircuitCanvas`, embed pages) | yes | only via human clicks | live editing, interactive embeds, viewing what an assistant built |
 | **Script** | Node (`tsx`, `vitest`, CI) | no | n/a, there is none | property tests, fuzzers, batch sweeps, CI verification |
 
 ### Sandbox path
 
-When user code runs inside the editor or an embed, it goes through the sandbox iframe + worker (see [Security](/docs/security)). Code in this path *defines* circuits; *something else* drives them: a human flipping a switch, or Claude calling MCP actions like `RUN_SIMULATION` / `SET_INPUT`. User code itself currently has no API to drive the canvas simulator. The canvas sim and user code share the sandbox worker, but a user-code `simulate(...)` call would still create a separate instance instead of moving the canvas; wiring it to the canvas slot is what self-animating embeds would need.
+When user code runs inside the editor or an embed, it goes through the sandbox iframe + worker (see [Security](/docs/security)). Code in this path *defines* circuits; a person at the canvas drives them, by flipping a switch or pressing run. The MCP's `show_circuit` only pushes a circuit to the canvas, with the inputs and memory its run starts from; nothing reads the canvas back. User code itself currently has no API to drive the canvas simulator. The canvas sim and user code share the sandbox worker, but a user-code `simulate(...)` call would still create a separate instance instead of moving the canvas; wiring it to the canvas slot is what self-animating embeds would need.
 
 ### Script path
 
@@ -328,7 +328,7 @@ export function FlowDiagram() {
 
 | Direction | Mechanism | Examples |
 |-----------|-----------|----------|
-| Claude → Browser | WebSocket push | Circuit updates, waveforms, test results |
+| Claude → Browser | WebSocket push | The circuit, with the inputs and memory its run starts from |
 | Browser → Claude | Render acknowledgment | Boolean ack that a pushed circuit rendered |
 
 The browser viewer is intentionally one-way: it accepts nothing actionable back, so a rendered page can't drive Claude or read its state. The MCP server provides tools, not inference; users bring their own Claude subscription. Zero AI API cost for the app developer.

@@ -15,7 +15,7 @@ You run your assistant in the terminal. When you ask it to build something, it:
 2. Pushes it to a live viewer in your browser, and the circuit appears on the canvas instantly
 3. Runs a simulation, or a self-checking testbench, to confirm it behaves correctly
 
-The browser is a **viewer**: the assistant pushes circuits, waveforms, and test results to it for display. It is one-way by design: the page shows what was built and sends nothing actionable back (see [Security](/docs/security#local-studio-server)). You drive the conversation from the terminal, where your assistant already lives.
+The browser is a **viewer**: the assistant pushes circuits to it for display. It is one-way by design: the page shows what was built and sends nothing actionable back (see [Security](/docs/security#local-studio-server)). You drive the conversation from the terminal, where your assistant already lives.
 
 ## Setup
 
@@ -41,15 +41,19 @@ Once the MCP server is registered, your assistant has access to these tools:
 
 | Tool | What it does |
 |------|-------------|
+| `get_started` | Orientation and the bundled examples (Snake, a RISC-V computer, an ALU, ...). With `example`, writes one to `circuits/<id>.circuit.ts`. No setup needed. |
 | `get_grammar` | Return the `circuit()` builder API (inputs/outputs, nodes, connect) with worked examples. |
 | `list_components` | Return the full catalog of stdlib components, each with its ports and constructor options (e.g. `Register({ width })`). |
-| `get_verify_api` | Return how to write a `.verify.ts` testbench: the `simulate()` stepper API, `verify.exhaustive`/`verify.check`, `declareOracle`, and worked examples. |
-| `show_circuit` | Push a circuit file to the browser viewer and open a live preview. Watches the file for changes. |
-| `check_circuit` | Validate circuit source (syntax, semantic, type, structural) without running it. |
-| `simulate_circuit` | Compile and simulate; return signal traces and the steady-state cycle. Observation only: shows what the circuit does, not whether it's correct. |
+| `get_verify_api` | Return how to write a `.verify.ts` testbench: `simulate(top, { memory })`, `set` for ports and switches, `verify.exhaustive`/`verify.check`, `declareOracle`, and worked examples. |
+| `check_circuit` | Compile a circuit and report whether it builds, with the location of a compile error. |
+| `simulate_circuit` | Compile and simulate; return signal traces and the steady-state cycle. Observation only: shows what the circuit does, not whether it's correct. Never touches the canvas. |
+| `show_circuit` | Paint a circuit on the browser canvas, opening the viewer if needed. The file is read once, not watched: the assistant calls it again to repaint. |
+| `setup_project` | Make a folder ready for `verify_circuit`: writes `package.json` and installs `@simten/core`, `fast-check` and `tsx`. Only verify needs it. |
 | `verify_circuit` | Run a self-checking `.verify.ts` testbench at a declared oracle tier. This is the correctness gate (see [Verifying circuits](/docs/verifying-circuits)). |
-| `read_waveform` | Query a VCD waveform for specific signals over a cycle window. |
-| `run_on_fpga` | Build and run the circuit on a connected FPGA board. |
+
+`simulate_circuit` and `show_circuit` start a run the same way. `inputs` maps input port names, or the paths of Switch and `Input` nodes, to numbers, as `simulate(top).set()` takes them. `memoryData` maps exact node paths to `{ address: value }` contents, as `simulate(top, { memory })` does. A key or path that doesn't resolve is an error.
+
+Inside a checkout of the Simten repo, the server also registers `run_on_fpga` (build, flash and capture a project on a ULX3S board). It works on files under `hardware/ulx3s`, so it isn't listed anywhere else.
 
 `get_grammar`, `list_components`, and `get_verify_api` exist because clients cap an MCP server's instructions *and each tool description* at 2 KB, too small to inline the circuit API, the component catalog, or the testbench-writing guide. The assistant calls these on demand to get the authoritative part names, signatures, and `simulate()` API rather than guessing.
 
@@ -60,7 +64,7 @@ The MCP server runs locally alongside your assistant and serves two roles:
 1. **MCP tool provider**: the assistant calls tools via the standard MCP protocol (stdio transport).
 2. **Local studio**: a single HTTP + WebSocket server on `localhost:19847` serves the bundled viewer *and* hosts the socket the viewer connects back on. The page and the socket share one origin, which is what sidesteps the browser's Local Network Access block.
 
-When the assistant calls `show_circuit` (or pushes traces / test results), the data flows **one way** to the viewer for display. The viewer sends back only a boolean render acknowledgment, and there is no channel for the page to drive the assistant or read host state.
+When the assistant calls `show_circuit`, the data flows **one way** to the viewer for display. The viewer sends back only a boolean render acknowledgment, and there is no channel for the page to drive the assistant or read host state.
 
 ```
 Assistant (terminal)
@@ -93,7 +97,7 @@ Browser viewer
 **The assistant:**
 1. Edits the circuit file it already wrote
 2. Adds a Switch and Mux for reset logic
-3. Calls `show_circuit` again, and the viewer updates live, and you see the reset switch appear
+3. Calls `show_circuit` again, and the viewer repaints with the reset switch
 
 ## Running without an assistant
 
@@ -103,4 +107,4 @@ The app works without any AI assistant. You can:
 - Explore the interactive blog posts
 - Embed circuits in your own React app
 
-An assistant is an enhancement, not a requirement. The MCP server adds an AI tutor to the experience, but all the tools and content work standalone.
+An assistant is an addition, not a requirement: everything on the site works without one.

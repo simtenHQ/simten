@@ -1,6 +1,7 @@
 import { resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { handleReadWaveform } from './read_waveform.js';
+import { toolOf } from '../__tests__/tools.js';
+import { handleReadWaveform, registerReadWaveformTool } from './read_waveform.js';
 
 const FIX = (name: string) => resolve(__dirname, '../__fixtures__/vcd', name);
 
@@ -11,9 +12,9 @@ function parsePayload(result: { content: Array<{ text: string }>; isError?: bool
 describe('handleReadWaveform — happy paths', () => {
   it('changes format on synthetic-clock returns shaped JSON', async () => {
     const r = await handleReadWaveform({
-      vcd_path: FIX('synthetic-clock.vcd'),
+      vcdPath: FIX('synthetic-clock.vcd'),
       signals: ['a'],
-      cycle_range: [0, 4],
+      cycleRange: [0, 4],
       format: 'changes',
       edge: 'rising',
     });
@@ -31,9 +32,9 @@ describe('handleReadWaveform — happy paths', () => {
 
   it('real fixture: query tb.clk + a signal over cycles 0-20 of R-Type_ADD_basic', async () => {
     const r = await handleReadWaveform({
-      vcd_path: FIX('R-Type_ADD_basic.vcd'),
+      vcdPath: FIX('R-Type_ADD_basic.vcd'),
       signals: ['tb.clk', 'tb.cpu.w_cpu_alu_result'],
-      cycle_range: [0, 20],
+      cycleRange: [0, 20],
       format: 'changes',
       edge: 'rising',
     });
@@ -55,9 +56,9 @@ describe('handleReadWaveform — sanity guard fires before any I/O', () => {
   // if I/O happens first, we'd get vcd_not_found.
   it('cycle_range span > 50 000 short-circuits before path resolution', async () => {
     const r = await handleReadWaveform({
-      vcd_path: '/tmp/definitely-not-here-987654.vcd',
+      vcdPath: '/tmp/definitely-not-here-987654.vcd',
       signals: ['clk'],
-      cycle_range: [0, 50_001],
+      cycleRange: [0, 50_001],
       format: 'changes',
       edge: 'rising',
     });
@@ -71,9 +72,9 @@ describe('handleReadWaveform — sanity guard fires before any I/O', () => {
 describe('handleReadWaveform — error mappings', () => {
   it('missing file → vcd_not_found isError', async () => {
     const r = await handleReadWaveform({
-      vcd_path: '/tmp/this-file-does-not-exist-12345.vcd',
+      vcdPath: '/tmp/this-file-does-not-exist-12345.vcd',
       signals: ['clk'],
-      cycle_range: [0, 4],
+      cycleRange: [0, 4],
       format: 'changes',
       edge: 'rising',
     });
@@ -84,9 +85,9 @@ describe('handleReadWaveform — error mappings', () => {
 
   it('ambiguous leaf on real CPU VCD → ambiguous_signal isError', async () => {
     const r = await handleReadWaveform({
-      vcd_path: FIX('R-Type_ADD_basic.vcd'),
+      vcdPath: FIX('R-Type_ADD_basic.vcd'),
       signals: ['clk'], // ambiguous: tb.clk vs tb.cpu.clk
-      cycle_range: [0, 5],
+      cycleRange: [0, 5],
       format: 'changes',
       edge: 'rising',
     });
@@ -98,9 +99,9 @@ describe('handleReadWaveform — error mappings', () => {
 
   it('unknown signal → unknown_signal with Levenshtein suggestions', async () => {
     const r = await handleReadWaveform({
-      vcd_path: FIX('synthetic-clock.vcd'),
+      vcdPath: FIX('synthetic-clock.vcd'),
       signals: ['ckl'], // typo
-      cycle_range: [0, 4],
+      cycleRange: [0, 4],
       format: 'changes',
       edge: 'rising',
     });
@@ -112,9 +113,9 @@ describe('handleReadWaveform — error mappings', () => {
 
   it('cycle range out of bounds → cycle_range_out_of_bounds isError', async () => {
     const r = await handleReadWaveform({
-      vcd_path: FIX('synthetic-clock.vcd'),
+      vcdPath: FIX('synthetic-clock.vcd'),
       signals: ['clk'],
-      cycle_range: [0, 100], // synth has 5 cycles
+      cycleRange: [0, 100], // synth has 5 cycles
       format: 'changes',
       edge: 'rising',
     });
@@ -129,9 +130,9 @@ describe('handleReadWaveform — output cap exceeded is success, not error', () 
   it('returns truncated:true in payload, NOT isError', async () => {
     // Real CPU VCD has many cycles; force per-signal cap by requesting a wide window.
     const r = await handleReadWaveform({
-      vcd_path: FIX('R-Type_ADD_basic.vcd'),
+      vcdPath: FIX('R-Type_ADD_basic.vcd'),
       signals: ['tb.clk'],
-      cycle_range: [0, 100],
+      cycleRange: [0, 100],
       format: 'changes',
       edge: 'rising',
     });
@@ -140,5 +141,26 @@ describe('handleReadWaveform — output cap exceeded is success, not error', () 
     // tb.clk has hundreds of transitions in [0,100] — far above 200 cap.
     // (Cap may not trigger if the VCD has fewer cycles; spot-check it parsed.)
     expect(p.signals[0].resolved).toBe('tb.clk');
+  });
+});
+
+// Not registered by the server until #539; the registration still has to work.
+describe('read_waveform registration', () => {
+  const call = toolOf((server) => registerReadWaveformTool(server, '/'));
+
+  it('takes camelCase parameters and answers through the handler', async () => {
+    const r = await call({
+      vcdPath: FIX('synthetic-clock.vcd'),
+      signals: ['a'],
+      cycleRange: [0, 4],
+    });
+    expect(r.isError).toBeUndefined();
+    expect(parsePayload(r).cycle_range).toEqual([0, 4]);
+  });
+
+  it('rejects the old snake_case names', async () => {
+    await expect(
+      call({ vcd_path: FIX('synthetic-clock.vcd'), signals: ['a'], cycle_range: [0, 4] }),
+    ).rejects.toThrow();
   });
 });

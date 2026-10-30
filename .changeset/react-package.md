@@ -14,7 +14,7 @@ Where things moved. The surface itself is decision 0010's, described in the `use
 | `ClockControls` from `@simten/ui/editor/components` | `@simten/react`, taking `simulation` |
 | `@simten/ui/sandbox` | `@simten/react` |
 | `@simten/ui/monaco` | `@simten/react/code-editor` |
-| `@simten/ui/waveform` | `@simten/react`: `WaveformViewer`, taking `simulation` |
+| `@simten/ui/waveform` | not public for now: the waveform viewer comes back once it can pick which signals to show (#539) |
 | `@simten/ui/canvas`, `/nodes`, `/share`, `/primitives/*`, `/styles/theme.css`; `ErrorDisplay`, `ErrorBoundary`, `ShareCircuitProvider`, `useShareCircuit`, `FlatPortValueMap` from `@simten/embed` | no longer public: canvas internals, or Simten's own app code |
 
 New in this package:

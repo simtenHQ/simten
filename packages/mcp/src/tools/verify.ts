@@ -12,7 +12,7 @@
  * `verify.run()`. It also runs directly under `tsx` and under `vitest`.
  */
 
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import {
   VERIFY_JSON_BEGIN,
   VERIFY_JSON_END,
@@ -48,24 +48,26 @@ const oracleSchema = z.object({
 });
 
 export function registerVerifyTool(server: McpServer): void {
-  server.tool(
+  server.registerTool(
     'verify_circuit',
-    DESCRIPTION,
     {
-      testbench: z
-        .string()
-        .describe(
-          'Path to the .verify.ts testbench file (it imports its own DUT). Relative to the project root.',
+      description: DESCRIPTION,
+      inputSchema: z.strictObject({
+        testbench: z
+          .string()
+          .describe(
+            'Path to the .verify.ts testbench file (it imports its own DUT). Relative to the project root.',
+          ),
+        oracle: oracleSchema.describe(
+          'Required declaration of the oracle tier and its independence basis — the contract gate',
         ),
-      oracle: oracleSchema.describe(
-        'Required declaration of the oracle tier and its independence basis — the contract gate',
-      ),
-      timeoutMs: z
-        .number()
-        .int()
-        .min(1)
-        .optional()
-        .describe('Wall-clock budget in ms (default 30000); the subprocess is killed past it'),
+        timeoutMs: z
+          .number()
+          .int()
+          .min(1)
+          .optional()
+          .describe('Wall-clock budget in ms (default 30000); the subprocess is killed past it'),
+      }),
     },
     async ({ testbench, oracle, timeoutMs }) => {
       // Preflight: verify runs the testbench via tsx and resolves @simten/core +

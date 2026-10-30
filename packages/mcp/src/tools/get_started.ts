@@ -21,7 +21,7 @@
 
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { EXAMPLES, type Example } from '@simten/core/examples';
 import * as std from '@simten/core/std';
 import { z } from 'zod';
@@ -81,7 +81,7 @@ THE WORKFLOW
 2. check_circuit validates it; simulate_circuit runs it and returns signal traces. In-process, no setup.
 3. show_circuit paints it on an interactive canvas in the browser — drillable down to the gates.
 4. verify_circuit proves it correct against an oracle (get_verify_api explains testbenches). This is the only step that needs setup_project first.
-5. The same circuit exports to Verilog and runs on a ULX3S FPGA (run_on_fpga).
+5. The same circuit exports to Verilog (@simten/core/verilog) for synthesis onto an FPGA.
 
 BUNDLED EXAMPLES
 Load one with get_started({ example: "<id>" }) — it is written to circuits/<id>.circuit.ts, then show_circuit paints it. No setup, works in an empty folder.
@@ -94,20 +94,22 @@ These examples are maintained and tested in the simten repo — viewing one need
 }
 
 export function registerGetStartedTool(server: McpServer): void {
-  server.tool(
+  server.registerTool(
     'get_started',
-    DESCRIPTION,
     {
-      example: z
-        .string()
-        .optional()
-        .describe(
-          `Example id to write to circuits/<id>.circuit.ts (one of: ${EXAMPLES.map((e) => e.id).join(', ')}). Omit to get the orientation and example menu.`,
-        ),
-      dir: z
-        .string()
-        .optional()
-        .describe('Project root to write the example under (default: the MCP working directory)'),
+      description: DESCRIPTION,
+      inputSchema: z.strictObject({
+        example: z
+          .string()
+          .optional()
+          .describe(
+            `Example id to write to circuits/<id>.circuit.ts (one of: ${EXAMPLES.map((e) => e.id).join(', ')}). Omit to get the orientation and example menu.`,
+          ),
+        dir: z
+          .string()
+          .optional()
+          .describe('Project root to write the example under (default: the MCP working directory)'),
+      }),
     },
     async ({ example, dir }) => {
       if (!example) {

@@ -198,7 +198,7 @@ The model above is the default and matches what `npm test` does. If your threat 
 
 ## Local studio server
 
-Separate from the host-execution model above (which governs running *your* code), the MCP also runs a small server that drives a **viewer** in your browser: when Claude calls `show_circuit`, the MCP serves a bundled, standalone editor build and pushes circuits, waveforms, and test results to it for display. The page and its WebSocket share one `localhost` origin, which sidesteps the browser's Local Network Access block (a public page may not reach `ws://localhost`).
+Separate from the host-execution model above (which governs running *your* code), the MCP also runs a small server that drives a **viewer** in your browser: when Claude calls `show_circuit`, the MCP serves a bundled, standalone editor build and pushes circuits to it for display. The page and its WebSocket share one `localhost` origin, which sidesteps the browser's Local Network Access block (a public page may not reach `ws://localhost`).
 
 Because that server is browser-facing, its security rests on four properties:
 

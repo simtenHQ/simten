@@ -19,7 +19,7 @@ Nothing has been released since these grew, so this is the cheapest time to chan
 
 - **One canvas takes a simulation.** `<CircuitCanvas simulation={sim} />` draws any running circuit. It shows its own loading and error states, and clicking a switch calls the simulation's actions. Drill-down is built in: double-clicking a composite opens its insides as a live view of the same simulation, with breadcrumbs, so callers pass nothing for it. The editor, the game, the blog demos and the embed page all use it. `SimulationView` and `CircuitViewer` are deleted.
 - **`ClockControls` takes the same simulation and renders nothing for a circuit without a clock.** It stays a separate component because the editor and the game put it in their own toolbars. Render it next to the canvas and it does the right thing for any circuit.
-- **`WaveformViewer` takes the same simulation.** It's the second way to look at a run, signals over time, not a second way to draw the circuit. It records the run while it's mounted, and Save VCD downloads the recording for GTKWave. It used to be a viewer of VCD files: loading a VCD, and the editor's replay of traces the MCP pushed, are dropped.
+- **`WaveformViewer` takes the same simulation.** Deferred to #539: it isn't public until it can pick which signals to show. It's the second way to look at a run, signals over time, not a second way to draw the circuit. It records the run while it's mounted, and Save VCD downloads the recording for GTKWave. It used to be a viewer of VCD files: loading a VCD, and the editor's replay of traces the MCP pushed, are dropped.
 - **`CodeEditor` is the input.** It's Monaco with Simten's autocomplete and error markers, and it knows nothing about simulations. Its entry is `@simten/react/code-editor` (renamed from `./monaco`), kept separate so the canvas never pulls in Monaco. Wiring it up is two lines: `useSimulation({ source })`, and `diagnostics` from `compileError`. The entry also exports Simten's Monaco themes (`registerSimtenThemes`, `SIMTEN_DARK`, `SIMTEN_LIGHT`), `preloadMonaco` and `buildGlobalsFor` (the game warms the editor and limits its globals per level), and `setupSimtenIntellisense` with `useTypeAcquisition`, for apps that bring their own Monaco instance.
 - **Cards are app code.** The blog's card and Fork button move to `apps/web`, and the embed page's card to `apps/embed-page`. `CircuitEmbed` and `EmbedCard` leave the library. The zero-code way to show a circuit on any page is the iframe embed.
 - **`useSimulation` returns `{ state, actions }` and takes only how the simulation starts.**
@@ -78,10 +78,10 @@ The surface after this:
 | `@simten/core/verify`, `/verilog`, `/examples` | testbenches, Verilog export and import, example circuits |
 | `@simten/sandbox` | `SandboxClient`, `SimulationClient`, `SandboxError` |
 | `@simten/sandbox/host` | the worker side (`SessionHost`, `createRelay`) and `inProcessSandbox()` for tests |
-| `@simten/react` | `useSimulation`, `SandboxProvider`, `useSandboxClient`, `CircuitCanvas`, `ClockControls`, `WaveformViewer` |
+| `@simten/react` | `useSimulation`, `SandboxProvider`, `useSandboxClient`, `CircuitCanvas`, `ClockControls` (`WaveformViewer` is deferred to #539) |
 | `@simten/react/code-editor` | `CodeEditor`, the Monaco themes, `preloadMonaco`, `buildGlobalsFor`, `setupSimtenIntellisense`, `useTypeAcquisition` |
 | `@simten/react/styles.css` | the stylesheet |
-| `@simten/mcp` | the `simten-mcp` server, `./schemas` |
+| `@simten/mcp` | the `simten-mcp` server |
 
 ## Rejected
 

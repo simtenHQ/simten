@@ -8,80 +8,20 @@
  *   claude mcp add simten node packages/mcp/bin/simten-mcp.js
  */
 
-import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
-
-// Read version from package.json at runtime so the MCP `initialize` response
-// reports the actual published version rather than a hand-maintained constant.
-// `with { type: 'json' }` is the standard import-attribute form (Node 20+, TS 5.3+).
-import pkg from '../package.json' with { type: 'json' };
+import { serveStdio } from '@modelcontextprotocol/server/stdio';
+import { createSimtenServer } from './create-server.js';
 import { getOrCreateServer, getPreviewServer } from './lib/preview-singleton.js';
-import { registerCheckTool } from './tools/check.js';
-import { registerGetStartedTool } from './tools/get_started.js';
-import { registerReadWaveformTool } from './tools/read_waveform.js';
-import { registerReferenceTools } from './tools/reference.js';
-import { registerRunOnFpgaTool } from './tools/run_on_fpga.js';
-import { registerSetupTool } from './tools/setup.js';
-import { registerShowTools } from './tools/show.js';
-import { registerSimulateTool } from './tools/simulate.js';
-import { registerVerifyTool } from './tools/verify.js';
+import { findSimtenRepo } from './lib/repo-root.js';
 
-// NOTE: clients truncate an MCP server's `instructions` at ~2KB (Claude Code
-// does — https://code.claude.com/docs/en/mcp.md), so this MUST stay small and
-// front-load what matters. The circuit-builder API and the ~10KB component
-// catalog deliberately do NOT live here — they'd be cut — and are exposed via
-// the `get_grammar` / `list_components` tools instead (tool results aren't
-// capped). Keep critical guidance (the verify contract, the reference pointer)
-// near the top so it survives truncation.
-const instructions = `You help developers design, simulate, and verify hardware from TypeScript. Circuits are files the host edits (write to \`circuits/<name>.circuit.ts\` unless told otherwise); the simten tools check, simulate, verify, and visualize them. If the user asks what simten is, wants a demo, or doesn't know where to start, call \`get_started\` (orientation + bundled examples, zero setup); if they ask for a specific circuit, skip it and build.
+// Decided once, at startup: the tool list stays fixed for the process.
+const repoRoot = findSimtenRepo();
 
-## Setup — only needed for verify
-\`check_circuit\`, \`simulate_circuit\`, \`show_circuit\`, and \`get_started\` need no setup. \`verify_circuit\` does — it runs on the host via \`tsx\` and resolves \`@simten/core\` + \`fast-check\` from the project. Before a project's first verify, call \`setup_project\` once (writes \`package.json\`, installs the deps); it reports the file extension to use (\`.ts\`, or \`.mts\` for an existing CommonJS project). \`verify_circuit\` will tell you to run it if you forget.
-
-## Reference (call these — don't guess)
-This server's instructions are truncated by clients at ~2KB, so the full reference lives in tools:
-- \`get_grammar\` — the \`circuit()\` API (inputs/outputs, nodes, connect) with examples. Read before writing a circuit.
-- \`list_components\` — every available component with its ports and constructor options (e.g. \`Register({ width })\`).
-
-## The contract
-- **Done = correct, at a declared tier.** A non-trivial design is complete only when \`verify_circuit\` passes at the highest feasible oracle tier (its description defines the tiers), sibling \`.verify.ts\` still pass (re-run them for any circuit you touched), and integrated changes have a system-level verify. \`simulate_circuit\` shows what a circuit *does*, not that it's correct — don't stop at a plausible waveform.
-- **Don't weaken the oracle to pass** — the \`independence_basis\` makes that visible. Lead with what you checked, against what, at what tier.
-
-## Writing circuits
-Write each circuit as a standalone TS module: \`import { circuit, bit, bus } from '@simten/core'\`, stdlib from \`@simten/core/std\`, and **\`export\`** the top-level circuit so a testbench can import it. Don't write import-free code.
-
-## Canvas & trust
-\`show_circuit\` is the only tool that paints; the canvas is a one-way **viewer** (it displays/simulates what you push and sends nothing back). \`show_circuit\` is also the ONLY thing that updates the canvas — editing the \`.circuit.ts\` does NOT auto-update the browser; re-call \`show_circuit\` to repaint (at a verify pass, not during tight iteration). The web editor is a sandbox **view** of the file: the file you edit is the source of truth; in-browser edits are local experiments. \`verify_circuit\` runs the testbench on the host via \`tsx\` (full node/npm, your trust level — like \`npm test\`); open unfamiliar or shared circuits in the sandboxed web \`/circuit\` editor, not locally.
-`;
-
-const server = new McpServer(
-  {
-    name: 'simten',
-    version: pkg.version,
-  },
-  {
-    capabilities: {},
-    instructions,
-  },
-);
-
-registerGetStartedTool(server);
-registerCheckTool(server);
-registerSimulateTool(server);
-registerVerifyTool(server);
-registerSetupTool(server);
-registerShowTools(server);
-registerRunOnFpgaTool(server);
-registerReadWaveformTool(server);
-registerReferenceTools(server);
-
-// The local studio is VIEWER-ONLY: the MCP pushes circuits to the browser for
-// display/simulation and accepts nothing actionable back. The browser→Claude
-// chat bridge (push_chat_response / send-to-claude) and the get_circuit_state
-// read-back are intentionally absent — see the security note in ws-server.ts.
-
-const transport = new StdioServerTransport();
-await server.connect(transport);
+// serveStdio speaks the 2026-07-28 revision to a client that opens with it and
+// the 2025 revisions (initialize) to one that doesn't. A plain connect() on a
+// StdioServerTransport would only ever speak 2025.
+const handle = serveStdio(() => createSimtenServer({ repoRoot }), {
+  onerror: (err) => process.stderr.write(`[simten-mcp] ${err.message}\n`),
+});
 
 // Start the WS server eagerly so the browser can reconnect immediately after MCP restart.
 // Without this, the server only starts when a tool is called (lazy), leaving the browser
@@ -113,21 +53,16 @@ function shutdown(reason: string): void {
   } catch {
     /* best effort — exit regardless */
   }
-  process.exit(0);
+  // Close the MCP connection, then exit even if that hangs.
+  const exit = () => process.exit(0);
+  handle.close().then(exit, exit);
+  setTimeout(exit, 1000).unref();
 }
 
 // stdin EOF/close is the reliable lifeline: when the MCP client closes the pipe
 // (or the wrapper chain dies), our stdin ends even if no signal is delivered.
 process.stdin.on('end', () => shutdown('stdin end'));
 process.stdin.on('close', () => shutdown('stdin close'));
-
-// The MCP transport closing means the client disconnected; chain any handler the
-// SDK already installed, then shut down.
-const prevOnClose = transport.onclose;
-transport.onclose = () => {
-  prevOnClose?.();
-  shutdown('transport close');
-};
 
 // Make signals actually terminate. (preview-singleton also closes the studio on
 // these, but its handlers don't exit — which overrides Node's default and leaves

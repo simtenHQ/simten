@@ -1,16 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { type ToolCall, toolsOf } from '../__tests__/tools.js';
 import { registerReferenceTools } from './reference.js';
 
-type Handler = () => Promise<{ content: { type: string; text: string }[] }>;
-
-function captureTools(): Map<string, Handler> {
-  const tools = new Map<string, Handler>();
-  const server = {
-    tool: (name: string, _desc: string, _schema: unknown, handler: Handler) =>
-      tools.set(name, handler),
-  };
-  registerReferenceTools(server as never);
-  return tools;
+function captureTools(): Map<string, ToolCall> {
+  return toolsOf(registerReferenceTools);
 }
 
 describe('reference tools', () => {

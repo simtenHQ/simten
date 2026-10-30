@@ -6,7 +6,7 @@
  * after `parseVcd` has normalized the timescale) of the n-th rising edge.
  *
  * Detection priority (per plan):
- *   1. explicit clock_signal arg (full path or unique leaf)
+ *   1. explicit clockSignal arg (full path or unique leaf)
  *   2. 1-bit signal whose leaf matches /^clk$|^clock$/i at the shallowest scope;
  *      tiebreak `tb.clk`
  *   3. fail with no_clock error listing all 1-bit signals as candidates

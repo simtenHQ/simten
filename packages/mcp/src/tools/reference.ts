@@ -9,8 +9,9 @@
  * these tools: tool *results* aren't capped, so the agent gets the full text.
  */
 
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { getStdLibrary } from '@simten/core/internal';
+import { z } from 'zod';
 import {
   annotatePrimitivesWithOptions,
   getFactoryOptionSignatures,
@@ -52,15 +53,26 @@ SHAPE
 
 THE simulate() HANDLE
   const s = simulate(Circuit);
-  s.set({ portName: value, ... });   // set input port values (numbers)
+  const p = simulate(Cpu, { memory: { imem: { 0: 0x13, 1: 0x93 } } });
+                                     // memory: contents by exact node path ('imem', 'cpu.rom'), loaded before cycle 0
+  s.set({ a: 1, en: 0 });            // drive inputs (numbers): input port names AND Switch/Input node paths
   s.tick();                          // advance one rising clock edge (sequential circuits)
   s.tick(n);                         // advance n edges
   s.get('portName');                 // read an output port's settled value
   s.read();                          // every output, as { portName: value }
-  s.reset();                         // back to cycle 0; s.cycle counts edges
+  s.reset();                         // the reset line: cycle 0, registers to initial values; memory and inputs stay
   // Nothing to clean up: a simulation is plain objects.
   // Combinational: set() then get(). Sequential: set(), tick() per cycle, get().
-  // Pulse a reset: s.set({ reset: 1 }); s.tick(); s.set({ reset: 0 }); then drive normally.
+  // Pulse a reset input: s.set({ reset: 1 }); s.tick(); s.set({ reset: 0 }); then drive normally.
+
+set() KEYS
+  Each key resolves exactly: an input port name, or the path of a Switch or Input node inside the circuit
+  ('d', 'cpu.kbd'). So a circuit whose inputs are switches (no input ports) is driven the same way:
+    const latch = simulate(DLatch);
+    latch.set({ d: 1, en: 1 });      // d and en are Switch nodes
+  Every key in one call is written before the circuit settles. A key that names any other node (a register,
+  a memory, a gate), names nothing, or names both a port and a Switch throws, and nothing is written.
+  Load memories with the memory option, not set().
 
 CHECK STRATEGIES
   verify.exhaustive(name, spaces, predicate) — sweep every combination. spaces: [256] = 0..255; [2,2] = all 4 (a,b) pairs. Harness caps at 2^20. Use when the space is enumerable.
@@ -79,24 +91,33 @@ TIER-A npm-oracle pattern (the flagship) — import a real package and compare t
 The same file runs unchanged three ways: via verify_circuit (agent), 'tsx file.verify.ts' (CLI), or under vitest (wrap as test('verify', () => verify.run())). Lead with the tier when you report — Tier-A exhaustive is a far stronger claim than Tier-D sampled.`;
 
 export function registerReferenceTools(server: McpServer): void {
-  server.tool(
+  server.registerTool(
     'get_grammar',
-    'Return the circuit-builder API: how to write a `circuit()` module — inputs/outputs, nodes, connect — with worked examples. Call this before writing a circuit.',
-    {},
+    {
+      description:
+        'Return the circuit-builder API: how to write a `circuit()` module — inputs/outputs, nodes, connect — with worked examples. Call this before writing a circuit.',
+      inputSchema: z.strictObject({}),
+    },
     async () => ({ content: [{ type: 'text' as const, text: grammar }] }),
   );
 
-  server.tool(
+  server.registerTool(
     'list_components',
-    'Return the full catalog of available components from `@simten/core/std`, each with its ports and constructor options (e.g. `Register({ width })`). Call this to discover exact part names and parameters instead of guessing.',
-    {},
+    {
+      description:
+        'Return the full catalog of available components from `@simten/core/std`, each with its ports and constructor options (e.g. `Register({ width })`). Call this to discover exact part names and parameters instead of guessing.',
+      inputSchema: z.strictObject({}),
+    },
     async () => ({ content: [{ type: 'text' as const, text: components }] }),
   );
 
-  server.tool(
+  server.registerTool(
     'get_verify_api',
-    'Return how to write a `.verify.ts` testbench for `verify_circuit`: the `simulate()` stepper API (set/tick/get/read/reset), `verify.exhaustive` vs `verify.check`, `declareOracle`, and worked examples (incl. the Tier-A npm-oracle pattern). Call this before writing a testbench.',
-    {},
+    {
+      description:
+        'Return how to write a `.verify.ts` testbench for `verify_circuit`: `simulate(top, { memory })` and its stepper API (set for ports and switches, tick, get, read, reset), `verify.exhaustive` vs `verify.check`, `declareOracle`, and worked examples (including the Tier-A npm-oracle pattern). Call this before writing a testbench.',
+      inputSchema: z.strictObject({}),
+    },
     async () => ({ content: [{ type: 'text' as const, text: VERIFY_API }] }),
   );
 }

@@ -1,18 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { type ToolCall, toolOf } from '../__tests__/tools.js';
 import { registerSimulateTool } from './simulate.js';
 
-type Result = { content: { type: string; text: string }[]; isError?: boolean };
-type Handler = (args: Record<string, unknown>) => Promise<Result>;
-
-function simulateTool(): Handler {
-  let handler: Handler | undefined;
-  const server = {
-    tool: (_name: string, _desc: string, _schema: unknown, h: Handler) => {
-      handler = h;
-    },
-  };
-  registerSimulateTool(server as never);
-  return handler!;
+function simulateTool(): ToolCall {
+  return toolOf(registerSimulateTool);
 }
 
 const ROM_READER = `
@@ -37,7 +28,6 @@ describe('simulate_circuit memoryData', () => {
       ticks: 2,
       inputs: { addr: 1 },
       memoryData: { rom: { '0': 11, '1': 42 } },
-      show: false,
     });
     expect(result.isError).toBeUndefined();
     const { signals } = JSON.parse(result.content[0].text);
@@ -61,7 +51,6 @@ export const Board = circuit('Board', {
       ticks: 1,
       inputs: { addr: 0 },
       memoryData: { 'reader.rom': { '0': 7 } },
-      show: false,
     });
     expect(result.isError).toBeUndefined();
     expect(JSON.parse(result.content[0].text).signals.data).toEqual([{ value: 7, count: 1 }]);
@@ -72,7 +61,6 @@ export const Board = circuit('Board', {
       source: ROM_READER,
       ticks: 1,
       memoryData: { imem: { '0': 1 } },
-      show: false,
     });
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('memoryData: no node "imem"');
@@ -94,24 +82,67 @@ export const Board = circuit('Board', {
       source,
       ticks: 1,
       memoryData: { rom: { '0': 7 } },
-      show: false,
     });
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain('memoryData: no node "rom"');
   });
 });
 
+const LATCH = `
+import { bit, circuit } from '@simten/core';
+import { And, Led, Switch } from '@simten/core/std';
+
+export const Gate = circuit('Gate', {
+  inputs: { a: bit },
+  outputs: { y: bit },
+  nodes: { en: Switch, and: And, lamp: Led },
+  connect: ({ inputs, outputs, nodes: { en, and, lamp } }) => [
+    inputs.a.to(and.a),
+    en.out.to(and.b),
+    and.out.to(outputs.y, lamp.in),
+  ],
+});
+`;
+
 describe('simulate_circuit inputs', () => {
-  it('rejects a name that is not a top-level input, listing the inputs', async () => {
-    const result = await simulateTool()({
-      source: ROM_READER,
-      ticks: 1,
-      inputs: { adr: 1 },
-      show: false,
-    });
+  it('sets input ports and Switch nodes with one map, as set() does', async () => {
+    const result = await simulateTool()({ source: LATCH, ticks: 1, inputs: { a: 1, en: 1 } });
+    expect(result.isError).toBeUndefined();
+    expect(JSON.parse(result.content[0].text).signals.y).toEqual([{ value: 1, count: 1 }]);
+  });
+
+  it('rejects a key that names no port or Switch, listing the inputs', async () => {
+    const result = await simulateTool()({ source: ROM_READER, ticks: 1, inputs: { adr: 1 } });
     expect(result.isError).toBe(true);
     expect(result.content[0].text).toContain(
-      'inputs: "adr" is not an input of circuit "RomReader". Inputs: addr',
+      "inputs: set('adr'): RomReader has no input port, Switch or Input named 'adr'. Its inputs: addr",
+    );
+  });
+
+  it('rejects a key that names a node that is not an input', async () => {
+    const result = await simulateTool()({ source: LATCH, ticks: 1, inputs: { lamp: 1 } });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain("inputs: set('lamp'): 'lamp' is a Led, not an input");
+  });
+
+  it('rejects a key that names both a port and a Switch', async () => {
+    const source = LATCH.replace('nodes: { en: Switch', 'nodes: { a: Switch, en: Switch');
+    const result = await simulateTool()({ source, ticks: 1, inputs: { a: 1 } });
+    expect(result.isError).toBe(true);
+    expect(result.content[0].text).toContain('ambiguous');
+  });
+
+  it('takes numbers only', async () => {
+    await expect(
+      simulateTool()({ source: LATCH, ticks: 1, inputs: { a: true } }),
+    ).rejects.toThrow();
+  });
+});
+
+describe('simulate_circuit parameters', () => {
+  it('has no show parameter: it never paints the canvas', async () => {
+    await expect(simulateTool()({ source: LATCH, show: true, reason: 'x' })).rejects.toThrow(
+      /show/,
     );
   });
 });

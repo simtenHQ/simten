@@ -15,8 +15,8 @@
  *   }
  *
  * `useSimulation` compiles and runs a circuit in the sandbox and returns
- * `{ state, actions }`. `CircuitCanvas`, `ClockControls` and `WaveformViewer`
- * each take that simulation. Circuits on a page share one sandbox unless a
+ * `{ state, actions }`. `CircuitCanvas` and `ClockControls` each take that
+ * simulation. Circuits on a page share one sandbox unless a
  * `SandboxProvider` says otherwise. The code editor is `@simten/react/code-editor`.
  */
 
@@ -37,4 +37,3 @@ export {
   type UseSimulationResult,
   useSimulation,
 } from './sandbox/useSimulation';
-export { WaveformViewer, type WaveformViewerProps } from './waveform/WaveformViewer';

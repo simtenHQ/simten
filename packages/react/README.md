@@ -1,6 +1,6 @@
 # @simten/react
 
-React for Simten circuits: `useSimulation` runs a circuit, and `CircuitCanvas`, `ClockControls` and `WaveformViewer` show it. Every circuit runs in Simten's cross-origin sandbox, never on your page.
+React for Simten circuits: `useSimulation` runs a circuit, and `CircuitCanvas` and `ClockControls` show it. Every circuit runs in Simten's cross-origin sandbox, never on your page.
 
 This package replaces `@simten/ui` and `@simten/embed`.
 
@@ -77,7 +77,6 @@ To build your own UI, read `state` and call `actions` from your components. See 
 |---|---|
 | `CircuitCanvas` | `simulation`, and how it looks: `height`, `theme`, `layout`, `focus`, `draggable`, `autoLayout`, `onLoadMemory` |
 | `ClockControls` | `simulation`, `showSpeed`, `showScrubber`, `floating`, `chromeless`, `pulseRun` |
-| `WaveformViewer` | `simulation`, `onClose`: the inputs and outputs over the cycles it has seen, with Save VCD for GTKWave |
 
 Double-clicking a component on the canvas opens its insides as a live view of the same simulation, with breadcrumbs.
 

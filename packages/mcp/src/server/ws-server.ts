@@ -3,8 +3,7 @@
  *
  * Replaces the old HTTP/SSE preview server with a bidirectional WebSocket.
  * - Manages sessions (one per browser tab, identified by UUID)
- * - Pushes circuit source, traces, test results, memory data to connected tabs
- * - Requests circuit state on demand (pull model)
+ * - Pushes circuit source, with how its run starts (memory, inputs), to connected tabs
  * - Token auth: connections must provide the server's token to be accepted
  * - Origin allowlist: browser connections must originate from localhost (a
  *   cross-site page you visit is refused); non-browser clients (no Origin) pass
@@ -20,10 +19,7 @@ import {
   publicDirExists,
   serveStatic,
 } from '../lib/serve-static.js';
-import type { RenderResult, TestResultsPayload, TracesPayload } from './types.js';
-
-/** JSON-serializable memory data: { nodePattern: { address: value } } */
-type MemoryDataPayload = Record<string, Record<string, number>>;
+import type { RenderResult, SourcePush } from './types.js';
 
 interface Session {
   id: string;
@@ -40,18 +36,14 @@ export interface StudioServer {
   servesStatic: boolean;
   sessions: Map<string, Session>;
 
-  updateSource(source: string, sessionId?: string): void;
-  /** Push source AND await the browser's render acknowledgment (success + circuitName, or error/timeout). */
+  /** Push source AND await the browser's render acknowledgment (success, or failure/timeout). */
   updateSourceAndAwait(
-    source: string,
+    push: SourcePush,
     sessionId?: string,
     timeoutMs?: number,
   ): Promise<RenderResult>;
   /** Push source and await the render ack from a not-yet-connected tab (fresh open). */
-  updateSourceAndAwaitConnect(source: string, timeoutMs?: number): Promise<RenderResult>;
-  pushTraces(data: TracesPayload, sessionId?: string): void;
-  pushTestResults(data: TestResultsPayload, sessionId?: string): void;
-  pushMemoryData(data: MemoryDataPayload, sessionId?: string): void;
+  updateSourceAndAwaitConnect(push: SourcePush, timeoutMs?: number): Promise<RenderResult>;
   getActiveSession(): Session | null;
   close(): void;
 }
@@ -80,10 +72,8 @@ export async function createStudioServer(options?: {
     { resolve: (value: unknown) => void; timer: ReturnType<typeof setTimeout> }
   >();
 
-  let currentSource: string | null = null;
-  let cachedTraces: TracesPayload | null = null;
-  let cachedTestResults: TestResultsPayload | null = null;
-  let cachedMemoryData: MemoryDataPayload | null = null;
+  // The last push, with how its run starts, for a tab that joins late.
+  let currentPush: SourcePush | null = null;
 
   // Track the most recently active session for default targeting
   let lastActiveSessionId: string | null = null;
@@ -221,22 +211,13 @@ export async function createStudioServer(options?: {
           // Send cached state to late-joining client. If a render is being
           // awaited for a freshly-opening tab, attach the requestId so this tab
           // acks it (resolving updateSourceAndAwaitConnect).
-          if (currentSource) {
+          if (currentPush) {
             if (pendingConnectRender) {
-              send(ws, { type: 'source', source: currentSource, requestId: pendingConnectRender });
+              send(ws, sourceMessage(currentPush, pendingConnectRender));
               pendingConnectRender = null;
             } else {
-              send(ws, { type: 'source', source: currentSource });
+              send(ws, sourceMessage(currentPush));
             }
-          }
-          if (cachedTraces) {
-            send(ws, { type: 'traces', data: cachedTraces });
-          }
-          if (cachedTestResults) {
-            send(ws, { type: 'test-results', data: cachedTestResults });
-          }
-          if (cachedMemoryData) {
-            send(ws, { type: 'memory-data', data: cachedMemoryData });
           }
           return;
         }
@@ -306,27 +287,6 @@ export async function createStudioServer(options?: {
     return first.done ? null : first.value;
   }
 
-  function broadcast(data: unknown, sessionId?: string) {
-    if (sessionId) {
-      const session = sessions.get(sessionId);
-      if (session) {
-        send(session.ws, data);
-        lastActiveSessionId = sessionId;
-      }
-      return;
-    }
-    // If no session specified, send to the active session only
-    const target = getTargetSession();
-    if (target) {
-      send(target.ws, data);
-    }
-  }
-
-  function updateSource(source: string, sessionId?: string) {
-    currentSource = source;
-    broadcast({ type: 'source', source }, sessionId);
-  }
-
   /**
    * Push source with a requestId and await the browser's render acknowledgment.
    * Mirrors the getState round-trip: send → browser executes → posts back
@@ -335,11 +295,11 @@ export async function createStudioServer(options?: {
    * result reflects whether the push actually rendered (no polling/sleep needed).
    */
   function updateSourceAndAwait(
-    source: string,
+    push: SourcePush,
     sessionId?: string,
     timeoutMs: number = STATE_REQUEST_TIMEOUT,
   ): Promise<RenderResult> {
-    currentSource = source;
+    currentPush = push;
     const target = getTargetSession(sessionId);
     if (!target) return Promise.resolve({ ok: false, error: 'no browser tab connected' });
 
@@ -354,7 +314,7 @@ export async function createStudioServer(options?: {
         });
       }, timeoutMs);
       pendingRequests.set(requestId, { resolve: resolveReq as (v: unknown) => void, timer });
-      send(target.ws, { type: 'source', source, requestId });
+      send(target.ws, sourceMessage(push, requestId));
     });
   }
 
@@ -366,10 +326,10 @@ export async function createStudioServer(options?: {
    * result reflects the actual render once the new tab finishes loading.
    */
   function updateSourceAndAwaitConnect(
-    source: string,
+    push: SourcePush,
     timeoutMs: number = CONNECT_RENDER_TIMEOUT,
   ): Promise<RenderResult> {
-    currentSource = source;
+    currentPush = push;
     const requestId = randomUUID();
     return new Promise((resolveReq) => {
       const timer = setTimeout(() => {
@@ -384,21 +344,6 @@ export async function createStudioServer(options?: {
       pendingRequests.set(requestId, { resolve: resolveReq as (v: unknown) => void, timer });
       pendingConnectRender = requestId;
     });
-  }
-
-  function pushTraces(data: TracesPayload, sessionId?: string) {
-    cachedTraces = data;
-    broadcast({ type: 'traces', data }, sessionId);
-  }
-
-  function pushTestResults(data: TestResultsPayload, sessionId?: string) {
-    cachedTestResults = data;
-    broadcast({ type: 'test-results', data }, sessionId);
-  }
-
-  function pushMemoryData(data: MemoryDataPayload, sessionId?: string) {
-    cachedMemoryData = data;
-    broadcast({ type: 'memory-data', data }, sessionId);
   }
 
   function getActiveSession(): Session | null {
@@ -423,13 +368,23 @@ export async function createStudioServer(options?: {
     token,
     servesStatic,
     sessions,
-    updateSource,
     updateSourceAndAwait,
     updateSourceAndAwaitConnect,
-    pushTraces,
-    pushTestResults,
-    pushMemoryData,
     getActiveSession,
     close,
+  };
+}
+
+/**
+ * The `source` message: the circuit, and how its run starts. The page opens
+ * the run with `memory` loaded and `inputs` set, by exact node path and key.
+ */
+function sourceMessage(push: SourcePush, requestId?: string) {
+  return {
+    type: 'source',
+    source: push.source,
+    ...(push.memory ? { memory: push.memory } : {}),
+    ...(push.inputs ? { inputs: push.inputs } : {}),
+    ...(requestId ? { requestId } : {}),
   };
 }
