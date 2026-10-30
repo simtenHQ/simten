@@ -34,7 +34,6 @@ import { forbiddenPrimitives, grade, permittedFor } from '../game/grade';
 import { nameDiagnostics } from '../game/level-name';
 import { LEVELS_BY_ID, nextLevel } from '../game/levels';
 import { isSkeleton } from '../game/parts';
-import { sandboxRuntime } from '../game/runtime';
 import {
   clearDraft,
   isOnboarded,
@@ -337,7 +336,7 @@ function PlayLevel({ level }: { level: Level }) {
     if (!sandbox) return;
     setSubmitting(true);
     try {
-      const verdict = await grade(sandboxRuntime(sandbox), level, source);
+      const verdict = await grade(sandbox, level, source);
       setResult(verdict);
       setCompleteDismissed(false);
       // The verdict shows in the spec panel.
