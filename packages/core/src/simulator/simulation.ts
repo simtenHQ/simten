@@ -64,8 +64,11 @@ export interface Simulation<
    * Switch throws, and then nothing is written.
    */
   set(values: Partial<Record<Keys, number>>): void;
-  /** Read one top-level output port. Unknown names throw. */
-  get<K extends keyof Outs & string>(name: K): number;
+  /**
+   * Read an output port, an input port, or a Switch or Input by path: what
+   * `read` returns, and anything `set` can write. Any other name throws.
+   */
+  get<K extends (keyof Outs & string) | Keys>(name: K): number;
   /** Read every top-level output port. */
   read(): { [K in keyof Outs]: number };
 
@@ -163,8 +166,8 @@ const TOP = '__top__';
 /** The components `set` writes by path: what a person at the board could change. */
 const CONTROLS = new Set(['Switch', 'Input']);
 
-/** One write `set` resolved a key to. */
-type InputWrite = { port: string; value: number } | { path: string; value: number };
+/** What a key of `set` names: an input port, or a Switch or Input node by path. */
+type InputKey = { port: string } | { path: string };
 
 interface EngineSimulationOptions {
   isSequential: boolean;
@@ -238,22 +241,38 @@ class EngineSimulation implements Simulation {
 
   set(values: Partial<Record<string, number>>): void {
     // Resolve every key before writing any, so a typo leaves the inputs as they were.
-    const writes: InputWrite[] = [];
+    const writes: Array<{ input: InputKey; value: number }> = [];
     for (const [key, value] of Object.entries(values)) {
-      if (value !== undefined) writes.push(this.resolveInput(key, value));
+      if (value === undefined) continue;
+      const input = this.findInput('set', key);
+      if (!input) {
+        const names = [...this.inputNames].join(', ') || '(none)';
+        throw new Error(
+          `set('${key}'): ${this.circuitName} has no input port, Switch or Input named '${key}'. Its inputs: ${names}`,
+        );
+      }
+      writes.push({ input, value });
     }
-    for (const write of writes) {
-      if ('port' in write) this.engine.setInput(write.port, write.value);
-      else this.engine.setNode(write.path, write.value);
+    for (const { input, value } of writes) {
+      if ('port' in input) this.engine.setInput(input.port, value);
+      else this.engine.setNode(input.path, value);
     }
     this.dirty = true;
   }
 
   get(name: string): number {
-    if (!this.outputNameSet.has(name)) {
-      throw new Error(this.unknownPortMessage('get', name, 'output', this.outputNames));
-    }
-    return this.nodes.ports().get(`${TOP}.${name}`) ?? 0;
+    const ports = this.nodes.ports();
+    if (this.outputNameSet.has(name)) return ports.get(`${TOP}.${name}`) ?? 0;
+    const input = this.findInput('get', name);
+    if (input)
+      return ports.get('port' in input ? `${TOP}.${input.port}` : `${input.path}.out`) ?? 0;
+    const list = (names: Iterable<string>) => [...names].join(', ') || '(none)';
+    const controls = [...this.primitiveTypesOf().entries()]
+      .filter(([, type]) => this.isControlType(type))
+      .map(([path]) => path);
+    throw new Error(
+      `get('${name}'): ${this.circuitName} has no port, Switch or Input named '${name}'. Its inputs: ${list(this.inputNames)}. Its Switches and Inputs: ${list(controls)}. Its outputs: ${list(this.outputNames)}`,
+    );
   }
 
   read(): Record<string, number> {
@@ -301,45 +320,38 @@ class EngineSimulation implements Simulation {
     this.dirty = false;
   }
 
-  private primitiveOf(path: string): string | undefined {
+  private primitiveTypesOf(): ReadonlyMap<string, string> {
     this.primitiveTypes ??= this.findPrimitiveTypes();
-    return this.primitiveTypes.get(path);
+    return this.primitiveTypes;
+  }
+
+  private primitiveOf(path: string): string | undefined {
+    return this.primitiveTypesOf().get(path);
   }
 
   /**
-   * What `set` writes for `key`: the input port of that name, or the Switch or
-   * Input node at that path. Exactly one must match.
+   * The input `key` names for `set` and `get`: the input port of that name, or
+   * the Switch or Input node at that path. Undefined when nothing has that
+   * name; throws, naming `method`, when both match or the node is something
+   * else.
    */
-  private resolveInput(key: string, value: number): InputWrite {
+  private findInput(method: 'set' | 'get', key: string): InputKey | undefined {
     const isPort = this.inputNames.has(key);
     const type = this.primitiveOf(key);
     const isControl = type !== undefined && this.isControlType(type);
     if (isPort && isControl) {
       throw new Error(
-        `set('${key}'): ${this.circuitName} has both an input port and a ${type} named '${key}', so the key is ambiguous. Rename one of them.`,
+        `${method}('${key}'): ${this.circuitName} has both an input port and a ${type} named '${key}', so the key is ambiguous. Rename one of them.`,
       );
     }
-    if (isPort) return { port: key, value };
-    if (isControl) return { path: key, value };
-    if (type !== undefined) {
-      throw new Error(
-        `set('${key}'): '${key}' is a ${type}, not an input. Only input ports and Switch and Input nodes can be set; load a memory's contents with the memory option.`,
-      );
-    }
-    const names = [...this.inputNames].join(', ') || '(none)';
-    throw new Error(
-      `set('${key}'): ${this.circuitName} has no input port, Switch or Input named '${key}'. Its inputs: ${names}`,
-    );
-  }
-
-  private unknownPortMessage(
-    method: string,
-    name: string,
-    kind: string,
-    valid: readonly string[],
-  ): string {
-    const names = valid.length > 0 ? valid.join(', ') : '(none)';
-    return `${method}('${name}'): ${this.circuitName} has no ${kind} named '${name}'. Its ${kind}s: ${names}`;
+    if (isPort) return { port: key };
+    if (isControl) return { path: key };
+    if (type === undefined) return undefined;
+    const hint =
+      method === 'set'
+        ? "not an input. Only input ports and Switch and Input nodes can be set; load a memory's contents with the memory option."
+        : 'not a port, Switch or Input. Only ports and Switch and Input nodes can be read.';
+    throw new Error(`${method}('${key}'): '${key}' is a ${type}, ${hint}`);
   }
 
   private setNode(path: string, value: number | MemoryContents): void {

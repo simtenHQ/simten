@@ -2,7 +2,8 @@
  * `Simulation.set` takes the circuit's inputs as a person at the board sees
  * them: input ports by name, and Switch and Input nodes by path (decision
  * 0010). Every key resolves exactly, and every value is written before the
- * circuit settles. Also `simulate(top, { memory })`.
+ * circuit settles. `get` reads the same keys back. Also
+ * `simulate(top, { memory })`.
  */
 
 import { describe, expect, it } from 'vitest';
@@ -104,6 +105,39 @@ describe('set', () => {
     board.set({ a: 1, kbd: 3, 'latch.d': 1 });
     // @ts-expect-error: y is an output
     expect(() => board.set({ y: 1 })).toThrow();
+  });
+});
+
+describe('get', () => {
+  it('reads an input port after set, and still reads outputs', () => {
+    const sim = simulate(Board);
+    sim.set({ a: 1 });
+    expect(sim.get('a')).toBe(1);
+    expect(sim.get('y')).toBe(0);
+  });
+
+  it('reads Switch and Input nodes by path, as set writes them', () => {
+    const sim = simulate(Board);
+    sim.set({ 'latch.d': 1, kbd: 65 });
+    expect(sim.get('latch.d')).toBe(1);
+    expect(sim.get('latch.en')).toBe(0);
+    expect(sim.get('kbd')).toBe(65);
+  });
+
+  it('rejects a gate, and a name that is nothing, listing what can be read', () => {
+    const sim = simulate(Board);
+    // @ts-expect-error: gate is a Nand
+    expect(() => sim.get('gate')).toThrow(
+      "get('gate'): 'gate' is a Nand, not a port, Switch or Input.",
+    );
+    expect(() => sim.get('b' as never)).toThrow(
+      "get('b'): SetBoard has no port, Switch or Input named 'b'. Its inputs: a. Its Switches and Inputs: latch.d, latch.en, kbd. Its outputs: y, q",
+    );
+  });
+
+  it('rejects a key that names both a port and a Switch', () => {
+    const sim = simulate(Clash);
+    expect(() => sim.get('a')).toThrow("get('a'): SetClash has both an input port and a Switch");
   });
 });
 

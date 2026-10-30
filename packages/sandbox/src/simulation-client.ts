@@ -122,7 +122,7 @@ export class SimulationClient {
     return this.state.history;
   }
 
-  /** Read one top-level output from the last state, as `Simulation.get` does. Unknown names throw. */
+  /** Read one top-level output from the last state. Unknown names throw. */
   get(name: string): number {
     if (!this.outputNames.has(name)) {
       const names = [...this.outputNames].join(', ') || '(none)';

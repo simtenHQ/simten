@@ -458,15 +458,19 @@ describe('toggle', () => {
     expect(expectType(await second, 'updated').state.ports.get('d.out')).toBe(1);
   });
 
-  it('rejects a node that is not an input, as set does, and writes nothing', async () => {
+  it("rejects a node that is not an input, with core's message, and writes nothing", async () => {
     const { call } = await openLatch();
     const res = expectType(await call({ type: 'toggle', session: 's1', name: 'n1' }), 'failed');
-    expect(res.error).toMatch(/^toggle\('n1'\): 'n1' is a Nand, not an input/);
+    expect(res.error).toBe(
+      "get('n1'): 'n1' is a Nand, not a port, Switch or Input. Only ports and Switch and Input nodes can be read.",
+    );
     const missing = expectType(
       await call({ type: 'toggle', session: 's1', name: 'nope' }),
       'failed',
     );
-    expect(missing.error).toMatch(/^toggle\('nope'\)/);
+    expect(missing.error).toMatch(
+      /^get\('nope'\): DLatch has no port, Switch or Input named 'nope'/,
+    );
     const after = expectType(await call({ type: 'set', session: 's1', values: {} }), 'updated');
     expect(after.state.ports.get('d.out')).toBe(1);
   });

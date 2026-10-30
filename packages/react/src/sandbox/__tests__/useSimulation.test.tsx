@@ -302,7 +302,7 @@ describe('useSimulation', () => {
     await act(async () => {
       await hook.result.current.actions.toggle('g' as never);
     });
-    expect(hook.result.current.state.error).toMatch(/^toggle\('g'\): 'g' is a And, not an input/);
+    expect(hook.result.current.state.error).toMatch(/^get\('g'\): 'g' is a And, not a port/);
   });
 
   it('toggles from where stepping back left the input', async () => {
