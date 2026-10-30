@@ -162,6 +162,18 @@ export function EditorWorkspace({
    */
   const [pushedInputs, setPushedInputs] = useState<Record<string, number> | undefined>();
 
+  /**
+   * Every new source goes through here: typed, an example, an import or a
+   * push. The editor shows it through its `value`, and useSimulation compiles
+   * it once. A new source starts a new run of the new circuit, without the
+   * programs loaded into the old one or the inputs a push set on it.
+   */
+  const changeSource = useCallback((source: string) => {
+    setCode(source);
+    setMemory(NO_MEMORY);
+    setPushedInputs(undefined);
+  }, []);
+
   // Compiles the source and simulates its last circuit in the sandbox. The
   // canvas draws switches and displays for its ports.
   const simulation = useSimulation({ source: code }, { memory, initialInputs: pushedInputs });
@@ -187,7 +199,7 @@ export function EditorWorkspace({
     { kind: 'idle' } | { kind: 'error'; message: string }
   >({ kind: 'idle' });
 
-  // Editor handle for imperative get/set of the Monaco source.
+  // Editor handle, for reading the Monaco source.
   const editorRef = useRef<CodeEditorHandle>(null);
   // requestId of an in-flight show_circuit render-ack, cleared when the
   // resulting session opens or the compile fails (see the effects below).
@@ -274,14 +286,15 @@ export function EditorWorkspace({
     onSource: useCallback(
       (source: string, requestId: string | undefined, run: MCPRunStart) => {
         pendingRenderRef.current = requestId ?? null;
-        // setValue runs the editor's onChange, which clears memory and pushed
-        // inputs as for an edit; the push's own run start replaces them after.
-        editorRef.current?.setValue(source);
+        // The same source again doesn't change `code`, so nothing would
+        // compile and the render would never be answered: compile it here.
+        if (source === code) void actions.recompile();
+        else setCode(source);
+        // A push starts its run with its own programs and inputs.
         setMemory(run.memory ?? NO_MEMORY);
         setPushedInputs(run.inputs);
-        setTimeout(() => void actions.recompile(), 100);
       },
-      [actions],
+      [actions, code],
     ),
     // useMCPConnection keeps its callbacks in a ref, so this reads the
     // latest state without needing a stable identity.
@@ -316,13 +329,7 @@ export function EditorWorkspace({
   }, [compileError, openError, sendRenderResult]);
 
   // Load an example into the editor
-  const loadExample = useCallback(
-    (example: Example) => {
-      editorRef.current?.setValue(example.code);
-      setTimeout(() => void actions.recompile(), 100);
-    },
-    [actions],
-  );
+  const loadExample = useCallback((example: Example) => changeSource(example.code), [changeSource]);
 
   // First-run hint: pulse the Run button so a new user knows to press it to
   // start the clock. The clock bar only renders for sequential circuits, so a
@@ -433,12 +440,7 @@ export function EditorWorkspace({
                 </>
               )}
 
-              <VerilogImportSheet
-                onImport={(source) => {
-                  editorRef.current?.setValue(source);
-                  setTimeout(() => void actions.recompile(), 100);
-                }}
-              />
+              <VerilogImportSheet onImport={changeSource} />
 
               <Button
                 onClick={handleExportVerilog}
@@ -510,14 +512,7 @@ export function EditorWorkspace({
                   <CodeEditor
                     ref={editorRef}
                     value={code}
-                    onChange={(value) => {
-                      setCode(value ?? '');
-                      // An edit starts a new run of the new circuit, without
-                      // the programs loaded into the old one or the inputs a
-                      // push set on it.
-                      setMemory(NO_MEMORY);
-                      setPushedInputs(undefined);
-                    }}
+                    onChange={(value) => changeSource(value ?? '')}
                     theme={resolvedTheme === 'dark' ? SIMTEN_DARK : SIMTEN_LIGHT}
                     diagnostics={diagnostics}
                     beforeMount={(m) => registerSimtenThemes(m, { lightBackground: '#faf9f4' })}
