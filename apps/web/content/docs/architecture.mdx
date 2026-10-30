@@ -277,12 +277,12 @@ The same engine powers two distinct consumption paths. The split is **interactiv
 
 | Path | Where it runs | Has a canvas? | Drives the canvas? | Typical use |
 |------|---------------|---------------|--------------------|-------------|
-| **Sandbox** | Browser worker (editor, `CircuitCanvas`, embed pages) | yes | only via human clicks or MCP actions | live editing, interactive embeds, LLM-driven design |
+| **Sandbox** | Browser worker (editor, `CircuitCanvas`, embed pages) | yes | only via human clicks | live editing, interactive embeds, viewing what an assistant built |
 | **Script** | Node (`tsx`, `vitest`, CI) | no | n/a, there is none | property tests, fuzzers, batch sweeps, CI verification |
 
 ### Sandbox path
 
-When user code runs inside the editor or an embed, it goes through the sandbox iframe + worker (see [Security](/docs/security)). Code in this path *defines* circuits; *something else* drives them: a human flipping a switch, or Claude calling MCP actions like `RUN_SIMULATION` / `SET_INPUT`. User code itself currently has no API to drive the canvas simulator. The canvas sim and user code share the sandbox worker, but a user-code `simulate(...)` call would still create a separate instance instead of moving the canvas; wiring it to the canvas slot is what self-animating embeds would need.
+When user code runs inside the editor or an embed, it goes through the sandbox iframe + worker (see [Security](/docs/security)). Code in this path *defines* circuits; a person at the canvas drives them, by flipping a switch or pressing run. The MCP's `show_circuit` only pushes a circuit to the canvas, with the inputs and memory its run starts from; nothing reads the canvas back. User code itself currently has no API to drive the canvas simulator. The canvas sim and user code share the sandbox worker, but a user-code `simulate(...)` call would still create a separate instance instead of moving the canvas; wiring it to the canvas slot is what self-animating embeds would need.
 
 ### Script path
 

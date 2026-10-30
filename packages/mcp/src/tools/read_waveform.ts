@@ -6,8 +6,11 @@
  * about*, in a token-efficient shape (positional pairs/triples, packed
  * strings for raw 1-bit traces, hex mirror for wide buses).
  *
+ * Registered only inside the Simten repo (see lib/repo-root.ts): testName
+ * VCDs and repo-relative paths resolve against it.
+ *
  * Pipeline:
- *   1. Resolve vcd_path or test_name → absolute path. Sanity-guard the
+ *   1. Resolve vcdPath or testName → absolute path. Sanity-guard the
  *      requested cycle range BEFORE any file I/O.
  *   2. parseVcd(path, { requestedSignals }) — single-pass: header phase
  *      builds signal maps, body phase only collects retained ids.
@@ -17,9 +20,8 @@
 
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
-import { findRepoRoot } from '../lib/repo-root.js';
 import { buildCycleMap, detectClock } from '../lib/vcd-cycles.js';
 import { type EdgeKind, type FormatKind, formatSignals } from '../lib/vcd-format.js';
 import { parseVcd } from '../lib/vcd-parser.js';
@@ -29,16 +31,16 @@ const CYCLE_RANGE_HARD_CAP = 50_000;
 const PER_SIGNAL_TXN_CAP = 200;
 const RAW_CELL_CAP = 20_000;
 
-const schemaShape = {
-  vcd_path: z
+const inputSchema = z.strictObject({
+  vcdPath: z
     .string()
     .optional()
-    .describe('Absolute or repo-relative path to a .vcd file. Mutually exclusive with test_name.'),
-  test_name: z
+    .describe('Absolute or repo-relative path to a .vcd file. Mutually exclusive with testName.'),
+  testName: z
     .string()
     .optional()
     .describe(
-      'CPU verify-suite test name (e.g. "R-Type ADD basic"). Resolved via shared slugify to hardware/ulx3s/projects/cpu/.vcd/. Mutually exclusive with vcd_path.',
+      'CPU verify-suite test name (e.g. "R-Type ADD basic"). Resolved via shared slugify to hardware/ulx3s/projects/cpu/.vcd/. Mutually exclusive with vcdPath.',
     ),
   signals: z
     .array(z.string())
@@ -46,7 +48,7 @@ const schemaShape = {
     .describe(
       'Signal paths or unique leaf names. Inputs containing "." are matched as full hierarchical paths; otherwise leaf-name match.',
     ),
-  cycle_range: z
+  cycleRange: z
     .tuple([z.number().int().min(0), z.number().int().min(0)])
     .describe('Inclusive [from, to] cycle window. Cycle 0 = first rising edge of the clock.'),
   format: z
@@ -61,11 +63,11 @@ const schemaShape = {
     .optional()
     .default('rising')
     .describe('edges-format only.'),
-  clock_signal: z.string().optional().describe('Override clock auto-detection.'),
-};
+  clockSignal: z.string().optional().describe('Override clock auto-detection.'),
+});
 
-const schema = z.object(schemaShape).refine((v) => Boolean(v.vcd_path) !== Boolean(v.test_name), {
-  message: 'exactly one of vcd_path or test_name must be provided',
+const schema = inputSchema.refine((v) => Boolean(v.vcdPath) !== Boolean(v.testName), {
+  message: 'exactly one of vcdPath or testName must be provided',
 });
 
 type Args = z.infer<typeof schema>;
@@ -94,15 +96,17 @@ function successReturn(payload: unknown): ToolReturn {
   };
 }
 
-function resolvePath(args: Pick<Args, 'vcd_path' | 'test_name'>): { path: string } | ToolError {
-  if (args.vcd_path) {
-    const p = resolve(findRepoRoot(), args.vcd_path);
+function resolvePath(
+  args: Pick<Args, 'vcdPath' | 'testName'>,
+  root: string,
+): { path: string } | ToolError {
+  if (args.vcdPath) {
+    const p = resolve(root, args.vcdPath);
     if (!existsSync(p)) return { error: 'vcd_not_found', path: p };
     return { path: p };
   }
-  // test_name path
   try {
-    const r = resolveTestName(args.test_name!);
+    const r = resolveTestName(args.testName ?? '', root);
     return { path: r.path };
   } catch (e) {
     const msg = (e as Error).message;
@@ -110,9 +114,10 @@ function resolvePath(args: Pick<Args, 'vcd_path' | 'test_name'>): { path: string
   }
 }
 
-export async function handleReadWaveform(args: Args) {
+/** Answer a read_waveform call; relative paths and test names resolve against `root`. */
+export async function handleReadWaveform(args: Args, root: string = process.cwd()) {
   // 1. Sanity-guard cycle range BEFORE any file I/O.
-  const [from, to] = args.cycle_range;
+  const [from, to] = args.cycleRange;
   if (to < from) {
     return errorReturn({
       error: 'invalid_cycle_range',
@@ -131,15 +136,15 @@ export async function handleReadWaveform(args: Args) {
   }
 
   // 2. Resolve vcd path.
-  const resolved = resolvePath(args);
+  const resolved = resolvePath(args, root);
   if ('error' in resolved) return errorReturn(resolved);
 
   // 3. Parse VCD with retained-id selectivity. autoIncludeClock honors the
-  // user's clock_signal override so the right clock id lands in the retained
+  // user's clockSignal override so the right clock id lands in the retained
   // set during the body walk.
   const parsed = await parseVcd(resolved.path, {
     requestedSignals: args.signals,
-    autoIncludeClock: args.clock_signal ?? true,
+    autoIncludeClock: args.clockSignal ?? true,
   });
 
   // Resolution errors → first error wins (the tool returns isError on any).
@@ -149,7 +154,7 @@ export async function handleReadWaveform(args: Args) {
   }
 
   // 4. Clock detection.
-  const det = detectClock(parsed, { clockSignal: args.clock_signal });
+  const det = detectClock(parsed, { clockSignal: args.clockSignal });
   if ('error' in det) {
     return errorReturn(det.error as unknown as ToolError);
   }
@@ -193,11 +198,15 @@ export async function handleReadWaveform(args: Args) {
   });
 }
 
-export function registerReadWaveformTool(server: McpServer): void {
-  server.tool(
+/** Register read_waveform, resolving paths against the Simten repo at `root`. */
+export function registerReadWaveformTool(server: McpServer, root: string): void {
+  server.registerTool(
     'read_waveform',
-    'Query a VCD waveform file (from iverilog cross-validation runs or other simulators) for specific signals over a cycle window. Returns transitions or per-cycle values in a token-efficient shape. Use test_name (e.g. "R-Type ADD basic") for verify-suite VCDs, or vcd_path for arbitrary VCDs (e.g. ILA captures, simulate_firmware output). Format: "changes" (transitions + carry-in, default), "raw" (value at every cycle), "edges" (filtered transitions). Output is capped — narrow cycle_range or request fewer signals if you see truncated:true.',
-    schemaShape,
+    {
+      description:
+        'Query a VCD waveform file (from iverilog cross-validation runs or other simulators) for specific signals over a cycle window. Returns transitions or per-cycle values in a token-efficient shape. Use testName (e.g. "R-Type ADD basic") for CPU verify-suite VCDs, or vcdPath for any other VCD (e.g. an ILA capture). Format: "changes" (transitions + carry-in, default), "raw" (value at every cycle), "edges" (filtered transitions). Output is capped: narrow cycleRange or request fewer signals if you see truncated:true.',
+      inputSchema,
+    },
     async (args) => {
       const parsed = schema.safeParse(args);
       if (!parsed.success) {
@@ -207,7 +216,7 @@ export function registerReadWaveformTool(server: McpServer): void {
           issues: parsed.error.issues,
         });
       }
-      return handleReadWaveform(parsed.data);
+      return handleReadWaveform(parsed.data, root);
     },
   );
 }

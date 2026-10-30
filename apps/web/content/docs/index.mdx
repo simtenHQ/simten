@@ -34,15 +34,15 @@ const { verilog, files } = exportVerilog(HalfAdder, { target: 'synthesis' });
 
 The `target: 'synthesis'` option strips simulation-only constructs (`initial` blocks) for FPGA-ready output. Memories above `inlineMemoryThreshold` (default 2048 words) are emitted as `$readmemh("<file>.hex", reg)` with the hex contents returned alongside, matching the Yosys/Vivado/Quartus convention for large ROM/RAM initialization.
 
-## AI tutor over MCP
+## Build with an assistant over MCP
 
-Connect an MCP-capable assistant (Claude Code, Codex CLI, Gemini CLI, Cursor, and others) to get an AI tutor that can see your circuit, push changes to the browser, run simulations, and answer questions in real time:
+Connect an MCP-capable assistant (Claude Code, Codex CLI, Gemini CLI, Cursor, and others) and it can write circuits, simulate and verify them, and show them on a canvas in your browser:
 
 ```bash
 claude mcp add simten npx @simten/mcp
 ```
 
-Ask it to build a counter or debug your ALU, and it writes the TypeScript and the circuit appears on your canvas instantly.
+Ask it to build a counter or debug your ALU: it writes the TypeScript, checks it with a testbench, and paints the circuit on your canvas. The canvas only displays what the assistant pushes; it sends nothing back.
 
 See the [MCP Integration](/docs/mcp-integration) guide for per-client setup, available tools, and how the MCP viewer works.
 

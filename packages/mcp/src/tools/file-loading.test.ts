@@ -9,24 +9,10 @@ import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
+import { toolOf as handlerOf } from '../__tests__/tools.js';
 import { registerCheckTool } from './check.js';
 import { registerSimulateTool } from './simulate.js';
 import { registerVerifyTool } from './verify.js';
-
-type Result = { content: { type: string; text: string }[]; isError?: boolean };
-type Handler = (args: Record<string, unknown>) => Promise<Result>;
-
-function handlerOf(register: (server: never) => void): Handler {
-  let handler: Handler | undefined;
-  const server = {
-    tool: (_name: string, _desc: string, _schema: unknown, h: Handler) => {
-      handler = h;
-    },
-  };
-  register(server as never);
-  if (!handler) throw new Error('tool did not register a handler');
-  return handler;
-}
 
 const check = handlerOf(registerCheckTool);
 const simulate = handlerOf(registerSimulateTool);
@@ -282,7 +268,6 @@ describe('a circuit importing a sub-circuit from a sibling file', () => {
         filePath: join(project, 'top.circuit.ts'),
         ticks: 1,
         inputs: { a: 1, b: 1 },
-        show: false,
       });
       expect(result.isError).toBeUndefined();
       const trace = JSON.parse(result.content[0].text);
@@ -302,8 +287,7 @@ describe('a file that imports the builder from @simten/core/circuit', () => {
       const report = JSON.parse((await check({ filePath: file })).content[0].text);
       expect(report.valid).toBe(true);
       const trace = JSON.parse(
-        (await simulate({ filePath: file, ticks: 1, inputs: { a: 1 }, show: false })).content[0]
-          .text,
+        (await simulate({ filePath: file, ticks: 1, inputs: { a: 1 } })).content[0].text,
       );
       expect(trace.signals.y).toEqual([{ value: 0, count: 1 }]);
     },
@@ -341,7 +325,6 @@ describe('a circuit importing a helper function from a sibling file', () => {
         filePath: join(project, 'lookup.circuit.ts'),
         ticks: 1,
         inputs: { addr: 1 },
-        show: false,
       });
       expect(result.isError).toBeUndefined();
       const trace = JSON.parse(result.content[0].text);
@@ -361,7 +344,7 @@ describe('a single file', () => {
       expect(report.valid).toBe(true);
       expect(report.analysis.circuitsDefined).toEqual(['Inverter', 'Twice']);
 
-      const result = await simulate({ filePath: file, ticks: 1, inputs: { a: 1 }, show: false });
+      const result = await simulate({ filePath: file, ticks: 1, inputs: { a: 1 } });
       expect(result.isError).toBeUndefined();
       const trace = JSON.parse(result.content[0].text);
       expect(trace.circuit).toBe('Twice');
@@ -378,7 +361,7 @@ describe('a single file', () => {
       expect(report.valid).toBe(true);
       expect(report.analysis.circuitsDefined).toEqual(['Buffer']);
 
-      const result = await simulate({ filePath: file, ticks: 1, inputs: { a: 1 }, show: false });
+      const result = await simulate({ filePath: file, ticks: 1, inputs: { a: 1 } });
       expect(JSON.parse(result.content[0].text).signals.y).toEqual([{ value: 1, count: 1 }]);
     },
     TIMEOUT,
@@ -415,7 +398,6 @@ describe('a project with no setup', () => {
           filePath: join(project, 'top.circuit.ts'),
           ticks: 1,
           inputs: { a: 1, b: 1 },
-          show: false,
         });
         return JSON.parse(result.content[0].text).signals.carry;
       };
@@ -449,7 +431,7 @@ describe('an error in a circuit file', () => {
         /^syntax-error\.circuit\.ts:7:\d+: Expected "\}" but found "connect"$/,
       );
 
-      const result = await simulate({ filePath: file, ticks: 1, show: false });
+      const result = await simulate({ filePath: file, ticks: 1 });
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toBe(report.diagnostics[0].message);
     },
@@ -468,7 +450,7 @@ describe('an error in a circuit file', () => {
       expect(message).toContain("Port 'nope' does not exist on node 'n'");
       expect(message).not.toContain('    at ');
 
-      const result = await simulate({ filePath: file, ticks: 1, show: false });
+      const result = await simulate({ filePath: file, ticks: 1 });
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toBe(message);
     },

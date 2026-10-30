@@ -6,7 +6,7 @@
  *   these; the port is OS-assigned and may not be the default 19847)
  * - Token auth from URL fragment (cleaned immediately)
  * - Session registration with a stable UUID
- * - Incoming messages: circuit source, traces, test results, memory data
+ * - Incoming messages: circuit source, with how its run starts (memory, inputs)
  * - Responding to state requests from the MCP server (pull model)
  */
 
@@ -22,21 +22,51 @@ interface MCPMessage {
   [key: string]: unknown;
 }
 
+/**
+ * How show_circuit starts the pushed circuit's run, as `useSimulation`'s
+ * `memory` (contents by exact node path) and `initialInputs` (port names and
+ * Switch or Input paths).
+ */
+export interface MCPRunStart {
+  memory?: Record<string, Record<string, number>>;
+  inputs?: Record<string, number>;
+}
+
+/** The server's maps of numbers, or nothing when the message has none. */
+function numberRecord(value: unknown): Record<string, number> | undefined {
+  if (typeof value !== 'object' || value === null) return undefined;
+  const entries = Object.entries(value);
+  return entries.every(([, v]) => typeof v === 'number')
+    ? Object.fromEntries(entries as [string, number][])
+    : undefined;
+}
+
+function runStartOf(msg: MCPMessage): MCPRunStart {
+  const memory: Record<string, Record<string, number>> = {};
+  if (typeof msg.memory === 'object' && msg.memory !== null) {
+    for (const [path, contents] of Object.entries(msg.memory)) {
+      const record = numberRecord(contents);
+      if (record) memory[path] = record;
+    }
+  }
+  const inputs = numberRecord(msg.inputs);
+  return {
+    ...(Object.keys(memory).length > 0 ? { memory } : {}),
+    ...(inputs && Object.keys(inputs).length > 0 ? { inputs } : {}),
+  };
+}
+
 interface MCPCallbacks {
-  /** Called when new circuit source is pushed from Claude Code. `requestId` is
-   *  present when the server is awaiting a render acknowledgment; call
-   *  `sendRenderResult(requestId, …)` once compile finishes. */
-  onSource?: (source: string, requestId?: string) => void;
+  /** Called when new circuit source is pushed from Claude Code, with how its
+   *  run starts. `requestId` is present when the server is awaiting a render
+   *  acknowledgment; call `sendRenderResult(requestId, …)` once compile finishes. */
+  onSource?: (source: string, requestId: string | undefined, run: MCPRunStart) => void;
   /** Called when a file-deleted event is received */
   onFileDeleted?: () => void;
   /** Called when an error message is received */
   onError?: (message: string) => void;
-  /** Called when traces are pushed */
+  /** Called when traces are pushed (no current MCP tool pushes them) */
   onTraces?: (data: unknown) => void;
-  /** Called when test results are pushed */
-  onTestResults?: (data: unknown) => void;
-  /** Called when memory data is pushed */
-  onMemoryData?: (data: unknown) => void;
   /** Called to get current circuit state for MCP server requests */
   getCircuitState?: () => unknown;
 }
@@ -148,7 +178,11 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
 
         switch (msg.type) {
           case 'source':
-            cb.onSource?.(msg.source as string, msg.requestId as string | undefined);
+            cb.onSource?.(
+              msg.source as string,
+              msg.requestId as string | undefined,
+              runStartOf(msg),
+            );
             break;
           case 'file-deleted':
             cb.onFileDeleted?.();
@@ -158,12 +192,6 @@ export function useMCPConnection(callbacks: MCPCallbacks) {
             break;
           case 'traces':
             cb.onTraces?.(msg.data);
-            break;
-          case 'test-results':
-            cb.onTestResults?.(msg.data);
-            break;
-          case 'memory-data':
-            cb.onMemoryData?.(msg.data);
             break;
 
           // Pull model: MCP server is requesting state
