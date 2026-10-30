@@ -113,7 +113,7 @@ useSimulation({ source, circuit: 'FullAdder' });
 | Returns | |
 |---|---|
 | `state` | `ready`, `error`, `compileError` (the last compile's error, with `line` and `column` when it has a location; pass it to `CodeEditor`'s `diagnostics`), `outputs`, `cycle`, `portValues`, `isRunning`, `speed`, `history`, and `circuits` (every circuit the compile built) |
-| `actions` | `set`, `toggle`, `tick`, `run`, `pause`, `reset`, `stepBack`, `stepForward`, `seek`, `scan`, `sample`, `exportVerilog`, `recompile` |
+| `actions` | `set`, `toggle`, `tick`, `run`, `pause`, `reset`, `restart`, `stepBack`, `stepForward`, `seek`, `scan`, `sample`, `exportVerilog`, `recompile` |
 
 `actions` keeps one identity for the life of the component, so it's safe in dependency arrays. `recompile()` compiles now, skipping the debounce. With source text, the keys `set` takes are checked when the call reaches the sandbox, as there's no circuit to type them from until it compiles.
 

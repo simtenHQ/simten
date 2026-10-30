@@ -130,6 +130,11 @@ export type SessionRequest =
   | { id: string; type: 'step-forward'; session: SessionId }
   | { id: string; type: 'seek'; session: SessionId; index: number }
   | { id: string; type: 'reset'; session: SessionId }
+  /**
+   * The power cycle: the session starts over in the state it opened in, with
+   * the circuit, inputs, memory and history it was opened with. Same session.
+   */
+  | { id: string; type: 'restart'; session: SessionId }
   | {
       id: string;
       type: 'sample';
