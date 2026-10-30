@@ -1,6 +1,6 @@
 {
   "name": "@simten/sandbox",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Run Simten circuits in a cross-origin sandbox: the page-side clients, the protocol, and the worker-side session host. No React.",
   "license": "Apache-2.0",
   "author": "Charles Harris",

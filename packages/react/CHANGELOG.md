@@ -1,5 +1,128 @@
 # @simten/ui
 
+## 0.16.0
+
+### Minor Changes
+
+- 7cb96ba: New package `@simten/react`: Simten's React components and hooks in one place (#418). It replaces `@simten/ui` and `@simten/embed`, which are deprecated, and continues `@simten/ui`'s version line. Embedding on a page that isn't React is the iframe from Share > Embed on simten.dev, with no package.
+
+  Where things moved. The surface itself is decision 0010's, described in the `useSimulation` entry:
+
+  | Old                                                                                                                                                                                                | New                                                                                              |
+  | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------ |
+  | `CircuitEmbed`, `CircuitViewer` from `@simten/embed`                                                                                                                                               | `useSimulation` with `CircuitCanvas` and `ClockControls` from `@simten/react`                    |
+  | `CircuitCanvas`, `CircuitCanvasProps` from `@simten/embed`                                                                                                                                         | `@simten/react`, taking `simulation`                                                             |
+  | `@simten/embed/styles.css`                                                                                                                                                                         | `@simten/react/styles.css`                                                                       |
+  | `ClockControls` from `@simten/ui/editor/components`                                                                                                                                                | `@simten/react`, taking `simulation`                                                             |
+  | `@simten/ui/sandbox`                                                                                                                                                                               | `@simten/react`                                                                                  |
+  | `@simten/ui/monaco`                                                                                                                                                                                | `@simten/react/code-editor`                                                                      |
+  | `@simten/ui/waveform`                                                                                                                                                                              | not public for now: the waveform viewer comes back once it can pick which signals to show (#539) |
+  | `@simten/ui/canvas`, `/nodes`, `/share`, `/primitives/*`, `/styles/theme.css`; `ErrorDisplay`, `ErrorBoundary`, `ShareCircuitProvider`, `useShareCircuit`, `FlatPortValueMap` from `@simten/embed` | no longer public: canvas internals, or Simten's own app code                                     |
+
+  New in this package:
+
+  - `@simten/react/styles.css` is the one stylesheet, with the theme as CSS variables.
+  - `"sideEffects": ["*.css"]`, so bundlers keep the stylesheets the components import.
+  - `preloadMonaco()` in `@simten/react/code-editor` starts downloading Monaco before an editor mounts.
+
+  Changes since `@simten/ui` 0.15 and `@simten/embed` 0.5:
+
+  - Circuits simulate only through `useSimulation` (#417), which runs them in the sandbox's worker. The page-side hooks are gone: `useCircuitSimulator`, `useCircuitCompiler`, `useCompiledCircuit` and `builtFromIR` from `@simten/embed`, and `useSandbox`, `useSandboxContext` and `SANDBOX_UNAVAILABLE_ERROR` from `@simten/ui/sandbox`, with their types. `CompileDiagnostic` is exported from `@simten/react`.
+  - The canvas pans when you left-drag the background, not only with the middle or right button. Dragging a node still moves the node. Bus wires are drawn thicker than single-bit wires.
+  - Pin labels are on by default on every canvas. Blocks grow to fit their pins and label names, the layout spaces them by the same sizes, and labels hide when the canvas is zoomed out too far to read them.
+  - The code editor defaults to `wordWrap: 'on'`, `tabSize: 2` and `fixedOverflowWidgets: true`, and no longer pops up parameter hints on its own, so the signature box stops covering completions. Cmd/Ctrl+Shift+Space still shows them.
+
+- 9b438e8: The public surface of decision 0010: the library gives you data, input and output, and your app arranges them.
+
+  ```tsx
+  import "@simten/react/styles.css";
+  import { CircuitCanvas, ClockControls, useSimulation } from "@simten/react";
+
+  const sim = useSimulation(HalfAdder);
+  sim.actions.set({ a: 1, b: 1 });
+  // <CircuitCanvas simulation={sim} />  <ClockControls simulation={sim} />
+  ```
+
+  - **`useSimulation(circuitOrSource, { initialInputs, memory, history })` returns `{ state, actions }`.** `state` has `outputs` by name, `portValues`, `cycle`, `isRunning`, `speed`, `ready`, `error`, `compileError` and `history`. `actions` is `set`, `toggle`, `tick`, `run`, `pause`, `reset`, `stepBack`, `stepForward`, `seek`, `scan`, `sample`, `exportVerilog` and `recompile`, with one identity for the life of the hook.
+  - **One `set` for every input.** It takes input port names and the paths of Switch and Input nodes, writes them all before the circuit settles, and reports an error, writing nothing, for a key that names anything else or both a port and a Switch. `scan` takes the same keys. For a circuit built on the page, the keys of `set` and `toggle` and the names in `state.outputs` are typed from the circuit.
+  - **Circuits on a page share one sandbox**, created in the browser by the first `useSimulation` that needs it. `SandboxProvider` is optional: with `client` it uses that client (an `inProcessSandbox()` in tests); without one its subtree gets a sandbox of its own. The nearest provider wins.
+  - **`CircuitCanvas` and `ClockControls` take `simulation`.** The canvas shows its own loading and error states and calls the simulation's actions when you click; drill-down is built in. A circuit with ports is drawn with a switch or number input on each input port and a lamp or display on each output, around the circuit as one box (#531). The simulation runs the circuit itself, so `state.portValues` has its own paths: `__top__.sum` for a port, `ha1.x.out` for a node. `ClockControls` renders nothing for a circuit without a clock. `WaveformViewer` isn't exported in this release; it returns once it can pick which signals to show (#539).
+  - **Entry points:** `@simten/react`, `@simten/react/code-editor` and `@simten/react/styles.css`.
+  - Recompiling source text waits 50 ms after the last change; the first compile is immediate.
+
+  How to migrate:
+
+  | Before                                                                                   | After                                                                                                                                             |
+  | ---------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+  | `import … from '@simten/react/sandbox'`, `'@simten/react/canvas'`                        | `import … from '@simten/react'`                                                                                                                   |
+  | `@simten/react/monaco`, `SimtenCodeEditor`, `SimtenCodeEditorHandle`, `SimtenDiagnostic` | `@simten/react/code-editor`, `CodeEditor`, `CodeEditorHandle`, `CodeEditorDiagnostic`                                                             |
+  | `<CircuitEmbed circuit={C} />` or `<CircuitViewer circuit={C} />`                        | `const sim = useSimulation(C)`, then `<CircuitCanvas simulation={sim} />` and `<ClockControls simulation={sim} />`; put your own card around them |
+  | `useSimulation(src)` + `<SimulationView simulation={sim} />`                             | `<CircuitCanvas simulation={sim} />` + `<ClockControls simulation={sim} />`                                                                       |
+  | `<CircuitCanvas circuit={…} definitions={…} portValues={…} onToggleNode={…} … />`        | `<CircuitCanvas simulation={sim} />`                                                                                                              |
+  | `<ClockControls cycle={…} onStep={…} … />`                                               | `<ClockControls simulation={sim} showSpeed showScrubber />`                                                                                       |
+  | `<WaveformViewer vcd={…} />`                                                             | not exported for now (#539). The editor no longer replays the MCP's traces                                                                        |
+  | `actions.setInput('d', 1)`, `actions.setInputs({ d: 0, en: 0 })`                         | `actions.set({ d: 1 })`, `actions.set({ d: 0, en: 0 })`                                                                                           |
+  | `actions.toggleNode('a')`                                                                | `actions.toggle('a')`                                                                                                                             |
+  | `actions.setSpeed(n)`, `{ speed: n }`                                                    | `actions.run(n)`                                                                                                                                  |
+  | `{ harness: true }`                                                                      | nothing: the canvas draws a circuit's ports itself                                                                                                |
+  | `layout={{ dut: … }}` for a circuit with ports                                           | `layout={{ circuit: … }}`: the box shows the circuit's name, not `dut`                                                                            |
+  | `portValues.get('sum.in')`, `'a.out'`, `'dut.ha1.x.out'` for a circuit with ports        | `portValues.get('__top__.sum')`, `'__top__.a'`, `'ha1.x.out'`, or `state.outputs.sum`                                                             |
+  | `{ debounceMs }`                                                                         | nothing: 50 ms                                                                                                                                    |
+  | `result.compileError`, `result.history`                                                  | `result.state.compileError`, `result.state.history`                                                                                               |
+  | `result.client`                                                                          | `useSandboxClient()`                                                                                                                              |
+  | `onPortValuesChange`                                                                     | read `sim.state` in the same component                                                                                                            |
+  | a `ref` with `setNodeValue`, `startAutoRun`                                              | `sim.actions.set`, `sim.actions.run`                                                                                                              |
+  | `memory: { 'dut.imem': … }` for a circuit with ports                                     | `memory: { imem: … }`, the circuit's own path                                                                                                     |
+  | `@simten/react/styles/theme.css`                                                         | `@simten/react/styles.css`                                                                                                                        |
+  | `@simten/react/embed`, `/nodes`, `/share`, `/primitives/*`                               | removed: no longer part of the library                                                                                                            |
+
+- 7cb96ba: Removed in the move from `@simten/ui` and `@simten/embed` to `@simten/react` (#418), so there is one migration:
+
+  - **The `<circuit-embed>` web component** (`@simten/embed/webcomponent`, `dist/circuit-embed.js`). To show a circuit on a page that isn't React, open it on simten.dev and use Share > Embed: an iframe that works where `<script>` is stripped, is isolated from the page, and ships nothing into it.
+  - **`@simten/embed/nodes` and `@simten/embed/canvas`**, which only re-exported `@simten/ui`. The node components are how `CircuitCanvas` draws and aren't exported.
+  - **The Zustand editor stores**, `@simten/ui/editor/stores`: `useCircuitStore`, `useCircuitPreviewStore`, `useCircuitDefinitionsStore` and their types. The editor stopped reading them when it moved to `useSimulation` (#520).
+  - **`@simten/ui/editor`**, which only re-exported `captureEnvironmentalState` and `restoreEnvironmentalState` from `@simten/core/internal`.
+  - **`@simten/ui/editor/components`**: `ClockControls` is in `@simten/react`; `ReactFlowProvider` comes from `@xyflow/react` (`CircuitCanvas` has its own); `CircuitSelector`, `CircuitTabBar` and `SignalOutputPanel` read the removed stores and had no other users.
+  - **`@simten/ui/editor/types`**. The IR types (`CircuitIR` and the rest) come from `@simten/core/internal`; the editor-only types there had no users.
+  - **`@simten/ui/editor/hooks`**, which exported nothing.
+
+- 047eee1: `useSimulation` has `actions.restart()`, the power cycle: the session goes back to the state it opened in, at cycle 0, with the inputs at `initialInputs`. `reset()` leaves the inputs where they are, so a latch built from gates settles on them rather than as it did when the circuit opened.
+
+### Patch Changes
+
+- 6052ee8: The canvas reads the simulation's values in the simulation's own terms, and redraws only what changed.
+
+  - A value update re-renders only the nodes and wires whose value changed. Before, every node and wire was rebuilt on every update.
+  - Double-clicking the box of a circuit with ports opens the circuit itself. Inside it, a Screen shows its pixels, consoles and UARTs show their text, and loading a program onto a memory calls `onLoadMemory` with the memory's path (`imem`), as it does on a circuit without ports.
+  - A circuit that compiles but fails to open (an `eval` that throws as it first settles, say) is reported in `state.compileError`, so the editor marks it and the canvas keeps the last good drawing. It used to be `state.error`, which replaced the drawing.
+  - `WaveformViewer` drops the cycles stepped back over when the clock ticks again from the past.
+  - The boundary ports inside the drill-down have no pin labels, like the switches and lamps the canvas draws for a circuit's ports.
+
+- c7e5768: `useSimulation` returns the same `{ state, actions }` object, and the same `state`, until something in the state changes, so a `useMemo` or `memo` component that depends on the simulation no longer recomputes on every render. `actions.toggle` flips the value the sandbox holds instead of one the page remembered, so a double click lands where it started even when the state shown hasn't caught up.
+- Updated dependencies [4f74855]
+- Updated dependencies [d730bbf]
+- Updated dependencies [c7e5768]
+- Updated dependencies [90126f4]
+- Updated dependencies [6052ee8]
+- Updated dependencies [f5c8869]
+- Updated dependencies [f4c5153]
+- Updated dependencies [38feb78]
+- Updated dependencies [f7a6a51]
+- Updated dependencies [1377bd3]
+- Updated dependencies [d3031cb]
+- Updated dependencies [25966b0]
+- Updated dependencies [fdf488d]
+- Updated dependencies [1377bd3]
+- Updated dependencies [047eee1]
+- Updated dependencies [c7e5768]
+- Updated dependencies [fdf488d]
+- Updated dependencies [4f74855]
+- Updated dependencies [5dc1429]
+- Updated dependencies [2dbad6f]
+- Updated dependencies [4f74855]
+  - @simten/core@0.23.0
+  - @simten/sandbox@0.1.0
+
 ## 0.15.6
 
 ### Patch Changes
