@@ -3,7 +3,7 @@
  *
  * Edges are projected from the unelaborated circuit, where a composite is one
  * node with ports. The session's values come from the flattened netlist, where
- * that boundary no longer exists — a `HalfAdder` named `h1` contributes
+ * * that boundary no longer exists: a `HalfAdder` named `h1` contributes
  * `h1.x1.out` and `h1.a1.out`, and never `h1.carry`.
  *
  * So a wire running from one composite into another had neither endpoint in the
