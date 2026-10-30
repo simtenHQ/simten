@@ -2,7 +2,7 @@
  * Shared studio server singleton.
  *
  * Provides a single WebSocket-based studio server shared across all MCP tools
- * (show, state, traces, test-results).
+ * (show_circuit and the server entry).
  */
 
 import { randomUUID } from 'node:crypto';

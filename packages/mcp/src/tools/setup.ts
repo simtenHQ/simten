@@ -12,7 +12,7 @@
 
 import { existsSync, mkdirSync } from 'node:fs';
 import { resolve } from 'node:path';
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import {
   DEV_DEPS,
@@ -33,18 +33,20 @@ Call this once before a project's first verify_circuit (or whenever it reports "
 The result reports the extension to use for circuit/testbench files: ".ts" normally, ".mts" only if you already have a type:commonjs package.json.`;
 
 export function registerSetupTool(server: McpServer): void {
-  server.tool(
+  server.registerTool(
     'setup_project',
-    DESCRIPTION,
     {
-      dir: z
-        .string()
-        .optional()
-        .describe('Project root to set up (default: the MCP working directory)'),
-      packageManager: z
-        .enum(['npm', 'pnpm', 'yarn', 'bun'])
-        .optional()
-        .describe('Override the package manager (default: detect from lockfile, else npm)'),
+      description: DESCRIPTION,
+      inputSchema: z.strictObject({
+        dir: z
+          .string()
+          .optional()
+          .describe('Project root to set up (default: the MCP working directory)'),
+        packageManager: z
+          .enum(['npm', 'pnpm', 'yarn', 'bun'])
+          .optional()
+          .describe('Override the package manager (default: detect from lockfile, else npm)'),
+      }),
     },
     async ({ dir, packageManager }) => {
       const root = dir ? resolve(dir) : process.cwd();

@@ -5,14 +5,17 @@
  * Accepts TypeScript circuit builder code.
  */
 
+import type { Simulation } from '@simten/core';
 import {
   type BitValue,
   type BusValue,
+  type CircuitIR,
   compressTrace,
-  createEngine,
+  createSimulation,
   detectSteadyState,
   elaborate,
   type MemoryContents,
+  nodesOf,
   type SimulationTrace,
   TOP_LEVEL_NODE,
 } from '@simten/core/internal';
@@ -40,15 +43,13 @@ export interface SimulateError {
 export interface TraceOptions {
   circuitName?: string;
   ticks?: number;
-  // Numeric: `setNode` does not coerce, and this map feeds `topLevelInputs`,
-  // which propagate.ts reads raw when building onTick's inputs. A boolean here
-  // would land in sequential state verbatim.
-  inputs?: Record<string, number>;
   /**
-   * Memory contents to load before the first tick, by node: the node's ID
-   * (`rom`) or its path inside the circuit (`cpu.imem`), each holding
-   * `{ address: value }` contents.
+   * Input values at cycle 0, keyed as `simulate(top).set()` takes them: input
+   * port names and Switch or Input node paths. Numbers only: the engine does
+   * not coerce, so a boolean would land in sequential state verbatim.
    */
+  inputs?: Record<string, number>;
+  /** Memory contents loaded before cycle 0, by exact node path (`rom`, `cpu.imem`). */
   memoryData?: Record<string, MemoryContents>;
 }
 
@@ -86,33 +87,11 @@ export function traceCompiled(
   // Elaborate to flat circuit — needed for VCD hierarchy
   const flatCircuit = elaborate(target, compiled.library.definitions);
 
-  // Create simulator from flat circuit
-  const simulator = createEngine(flatCircuit, { library: compiled.library });
-
-  // Load memory data if provided. The engine's memories run on a Map, and its
-  // setNode takes exact node paths only, so check the names here and report a
-  // miss as a tool error.
-  if (params.memoryData) {
-    for (const [nodeId, contents] of Object.entries(params.memoryData)) {
-      if (!flatCircuit.nodes.some((n) => n.id === nodeId)) {
-        return { error: `memoryData: no node "${nodeId}" in circuit "${target.name}"` };
-      }
-      simulator.setNode(nodeId, memoryContentsToMap(contents));
-    }
-  }
-
-  // Set inputs
-  if (params.inputs) {
-    const ports = target.inputs.map((i) => i.name);
-    for (const [name, value] of Object.entries(params.inputs)) {
-      if (!ports.includes(name)) {
-        return {
-          error: `inputs: "${name}" is not an input of circuit "${target.name}". Inputs: ${ports.join(', ') || '(none)'}`,
-        };
-      }
-      simulator.setInput(name, value);
-    }
-  }
+  // The run starts the way simulate(top, { memory }) and set() start one.
+  const started = startSimulation(target, compiled, params);
+  if ('error' in started) return started;
+  const { simulation } = started;
+  const nodes = nodesOf(simulation);
 
   // Run simulation — capture full portValues each tick for VCD
   const outputNames = target.outputs.map((o) => o.name);
@@ -126,18 +105,15 @@ export function traceCompiled(
   }
 
   for (let tick = 0; tick < ticks; tick++) {
-    const result = simulator.tick();
+    simulation.tick();
+    const portValues = nodes.ports();
 
     // Capture full port values for VCD (all internal signals)
-    portValuesByTick.push(result.portValues);
+    portValuesByTick.push(portValues);
 
     // Capture top-level signals for RLE compression
     for (const name of signalNames) {
-      const key = `${TOP_LEVEL_NODE}.${name}`;
-      const val = result.portValues.get(key);
-      // (The old fallback tested `typeof val === 'boolean'` on the right of
-      // `??`, where val is always nullish — it could only ever yield 0.)
-      signals[name].push(val ?? 0);
+      signals[name].push(portValues.get(`${TOP_LEVEL_NODE}.${name}`) ?? 0);
     }
   }
 
@@ -174,6 +150,34 @@ export function traceCompiled(
   };
 }
 
-function memoryContentsToMap(contents: MemoryContents): Map<number, number> {
-  return new Map(Object.entries(contents).map(([address, value]) => [Number(address), value]));
+/**
+ * A simulation of `target` with `memoryData` loaded and `inputs` set, at cycle
+ * 0. Memory paths and input keys resolve exactly, as in `simulate(top, {
+ * memory })` and `set()`: a miss is a tool error naming the parameter.
+ */
+function startSimulation(
+  target: CircuitIR,
+  compiled: Compiled,
+  params: TraceOptions,
+): { simulation: Simulation } | SimulateError {
+  const simulation = createSimulation(target, compiled.library);
+  const nodes = nodesOf(simulation);
+  for (const [path, contents] of Object.entries(params.memoryData ?? {})) {
+    if (nodes.primitiveOf(path) === undefined) {
+      return { error: `memoryData: no node "${path}" in circuit "${target.name}"` };
+    }
+    try {
+      nodes.set(path, contents);
+    } catch (e) {
+      return { error: `memoryData: ${e instanceof Error ? e.message : String(e)}` };
+    }
+  }
+  try {
+    simulation.set(params.inputs ?? {});
+  } catch (e) {
+    return { error: `inputs: ${e instanceof Error ? e.message : String(e)}` };
+  }
+  // Cycle 0 is with the program and the inputs in place.
+  simulation.reset();
+  return { simulation };
 }

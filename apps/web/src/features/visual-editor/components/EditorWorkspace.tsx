@@ -8,7 +8,7 @@
 'use client';
 
 import type { CircuitIR, MemoryContents } from '@simten/core/internal';
-import { CircuitCanvas, ClockControls, useSimulation, WaveformViewer } from '@simten/react';
+import { CircuitCanvas, ClockControls, useSimulation } from '@simten/react';
 import {
   CodeEditor,
   type CodeEditorHandle,
@@ -29,7 +29,7 @@ import { SiteHeader } from '@/components/SiteHeader';
 import { useTheme } from '@/components/ThemeProvider';
 import { ErrorDisplay } from '@/features/code-editor';
 import { ShareDialog } from '@/features/share/ShareDialog';
-import { useMCPConnection } from '@/hooks/useMCPConnection';
+import { type MCPRunStart, useMCPConnection } from '@/hooks/useMCPConnection';
 import { CATEGORY_COLORS, CATEGORY_LABELS, EXAMPLES, type Example } from '../examples';
 import { VerilogImportSheet } from './VerilogImportSheet';
 
@@ -155,9 +155,16 @@ export function EditorWorkspace({
    */
   const [memory, setMemory] = useState(NO_MEMORY);
 
+  /**
+   * Where show_circuit's `inputs` put the pushed circuit's inputs at power-on:
+   * port names and Switch or Input paths, as `set` takes them. Kept until the
+   * next push or an edit, so a reset or a new program keeps them.
+   */
+  const [pushedInputs, setPushedInputs] = useState<Record<string, number> | undefined>();
+
   // Compiles the source and simulates its last circuit in the sandbox. The
   // canvas draws switches and displays for its ports.
-  const simulation = useSimulation({ source: code }, { memory });
+  const simulation = useSimulation({ source: code }, { memory, initialInputs: pushedInputs });
   const { state, actions } = simulation;
   const { compileError } = state;
   const circuit = state.circuit;
@@ -179,10 +186,6 @@ export function EditorWorkspace({
   const [exportStatus, setExportStatus] = useState<
     { kind: 'idle' } | { kind: 'error'; message: string }
   >({ kind: 'idle' });
-
-  // The waveform panel, opened when the MCP pushes traces. It records this
-  // simulation, the same circuit the MCP pushed with them.
-  const [waveformOpen, setWaveformOpen] = useState(false);
 
   // Editor handle for imperative get/set of the Monaco source.
   const editorRef = useRef<CodeEditorHandle>(null);
@@ -268,11 +271,14 @@ export function EditorWorkspace({
 
   // Studio connection (WebSocket to MCP server)
   const { status: mcpStatus, sendRenderResult } = useMCPConnection({
-    onTraces: useCallback(() => setWaveformOpen(true), []),
     onSource: useCallback(
-      (source: string, requestId?: string) => {
+      (source: string, requestId: string | undefined, run: MCPRunStart) => {
         pendingRenderRef.current = requestId ?? null;
+        // setValue runs the editor's onChange, which clears memory and pushed
+        // inputs as for an edit; the push's own run start replaces them after.
         editorRef.current?.setValue(source);
+        setMemory(run.memory ?? NO_MEMORY);
+        setPushedInputs(run.inputs);
         setTimeout(() => void actions.recompile(), 100);
       },
       [actions],
@@ -507,8 +513,10 @@ export function EditorWorkspace({
                     onChange={(value) => {
                       setCode(value ?? '');
                       // An edit starts a new run of the new circuit, without
-                      // the programs loaded into the old one.
+                      // the programs loaded into the old one or the inputs a
+                      // push set on it.
                       setMemory(NO_MEMORY);
+                      setPushedInputs(undefined);
                     }}
                     theme={resolvedTheme === 'dark' ? SIMTEN_DARK : SIMTEN_LIGHT}
                     diagnostics={diagnostics}
@@ -520,29 +528,9 @@ export function EditorWorkspace({
               </div>
             </ResizablePanel>
             <ResizableHandle withHandle />
-            {/* Right: Circuit Canvas, optionally split with Waveform below */}
+            {/* Right: Circuit Canvas */}
             <ResizablePanel defaultSize={60} minSize={30} style={CLIP}>
-              {waveformOpen ? (
-                <ResizablePanelGroup orientation="vertical">
-                  <ResizablePanel defaultSize={65} minSize={20} style={CLIP}>
-                    {canvas}
-                  </ResizablePanel>
-                  <ResizableHandle withHandle />
-                  <ResizablePanel
-                    defaultSize={35}
-                    minSize={10}
-                    className="flex flex-col"
-                    style={CLIP}
-                  >
-                    <WaveformViewer
-                      simulation={simulation}
-                      onClose={() => setWaveformOpen(false)}
-                    />
-                  </ResizablePanel>
-                </ResizablePanelGroup>
-              ) : (
-                canvas
-              )}
+              {canvas}
             </ResizablePanel>
           </ResizablePanelGroup>
         </div>

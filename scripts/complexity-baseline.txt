@@ -31,7 +31,5 @@ packages/mcp/src/lib/vcd-format.ts formatSignals
 packages/mcp/src/lib/vcd-parser.ts handleDirective
 packages/mcp/src/lib/vcd-parser.ts parseVcd
 packages/mcp/src/lib/vcd-parser.ts processValueRecord
-packages/mcp/src/server/ws-server.ts (anonymous)
-packages/mcp/src/tools/show.ts (anonymous)
 packages/sandbox/src/legacy-harness.ts autoHarness
 scripts/check-exports.ts checkPackage

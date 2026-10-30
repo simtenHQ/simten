@@ -149,7 +149,7 @@ export interface SimulationActions<Keys extends string = string> {
   recompile(): Promise<void>;
 }
 
-/** A running simulation, as `CircuitCanvas`, `ClockControls` and `WaveformViewer` take it. */
+/** A running simulation, as `CircuitCanvas` and `ClockControls` take it. */
 export interface UseSimulationResult<Keys extends string = string, Outs extends string = string> {
   state: SimulationState<Outs>;
   actions: SimulationActions<Keys>;

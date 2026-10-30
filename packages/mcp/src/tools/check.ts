@@ -2,19 +2,22 @@
  * check_circuit tool - MCP wrapper
  */
 
-import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
+import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
 import { checkCircuit } from '../lib/check-circuit.js';
 import { readCircuitSource } from '../lib/file-reader.js';
 import { checkFile, loadsAsModule } from '../lib/load-file.js';
 
 export function registerCheckTool(server: McpServer): void {
-  server.tool(
+  server.registerTool(
     'check_circuit',
-    'Parse and validate circuit source code. Returns structured diagnostics including errors, warnings, and suggestions. Runs the full 4-phase validation pipeline: syntax, semantic, type, and structural checks.',
     {
-      source: z.string().optional().describe('TypeScript circuit code as a string'),
-      filePath: z.string().optional().describe('Path to a .circuit.ts file'),
+      description:
+        'Compile a circuit and report whether it builds: a compile error with its location, or the circuits it defines and the components they use. A file with imports loads as a module, so its own imports resolve; source text with no imports runs in-process. No setup needed.',
+      inputSchema: z.strictObject({
+        source: z.string().optional().describe('TypeScript circuit code as a string'),
+        filePath: z.string().optional().describe('Path to a .circuit.ts file'),
+      }),
     },
     async ({ source, filePath }) => {
       const read = readCircuitSource({ source, filePath });
