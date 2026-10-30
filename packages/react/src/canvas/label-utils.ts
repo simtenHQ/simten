@@ -1,4 +1,4 @@
-import type { CircuitIR } from '@simten/core/internal';
+import type { DrawnCircuit } from './types';
 
 /**
  * Extract clean label from node ID (removes timestamps and prefixes).
@@ -23,7 +23,7 @@ function extractCleanLabel(nodeId: string): string {
 /**
  * Clean up node labels for display.
  */
-export function cleanCircuitLabels(circuit: CircuitIR): CircuitIR {
+export function cleanCircuitLabels(circuit: DrawnCircuit): DrawnCircuit {
   return {
     ...circuit,
     nodes: circuit.nodes.map((node) => ({

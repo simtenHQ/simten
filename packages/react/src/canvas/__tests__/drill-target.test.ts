@@ -36,6 +36,7 @@ function definitionsOf(...circuits: CircuitIR[]): CircuitDefinitions {
 function nodeData(componentRef: string, args: Record<string, unknown> = {}): NodeData {
   return {
     nodeId: 'n1',
+    path: 'n1',
     componentRef,
     label: componentRef.toLowerCase(),
     inputCount: 0,

@@ -1,5 +1,6 @@
 import type React from 'react';
-import { useCallback, useState } from 'react';
+import { useCallback } from 'react';
+import { useCanvasActions, useNodeValue } from '../canvas/values';
 import { cn } from '../lib/utils';
 import { BaseNode, type PortConfig } from './BaseNode';
 import { CompositeBadge } from './CompositeBadge';
@@ -8,116 +9,6 @@ import type { NodeData } from './NodeData';
 interface InputNodeProps {
   data: NodeData;
   selected?: boolean;
-}
-
-function NumericInputControl({ data }: { data: NodeData }) {
-  const width = data.width ?? 8;
-  // Use 2**width, not (1 << width): JS `<<` is signed 32-bit, so `1 << 31` is
-  // negative and `1 << 32` wraps to 1 — either way maxValue went bad and clamped
-  // every wide input to 0. Cap at 32 (simten's max bus width) → up to 2^32-1.
-  const maxValue = 2 ** Math.min(width, 32) - 1;
-  const currentValue = data.numericValue ?? 0;
-  const [isEditing, setIsEditing] = useState(false);
-  const [editText, setEditText] = useState('');
-
-  const setValue = useCallback(
-    (newValue: number) => {
-      const clamped = Math.max(0, Math.min(maxValue, newValue));
-      data.onValueChange?.(clamped);
-    },
-    [data, maxValue],
-  );
-
-  const handleStartEdit = useCallback(
-    (e: React.MouseEvent) => {
-      e.stopPropagation();
-      setEditText(currentValue.toString());
-      setIsEditing(true);
-    },
-    [currentValue],
-  );
-
-  const handleFinishEdit = useCallback(() => {
-    const parsed = parseInt(editText, 10);
-    if (!isNaN(parsed)) setValue(parsed);
-    setIsEditing(false);
-  }, [editText, setValue]);
-
-  const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent) => {
-      e.stopPropagation();
-      if (e.key === 'Enter') handleFinishEdit();
-      else if (e.key === 'Escape') setIsEditing(false);
-    },
-    [handleFinishEdit],
-  );
-
-  const hexDigits = Math.ceil(width / 4);
-  const hexValue = currentValue.toString(16).toUpperCase().padStart(hexDigits, '0');
-
-  // Nothing to write to (the inspector's boundary ports): a reading, not a control.
-  if (!data.onValueChange) {
-    return (
-      <div className="flex flex-col items-center gap-1.5">
-        <div className="w-14 h-7 flex items-center justify-center rounded bg-[var(--embed-bg-tertiary)] text-emerald-400 font-mono text-sm font-bold">
-          0x{hexValue}
-        </div>
-        <div className="text-[10px] text-[var(--embed-text-secondary)] font-mono">
-          = {currentValue}
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col items-center gap-1.5">
-      <div className="flex items-center gap-1">
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setValue(currentValue - 1);
-          }}
-          aria-label="Decrease value"
-          className="w-6 h-6 flex items-center justify-center rounded bg-[var(--embed-bg-tertiary)] hover:opacity-80 text-[var(--embed-text-secondary)] text-sm font-bold active:scale-90 transition-all"
-        >
-          -
-        </button>
-        {isEditing ? (
-          <input
-            type="text"
-            value={editText}
-            onChange={(e) => setEditText(e.target.value)}
-            onBlur={handleFinishEdit}
-            onKeyDown={handleKeyDown}
-            onClick={(e) => e.stopPropagation()}
-            autoFocus
-            className="w-14 h-7 text-center text-xs font-mono bg-white border border-blue-400 rounded outline-none text-gray-800"
-          />
-        ) : (
-          <button
-            onClick={handleStartEdit}
-            aria-label={`Current value: ${currentValue}. Click to edit`}
-            className="w-14 h-7 flex items-center justify-center rounded bg-[var(--embed-bg-tertiary)] text-emerald-400 font-mono text-sm font-bold hover:opacity-80 transition-colors cursor-text"
-          >
-            0x{hexValue}
-          </button>
-        )}
-        <button
-          onClick={(e) => {
-            e.stopPropagation();
-            setValue(currentValue + 1);
-          }}
-          aria-label="Increase value"
-          className="w-6 h-6 flex items-center justify-center rounded bg-[var(--embed-bg-tertiary)] hover:opacity-80 text-[var(--embed-text-secondary)] text-sm font-bold active:scale-90 transition-all"
-        >
-          +
-        </button>
-      </div>
-      <div className="text-[10px] text-[var(--embed-text-secondary)] font-mono">
-        = {currentValue}
-      </div>
-    </div>
-  );
 }
 
 /** A Switch with nothing to write to (the inspector's boundary ports): a lamp, not a switch. */
@@ -136,13 +27,21 @@ function SwitchLamp({ data, value }: { data: NodeData; value: boolean }) {
   );
 }
 
-function SwitchToggle({ data, value }: { data: NodeData; value: boolean }) {
+function SwitchToggle({
+  data,
+  value,
+  toggle,
+}: {
+  data: NodeData;
+  value: boolean;
+  toggle: (path: string) => void;
+}) {
   const handleToggle = useCallback(
     (e: React.MouseEvent) => {
       e.stopPropagation();
-      data.onToggle?.();
+      toggle(data.path);
     },
-    [data],
+    [toggle, data.path],
   );
 
   return (
@@ -191,15 +90,17 @@ function SwitchToggle({ data, value }: { data: NodeData; value: boolean }) {
   );
 }
 
+/** A Switch, or a primitive that only drives outputs. */
 export function InputNode({ data, selected }: InputNodeProps) {
-  const value = data.value ?? false;
-  const isNumericInput = data.componentRef === 'Input';
+  const reading = useNodeValue(data);
+  const value = reading !== undefined && reading !== 0;
+  const { toggle } = useCanvasActions();
 
   const outputPorts: PortConfig[] = data.outputNames.map((name, index) => ({
     name,
     index,
     type: 'output' as const,
-    value: (isNumericInput ? (data.numericValue ?? 0) !== 0 : value) ? 1 : 0,
+    value: value ? 1 : 0,
   }));
 
   return (
@@ -208,8 +109,6 @@ export function InputNode({ data, selected }: InputNodeProps) {
       selected={selected}
       className="min-w-[80px]"
       showPortLabels={data.showPortLabels}
-      onPortClick={data.onPortClick}
-      glowUnconnected={data.glowUnconnected}
     >
       <div className="relative flex flex-col items-center gap-2">
         {(data.isComposite || data.hasReference) && <CompositeBadge />}
@@ -217,10 +116,8 @@ export function InputNode({ data, selected }: InputNodeProps) {
           {data.label || data.componentRef}
         </div>
 
-        {isNumericInput ? (
-          <NumericInputControl data={data} />
-        ) : data.onToggle ? (
-          <SwitchToggle data={data} value={value} />
+        {toggle && data.componentRef === 'Switch' ? (
+          <SwitchToggle data={data} value={value} toggle={toggle} />
         ) : (
           <SwitchLamp data={data} value={value} />
         )}

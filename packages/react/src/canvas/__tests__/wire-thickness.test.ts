@@ -7,7 +7,7 @@
 
 import type { CircuitIR } from '@simten/core/internal';
 import { describe, expect, it } from 'vitest';
-import { projectCircuitToReactFlow } from '../circuit-to-flow';
+import { projectCircuit } from '../circuit-to-flow';
 
 const circuit: CircuitIR = {
   name: 'Top',
@@ -63,10 +63,9 @@ const library = {
   resolveCircuit: () => undefined,
   getAllPrimitiveNames: () => ['Input', 'Switch', 'Register'],
 };
-const metadata = { components: {}, connections: {} };
 
 describe('wire thickness', () => {
-  const { edges } = projectCircuitToReactFlow(circuit, metadata, library);
+  const { edges } = projectCircuit(circuit, {}, library);
   const strokeOf = (id: string) => edges.find((e) => e.id === id)?.style?.strokeWidth;
 
   it('draws a bus heavier than a single bit', () => {

@@ -163,4 +163,32 @@ describe('WaveformViewer', () => {
     });
     expect(screen.getByText(/cycles 0 to 3/)).toBeTruthy();
   });
+
+  it('drops the cycles stepped back over once the clock ticks again', async () => {
+    let sim: UseSimulationResult | null = null;
+    function Demo() {
+      const simulation = useSimulation(Counter, { initialInputs: { en: 1, step: 1 } });
+      sim = simulation;
+      return <WaveformViewer simulation={simulation} />;
+    }
+    inSandbox(<Demo />);
+    await waitFor(() => expect(sim?.state.ready).toBe(true));
+    for (let i = 0; i < 5; i++) {
+      await act(async () => {
+        await sim?.actions.tick();
+      });
+    }
+    await screen.findByText(/cycles 0 to 5/);
+    for (let i = 0; i < 3; i++) {
+      await act(async () => {
+        await sim?.actions.stepBack();
+      });
+    }
+    // Cycle 2. A tick from the past starts a new future: cycles 4 and 5 never happened.
+    await act(async () => {
+      await sim?.actions.tick();
+    });
+    await waitFor(() => expect(sim?.state.cycle).toBe(3));
+    await screen.findByText(/cycles 0 to 3/);
+  });
 });

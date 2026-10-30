@@ -126,11 +126,7 @@ function useKeyboardInput(
 
 interface EditorWorkspaceProps {
   theme?: 'light' | 'dark';
-  /**
-   * Source to pre-load into the editor (e.g. from a shared `/circuit/<encoded>` URL).
-   * When set, the editor runs in ephemeral mode (no localStorage read/write) so a
-   * shared link doesn't clobber the user's saved work.
-   */
+  /** Source to start the editor with, such as a shared link's or a bundled example's. */
   initialSource?: string;
   /**
    * Running as the standalone local MCP viewer (a separate client-only build,

@@ -1,3 +1,4 @@
+import { usePeripheral } from '../canvas/values';
 import { BaseNode } from './BaseNode';
 import type { NodeData } from './NodeData';
 
@@ -7,12 +8,12 @@ interface NicFifoNodeProps {
 }
 
 export function NicFifoNode({ data, selected }: NicFifoNodeProps) {
-  const nicState = data.__nicState as
-    | { txCount: number; rxCount: number; draining: boolean }
-    | undefined;
-  const txCount = nicState?.txCount ?? 0;
-  const rxCount = nicState?.rxCount ?? 0;
-  const draining = nicState?.draining ?? false;
+  // The FIFO's registers: write and read pointers, receive count, draining flag.
+  const registers = usePeripheral(data.path);
+  const read = (address: number) => (registers instanceof Map ? (registers.get(address) ?? 0) : 0);
+  const txCount = read(0x2000) - read(0x2001);
+  const rxCount = read(0x2012);
+  const draining = read(0x2004) !== 0;
 
   return (
     <BaseNode
@@ -25,8 +26,6 @@ export function NicFifoNode({ data, selected }: NicFifoNodeProps) {
       }))}
       className="min-w-[160px]"
       showPortLabels={data.showPortLabels}
-      onPortClick={data.onPortClick}
-      glowUnconnected={data.glowUnconnected}
     >
       <div className="flex flex-col items-center gap-2">
         <div className="px-2 py-1 text-xs font-medium text-[var(--embed-text-primary)]">

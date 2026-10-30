@@ -45,8 +45,6 @@ interface BaseNodeProps {
   selected?: boolean;
   className?: string;
   showPortLabels?: boolean;
-  onPortClick?: (portName: string, portType: 'input' | 'output') => void;
-  glowUnconnected?: boolean;
 }
 
 export function BaseNode({
@@ -56,8 +54,6 @@ export function BaseNode({
   selected,
   className,
   showPortLabels,
-  onPortClick,
-  glowUnconnected,
 }: BaseNodeProps) {
   return (
     <div
@@ -71,20 +67,8 @@ export function BaseNode({
       {/* Input Ports (Left Side) */}
       {inputPorts.map((port) => {
         const topPct = `${((port.index + 1) * 100) / (inputPorts.length + 1)}%`;
-        const unconnected = glowUnconnected && !port.connected;
         return (
           <React.Fragment key={`in-${port.name}`}>
-            {unconnected && (
-              <div
-                className="absolute h-5 w-5 rounded-full animate-ping"
-                style={{
-                  top: topPct,
-                  left: '-7px',
-                  transform: 'translateY(-50%)',
-                  background: 'radial-gradient(circle, rgba(96,165,250,0.5) 0%, transparent 70%)',
-                }}
-              />
-            )}
             <Handle
               type="target"
               position={Position.Left}
@@ -100,19 +84,9 @@ export function BaseNode({
                 port.connected
                   ? 'bg-blue-500 border-blue-600'
                   : 'bg-[var(--embed-bg-tertiary)] border-[var(--embed-border-node)]',
-                unconnected && 'border-blue-400',
-                onPortClick && 'cursor-pointer hover:scale-150',
                 'hover:bg-blue-300 hover:border-blue-500',
               )}
               style={{ top: topPct, left: '-6px' }}
-              onClick={
-                onPortClick
-                  ? (e) => {
-                      e.stopPropagation();
-                      onPortClick(port.name, 'input');
-                    }
-                  : undefined
-              }
             />
             {showPortLabels && (
               <div
@@ -153,20 +127,8 @@ export function BaseNode({
       {/* Output Ports (Right Side) */}
       {outputPorts.map((port) => {
         const topPct = `${((port.index + 1) * 100) / (outputPorts.length + 1)}%`;
-        const unconnected = glowUnconnected && !port.connected;
         return (
           <React.Fragment key={`out-${port.name}`}>
-            {unconnected && (
-              <div
-                className="absolute h-5 w-5 rounded-full animate-ping"
-                style={{
-                  top: topPct,
-                  right: '-7px',
-                  transform: 'translateY(-50%)',
-                  background: 'radial-gradient(circle, rgba(74,222,128,0.5) 0%, transparent 70%)',
-                }}
-              />
-            )}
             <Handle
               type="source"
               position={Position.Right}
@@ -187,19 +149,9 @@ export function BaseNode({
                 // field that has always carried numbers at runtime.
                 port.value !== undefined && port.value !== 0 && 'bg-green-500 border-green-600',
                 port.value === 0 && 'bg-gray-300 border-gray-400',
-                unconnected && 'border-green-400',
-                onPortClick && 'cursor-pointer hover:scale-150',
                 'hover:bg-green-300 hover:border-green-500',
               )}
               style={{ top: topPct, right: '-6px' }}
-              onClick={
-                onPortClick
-                  ? (e) => {
-                      e.stopPropagation();
-                      onPortClick(port.name, 'output');
-                    }
-                  : undefined
-              }
             />
             {showPortLabels && (
               <div
