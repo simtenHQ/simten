@@ -115,7 +115,9 @@ function useTrace(
       const next = new Map(restart ? [] : previous);
       if (!viewingPast) next.set(cycle, portValues);
       for (const recorded of next.keys()) {
-        if (recorded <= cycle - WINDOW) next.delete(recorded);
+        // Too old to show, or a future that a tick from the past replaced.
+        const replaced = !viewingPast && recorded > cycle;
+        if (recorded <= cycle - WINDOW || replaced) next.delete(recorded);
       }
       return next;
     });
