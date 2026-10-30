@@ -93,6 +93,13 @@ export {
   restoreEnvironmentalState,
 } from './environmental-state.js';
 export {
+  isControlType,
+  type KeyScope,
+  primitivePaths,
+  type ResolvedKey,
+  resolveKey,
+} from './input-keys.js';
+export {
   createSimulation,
   nodesOf,
   type PeripheralValue,

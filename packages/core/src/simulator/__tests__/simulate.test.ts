@@ -174,12 +174,11 @@ describe('exact names', () => {
     ],
   });
 
-  it('get throws for a name that is not a top-level output, listing the outputs', () => {
+  it('get throws for a name that is not a top-level port or a Switch, listing what there is', () => {
     const sim: Simulation = simulate(Wrapped);
     expect(() => sim.get('q')).toThrow(
-      "get('q'): SimWrapped has no output named 'q'. Its outputs: ready",
+      "get('q'): SimWrapped has no port, Switch or Input named 'q'. Its inputs: en. Its Switches and Inputs: (none). Its outputs: ready",
     );
-    expect(() => sim.get('en')).toThrow(/no output named 'en'/);
   });
 
   it('set throws for a name that is not a top-level input, listing the inputs', () => {

@@ -2,12 +2,16 @@
  * `Simulation.set` takes the circuit's inputs as a person at the board sees
  * them: input ports by name, and Switch and Input nodes by path (decision
  * 0010). Every key resolves exactly, and every value is written before the
- * circuit settles. Also `simulate(top, { memory })`.
+ * circuit settles. `get` reads the same keys back. Also
+ * `simulate(top, { memory })`.
  */
 
 import { describe, expect, it } from 'vitest';
+import { libraryOf } from '../../circuit/behavior.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
+import { internalsOf } from '../../circuit/internals.js';
 import { Input, Led, Nand, Register, ROM, Switch } from '../../std/index.js';
+import { primitivePaths } from '../input-keys.js';
 import { simulate } from '../simulate.js';
 import { nodesOf, type Simulation } from '../simulation.js';
 
@@ -45,6 +49,16 @@ const Clash = circuit('SetClash', {
     a.out.to(g.b),
     g.out.to(outputs.y),
   ],
+});
+
+/**
+ * An output and a Switch with the same name. The builder allows it, so `get`
+ * and `set` refuse the name rather than read one and write the other.
+ */
+const OutputClash = circuit('SetOutputClash', {
+  outputs: { y: bit },
+  nodes: { y: Switch, g: Nand },
+  connect: ({ outputs, nodes: { y, g } }) => [y.out.to(g.a, g.b), g.out.to(outputs.y)],
 });
 
 const outputs = (sim: { read(): Record<string, number> }) => sim.read();
@@ -104,6 +118,71 @@ describe('set', () => {
     board.set({ a: 1, kbd: 3, 'latch.d': 1 });
     // @ts-expect-error: y is an output
     expect(() => board.set({ y: 1 })).toThrow();
+  });
+});
+
+describe('get', () => {
+  it('reads an input port after set, and still reads outputs', () => {
+    const sim = simulate(Board);
+    sim.set({ a: 1 });
+    expect(sim.get('a')).toBe(1);
+    expect(sim.get('y')).toBe(0);
+  });
+
+  it('reads Switch and Input nodes by path, as set writes them', () => {
+    const sim = simulate(Board);
+    sim.set({ 'latch.d': 1, kbd: 65 });
+    expect(sim.get('latch.d')).toBe(1);
+    expect(sim.get('latch.en')).toBe(0);
+    expect(sim.get('kbd')).toBe(65);
+  });
+
+  it('rejects a gate, and a name that is nothing, listing what can be read', () => {
+    const sim = simulate(Board);
+    // @ts-expect-error: gate is a Nand
+    expect(() => sim.get('gate')).toThrow(
+      "get('gate'): 'gate' is a Nand, not a port, Switch or Input.",
+    );
+    expect(() => sim.get('b' as never)).toThrow(
+      "get('b'): SetBoard has no port, Switch or Input named 'b'. Its inputs: a. Its Switches and Inputs: latch.d, latch.en, kbd. Its outputs: y, q",
+    );
+  });
+
+  it('rejects a key that names both a port and a Switch', () => {
+    const sim = simulate(Clash);
+    expect(() => sim.get('a')).toThrow("get('a'): SetClash has both an input port and a Switch");
+  });
+
+  it('rejects a name that is both an output and a Switch, as set does, so a toggle reads what it writes', () => {
+    const sim = simulate(OutputClash);
+    expect(() => sim.get('y')).toThrow(
+      "get('y'): SetOutputClash has both an output port and a Switch named 'y', so the key is ambiguous. Rename one of them.",
+    );
+    expect(() => sim.set({ y: 1 } as never)).toThrow(
+      "set('y'): SetOutputClash has both an output port and a Switch named 'y'",
+    );
+  });
+});
+
+describe('nodesOf(sim).resolve', () => {
+  it('gives what get reads and how wide it is', () => {
+    const nodes = nodesOf(simulate(Board));
+    expect(nodes.resolve('a')).toEqual({ kind: 'port', name: 'a', key: '__top__.a', width: 1 });
+    expect(nodes.resolve('latch.d')).toMatchObject({ kind: 'path', key: 'latch.d.out', width: 1 });
+    expect(nodes.resolve('kbd')).toMatchObject({ kind: 'path', key: 'kbd.out', width: 8 });
+    expect(nodes.resolve('y')).toMatchObject({ kind: 'output', width: 1 });
+    expect(() => nodes.resolve('gate')).toThrow("get('gate'): 'gate' is a Nand");
+  });
+});
+
+describe('primitivePaths', () => {
+  it('walks the IR to the node paths and types a simulation has', () => {
+    const sim = simulate(Board);
+    const library = libraryOf(Board);
+    const paths = primitivePaths(internalsOf(Board).ir, library.definitions);
+    expect(paths.get('latch.d')).toBe('Switch');
+    expect(paths.get('kbd')).toBe('Input');
+    for (const [path, type] of paths) expect(nodesOf(sim).primitiveOf(path)).toBe(type);
   });
 });
 

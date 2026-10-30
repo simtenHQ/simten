@@ -178,11 +178,11 @@ This is a safety net for **combinational feedback loops with no register breakin
 
 **How to recognize it:** the error message above. **Workaround:** find the combinational loop; break it with a `Register` or `DFlipFlop`.
 
-### `get()` only reads top-level output ports
+### `get()` only reads top-level ports and switches
 
-`simulate(C).get('foo')` reads top-level outputs of `C`, and `set` drives top-level inputs. Any other name, including an internal node's port (`'subModule.out'`), throws an error that lists the circuit's real port names.
+`simulate(C).get('foo')` reads the top-level ports of `C` and the Switch and Input nodes `set` drives. Any other name, including an internal node's port (`'subModule.out'`), throws an error that lists the names it can read.
 
-**How to recognize it:** an error like `get('out'): MyCircuit has no output named 'out'. Its outputs: sum, carry`. **Workaround:** expose the value you need as a top-level output of the circuit under test (wrap it in a probe harness with the signal piped out). Simten's own tests read internal ports with `nodesOf(sim).ports().get('subModule.out')` from `@simten/core/internal`, which works but carries no stability promise: the paths are elaboration details.
+**How to recognize it:** an error like `get('out'): MyCircuit has no port, Switch or Input named 'out'. Its inputs: a, b. Its Switches and Inputs: (none). Its outputs: sum, carry`. **Workaround:** expose the value you need as a top-level output of the circuit under test (wrap it in a probe harness with the signal piped out). Simten's own tests read internal ports with `nodesOf(sim).ports().get('subModule.out')` from `@simten/core/internal`, which works but carries no stability promise: the paths are elaboration details.
 
 ### Buses wider than 32 bits don't simulate
 
