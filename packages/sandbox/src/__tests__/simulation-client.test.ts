@@ -13,7 +13,7 @@ import type { SessionRequest, WorkerRequest } from '../protocol.js';
 import { createRelay } from '../relay.js';
 import { portTransport, SandboxClient, type SandboxTransport } from '../sandbox-client.js';
 import { SessionHost } from '../session-host.js';
-import type { SimulationClient } from '../simulation-client.js';
+import type { SimulationClient, SimulationClientState } from '../simulation-client.js';
 import { ADDER, COUNTER, D_LATCH } from './helpers.js';
 
 interface SandboxOptions {
@@ -35,6 +35,13 @@ afterEach(() => {
 function startSandbox(options: SandboxOptions = {}) {
   const { port1: page, port2: iframe } = new MessageChannel();
   let workers = 0;
+  /** Set when the page disposes: removing the iframe takes its worker with it. */
+  let closed = false;
+  /** Times the host has given the event loop back mid-request: one per slice boundary. */
+  let yields = 0;
+  /** `yields` when each request reached the worker, then how many it waited for its reply. */
+  const arrived = new Map<string, number>();
+  const waited = new Map<string, number>();
   /** Makes the current worker stop answering, as a hung cycle would. */
   let stickCurrent = () => {};
   const relay = createRelay({
@@ -44,18 +51,25 @@ function startSandbox(options: SandboxOptions = {}) {
       workers++;
       let dead = false;
       let stuck = false;
-      const alive = () => !dead && !stuck;
+      const alive = () => !dead && !stuck && !closed;
       stickCurrent = () => {
         stuck = true;
       };
       const host = new SessionHost({
         post: (message) => {
+          const id = 'id' in message ? message.id : undefined;
+          const start = id === undefined ? undefined : arrived.get(id);
+          if (id !== undefined && start !== undefined) waited.set(id, yields - start);
           const copy = structuredClone(message);
           setTimeout(() => alive() && receive(copy), 0);
         },
         clock: {
           now: () => performance.now(),
-          setTimeout: (callback, ms) => setTimeout(() => alive() && callback(), ms),
+          setTimeout: (callback, ms) => {
+            // Outside auto-run the host only sets a timer to yield between slices.
+            if (ms === 0) yields++;
+            return setTimeout(() => alive() && callback(), ms);
+          },
           clearTimeout: (handle) => clearTimeout(handle as ReturnType<typeof setTimeout>),
         },
       });
@@ -66,6 +80,7 @@ function startSandbox(options: SandboxOptions = {}) {
             stuck = true;
             return;
           }
+          arrived.set(request.id, yields);
           const copy = structuredClone(request) as SessionRequest;
           setTimeout(() => alive() && host.handle(copy), 0);
         },
@@ -86,13 +101,21 @@ function startSandbox(options: SandboxOptions = {}) {
       port.send(request);
     },
     close: () => {
+      closed = true;
       port.close();
       iframe.close();
     },
   };
   const client = new SandboxClient({ transport });
   open.push(client);
-  return { client, workers: () => workers, stick: () => stickCurrent() };
+  return {
+    client,
+    workers: () => workers,
+    stick: () => stickCurrent(),
+    yields: () => yields,
+    /** Slices the worker ran for other requests between taking request `id` and answering it. */
+    slicesWaited: (id: string) => waited.get(id),
+  };
 }
 
 async function openCounter(client: SandboxClient, history = 200): Promise<SimulationClient> {
@@ -103,6 +126,19 @@ async function openCounter(client: SandboxClient, history = 200): Promise<Simula
 }
 
 const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+
+/** Resolves once `sim`'s state passes `test`: now, or at the update that makes it. */
+function until(sim: SimulationClient, test: (state: SimulationClientState) => boolean) {
+  return new Promise<void>((resolve) => {
+    const check = () => {
+      if (!test(sim.getState())) return;
+      unsubscribe();
+      resolve();
+    };
+    const unsubscribe = sim.subscribe(check);
+    check();
+  });
+}
 
 describe('SimulationClient', () => {
   it('mirrors Simulation: set, tick, get, history', async () => {
@@ -343,28 +379,27 @@ describe('several sessions in one sandbox', () => {
   });
 
   it('a long tick on one session delays another session by no more than a frame or two', async () => {
-    const { client } = startSandbox();
+    const sent: SessionRequest[] = [];
+    const { client, yields, slicesWaited } = startSandbox({ onSend: (r) => sent.push(r) });
     const compiled = await client.compile(COUNTER);
     const busy = await client.open({ compiled, circuit: 'Counter' }, { history: 0 });
     const other = await client.open({ compiled, circuit: 'Counter' }, { history: 0 });
     await busy.set({ en: 1 });
-    let busyDone = false;
-    const long = busy.tick(400_000).then(() => {
-      busyDone = true;
-    });
-    await delay(50);
-    const latencies: number[] = [];
-    for (let i = 0; i < 5; i++) {
-      const start = performance.now();
-      await other.tick();
-      latencies.push(performance.now() - start);
-    }
-    expect(busyDone).toBe(false);
-    // A frame is 33ms; the busy session's slices take about 80% of one.
-    expect(Math.max(...latencies)).toBeLessThan(70);
-    await long;
-    expect(busy.cycle).toBe(400_000);
+    // Longer than the test on any machine; dispose ends it.
+    const long = busy.tick(1e12).catch((e: unknown) => e);
+    while (yields() === 0) await delay(1);
+
+    for (let i = 0; i < 5; i++) await other.tick();
     expect(other.cycle).toBe(5);
+    // Each slice is about 80% of a frame, so a request that arrives mid-slice
+    // waits out that slice and at most one more queued ahead of it. Counted in
+    // slices, not ms, so a slow machine doesn't change the answer.
+    const ticks = sent.filter((r) => r.type === 'tick' && r.session === other.id);
+    expect(ticks).toHaveLength(5);
+    for (const { id } of ticks) expect(slicesWaited(id)).toBeLessThanOrEqual(2);
+
+    client.dispose();
+    expect(((await long) as SandboxError).code).toBe('closed');
   });
 
   it('ids are unique across sessions and across several clients on one page', async () => {
@@ -403,7 +438,9 @@ describe('a watchdog restart', () => {
     expect(((await hung) as SandboxError).code).toBe('timed-out');
     expect(((await queued) as SandboxError).code).toBe('restarted');
 
-    await delay(50);
+    // The pending requests fail as the watchdog fires; the replay that follows
+    // takes a few more round trips to the new worker.
+    await Promise.all([a, b].map((sim) => until(sim, (s) => s.status === 'restarted')));
     expect(workers()).toBe(2);
     for (const sim of [a, b]) {
       expect(sim.getState().status).toBe('restarted');
@@ -426,11 +463,10 @@ describe('a watchdog restart', () => {
     const { client, workers, stick } = startSandbox({ timeoutMs: 200 });
     const sim = await openCounter(client);
     await sim.run(300);
-    await delay(100);
-    expect(sim.cycle).toBeGreaterThan(0);
+    await until(sim, (s) => s.cycle > 0);
     // Nothing is in flight: the running session owes frames and stops sending them.
     stick();
-    await delay(400);
+    await until(sim, (s) => s.status === 'restarted');
     expect(workers()).toBe(2);
     expect(sim.getState()).toMatchObject({ status: 'restarted', isRunning: false, cycle: 0 });
   });
