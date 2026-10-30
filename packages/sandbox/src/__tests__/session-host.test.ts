@@ -475,6 +475,32 @@ describe('toggle', () => {
     expect(after.state.ports.get('d.out')).toBe(1);
   });
 
+  it('refuses a bus, an input port or an Input node, and writes nothing', async () => {
+    const { call } = startHost();
+    await call({
+      type: 'compile',
+      compile: 'c1',
+      source: `${ADDER}
+const Keyed = circuit('Keyed', {
+  outputs: { y: bus(8) },
+  nodes: { kbd: Input(), add: Add },
+  connect: ({ outputs, nodes: { kbd, add } }) => [kbd.out.to(add.a), add.sum.to(outputs.y)],
+})`,
+    });
+    await call({ type: 'open', session: 's1', compile: 'c1', circuit: 'Add', history: 0 });
+    await call({ type: 'set', session: 's1', values: { a: 5 } });
+    const port = expectType(await call({ type: 'toggle', session: 's1', name: 'a' }), 'failed');
+    expect(port.error).toBe(
+      "toggle('a'): 'a' is 8 bits wide. toggle flips one bit; use set for a bus.",
+    );
+    const after = expectType(await call({ type: 'set', session: 's1', values: {} }), 'updated');
+    expect(after.state.ports.get('__top__.a')).toBe(5);
+
+    await call({ type: 'open', session: 's2', compile: 'c1', circuit: 'Keyed', history: 0 });
+    const node = expectType(await call({ type: 'toggle', session: 's2', name: 'kbd' }), 'failed');
+    expect(node.error).toMatch(/^toggle\('kbd'\): 'kbd' is 8 bits wide/);
+  });
+
   it('flips from where reset and history leave the input', async () => {
     const { call } = await openCounter(10);
     await call({ type: 'toggle', session: 's1', name: 'en' });

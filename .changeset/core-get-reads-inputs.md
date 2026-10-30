@@ -6,4 +6,4 @@
 
 A name that is both a port (input or output) and a Switch or Input is ambiguous for `get` and `set` alike, and throws. Before, `set` wrote the Switch while `get` would have read the output.
 
-`@simten/core/internal` adds `resolveKey`, `isControlType` and `primitivePaths`, so the sandbox's client resolves names exactly as `Simulation` does.
+`@simten/core/internal` adds `resolveKey`, `isControlType` and `primitivePaths`, so the sandbox's client resolves names exactly as `Simulation` does, and `nodesOf(sim).resolve(name)`, which says what `get` reads for a name and how many bits wide it is.

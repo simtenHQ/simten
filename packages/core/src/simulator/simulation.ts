@@ -19,6 +19,7 @@ import {
   type CircuitDefinitions,
   type CircuitIR,
   type MemoryContents,
+  type PortType,
   TOP_LEVEL_NODE,
 } from '../ir/circuit-ir.js';
 import { memoryContentsShapeError, memoryContentsToMap } from '../ir/memory-contents.js';
@@ -123,6 +124,8 @@ export interface SimulationNodes {
   peripherals(): ReadonlyMap<string, PeripheralValue>;
   /** The primitive type of the node at `path` (`'Switch'`, `'Register'`), or undefined when no node has that path. */
   primitiveOf(path: string): string | undefined;
+  /** What `get` takes `name` to mean, and its width in bits. Throws as `get` does. */
+  resolve(name: string): ResolvedKey & { width: number };
 }
 
 const nodesBySimulation = new WeakMap<Simulation, SimulationNodes>();
@@ -151,6 +154,7 @@ export function createSimulation(
     peripheralNodes: () => peripheralBusNodes(flat, library.definitions),
     primitiveTypes: () => new Map(flat.nodes.map((n) => [n.id, n.primitiveType])),
     isControl: (type) => isControlType(type, library.definitions),
+    portWidths: () => portWidthsOf(flat),
   });
   nodesBySimulation.set(simulation, simulation.nodes);
   const memory = Object.entries(options?.memory ?? {});
@@ -167,6 +171,19 @@ export function createSimulation(
 // Implementation
 // ============================================================================
 
+/** Every top-level port's and node output's width in bits, keyed as the port map is. */
+function portWidthsOf(flat: FlatCircuit): Map<string, number> {
+  const bits = (t: PortType) => (t.kind === 'bus' ? t.width : 1);
+  const widths = new Map<string, number>();
+  for (const p of [...flat.topLevelInputs, ...flat.topLevelOutputs]) {
+    widths.set(`${TOP_LEVEL_NODE}.${p.name}`, bits(p.portType));
+  }
+  for (const node of flat.nodes) {
+    for (const p of node.outputs) widths.set(`${node.id}.${p.name}`, bits(p.portType));
+  }
+  return widths;
+}
+
 interface EngineSimulationOptions {
   isSequential: boolean;
   historySize: number;
@@ -177,6 +194,7 @@ interface EngineSimulationOptions {
   primitiveTypes: () => ReadonlyMap<string, string>;
   /** Whether nodes of this primitive type are Switches or Inputs. */
   isControl: (primitiveType: string) => boolean;
+  portWidths: () => ReadonlyMap<string, number>;
 }
 
 class EngineSimulation implements Simulation {
@@ -221,6 +239,7 @@ class EngineSimulation implements Simulation {
     engine.runCombinational();
     this.startHistory();
 
+    let widths: ReadonlyMap<string, number> | null = null;
     this.nodes = {
       set: (path, value) => this.setNode(path, value),
       advance: (count) => this.advance(count),
@@ -231,6 +250,11 @@ class EngineSimulation implements Simulation {
       },
       peripherals: () => this.peripherals(),
       primitiveOf: (path) => this.primitiveOf(path),
+      resolve: (name) => {
+        const resolved = resolveKey('get', name, this.keys);
+        widths ??= options.portWidths();
+        return { ...resolved, width: widths.get(resolved.key) ?? 1 };
+      },
     };
   }
 
