@@ -8,7 +8,7 @@
 'use client';
 
 import type { CircuitIR, MemoryContents } from '@simten/core/internal';
-import { CircuitCanvas, ClockControls, useSimulation, WaveformViewer } from '@simten/react';
+import { CircuitCanvas, ClockControls, useSimulation } from '@simten/react';
 import {
   CodeEditor,
   type CodeEditorHandle,
@@ -23,7 +23,7 @@ import {
   ResizablePanelGroup,
 } from '@simten/shared/primitives/resizable';
 import { TooltipProvider } from '@simten/shared/primitives/tooltip';
-import { Activity, Download, Loader2, Share2 } from 'lucide-react';
+import { Download, Loader2, Share2 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SiteHeader } from '@/components/SiteHeader';
 import { useTheme } from '@/components/ThemeProvider';
@@ -190,10 +190,6 @@ export function EditorWorkspace({
   const [exportStatus, setExportStatus] = useState<
     { kind: 'idle' } | { kind: 'error'; message: string }
   >({ kind: 'idle' });
-
-  // The waveform panel, opened and closed from the toolbar. It records this
-  // simulation while it's open.
-  const [waveformOpen, setWaveformOpen] = useState(false);
 
   // Editor handle for imperative get/set of the Monaco source.
   const editorRef = useRef<CodeEditorHandle>(null);
@@ -449,18 +445,6 @@ export function EditorWorkspace({
               />
 
               <Button
-                onClick={() => setWaveformOpen((open) => !open)}
-                variant={waveformOpen ? 'secondary' : 'outline'}
-                size="sm"
-                className="gap-2"
-                title={waveformOpen ? 'Close the waveform panel' : 'Show signals over time'}
-                aria-pressed={waveformOpen}
-              >
-                <Activity className="h-4 w-4" />
-                <span className="hidden sm:inline text-xs">Waveform</span>
-              </Button>
-
-              <Button
                 onClick={handleExportVerilog}
                 variant="outline"
                 size="sm"
@@ -548,29 +532,9 @@ export function EditorWorkspace({
               </div>
             </ResizablePanel>
             <ResizableHandle withHandle />
-            {/* Right: Circuit Canvas, optionally split with Waveform below */}
+            {/* Right: Circuit Canvas */}
             <ResizablePanel defaultSize={60} minSize={30} style={CLIP}>
-              {waveformOpen ? (
-                <ResizablePanelGroup orientation="vertical">
-                  <ResizablePanel defaultSize={65} minSize={20} style={CLIP}>
-                    {canvas}
-                  </ResizablePanel>
-                  <ResizableHandle withHandle />
-                  <ResizablePanel
-                    defaultSize={35}
-                    minSize={10}
-                    className="flex flex-col"
-                    style={CLIP}
-                  >
-                    <WaveformViewer
-                      simulation={simulation}
-                      onClose={() => setWaveformOpen(false)}
-                    />
-                  </ResizablePanel>
-                </ResizablePanelGroup>
-              ) : (
-                canvas
-              )}
+              {canvas}
             </ResizablePanel>
           </ResizablePanelGroup>
         </div>
