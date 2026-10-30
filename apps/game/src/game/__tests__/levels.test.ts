@@ -21,12 +21,16 @@
  * signal resolution is exercised in both directions.
  */
 
-import { describe, expect, it } from 'vitest';
+import { inProcessSandbox } from '@simten/sandbox/host';
+import { afterAll, describe, expect, it } from 'vitest';
 import { grade } from '../grade';
 import { LEVELS, LEVELS_BY_ID } from '../levels';
 import { SOLUTIONS } from '../solutions';
 import type { Level } from '../types';
-import { localRuntime } from './local-runtime';
+
+// The grader as the browser runs it, with the sandbox in this process.
+const sandbox = inProcessSandbox();
+afterAll(() => sandbox.dispose());
 
 /**
  * A degenerate answer: the right signals, no real logic. Wires a Constant
@@ -67,7 +71,7 @@ describe('every level has a reference solution', () => {
 
 describe.each(LEVELS.map((l) => [l.id, l] as const))('%s', (id, level) => {
   it('is solvable, and the reference solution passes', async () => {
-    const result = await grade(localRuntime(), level, SOLUTIONS[id]);
+    const result = await grade(sandbox, level, SOLUTIONS[id]);
     // Surface the actual failure rather than a bare `false`.
     expect(result.status === 'pass' ? 'pass' : JSON.stringify(result)).toBe('pass');
   });
@@ -81,20 +85,20 @@ describe.each(LEVELS.map((l) => [l.id, l] as const))('%s', (id, level) => {
    * or par moved and the reference solution has not caught up.
    */
   it('scores exactly par, counting only permitted primitives', async () => {
-    const result = await grade(localRuntime(), level, SOLUTIONS[id]);
+    const result = await grade(sandbox, level, SOLUTIONS[id]);
     if (result.status !== 'pass') throw new Error('reference solution did not pass');
     expect(result.gates).toBeGreaterThan(0);
     if (level.par !== undefined) expect(result.gates).toBe(level.par);
   });
 
   it.each([0, 1] as const)('is not vacuous, so a constant %i answer fails', async (value) => {
-    const result = await grade(localRuntime(), level, constantSolution(level, value));
+    const result = await grade(sandbox, level, constantSolution(level, value));
     expect(result.status).toBe('fail');
   });
 
   it('rejects a solution that omits the required circuit', async () => {
     const result = await grade(
-      localRuntime(),
+      sandbox,
       level,
       `export const Nope = circuit('Nope', {
         nodes: { s: Switch, b: Buffer, l: Led },
@@ -110,7 +114,7 @@ describe('the graded circuit is chosen by name', () => {
   /**
    * The sandbox builds its simulator on the LAST circuit in the source
    * (apps/sandbox/src/main.ts), so a player who defines a helper below their
-   * answer would be graded on the helper. `GradeRuntime.select` pins the target
+   * answer would be graded on the helper. `grade` opens the target by name
    * instead. This is that regression: `Not1` is correct, a decoy with the same
    * signal names and the wrong logic follows it, and the level still passes.
    */
@@ -125,7 +129,7 @@ export const Decoy = circuit('Decoy', {
   connect: ({ nodes: { a, b, out } }) => [a.out.to(b.in), b.out.to(out.in)],
 });`;
 
-    const result = await grade(localRuntime(), level, withDecoyLast);
+    const result = await grade(sandbox, level, withDecoyLast);
     expect(result.status === 'pass' ? 'pass' : JSON.stringify(result)).toBe('pass');
   });
 });
@@ -139,7 +143,7 @@ describe('the score counts only permitted primitives', () => {
   it('does not charge for Switch and Led', async () => {
     const level = LEVELS_BY_ID.get('nand');
     if (!level) throw new Error('level missing');
-    const result = await grade(localRuntime(), level, SOLUTIONS.nand);
+    const result = await grade(sandbox, level, SOLUTIONS.nand);
     if (result.status !== 'pass') throw new Error(JSON.stringify(result));
     // Two switches, one lamp, one gate, so the score is 1.
     expect(result.gates).toBe(1);

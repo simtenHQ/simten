@@ -1,27 +1,26 @@
 /**
- * The port-key contract.
+ * The grader against the sandbox.
  *
- * `GradeRuntime.evaluate` must return BARE port names. The sandbox namespaces
- * top-level ports under `__top__.` while `@simten/core` returns them bare,
- * and because the interface never said which, the sandbox adapter shipped the
- * prefixed keys straight through. Grading then read `undefined` for every
+ * The port-key contract first. Levels name signals bare, and the sandbox
+ * namespaces top-level ports under `__top__.`. The sandbox adapter once shipped
+ * the prefixed keys straight through, so grading read `undefined` for every
  * output and, thanks to a `?? 0` fallback, scored it 0, which silently passes
  * every truth-table row that expects 0. Three of the four rows in a two-input
  * AND expect 0, so it looked like one stubborn failing case rather than a
  * grader that never read anything.
  *
- * The host-side tests could not have caught it: they use the local runtime,
- * which was the half that was already right.
+ * The host-side tests could not have caught it: they graded on a separate
+ * local runtime, which was the half that was already right. There is one
+ * grading path now, and the tests run it in `inProcessSandbox()`.
  */
 
 import { SimulationClient } from '@simten/sandbox';
 import { inProcessSandbox } from '@simten/sandbox/host';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { grade } from '../grade';
-import { LEVELS } from '../levels';
-import { readOutputs, resolveOutput, sandboxRuntime } from '../runtime';
+import { grade, readOutputs, resolveOutput } from '../grade';
+import { LEVELS, LEVELS_BY_ID } from '../levels';
 import { SOLUTIONS } from '../solutions';
-import { localRuntime } from './local-runtime';
+import type { Level } from '../types';
 
 describe('resolveOutput / readOutputs', () => {
   it('strips the __top__ prefix', () => {
@@ -86,42 +85,37 @@ const Ported = circuit('Ported', {
   connect: ({ inputs, outputs, nodes: { inv } }) => [inputs.a.to(inv.in), inv.out.to(outputs.out)],
 })`;
 
-  it('drives a port, and refuses a name that is neither a port nor a Switch, in both runtimes', async () => {
+  function ported(vectors: Level['vectors']): Level {
+    const not = LEVELS_BY_ID.get('not');
+    if (!not) throw new Error('no not level');
+    return { ...not, target: 'Ported', inputs: ['a'], outputs: ['out'], allowed: ['Not'], vectors };
+  }
+
+  it('drives a port, and refuses a name that is neither a port nor a Switch', async () => {
     const sandbox = inProcessSandbox();
     try {
-      for (const runtime of [localRuntime(), sandboxRuntime(sandbox)]) {
-        const { circuits } = await runtime.compile(PORTED);
-        await runtime.select(circuits[0]);
-        expect(await runtime.evaluate({ a: 1 }, ['out'])).toEqual({ out: 0 });
-        await expect(runtime.evaluate({ b: 1 }, ['out'])).rejects.toThrow(
-          "has no input port, Switch or Input named 'b'",
-        );
-        await runtime.close();
-      }
+      const driven = await grade(
+        sandbox,
+        ported([{ inputs: { a: 1 }, expect: { out: 0 } }]),
+        PORTED,
+      );
+      expect(driven).toEqual({ status: 'pass', gates: 1 });
+      const refused = await grade(
+        sandbox,
+        ported([{ inputs: { b: 1 }, expect: { out: 0 } }]),
+        PORTED,
+      );
+      expect(refused).toEqual({
+        status: 'error',
+        message: expect.stringContaining("has no input port, Switch or Input named 'b'"),
+      });
     } finally {
       sandbox.dispose();
     }
   });
 });
 
-describe('sandboxRuntime', () => {
-  // The browser grades through the sandbox; levels.test.ts proves every level
-  // on the local runtime. This ties the two together.
-  it('grades every level the same as the local runtime', { timeout: 60_000 }, async () => {
-    const sandbox = inProcessSandbox();
-    try {
-      for (const level of LEVELS) {
-        for (const source of [SOLUTIONS[level.id], level.stub]) {
-          const local = await grade(localRuntime(), level, source);
-          const remote = await grade(sandboxRuntime(sandbox), level, source);
-          expect(remote, level.id).toEqual(local);
-        }
-      }
-    } finally {
-      sandbox.dispose();
-    }
-  });
-
+describe('grade', () => {
   // #521: the sandbox settles after each request, so writing a vector's
   // switches one request at a time let d = 0 land while en was still 1, and
   // the latch followed it. The grader now writes them in one request.
@@ -131,8 +125,8 @@ describe('sandboxRuntime', () => {
     try {
       const level = LEVELS.find((l) => l.id === 'd-latch');
       if (!level) throw new Error('no d-latch level');
-      const remote = await grade(sandboxRuntime(sandbox), level, SOLUTIONS[level.id]);
-      expect(remote.status).toBe('pass');
+      const verdict = await grade(sandbox, level, SOLUTIONS[level.id]);
+      expect(verdict.status).toBe('pass');
       expect(set).toHaveBeenCalledTimes(level.vectors.length);
     } finally {
       sandbox.dispose();
@@ -146,7 +140,7 @@ describe('sandboxRuntime', () => {
     const close = vi.spyOn(SimulationClient.prototype, 'close');
     try {
       const level = LEVELS[0];
-      const verdict = await grade(sandboxRuntime(sandbox), level, SOLUTIONS[level.id]);
+      const verdict = await grade(sandbox, level, SOLUTIONS[level.id]);
       expect(verdict.status).toBe('pass');
       expect(open).toHaveBeenCalledTimes(1);
       expect(close).toHaveBeenCalled();

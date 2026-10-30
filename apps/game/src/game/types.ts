@@ -10,8 +10,9 @@
  * Signals are named, not typed as ports. That is deliberate: early levels are
  * self-contained circuits wiring `Switch` nodes to `Led` nodes, and later ones
  * declare real top-level ports once abstraction has been taught. The grader
- * resolves a name against either shape (see `runtime.ts`), so one format spans
- * the whole campaign and no level has to declare which kind it is.
+ * resolves a name against either shape (see `resolveOutput` in `grade.ts`), so
+ * one format spans the whole campaign and no level has to declare which kind
+ * it is.
  *
  * The grader lives in `grade.ts` and is the only thing that interprets these.
  */
