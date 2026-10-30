@@ -1,19 +1,10 @@
 # @simten/mcp
 
-MCP server for [Simten](https://simten.dev) — a live circuit simulator you talk to.
-
-The only MCP server with real-time browser push. Your LLM calls a tool, the user sees it happen live in a visual editor. No polling, no refresh.
-
-## What makes this different
-
-Most MCP servers are request-response: tool in, result out. This one maintains a persistent WebSocket session to the browser, so tool calls produce **live visual updates** — circuits appear, waveforms animate, test results highlight — all in real time.
+MCP server for [Simten](https://simten.dev). Your assistant writes circuits as TypeScript files and calls these tools to check, simulate, verify and draw them. The design lives in your repo, not in a chat log.
 
 ```
-Claude Code ──stdio──▸ MCP Server ──WebSocket──▸ Browser
-                              ◂── channel notifications ──
+Assistant ──stdio──▸ MCP server ──WebSocket──▸ Browser canvas (view only)
 ```
-
-The browser can also talk back. Channel notifications let the visual editor send messages to the LLM — error reports, user questions, circuit context — creating a bidirectional loop between AI and interactive UI.
 
 ## Setup
 
@@ -23,72 +14,71 @@ Register the server with Claude Code:
 claude mcp add --scope user simten npx @simten/mcp
 ```
 
-That's it. `--scope user` makes simten available across every project; drop the flag for a project-local install. Verify with `claude mcp list`.
+`--scope user` makes simten available in every project; drop the flag for a project-local install. Check it with `claude mcp list`. Any MCP client works the same way: the server speaks stdio.
 
-Designing and simulating need nothing else. `verify_circuit` runs the testbench on the host via `tsx`, so it needs `@simten/core` + `fast-check` + `tsx` installed in the project — Claude runs `setup_project` automatically on first use to write a `package.json` and install them (or run it yourself; it's idempotent). Existing projects with those deps already work as-is.
+Designing and simulating need nothing else. `verify_circuit` runs the testbench on the host with `tsx`, so the project needs `@simten/core`, `fast-check` and `tsx` installed. The assistant calls `setup_project` on first use to write a `package.json` and install them (it's safe to run again). Projects that already have those dependencies work as they are.
 
 `check_circuit` and `simulate_circuit` load circuit files with the MCP's own copy of `@simten/core`, while `verify_circuit` uses the copy installed in the project, so a project that pins a different core version can see the tools disagree.
 
-(If you prefer global installs over `npx`: `npm install -g @simten/mcp`, then `claude mcp add --scope user simten simten-mcp`.)
+If you prefer a global install to `npx`: `npm install -g @simten/mcp`, then `claude mcp add --scope user simten simten-mcp`.
 
-### Port
-
-The server listens on `127.0.0.1:19847` for the browser WebSocket bridge. The port is currently hardcoded — running two MCP instances simultaneously will fail the second one on `EADDRINUSE`. Tracked as a follow-up; for now, only run one instance at a time.
+The server needs Node.js 20 or later. It serves MCP protocol revision 2026-07-28 to clients that ask for it and the 2025 revisions to everything else.
 
 ## Tools
 
-| Tool | Description |
+| Tool | What it does |
 |------|-------------|
-| `setup_project` | Make an empty/new folder ready for `verify_circuit`: write an ESM `package.json` + tsconfig, install `@simten/core`/`fast-check`/`tsx`. Idempotent |
-| `check_circuit` | Validate circuit well-formedness (syntax, semantic, type, structural) |
-| `simulate_circuit` | Compile and simulate, return signal traces (observation only; does not establish correctness) |
-| `verify_circuit` | Run a self-checking testbench *file* (`.verify.ts`) on the host via `tsx`; reports pass/fail + counterexample at a declared oracle tier |
-| `read_waveform` | Query VCD waveform files (iverilog cross-validation, ILA captures) over a cycle window |
-| `run_on_fpga` | Build, flash, and UART-capture a project on a connected ULX3S FPGA |
-| `show_circuit` | Paint/update the live canvas (no args = list tabs; `close: true` = close). The only tool that draws |
-| `get_circuit_state` | Inspect the live tab the user is watching (current port values) |
-| `push_chat_response` | Send a reply to the in-app chat panel |
+| `get_started` | Orientation and the bundled examples. With `example`, writes one to `circuits/<id>.circuit.ts`. No setup needed |
+| `get_grammar` | The `circuit()` API (inputs, outputs, nodes, connect) with worked examples |
+| `list_components` | Every standard component with its ports and constructor options |
+| `get_verify_api` | How to write a `.verify.ts` testbench: `simulate(top, { memory })`, `set`, `tick`, oracles |
+| `check_circuit` | Compile a circuit and report whether it builds |
+| `simulate_circuit` | Compile and simulate, return signal traces. Shows what a circuit does, not that it's correct. Never touches the canvas |
+| `show_circuit` | Paint the circuit on the browser canvas, the only tool that draws. No circuit counts the open tabs; `close: true` closes the preview |
+| `setup_project` | Make a folder ready for `verify_circuit`: an ESM `package.json`, a tsconfig, and the dependencies installed |
+| `verify_circuit` | Run a self-checking testbench file on the host with `tsx`, and report pass or fail at a declared oracle tier |
+
+`simulate_circuit` and `show_circuit` start a run the same way:
+
+- `inputs`: `{ key: number }`. A key is an input port name or the path of a Switch or `Input` node (`"d"`, `"cpu.kbd"`), as `simulate(top).set()` takes it. Keys resolve exactly; a key that names anything else, or both a port and a Switch, is an error.
+- `memoryData`: `{ nodePath: { address: value } }`, loaded before cycle 0 as `simulate(top, { memory })` does. A path that names no node is an error.
+
+Inside a checkout of the Simten repo the server also registers `run_on_fpga`, which builds, flashes and captures a project on a ULX3S board. It works on files under `hardware/ulx3s`, so the server leaves it out anywhere else. It counts as inside the repo when the working directory, or a folder above it, holds `hardware/ulx3s/run_on_fpga.ts` and a `package.json` named `simten`. `SIMTEN_REPO_ROOT` points it at a checkout explicitly.
+
+## Writing circuits
+
+A circuit is a standalone module that imports the builder from `@simten/core` and exports its top-level circuit, so a testbench can import it:
+
+```ts
+import { bit, circuit } from '@simten/core';
+import { And, Xor } from '@simten/core/std';
+
+export const HalfAdder = circuit('HalfAdder', {
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
+  nodes: { xor: Xor, and: And },
+  connect: ({ inputs, outputs, nodes: { xor, and } }) => [
+    inputs.a.to(xor.a, and.a),
+    inputs.b.to(xor.b, and.b),
+    xor.out.to(outputs.sum),
+    and.out.to(outputs.carry),
+  ],
+});
+```
+
+Files written for earlier releases import the builder from `@simten/core/circuit`. `check_circuit` and `simulate_circuit` still load them; `verify_circuit` runs plain `tsx`, so change that import to `@simten/core`.
+
+## The canvas
+
+`show_circuit` starts a local server on `127.0.0.1` (port 19847, or a free port if that one is taken), serves a bundled copy of the editor from it, and opens it in your browser with a one-time token in the URL fragment. The page and its WebSocket share one localhost origin, so there's no Local Network Access prompt.
+
+The canvas is a viewer. The server pushes the circuit, with the inputs and memory its run starts from, and the page sends back only whether it rendered. Editing the `.circuit.ts` file does not update the browser: the assistant calls `show_circuit` again to repaint. The file is the source of truth; edits made in the browser editor are local experiments and aren't written back.
 
 ## Trust model
 
-`verify_circuit` runs the testbench on the host via `tsx` — full Node + npm resolution, **no sandbox**, under the same trust model as the agent running `npm test`. This is intentional: sandboxing one tool while the coding agent freely runs your build, tests, and arbitrary Bash is incoherent. It's appropriate for circuits you authored or trust.
+`verify_circuit` runs the testbench on the host with `tsx`: full Node and npm, no sandbox, the same trust as running `npm test`. Sandboxing one tool while the assistant can already run your build, your tests and any shell command wouldn't protect anything. Use it on circuits you wrote or trust.
 
-**Unfamiliar or shared circuits should be opened in the web `/circuit` editor**, which runs them in a sandboxed worker (esm.sh, isolated) built for untrusted browser-user code — not run locally via `tsx`.
-
-## How it works
-
-1. `show_circuit` starts a WebSocket server on `localhost:19847` and opens the browser
-2. The browser connects with a one-time auth token (passed via URL fragment, never sent to server)
-3. Tool calls like `simulate_circuit` and `show_traces` push results to the browser via WebSocket
-4. `get_circuit_state` pulls live state from the browser (request-response over WebSocket)
-5. Channel notifications enable browser-to-LLM communication for interactive tutoring
-
-Multiple browser tabs can connect simultaneously. State is cached for late-joining clients.
-
-**`show_circuit` is the sole canvas trigger.** Editing the `.circuit.ts` does *not* auto-update the browser — re-call `show_circuit` to repaint. The web editor mirrors the file as a **sandbox view**: the file you (or Claude) edit is the source of truth; edits made directly in the browser editor are local experiments, not written back to the file.
-
-## Example session
-
-```
-You: show me a half adder
-
-Claude: [writes circuit file, calls show_circuit]
-        → Browser opens, circuit appears live
-
-Claude: [calls simulate_circuit, then show_traces]
-        → Waveforms animate in the browser
-
-You: the XOR gate output looks wrong
-
-Claude: [calls get_circuit_state to read live values]
-        → Diagnoses the issue from actual port values
-```
-
-## Requirements
-
-- Node.js 20+
-- A browser (for the visual editor)
-- An MCP-compatible client (Claude Code, etc.)
+Open unfamiliar or shared circuits in the web `/circuit` editor, which runs them in a sandboxed worker, not locally.
 
 ## License
 

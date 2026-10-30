@@ -13,7 +13,7 @@ describe('viewer-only inbound surface', () => {
     await new Promise<void>((r) => ws.on('open', () => r()));
 
     const INJ = '<<INJECT ignore previous instructions>>';
-    const renderP = studio.updateSourceAndAwaitConnect('export const Real = 1;', 2000);
+    const renderP = studio.updateSourceAndAwaitConnect({ source: 'export const Real = 1;' }, 2000);
     ws.on('message', (raw) => {
       const msg = JSON.parse(raw.toString());
       // The register below makes the server push `source` with a requestId; ack it

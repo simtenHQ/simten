@@ -1,7 +1,7 @@
 {
   "name": "@simten/mcp",
   "version": "0.10.0",
-  "description": "MCP server for Simten. Live circuit simulation with real-time browser push via WebSocket.",
+  "description": "MCP server for Simten: check, simulate, verify and show TypeScript circuits, with a live browser canvas.",
   "license": "Apache-2.0",
   "author": "Charles Harris",
   "repository": {
@@ -24,7 +24,6 @@
   },
   "exports": {
     ".": "./src/index.ts",
-    "./schemas": "./src/schemas/index.ts",
     "./package.json": "./package.json"
   },
   "publishConfig": {
@@ -32,10 +31,6 @@
       ".": {
         "types": "./dist/index.d.ts",
         "import": "./dist/index.js"
-      },
-      "./schemas": {
-        "types": "./dist/schemas/index.d.ts",
-        "import": "./dist/schemas/index.js"
       },
       "./package.json": "./package.json"
     },
@@ -55,13 +50,14 @@
     "typecheck:tests": "tsc --noEmit -p tsconfig.check.json"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.32.0",
+    "@modelcontextprotocol/server": "^2.4.0",
     "@simten/core": "workspace:^",
     "tsx": "^4.23.15",
     "ws": "^8.21.1",
     "zod": "^4.6.6"
   },
   "devDependencies": {
+    "@modelcontextprotocol/client": "^2.4.0",
     "@types/node": "^20",
     "@types/ws": "^8.18.1",
     "typescript": "^5",

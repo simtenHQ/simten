@@ -1,7 +1,7 @@
 {
   "name": "@simten/react",
   "version": "0.15.6",
-  "description": "React for Simten circuits: useSimulation, the circuit canvas, clock controls, the waveform viewer and the code editor.",
+  "description": "React for Simten circuits: useSimulation, the circuit canvas, clock controls and the code editor.",
   "license": "Apache-2.0",
   "author": "Charles Harris",
   "repository": {
@@ -16,8 +16,7 @@
     "react-flow",
     "circuit",
     "digital-logic",
-    "canvas",
-    "waveform"
+    "canvas"
   ],
   "type": "module",
   "sideEffects": [
