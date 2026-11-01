@@ -9,9 +9,12 @@ import type { CircuitIR } from '../../ir/circuit-ir.js';
 import { createDefinitions } from '../behavior.js';
 
 const primitive = (name: string, description = name): CircuitIR => ({
+  version: 1,
   name,
   inputs: [],
   outputs: [],
+  clocks: [],
+  state: [],
   nodes: [],
   connections: [],
   implementation: { kind: 'primitive' },
