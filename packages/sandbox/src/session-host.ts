@@ -21,8 +21,8 @@ import type { Circuit, Simulation } from '@simten/core';
 import {
   type Behavior,
   type BehaviorFn,
-  type CircuitDefinitions,
   type CircuitIR,
+  createDefinitions,
   createSimulation,
   type ExecuteResult,
   executeCircuitCode,
@@ -150,28 +150,6 @@ function serializable(c: CircuitIR): CircuitIR {
   return JSON.parse(JSON.stringify(c));
 }
 
-/** Definitions that look in `circuits` first, then in `base`, and take additions on top. */
-function layeredDefinitions(
-  base: CircuitDefinitions,
-  circuits: Iterable<CircuitIR> = [],
-): CircuitDefinitions & { addCircuit(c: CircuitIR): void } {
-  const own = new Map<string, CircuitIR>();
-  for (const c of circuits) own.set(c.name, c);
-  return {
-    resolveCircuit: (name) => own.get(name) ?? base.resolveCircuit(name),
-    getAllPrimitiveNames: () => {
-      const names = new Set(base.getAllPrimitiveNames());
-      for (const c of own.values()) {
-        if (c.implementation.kind === 'primitive') names.add(c.name);
-      }
-      return [...names];
-    },
-    addCircuit: (c) => {
-      own.set(c.name, c);
-    },
-  };
-}
-
 /**
  * A compile of source text. Each circuit opens with its own tree's behavior
  * (`libraryOf`), so where two circuits in one file share a name without
@@ -249,10 +227,10 @@ function rebuildBehaviors(sources: Record<string, BehaviorSource>): Map<string, 
  * doesn't borrow from any other compile.
  */
 function irCompile(request: Request<'compile-ir'>): HostCompile {
-  const definitions = layeredDefinitions(getStdLibrary().definitions, [
-    ...request.libraryCircuits,
-    request.circuit,
-  ]);
+  const definitions = createDefinitions(
+    [...request.libraryCircuits, request.circuit],
+    getStdLibrary().definitions,
+  );
   const library: Library = { definitions, behaviors: rebuildBehaviors(request.behaviors) };
   return {
     circuits: [request.circuit],
@@ -325,13 +303,8 @@ function startingInputs(
 /** A Simulation of `target`, with std underneath for the harness's switches and displays. */
 function openSimulation(target: Openable, request: Request<'open'>): Opened {
   const std = getStdLibrary();
-  const own = target.library.definitions;
-  const definitions = layeredDefinitions({
-    resolveCircuit: (name) => own.resolveCircuit(name) ?? std.definitions.resolveCircuit(name),
-    getAllPrimitiveNames: () => [
-      ...new Set([...own.getAllPrimitiveNames(), ...std.definitions.getAllPrimitiveNames()]),
-    ],
-  });
+  // An empty first layer, for the legacy harness to add its circuits to.
+  const definitions = createDefinitions([], target.library.definitions, std.definitions);
   const library: Library = {
     definitions,
     behaviors: new Map([...std.behaviors, ...target.library.behaviors]),

@@ -2,11 +2,10 @@ import type { CircuitIR, FlatCircuit } from '@simten/core/internal';
 import {
   buildFromIR,
   compileForSimulation,
+  createDefinitions,
   elaborate,
   getStdLibrary,
-  internalsOf,
 } from '@simten/core/internal';
-import { STDLIB_CIRCUITS } from '@simten/core/std';
 import { useSandboxClient } from '@simten/react';
 import { useEffect, useState } from 'react';
 import { CircuitCard } from '@/components/CircuitCard';
@@ -113,14 +112,8 @@ export function PipelineVisualizer() {
 
     function showStages(circuits: CircuitIR[], libraryCircuits: CircuitIR[]) {
       try {
-        // Build resolveCircuit from sandbox-returned IR (no new Function())
-        const allCircuits = [...circuits, ...libraryCircuits];
-        const circuitMap = new Map(allCircuits.map((c) => [c.name, c]));
-        const resolveCircuit = (name: string) => circuitMap.get(name);
-
-        // Build primitive name list from stdlib (safe: no new Function())
-        const prims = STDLIB_CIRCUITS.map((c) => internalsOf(c).ir) as CircuitIR[];
-        const primNames = prims.map((p) => p.name);
+        // Definitions from the IR the sandbox returned (no new Function()).
+        const definitions = createDefinitions([...circuits, ...libraryCircuits]);
 
         // Stage 2: Elaborate the FullAdder
         const fullAdder = circuits.find((c) => c.name === 'FullAdder');
@@ -129,7 +122,6 @@ export function PipelineVisualizer() {
           return;
         }
 
-        const definitions = { resolveCircuit, getAllPrimitiveNames: () => primNames };
         const flat = elaborate(fullAdder, definitions);
 
         // Stage 3: Compile to numeric

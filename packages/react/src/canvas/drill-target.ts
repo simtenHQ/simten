@@ -23,27 +23,13 @@
 import {
   type ArgumentValue,
   type CircuitDefinitions,
-  type CircuitIR,
+  createDefinitions,
   internalsOf,
   isCircuit,
 } from '@simten/core/internal';
 import { MADE_OF } from '@simten/core/std';
 import type { NodeData } from '../nodes';
 import type { InspectorFrame } from './types';
-
-/** Definitions that answer from `extra` first, then fall back to `base`. */
-function layer(base: CircuitDefinitions, extra: Map<string, CircuitIR>): CircuitDefinitions {
-  return {
-    resolveCircuit: (name) => extra.get(name) ?? base.resolveCircuit(name),
-    getAllPrimitiveNames: () => {
-      const names = new Set(base.getAllPrimitiveNames());
-      for (const c of extra.values()) {
-        if (c.implementation.kind === 'primitive') names.add(c.name);
-      }
-      return [...names];
-    },
-  };
-}
 
 /**
  * Resolve the frame a double-click should push, or null if the node is a leaf.
@@ -82,14 +68,13 @@ export function resolveDrillTarget(
   if (!isCircuit(built)) return null;
 
   const { ir, dependencies } = internalsOf(built);
-  const extra = new Map<string, CircuitIR>([[ir.name, ir]]);
-  for (const dep of dependencies.values()) extra.set(dep.name, internalsOf(dep).ir);
+  const own = [ir, ...[...dependencies.values()].map((dep) => internalsOf(dep).ir)];
 
   return {
     componentName: componentRef,
     componentDef: ir,
     nodeLabel,
-    definitions: layer(definitions, extra),
+    definitions: createDefinitions(own, definitions),
     // The build is the top level of its own session, fed from this primitive.
     path: '',
     reference: { instance: path, circuit: built },

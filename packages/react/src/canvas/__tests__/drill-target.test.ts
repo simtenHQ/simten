@@ -5,8 +5,8 @@
  */
 
 import { bit, circuit } from '@simten/core';
-import type { CircuitDefinitions, CircuitIR } from '@simten/core/internal';
-import { internalsOf } from '@simten/core/internal';
+import type { CircuitIR } from '@simten/core/internal';
+import { createDefinitions, internalsOf } from '@simten/core/internal';
 import { And, Xor } from '@simten/core/std';
 import { describe, expect, it } from 'vitest';
 import type { NodeData } from '../../nodes';
@@ -24,14 +24,7 @@ const HalfAdder = circuit('HalfAdder', {
   ],
 });
 
-function definitionsOf(...circuits: CircuitIR[]): CircuitDefinitions {
-  const byName = new Map(circuits.map((c) => [c.name, c]));
-  return {
-    resolveCircuit: (name) => byName.get(name),
-    getAllPrimitiveNames: () =>
-      [...byName.values()].filter((c) => c.implementation.kind === 'primitive').map((c) => c.name),
-  };
-}
+const definitionsOf = (...circuits: CircuitIR[]) => createDefinitions(circuits);
 
 function nodeData(componentRef: string, args: Record<string, unknown> = {}): NodeData {
   return {
