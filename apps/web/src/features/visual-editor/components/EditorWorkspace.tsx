@@ -165,13 +165,13 @@ export function EditorWorkspace({
   /**
    * Every new source goes through here: typed, an example, an import or a
    * push. The editor shows it through its `value`, and useSimulation compiles
-   * it once. A new source starts a new run of the new circuit, without the
-   * programs loaded into the old one or the inputs a push set on it.
+   * it once. A new source starts a new run of the new circuit, with the
+   * programs and inputs a push brings and otherwise none.
    */
-  const changeSource = useCallback((source: string) => {
+  const changeSource = useCallback((source: string, run: MCPRunStart = {}) => {
     setCode(source);
-    setMemory(NO_MEMORY);
-    setPushedInputs(undefined);
+    setMemory(run.memory ?? NO_MEMORY);
+    setPushedInputs(run.inputs);
   }, []);
 
   // Compiles the source and simulates its last circuit in the sandbox. The
@@ -286,15 +286,12 @@ export function EditorWorkspace({
     onSource: useCallback(
       (source: string, requestId: string | undefined, run: MCPRunStart) => {
         pendingRenderRef.current = requestId ?? null;
+        changeSource(source, run);
         // The same source again doesn't change `code`, so nothing would
         // compile and the render would never be answered: compile it here.
         if (source === code) void actions.recompile();
-        else setCode(source);
-        // A push starts its run with its own programs and inputs.
-        setMemory(run.memory ?? NO_MEMORY);
-        setPushedInputs(run.inputs);
       },
-      [actions, code],
+      [actions, changeSource, code],
     ),
     // useMCPConnection keeps its callbacks in a ref, so this reads the
     // latest state without needing a stable identity.
