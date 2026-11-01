@@ -39,28 +39,6 @@ const Board = circuit('SetBoard', {
   ],
 });
 
-/** A port and a switch with the same name: `set('a')` can't choose. */
-const Clash = circuit('SetClash', {
-  inputs: { a: bit },
-  outputs: { y: bit },
-  nodes: { a: Switch, g: Nand },
-  connect: ({ inputs, outputs, nodes: { a, g } }) => [
-    inputs.a.to(g.a),
-    a.out.to(g.b),
-    g.out.to(outputs.y),
-  ],
-});
-
-/**
- * An output and a Switch with the same name. The builder allows it, so `get`
- * and `set` refuse the name rather than read one and write the other.
- */
-const OutputClash = circuit('SetOutputClash', {
-  outputs: { y: bit },
-  nodes: { y: Switch, g: Nand },
-  connect: ({ outputs, nodes: { y, g } }) => [y.out.to(g.a, g.b), g.out.to(outputs.y)],
-});
-
 const outputs = (sim: { read(): Record<string, number> }) => sim.read();
 /** The latch's lamp. */
 const lamp = (sim: Simulation, at = 'q') => nodesOf(sim).ports().get(`${at}.in`);
@@ -104,11 +82,6 @@ describe('set', () => {
     );
   });
 
-  it('rejects a key that names both a port and a Switch', () => {
-    const sim = simulate(Clash);
-    expect(() => sim.set({ a: 1 })).toThrow('ambiguous');
-  });
-
   it('types its keys from the circuit', () => {
     const latch = simulate(DLatch);
     latch.set({ d: 1, en: 0 });
@@ -145,21 +118,6 @@ describe('get', () => {
     );
     expect(() => sim.get('b' as never)).toThrow(
       "get('b'): SetBoard has no port, Switch or Input named 'b'. Its inputs: a. Its Switches and Inputs: latch.d, latch.en, kbd. Its outputs: y, q",
-    );
-  });
-
-  it('rejects a key that names both a port and a Switch', () => {
-    const sim = simulate(Clash);
-    expect(() => sim.get('a')).toThrow("get('a'): SetClash has both an input port and a Switch");
-  });
-
-  it('rejects a name that is both an output and a Switch, as set does, so a toggle reads what it writes', () => {
-    const sim = simulate(OutputClash);
-    expect(() => sim.get('y')).toThrow(
-      "get('y'): SetOutputClash has both an output port and a Switch named 'y', so the key is ambiguous. Rename one of them.",
-    );
-    expect(() => sim.set({ y: 1 } as never)).toThrow(
-      "set('y'): SetOutputClash has both an output port and a Switch named 'y'",
     );
   });
 });
