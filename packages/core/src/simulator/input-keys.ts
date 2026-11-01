@@ -7,14 +7,7 @@
  */
 
 import { type CircuitDefinitions, type CircuitIR, TOP_LEVEL_NODE } from '../ir/circuit-ir.js';
-
-/** The components `set` writes by path: what a person at the board could change. */
-const CONTROLS = new Set(['Switch', 'Input']);
-
-/** Whether `ir` is the Switch or Input primitive. */
-export function isControlCircuit(ir: CircuitIR): boolean {
-  return CONTROLS.has(ir.name) && !!ir.metadata?.interactiveArg;
-}
+import { isControlCircuit } from '../ir/controls.js';
 
 /** Whether nodes of primitive type `type` are Switches or Inputs. */
 export function isControlType(type: string, definitions: CircuitDefinitions): boolean {

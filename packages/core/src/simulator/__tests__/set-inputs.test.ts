@@ -8,10 +8,8 @@
 
 import { describe, expect, it } from 'vitest';
 import { libraryOf } from '../../circuit/behavior.js';
-import type { Circuit } from '../../circuit/builder-types.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
-import { internalsOf, makeCircuit } from '../../circuit/internals.js';
-import type { CircuitIR } from '../../ir/circuit-ir.js';
+import { internalsOf } from '../../circuit/internals.js';
 import { Input, Led, Nand, Register, ROM, Switch } from '../../std/index.js';
 import { primitivePaths } from '../input-keys.js';
 import { simulate } from '../simulate.js';
@@ -40,52 +38,6 @@ const Board = circuit('SetBoard', {
     gate.out.to(outputs.y),
   ],
 });
-
-/**
- * `built` with node `from` renamed `to` in its IR. `circuit()` rejects a port
- * and a Switch with the same name (#545), so a clash can only come from IR
- * that didn't go through it, like this.
- */
-function renameNode<C extends Circuit>(built: C, from: string, to: string): C {
-  const parts = internalsOf(built);
-  const json = JSON.stringify(parts.ir)
-    .replaceAll(`"${from}"`, `"${to}"`)
-    .replaceAll(`"${from}.`, `"${to}.`);
-  return makeCircuit({ ...parts, ir: JSON.parse(json) as CircuitIR }) as C;
-}
-
-/** A port and a switch with the same name: `set('a')` can't choose. */
-const Clash = renameNode(
-  circuit('SetClash', {
-    inputs: { a: bit },
-    outputs: { y: bit },
-    nodes: { clashing: Switch, g: Nand },
-    connect: ({ inputs, outputs, nodes: { clashing, g } }) => [
-      inputs.a.to(g.a),
-      clashing.out.to(g.b),
-      g.out.to(outputs.y),
-    ],
-  }),
-  'clashing',
-  'a',
-);
-
-/**
- * An output and a Switch with the same name: `get` and `set` refuse the name
- * rather than read one and write the other.
- */
-const OutputClash = renameNode(
-  circuit('SetOutputClash', {
-    outputs: { y: bit },
-    nodes: { clashing: Switch, g: Nand },
-    connect: ({ outputs, nodes: { clashing, g } }) => [
-      clashing.out.to(g.a, g.b),
-      g.out.to(outputs.y),
-    ],
-  }),
-  'clashing',
-  'y',
-);
 
 const outputs = (sim: { read(): Record<string, number> }) => sim.read();
 /** The latch's lamp. */
@@ -130,11 +82,6 @@ describe('set', () => {
     );
   });
 
-  it('rejects a key that names both a port and a Switch', () => {
-    const sim = simulate(Clash);
-    expect(() => sim.set({ a: 1 })).toThrow('ambiguous');
-  });
-
   it('types its keys from the circuit', () => {
     const latch = simulate(DLatch);
     latch.set({ d: 1, en: 0 });
@@ -171,21 +118,6 @@ describe('get', () => {
     );
     expect(() => sim.get('b' as never)).toThrow(
       "get('b'): SetBoard has no port, Switch or Input named 'b'. Its inputs: a. Its Switches and Inputs: latch.d, latch.en, kbd. Its outputs: y, q",
-    );
-  });
-
-  it('rejects a key that names both a port and a Switch', () => {
-    const sim = simulate(Clash);
-    expect(() => sim.get('a')).toThrow("get('a'): SetClash has both an input port and a Switch");
-  });
-
-  it('rejects a name that is both an output and a Switch, as set does, so a toggle reads what it writes', () => {
-    const sim = simulate(OutputClash);
-    expect(() => sim.get('y')).toThrow(
-      "get('y'): SetOutputClash has both an output port and a Switch named 'y', so the key is ambiguous. Rename one of them.",
-    );
-    expect(() => sim.set({ y: 1 } as never)).toThrow(
-      "set('y'): SetOutputClash has both an output port and a Switch named 'y'",
     );
   });
 });

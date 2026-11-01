@@ -32,8 +32,8 @@ import type {
   PortType,
   StateBlock,
 } from '../ir/circuit-ir.js';
+import { isControlCircuit } from '../ir/controls.js';
 import { checkMemoryContents } from '../ir/memory-contents.js';
-import { isControlCircuit } from '../simulator/input-keys.js';
 import { type Behavior, type BehaviorFn, definitionKey, NO_EVAL } from './behavior.js';
 import { isMemDecl, isRegDecl, type MemDecl, normalizePortType } from './bit-bus.js';
 import type {
