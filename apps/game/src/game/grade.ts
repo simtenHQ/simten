@@ -243,8 +243,9 @@ export async function grade(
   } catch (e) {
     return { status: 'error', message: e instanceof Error ? e.message : String(e) };
   } finally {
-    // Freeing is housekeeping, not part of the verdict.
-    if (compiled) sandbox.release(compiled);
+    // Freeing is housekeeping, not part of the verdict. The session first,
+    // then the compile it was opened from.
     await session?.close().catch(() => {});
+    if (compiled) sandbox.release(compiled);
   }
 }
