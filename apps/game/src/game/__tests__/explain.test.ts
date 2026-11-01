@@ -7,12 +7,16 @@
  * failure at step 4 reddened step 2.
  */
 
-import { describe, expect, it } from 'vitest';
+import { inProcessSandbox } from '@simten/sandbox/host';
+import { afterAll, describe, expect, it } from 'vitest';
 import { explain } from '../explain';
 import { grade } from '../grade';
 import { LEVELS_BY_ID } from '../levels';
 import type { Level } from '../types';
-import { localRuntime } from './local-runtime';
+
+// The grader as the browser runs it, with the sandbox in this process.
+const sandbox = inProcessSandbox();
+afterAll(() => sandbox.dispose());
 
 function level(id: string): Level {
   const found = LEVELS_BY_ID.get(id);
@@ -42,7 +46,7 @@ describe('a wrong output', () => {
     const latch = level('sr-latch');
     expect(latch.vectors[3].inputs).toEqual(latch.vectors[1].inputs);
 
-    const result = await grade(localRuntime(), latch, COPIES_R);
+    const result = await grade(sandbox, latch, COPIES_R);
     if (result.status !== 'fail' || result.failure.kind !== 'vector') {
       throw new Error(`expected a wrong output, got ${JSON.stringify(result)}`);
     }
@@ -51,7 +55,7 @@ describe('a wrong output', () => {
 
   it('is explained with the step on a sequential level', async () => {
     const latch = level('sr-latch');
-    const result = await grade(localRuntime(), latch, COPIES_R);
+    const result = await grade(sandbox, latch, COPIES_R);
     expect(explain(result, latch)).toBe(
       'At step 4 (s = 1, r = 1), q should be 0 but your circuit gives 1.',
     );
@@ -60,7 +64,7 @@ describe('a wrong output', () => {
   it('names the instruction a CPU step ran, not its bits', async () => {
     const cpu = level('load');
     // The stub as given: nothing wired, so r0 is never loaded.
-    const result = await grade(localRuntime(), cpu, cpu.stub);
+    const result = await grade(sandbox, cpu, cpu.stub);
     expect(explain(result, cpu)).toBe(
       'At step 1 (LOAD r0, 5), r0 should be 5 but your circuit gives 0.',
     );
@@ -68,7 +72,7 @@ describe('a wrong output', () => {
 
   it('is explained with the inputs on a truth-table level', async () => {
     const not = level('not');
-    const result = await grade(localRuntime(), not, UNFINISHED_NOT);
+    const result = await grade(sandbox, not, UNFINISHED_NOT);
     expect(explain(result, not)).toBe('With a = 0, result should be 1 but your circuit gives 0.');
   });
 });
