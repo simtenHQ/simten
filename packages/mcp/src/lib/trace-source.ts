@@ -17,7 +17,6 @@ import {
   type MemoryContents,
   nodesOf,
   type SimulationTrace,
-  TOP_LEVEL_NODE,
 } from '@simten/core/internal';
 import type { Compiled } from './compile-file.js';
 import { compileSource } from './compile-source.js';
@@ -113,7 +112,7 @@ export function traceCompiled(
 
     // Capture top-level signals for RLE compression
     for (const name of signalNames) {
-      signals[name].push(portValues.get(`${TOP_LEVEL_NODE}.${name}`) ?? 0);
+      signals[name].push(portValues.get(name) ?? 0);
     }
   }
 

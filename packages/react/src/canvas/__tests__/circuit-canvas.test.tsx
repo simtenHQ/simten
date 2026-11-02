@@ -207,7 +207,7 @@ describe('CircuitCanvas on an update', () => {
         await seen.sim?.actions.toggle('a');
         await new Promise((r) => setTimeout(r, 50));
       });
-      expect(seen.sim?.state.portValues?.get('__top__.a')).toBe(1);
+      expect(seen.sim?.state.portValues?.get('a')).toBe(1);
       expect([...renders.keys()]).toEqual(['a']);
     } finally {
       Object.assign(NODE_TYPES, originals);

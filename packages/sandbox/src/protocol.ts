@@ -39,7 +39,7 @@ export type SessionId = string;
 export interface SessionUpdate {
   /** Clock cycles since the start or the last reset. */
   cycle: number;
-  /** Every port value, keyed `nodePath.port` (top-level ports under `__top__`). */
+  /** Every port value: the circuit's own by name (`sum`), a node's by path (`ha1.x.out`). */
   ports: Map<string, number>;
   /** State of nodes on a peripheral bus (screens, consoles, UARTs); absent when there are none. */
   peripherals?: Map<string, PeripheralValue>;
@@ -128,7 +128,7 @@ export type SessionRequest =
       session: SessionId;
       /** The input to drive: a port name or a Switch or Input path, as `set` takes. */
       path: string;
-      /** The port-map key to read after each value. */
+      /** The port to read after each value: the circuit's own by name (`sum`), or a node's by path. */
       port: string;
       count: number;
     }

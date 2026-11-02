@@ -90,9 +90,8 @@ export interface SimulationState<Outs extends string = string> {
   /** The circuit's outputs by name. */
   outputs: Record<Outs, number>;
   /**
-   * Every port value, keyed `nodePath.port`, for the canvas and tooling: the
-   * circuit's own ports under `__top__` (`__top__.sum`), its nodes by path
-   * (`ha1.x.out`). Null until the first state.
+   * Every port value, for the canvas and tooling: the circuit's own ports by
+   * name (`sum`), its nodes by path (`ha1.x.out`). Null until the first state.
    */
   portValues: ReadonlyMap<string, number> | null;
   /** Screens, consoles, UARTs and the memories behind them, by session path. */
@@ -146,9 +145,9 @@ export interface SimulationActions<Keys extends string = string> {
   stepBack(): Promise<boolean>;
   stepForward(): Promise<boolean>;
   seek(index: number): Promise<boolean>;
-  /** Drive one input through 0..count-1, settling each time, and read `port` (a `portValues` key) after each. Doesn't tick. */
+  /** Drive one input through 0..count-1, settling each time, and read `port` (a port by name, or a node's by path) after each. Doesn't tick. */
   scan(input: Keys, port: string, count: number): Promise<number[]>;
-  /** Tick `count` times, after setting `inputs`, and read `port` (a `portValues` key) after each tick. */
+  /** Tick `count` times, after setting `inputs`, and read `port` (a port by name, or a node's by path) after each tick. */
   sample(port: string, count: number, inputs?: Partial<Record<Keys, number>>): Promise<number[]>;
   /** Verilog for the simulated circuit, from the same compile. */
   exportVerilog(options?: VerilogExportOptions): Promise<ExportResult>;
@@ -170,7 +169,6 @@ type OutputName<C extends Circuit> =
 const DEBOUNCE_MS = 50;
 const DEFAULT_SPEED = 15;
 const DEFAULT_HISTORY = 200;
-const TOP = '__top__';
 const NO_PERIPHERALS: ReadonlyMap<string, PeripheralValue> = new Map();
 const NO_CIRCUITS: CircuitIR[] = [];
 const NO_OUTPUTS: Record<string, number> = {};
@@ -205,7 +203,7 @@ function pickCircuit(compiled: Compiled, choice: SourceText['circuit']): Circuit
 function outputsOf(circuit: CircuitIR, ports: ReadonlyMap<string, number>): Record<string, number> {
   const outputs: Record<string, number> = {};
   for (const port of circuit.outputs) {
-    const value = ports.get(`${TOP}.${port.name}`);
+    const value = ports.get(port.name);
     if (value !== undefined) outputs[port.name] = value;
   }
   return outputs;

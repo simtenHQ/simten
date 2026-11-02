@@ -103,7 +103,7 @@ function runSimulator(steps: Step[]): number[] {
     sim.setInput('enable', step.enable);
     sim.setInput('clear', step.clear);
     sim.tick();
-    const v = sim.getPortValues().get('__top__.count');
+    const v = sim.getPortValues().get('count');
     outputs.push(typeof v === 'number' ? (v >>> 0) & 0xff : 0);
   }
   return outputs;

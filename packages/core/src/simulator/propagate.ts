@@ -496,11 +496,14 @@ export function propagateToTopLevelOutputs(
 ): void {
   for (const conn of circuit.flatCircuit.connections) {
     if (conn.target.nodeId === TOP_LEVEL_NODE || conn.target.nodeId === '') {
-      const sourceKey = `${conn.source.nodeId}.${conn.source.portName}`;
+      // An input wired straight to an output reads the input, keyed by name.
+      const fromTop = conn.source.nodeId === TOP_LEVEL_NODE || conn.source.nodeId === '';
+      const sourceKey = fromTop
+        ? conn.source.portName
+        : `${conn.source.nodeId}.${conn.source.portName}`;
       const sourcePortIdx = circuit.portKeyToIndex.get(sourceKey);
       if (sourcePortIdx !== undefined) {
-        const targetKey = `${conn.target.nodeId || TOP_LEVEL_NODE}.${conn.target.portName}`;
-        result.set(targetKey, values.values[sourcePortIdx]);
+        result.set(conn.target.portName, values.values[sourcePortIdx]);
       }
     }
   }

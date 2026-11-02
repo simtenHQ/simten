@@ -103,7 +103,7 @@ function runSimulator(addrs: number[]): number[] {
   for (const addr of addrs) {
     sim.setInput('addr', addr);
     sim.tick();
-    const v = sim.getPortValues().get('__top__.data_out');
+    const v = sim.getPortValues().get('data_out');
     outputs.push(typeof v === 'number' ? (v >>> 0) & 0xff : 0);
   }
   return outputs;

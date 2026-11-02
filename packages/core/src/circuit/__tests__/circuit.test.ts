@@ -284,6 +284,16 @@ describe('validation', () => {
     ).toThrow('used for both input and output');
   });
 
+  it('rejects a dot in a port name', () => {
+    expect(() =>
+      circuit('Bad', {
+        inputs: { 'a.b': bit },
+        outputs: { y: bit },
+        eval: ({ 'a.b': a }) => ({ y: a }),
+      }),
+    ).toThrow("Port name 'a.b' contains a dot");
+  });
+
   it('rejects state name colliding with input', () => {
     expect(() =>
       circuit('Bad', {

@@ -427,14 +427,12 @@ function expandNodes(
   return nodes;
 }
 
-/** Checks on the config itself, before `connect` runs. */
-function validateConfig(
-  config: AnyCircuitConfig,
-  { inputs, outputs }: Ports,
-  declaredNodes: Record<string, NodeEntry>,
+/** Port names are unique across inputs and outputs, and have no dot. */
+function checkPortNames(
+  inputs: ReadonlyMap<string, PortType>,
+  outputs: ReadonlyMap<string, PortType>,
   errors: string[],
 ): void {
-  // Duplicate port names
   const allPortNames = new Set<string>();
   for (const n of inputs.keys()) {
     if (allPortNames.has(n)) errors.push(`Duplicate port name: '${n}'`);
@@ -444,6 +442,21 @@ function validateConfig(
     if (allPortNames.has(n)) errors.push(`Port name '${n}' used for both input and output`);
     allPortNames.add(n);
   }
+  // A port's value is read by its name and a node's by path (`ha1.out`), so a
+  // dot in a port name could read as a path.
+  for (const n of allPortNames) {
+    if (n.includes('.')) errors.push(`Port name '${n}' contains a dot; dots separate node paths`);
+  }
+}
+
+/** Checks on the config itself, before `connect` runs. */
+function validateConfig(
+  config: AnyCircuitConfig,
+  { inputs, outputs }: Ports,
+  declaredNodes: Record<string, NodeEntry>,
+  errors: string[],
+): void {
+  checkPortNames(inputs, outputs, errors);
 
   // State name collisions
   if (config.state) {

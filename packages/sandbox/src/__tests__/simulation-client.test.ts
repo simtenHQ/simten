@@ -194,7 +194,7 @@ describe('SimulationClient', () => {
     void sim.tick(3);
     void sim.set({ en: 0 });
     await sim.tick(3);
-    expect(sim.getState().ports.get('__top__.count')).toBe(3);
+    expect(sim.getState().ports.get('count')).toBe(3);
   });
 
   it('rejects set on a register with a SandboxError', async () => {
@@ -262,7 +262,7 @@ describe('SimulationClient', () => {
   it('samples a port after every tick', async () => {
     const { client } = startSandbox();
     const sim = await openCounter(client);
-    expect(await sim.sample('__top__.count', 4)).toEqual([1, 2, 3, 4]);
+    expect(await sim.sample('count', 4)).toEqual([1, 2, 3, 4]);
     expect(sim.cycle).toBe(4);
   });
 

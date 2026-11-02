@@ -209,7 +209,7 @@ export class SimulationClient {
     await this.update({ type: 'pause' });
   }
 
-  /** Tick `count` times and return `port` after each tick (audio). `port` is a port-map key. */
+  /** Tick `count` times and return `port` after each tick (audio). `port` is a port by name (`sum`) or a node's by path (`ha1.x.out`). */
   async sample(port: string, count: number, inputs?: Record<string, number>): Promise<number[]> {
     const response = await this.send({ type: 'sample', port, count, inputs });
     if (response.type !== 'sampled') throw unexpected(response);
@@ -219,7 +219,7 @@ export class SimulationClient {
 
   /**
    * Drive one input (a port name or a Switch or Input path, as `set` takes)
-   * through 0..count-1, settling each time, and read `port` (a port-map key)
+   * through 0..count-1, settling each time, and read `port` (a port by name, or a node's by path)
    * after each. Doesn't tick.
    */
   async scan(input: string, port: string, count: number): Promise<number[]> {

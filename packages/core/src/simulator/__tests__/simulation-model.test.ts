@@ -133,11 +133,11 @@ describe('restore', () => {
     const snap = engine.snapshot();
     engine.setInput('d', 1);
     engine.tick();
-    expect(engine.getOutput('__top__', 'q')).toBe(1);
+    expect(engine.getOutput('', 'q')).toBe(1);
 
     engine.restore(snap);
     engine.tick();
-    expect(engine.getOutput('__top__', 'q')).toBe(0);
+    expect(engine.getOutput('', 'q')).toBe(0);
   });
 
   it('a switch first set after the snapshot goes back to its default', () => {
@@ -150,11 +150,11 @@ describe('restore', () => {
     const snap = engine.snapshot();
     engine.setNode('sw', 1);
     engine.tick();
-    expect(engine.getOutput('__top__', 'q')).toBe(1);
+    expect(engine.getOutput('', 'q')).toBe(1);
 
     engine.restore(snap);
     engine.tick();
-    expect(engine.getOutput('__top__', 'q')).toBe(0);
+    expect(engine.getOutput('', 'q')).toBe(0);
   });
 
   it('snapshots do not share the clocks map', () => {
@@ -243,6 +243,6 @@ describe('propagation loop cap', () => {
     const engine = engineFor(Chain);
     engine.setInput('a', 1);
     expect(engine.runCombinational().error).toBeUndefined();
-    expect(engine.getOutput('__top__', 'y')).toBe(1);
+    expect(engine.getOutput('', 'y')).toBe(1);
   });
 });

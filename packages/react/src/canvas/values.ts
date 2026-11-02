@@ -6,7 +6,7 @@
  * circuit. Values change on every update, so they don't go through it: the
  * canvas keeps the session's values in a small store, and each node and wire
  * reads its own value from the store by the session's key (`a.out`,
- * `__top__.sum`). A node re-renders when its value changes, not when any
+ * `sum`). A node re-renders when its value changes, not when any
  * value does. Both reach the nodes through `CanvasContext`, with the actions
  * a click calls.
  */
