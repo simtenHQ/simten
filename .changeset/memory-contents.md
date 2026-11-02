@@ -8,7 +8,7 @@ Memory contents have one format, a plain object `{ address: value }`, and conten
 |---|---|
 | `mem(depth, width, new Map([[0, 7]]))` | `mem(depth, width, { 0: 7 })` |
 | `ROM({ memory: [7, 9] })` (and `RAM`, `DualPortRAM`, `DualPortROM`) | `ROM({ memory: romFromBytes([7, 9]) })`, or `romFromWords(words, width)` for wider words |
-| `sim.setNode('rom', new Map([[0, 7]]))` | `sim.setNode('rom', { 0: 7 })`. `setNode` is typed `number \| MemoryContents` instead of `any` |
+| `sim.setNode('rom', new Map([[0, 7]]))` | `simulate(top, { memory: { rom: { 0: 7 } } })`, or `nodesOf(sim).set('rom', { 0: 7 })` from `/internal`, typed `number \| MemoryContents` instead of `any` |
 | `RegState` | `RegDecl` |
 | `MemState` | `MemDecl` |
 | `ConnectArg` | `ConnectContext` |

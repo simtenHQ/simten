@@ -26,6 +26,6 @@ A built `Circuit` is now just `{ name, inputs, outputs }`, frozen (#480). `input
 
 `exportVerilog` used the standard library's behavior unless you passed your own, so a design with its own `eval` primitive exported it as unsupported. It now uses the behavior of the circuit you pass.
 
-Newly exported types: `Snapshot` (from `@simten/core`), `ArgumentValue` and `NodeEntry` (from `/circuit`), `ExportResult` (from `/verilog`) and `CheckOpts` (from `/verify`). A test checks that every type a public signature reaches is exported, and that every exported type is used.
+Newly exported types: `Snapshot` (from `@simten/core`), `ArgumentValue` and `NodeEntry` (from `@simten/core`), `ExportResult` (from `/verilog`) and `CheckOpts` (from `/verify`). A test checks that every type a public signature reaches is exported, and that every exported type is used.
 
 `@simten/core/internal` adds `internalsOf`, `isCircuit` and `CircuitInternals`, plus `exportVerilogFromIR(ir, library, options)` for callers that only have IR. It takes the behavior explicitly and reports a primitive with none as unsupported rather than falling back to the standard library.
