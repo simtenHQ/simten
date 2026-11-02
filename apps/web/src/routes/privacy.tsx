@@ -100,8 +100,12 @@ function PrivacyPage() {
             local MCP server. Local-only; never leaves your machine.
           </li>
           <li>
-            <code>simten-ts-code</code> (and similar editor keys): your current editor buffer, so it
-            survives page reload.
+            <code>simten:mcp-client</code>: which AI client you picked in the MCP install
+            instructions.
+          </li>
+          <li>
+            <code>simten:seen-run-pulse</code>: that you have pressed Run in the editor, so its
+            first-run hint stops pulsing.
           </li>
         </ul>
         <p>No cookies of any kind.</p>
