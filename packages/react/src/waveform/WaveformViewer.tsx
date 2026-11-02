@@ -14,7 +14,7 @@
  * other waveform viewer.
  */
 
-import type { CircuitIR } from '@simten/core/internal';
+import { type CircuitIR, TOP_LEVEL_NODE } from '@simten/core/internal';
 import {
   type CSSProperties,
   type ReactElement,
@@ -72,13 +72,13 @@ function signalsOf(circuit: CircuitIR): Omit<Signal, 'values'>[] {
     }));
   const ports = [
     ...circuit.inputs.map((p) => ({
-      key: `__top__.${p.name}`,
+      key: `${TOP_LEVEL_NODE}.${p.name}`,
       name: p.name,
       isInput: true,
       width: widthOf(p.portType),
     })),
     ...circuit.outputs.map((p) => ({
-      key: `__top__.${p.name}`,
+      key: `${TOP_LEVEL_NODE}.${p.name}`,
       name: p.name,
       isInput: false,
       width: widthOf(p.portType),

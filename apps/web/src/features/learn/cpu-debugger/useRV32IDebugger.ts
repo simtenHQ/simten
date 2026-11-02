@@ -92,8 +92,8 @@ function binaryToROM(base64: string): MemoryContents {
 }
 
 /** Read one of the CPU's 32-bit output ports. */
-function readOutput(portValues: ReadonlyMap<string, number> | null, name: string): number | null {
-  const val = portValues?.get(`__top__.${name}`);
+function readOutput(outputs: Readonly<Record<string, number>>, name: string): number | null {
+  const val = outputs[name];
   return val === undefined ? null : val >>> 0;
 }
 
@@ -165,15 +165,15 @@ export function useRV32IDebugger() {
   // reach internal node labels. MEM/WB outputs are PC+4 of the in-flight
   // instruction; subtract 4 to recover the stage PC.
   const pipelineStages: PipelineStages = {
-    IF: readOutput(state.portValues, 'if_pc'),
-    ID: readOutput(state.portValues, 'id_pc'),
-    EX: readOutput(state.portValues, 'ex_pc'),
+    IF: readOutput(state.outputs, 'if_pc'),
+    ID: readOutput(state.outputs, 'id_pc'),
+    EX: readOutput(state.outputs, 'ex_pc'),
     MEM: (() => {
-      const v = readOutput(state.portValues, 'mem_pc4');
+      const v = readOutput(state.outputs, 'mem_pc4');
       return v != null ? (v - 4) >>> 0 : null;
     })(),
     WB: (() => {
-      const v = readOutput(state.portValues, 'wb_pc4');
+      const v = readOutput(state.outputs, 'wb_pc4');
       return v != null ? (v - 4) >>> 0 : null;
     })(),
   };
@@ -189,7 +189,7 @@ export function useRV32IDebugger() {
     if (!state.ready) return;
     let cancelled = false;
     (async () => {
-      const values = await actions.scan('debug_addr', '__top__.debug_value', 32);
+      const values = await actions.scan('debug_addr', 'debug_value', 32);
       if (cancelled || values.length === 0) return;
       const map = new Map<number, number>();
       for (let i = 0; i < values.length; i++) map.set(i, values[i] >>> 0);

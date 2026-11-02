@@ -10,9 +10,11 @@
  * outputs through it).
  *
  * The map is keyed by `<nodeId>.<portName>`. A circuit's own ports are under
- * `__top__` (`__top__.a`). A circuit without ports is read off its own nodes:
+ * core's TOP_LEVEL_NODE. A circuit without ports is read off its own nodes:
  * a Switch `a` at `a.out`, a lamp `s` at `s.in`.
  */
+
+import { TOP_LEVEL_NODE } from '@simten/core/internal';
 
 export type PortValuesMap = ReadonlyMap<string, number | boolean | bigint>;
 
@@ -27,7 +29,7 @@ export function readPortBit(
 ): number | null {
   if (!portValues) return null;
   const candidates = [
-    `__top__.${portName}`, // the circuit's own port
+    `${TOP_LEVEL_NODE}.${portName}`, // the circuit's own port
     `${portName}.out`, // a Switch node
     `${portName}.in`, // a Led or display node
     portName, // bare last-resort

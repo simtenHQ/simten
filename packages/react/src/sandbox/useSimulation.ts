@@ -25,11 +25,12 @@
  */
 
 import type { Circuit, InputKey, PortMap } from '@simten/core';
-import type {
-  CircuitDefinitions,
-  CircuitIR,
-  MemoryContents,
-  PeripheralValue,
+import {
+  type CircuitDefinitions,
+  type CircuitIR,
+  type MemoryContents,
+  type PeripheralValue,
+  TOP_LEVEL_NODE,
 } from '@simten/core/internal';
 import type { ExportResult, VerilogExportOptions } from '@simten/core/verilog';
 import {
@@ -170,7 +171,6 @@ type OutputName<C extends Circuit> =
 const DEBOUNCE_MS = 50;
 const DEFAULT_SPEED = 15;
 const DEFAULT_HISTORY = 200;
-const TOP = '__top__';
 const NO_PERIPHERALS: ReadonlyMap<string, PeripheralValue> = new Map();
 const NO_CIRCUITS: CircuitIR[] = [];
 const NO_OUTPUTS: Record<string, number> = {};
@@ -205,7 +205,7 @@ function pickCircuit(compiled: Compiled, choice: SourceText['circuit']): Circuit
 function outputsOf(circuit: CircuitIR, ports: ReadonlyMap<string, number>): Record<string, number> {
   const outputs: Record<string, number> = {};
   for (const port of circuit.outputs) {
-    const value = ports.get(`${TOP}.${port.name}`);
+    const value = ports.get(`${TOP_LEVEL_NODE}.${port.name}`);
     if (value !== undefined) outputs[port.name] = value;
   }
   return outputs;

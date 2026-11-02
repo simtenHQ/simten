@@ -626,13 +626,13 @@ describe('scan and sample', () => {
       initialInputs: { b: 10 },
     });
     const res = expectType(
-      await call({ type: 'scan', session: 's1', path: 'a', port: '__top__.sum', count: 4 }),
+      await call({ type: 'scan', session: 's1', path: 'a', port: 'sum', count: 4 }),
       'scanned',
     );
     expect(res.values).toEqual([10, 11, 12, 13]);
   });
 
-  it('scan takes a Switch path, as set does', async () => {
+  it('scan reads a node port by path, and drives a Switch path, as set does', async () => {
     const { call } = await openLatch();
     const res = expectType(
       await call({ type: 'scan', session: 's1', path: 'd', port: 'q.in', count: 2 }),
@@ -645,7 +645,7 @@ describe('scan and sample', () => {
     const { call } = await openCounter(10);
     await call({ type: 'set', session: 's1', values: { en: 1 } });
     const res = expectType(
-      await call({ type: 'sample', session: 's1', port: '__top__.count', count: 5 }),
+      await call({ type: 'sample', session: 's1', port: 'count', count: 5 }),
       'sampled',
     );
     expect(res.samples).toEqual([1, 2, 3, 4, 5]);
@@ -653,13 +653,23 @@ describe('scan and sample', () => {
     expect(res.state.history).toEqual({ length: 2, index: 1 });
   });
 
+  it('sample still takes the internal key of an own port', async () => {
+    const { call } = await openCounter(10);
+    await call({ type: 'set', session: 's1', values: { en: 1 } });
+    const res = expectType(
+      await call({ type: 'sample', session: 's1', port: '__top__.count', count: 2 }),
+      'sampled',
+    );
+    expect(res.samples).toEqual([1, 2]);
+  });
+
   it('sample rejects a port that is not there', async () => {
     const { call } = await openCounter();
     const res = expectType(
-      await call({ type: 'sample', session: 's1', port: 'count', count: 5 }),
+      await call({ type: 'sample', session: 's1', port: 'nope', count: 5 }),
       'failed',
     );
-    expect(res.error).toMatch(/^sample: no port 'count'/);
+    expect(res.error).toMatch(/^sample: no port 'nope'/);
   });
 });
 

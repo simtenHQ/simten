@@ -128,7 +128,7 @@ export type SessionRequest =
       session: SessionId;
       /** The input to drive: a port name or a Switch or Input path, as `set` takes. */
       path: string;
-      /** The port-map key to read after each value. */
+      /** The port to read after each value: the circuit's own by name (`sum`), or a node's by path. */
       port: string;
       count: number;
     }
