@@ -19,6 +19,7 @@ import type { Circuit } from '@simten/core';
 import {
   type CircuitDefinitions,
   type CircuitIR,
+  createDefinitions,
   internalsOf,
   type MemoryContents,
 } from '@simten/core/internal';
@@ -187,16 +188,6 @@ function behaviorSources(circuit: Circuit): Record<string, BehaviorSource> {
   return sources;
 }
 
-function definitionsOf(circuits: Iterable<CircuitIR>): CircuitDefinitions {
-  const byName = new Map<string, CircuitIR>();
-  for (const c of circuits) byName.set(c.name, c);
-  return {
-    resolveCircuit: (name) => byName.get(name),
-    getAllPrimitiveNames: () =>
-      [...byName.values()].filter((c) => c.implementation.kind === 'primitive').map((c) => c.name),
-  };
-}
-
 export class SandboxClient {
   private currentStatus: SandboxStatus = 'loading';
   private readonly statusListeners = new Set<(status: SandboxStatus) => void>();
@@ -293,7 +284,11 @@ export class SandboxClient {
       {
         id: session,
         circuit,
-        definitions: definitionsOf([...compiled.libraryCircuits, ...compiled.circuits, circuit]),
+        definitions: createDefinitions([
+          ...compiled.libraryCircuits,
+          ...compiled.circuits,
+          circuit,
+        ]),
         isSequential: response.isSequential,
         state: response.state,
       },
@@ -356,7 +351,7 @@ export class SandboxClient {
       circuits: response.circuits,
       exported: response.exported,
       libraryCircuits: response.libraryCircuits,
-      definitions: definitionsOf([
+      definitions: createDefinitions([
         ...response.libraryCircuits,
         ...response.exported,
         ...response.circuits,

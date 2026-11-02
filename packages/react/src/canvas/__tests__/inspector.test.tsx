@@ -10,12 +10,7 @@
  */
 
 import { bit, circuit, simulate } from '@simten/core';
-import {
-  type CircuitDefinitions,
-  type CircuitIR,
-  internalsOf,
-  nodesOf,
-} from '@simten/core/internal';
+import { type CircuitIR, createDefinitions, internalsOf, nodesOf } from '@simten/core/internal';
 import { And, Led, Switch, Xor } from '@simten/core/std';
 import type { SandboxClient } from '@simten/sandbox';
 import {
@@ -68,14 +63,7 @@ const Bench = circuit('Bench', {
 
 const HALF_ADDER = internalsOf(HalfAdder).ir;
 
-function definitionsOf(...circuits: CircuitIR[]): CircuitDefinitions {
-  const byName = new Map(circuits.map((c) => [c.name, c]));
-  return {
-    resolveCircuit: (name) => byName.get(name),
-    getAllPrimitiveNames: () =>
-      [...byName.values()].filter((c) => c.implementation.kind === 'primitive').map((c) => c.name),
-  };
-}
+const definitionsOf = (...circuits: CircuitIR[]) => createDefinitions(circuits);
 
 function nodeData(
   nodeId: string,
