@@ -2,12 +2,8 @@
  * A behavior function that never returns must not freeze the page or the
  * sandbox, and a long request that keeps working must not be taken for one.
  * Builds the sandbox, serves it on :4310 and a bare parent page on :4311,
- * then drives it in headless Chromium: first with the slot messages, then
- * with the session messages of `@simten/sandbox`.
- *
- * The slot checks stay while the sandbox answers slot messages. Kept: published
- * @simten/embed 0.5.x / @simten/ui 0.15.x send these; removed at the release
- * with the sandbox.simten.dev route (decision 0008, #424).
+ * then drives it in headless Chromium with the messages `@simten/sandbox`'s
+ * clients send.
  *
  *   pnpm --filter @simten/sandbox-app test:e2e
  */
@@ -120,10 +116,6 @@ type Response = {
   type: string;
   error?: string;
   code?: string;
-  cycle?: number;
-  snapshotId?: number;
-  portValues?: Record<string, number>;
-  signals?: Record<string, unknown>;
   session?: string;
   sessions?: string[];
   dropped?: string[];
@@ -169,8 +161,7 @@ const SlowCounter = circuit('SlowCounter', {
 `;
 
 const show = (r: Response) =>
-  r.error ??
-  `${r.type}, cycle ${r.cycle ?? r.state?.cycle}${r.portValues ? ` ${JSON.stringify(r.portValues)}` : ''}`;
+  r.error ?? `${r.type}, cycle ${r.state?.cycle} ${JSON.stringify(r.state?.ports ?? {})}`;
 
 let failures = 0;
 function check(name: string, ok: boolean, detail = '') {
@@ -225,24 +216,31 @@ try {
       req,
     );
 
-  // A working slot, ticked a few times and snapshotted.
+  const pushed = () =>
+    page.evaluate(() => (window as unknown as { pushed: Response[] }).pushed.splice(0));
+
   check(
     'compile fibonacci',
-    (await send({ type: 'compile', source: FIBONACCI, slot: 'fib' })).type === 'compiled',
+    (await send({ type: 'compile', compile: 'fib', source: FIBONACCI })).type === 'compiled',
   );
-  await send({ type: 'tick', slot: 'fib' });
-  await send({ type: 'tick', slot: 'fib' });
-  const snap = await send({ type: 'tick', slot: 'fib', snapshot: true });
-  check('ticks before the hang', snap.cycle === 3, `cycle ${snap.cycle}`);
+  await send({ type: 'open', session: 'fib-1', compile: 'fib', circuit: 'Fibonacci', history: 10 });
+  const before = await send({ type: 'tick', session: 'fib-1', count: 3 });
+  check('ticks before the hang', before.state?.cycle === 3, show(before));
 
-  // Compile the stuck circuit while a timer on the page measures how late it
-  // fires. If the hang reached the page, this evaluate would never return.
+  // Compiling builds the circuit without running its eval; opening a session
+  // settles it, which is where it hangs. Open it while a timer on the page
+  // measures how late it fires. If the hang reached the page, this evaluate
+  // would never return.
+  check(
+    'compile the stuck circuit',
+    (await send({ type: 'compile', compile: 'stuck', source: STUCK })).type === 'compiled',
+  );
   const hung = new Promise<never>((_, reject) =>
     setTimeout(() => reject(new Error('page froze: no answer after 20s')), 20000),
   );
   const stuck = await Promise.race([
     hung,
-    page.evaluate(async (source) => {
+    page.evaluate(async () => {
       const w = window as unknown as { send(r: object): Promise<Response> };
       let worstLag = 0;
       let last = performance.now();
@@ -252,18 +250,24 @@ try {
         last = now;
       }, 50);
       const start = performance.now();
-      const pending = w.send({ type: 'compile', source, slot: 'stuck' });
+      const pending = w.send({
+        type: 'open',
+        session: 'stuck-1',
+        compile: 'stuck',
+        circuit: 'Stuck',
+        history: 0,
+      });
       // Queued behind the stuck request in the same worker.
-      const collateral = w.send({ type: 'tick', slot: 'fib' });
+      const collateral = w.send({ type: 'tick', session: 'fib-1', count: 1 });
       const [result, other] = await Promise.all([pending, collateral]);
       const elapsed = performance.now() - start;
       clearInterval(timer);
       return { result, other, elapsed, worstLag };
-    }, STUCK),
+    }),
   ]);
   check(
-    'stuck compile times out',
-    stuck.result.type === 'error' && /timed out/.test(stuck.result.error ?? ''),
+    'opening it times out',
+    stuck.result.type === 'failed' && stuck.result.code === 'timed-out',
     show(stuck.result),
   );
   check(
@@ -276,65 +280,81 @@ try {
     stuck.worstLag < 250,
     `worst lag ${Math.round(stuck.worstLag)}ms`,
   );
-  check('queued request is failed', stuck.other.error === 'Worker restarted', show(stuck.other));
-
-  // The working slot was recompiled at cycle 0; its old snapshot is gone.
-  const after = await send({ type: 'tick', slot: 'fib' });
   check(
-    'existing slot restarts at cycle 0',
-    after.type === 'ticked' && after.cycle === 1,
-    show(after),
+    'queued request is failed as restarted',
+    stuck.other.type === 'failed' && stuck.other.code === 'restarted',
+    show(stuck.other),
   );
-  const restore = await send({ type: 'restore', slot: 'fib', snapshotId: snap.snapshotId });
-  check('old snapshot ids are invalid', restore.type === 'error', show(restore));
-  check('stuck slot was not kept', (await send({ type: 'tick', slot: 'stuck' })).type === 'error');
 
-  // A fresh circuit compiles and ticks normally.
+  // Requests sent during the restart wait for the replay, so this one sees
+  // fib-1 reopened at cycle 0.
+  const after = await send({ type: 'tick', session: 'fib-1', count: 1 });
+  check('the open session restarts at cycle 0', after.state?.cycle === 1, show(after));
+  const restartedFirst = (await pushed()).find((m) => m.type === 'restarted');
   check(
-    'compile after restart',
-    (await send({ type: 'compile', source: FIBONACCI, slot: 'again' })).type === 'compiled',
+    'the page hears restarted',
+    restartedFirst?.sessions?.includes('fib-1') === true,
+    JSON.stringify(restartedFirst),
   );
-  const ticked = await send({ type: 'tick-n', n: 5, slot: 'again' });
-  check('tick after restart', ticked.type === 'ticked-n' && ticked.cycle === 5, show(ticked));
+  const stuckTick = await send({ type: 'tick', session: 'stuck-1', count: 1 });
+  check('the stuck session was not kept', stuckTick.type === 'failed', show(stuckTick));
 
-  // User code can't change stdlib behavior for any slot.
+  // User code can't change stdlib behavior for any session.
+  await send({ type: 'open', session: 'fib-2', compile: 'fib', circuit: 'Fibonacci', history: 0 });
+  await send({ type: 'tick', session: 'fib-2', count: 5 });
   check(
     'compile fake Adder',
-    (await send({ type: 'compile', source: FAKE_ADDER, slot: 'fake' })).type === 'compiled',
+    (await send({ type: 'compile', compile: 'fake', source: FAKE_ADDER })).type === 'compiled',
   );
-  const fibAfter = await send({ type: 'tick-n', n: 5, slot: 'again' });
+  const fibAfter = await send({ type: 'tick', session: 'fib-2', count: 5 });
   check(
-    'running slot keeps the std Adder',
-    fibAfter.portValues?.['__top__.fib'] === 55,
+    'an open session keeps the std Adder',
+    fibAfter.state?.ports['__top__.fib'] === 55,
     show(fibAfter),
   );
-  await send({ type: 'compile', source: FIBONACCI, slot: 'again' });
-  const fibFresh = await send({ type: 'tick-n', n: 5, slot: 'again' });
-  check('new slot gets the std Adder', fibFresh.portValues?.['__top__.fib'] === 5, show(fibFresh));
-  await send({ type: 'compile', source: FAKE_ADDER_TOP, slot: 'fake' });
-  const fakeSum = await send({ type: 'tick', slot: 'fake', inputs: { a: 2, b: 3 } });
+  await send({ type: 'compile', compile: 'fib-new', source: FIBONACCI });
+  await send({
+    type: 'open',
+    session: 'fib-3',
+    compile: 'fib-new',
+    circuit: 'Fibonacci',
+    history: 0,
+  });
+  const fibFresh = await send({ type: 'tick', session: 'fib-3', count: 5 });
+  check(
+    'a new compile gets the std Adder',
+    fibFresh.state?.ports['__top__.fib'] === 5,
+    show(fibFresh),
+  );
+  await send({ type: 'compile', compile: 'fake-top', source: FAKE_ADDER_TOP });
+  await send({
+    type: 'open',
+    session: 'fake-1',
+    compile: 'fake-top',
+    circuit: 'FakeTop',
+    history: 0,
+  });
+  const fakeSum = await send({ type: 'set', session: 'fake-1', values: { a: 2, b: 3 } });
   check(
     'a design using only its own Adder runs it',
-    fakeSum.portValues?.['__top__.sum'] === 99,
+    fakeSum.state?.ports['__top__.sum'] === 99,
     show(fakeSum),
   );
-  const both = await send({ type: 'compile', source: BOTH_ADDERS, slot: 'both' });
+  const both = await send({ type: 'compile', compile: 'both', source: BOTH_ADDERS });
   check(
     'two Adders in one design is a compile error',
-    both.type === 'error' && /Two different circuits are named 'Adder'/.test(both.error ?? ''),
+    both.type === 'failed' && /Two different circuits are named 'Adder'/.test(both.error ?? ''),
     show(both),
   );
-  const fibStill = await send({ type: 'tick-n', n: 5, slot: 'again' });
+  const fibStill = await send({ type: 'tick', session: 'fib-3', count: 5 });
   check(
-    'other slots keep the std Adder',
-    fibStill.portValues?.['__top__.fib'] === 55,
+    'other sessions keep the std Adder',
+    fibStill.state?.ports['__top__.fib'] === 55,
     show(fibStill),
   );
 
-  // ── Session messages ──────────────────────────────────────────────────────
+  // ── Long ticks, hanging runs and hanging ticks ────────────────────────────
 
-  const pushed = () =>
-    page.evaluate(() => (window as unknown as { pushed: Response[] }).pushed.splice(0));
   await pushed();
 
   // A 20s tick, sliced, with heartbeats: the watchdog must leave it alone,
@@ -350,15 +370,9 @@ try {
     circuit: 'SlowCounter',
     history: 10,
   });
-  check(
-    'compile fibonacci by id',
-    (await send({ type: 'compile', compile: 'fib', source: FIBONACCI })).type === 'compiled',
-  );
-  await send({ type: 'open', session: 'fib-1', compile: 'fib', circuit: 'Fibonacci', history: 10 });
-  // set-input takes `values` only. The single { path, value } form fails, and
-  // the worker keeps answering.
-  const oldSetInput = await send({ type: 'set-input', session: 'fib-1', path: 'reg_a', value: 1 });
-  check('the single set-input form fails', oldSetInput.type === 'failed', show(oldSetInput));
+  // The old set-input is gone: it fails, and the worker keeps answering.
+  const oldSetInput = await send({ type: 'set-input', session: 'fib-1', values: { reg_a: 1 } });
+  check('set-input now fails', oldSetInput.type === 'failed', show(oldSetInput));
   // The exporter is a chunk of its own, fetched on the first export: it must
   // load under the sandbox's CSP.
   const exported = await send({ type: 'export', compile: 'fib', circuit: 'Fibonacci' });

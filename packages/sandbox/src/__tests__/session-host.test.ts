@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { HostClock } from '../session-host.js';
 import { ADDER, COUNTER, D_LATCH, expectType, startHost } from './helpers.js';
 
-async function openCounter(history = 10, options: { harness?: boolean } = {}) {
+async function openCounter(history = 10) {
   const host = startHost();
   expectType(await host.call({ type: 'compile', compile: 'c1', source: COUNTER }), 'compiled');
   const opened = expectType(
@@ -15,7 +15,6 @@ async function openCounter(history = 10, options: { harness?: boolean } = {}) {
       compile: 'c1',
       circuit: 'Counter',
       history,
-      ...options,
     }),
     'opened',
   );
@@ -56,16 +55,6 @@ describe('compile and open', () => {
       'failed',
     );
     expect(res.error).toBe("No circuit named 'Nope' in this compile. Its circuits: Add");
-  });
-
-  it('still harnesses the circuit for pages deployed before #531', async () => {
-    const { opened } = await openCounter(10, { harness: true });
-    expect(opened.circuit.name).toBe('CounterDemo');
-    expect(opened.circuit.nodes.map((n) => n.componentRef).sort()).toEqual([
-      'Counter',
-      'HexDisplay',
-      'Switch',
-    ]);
   });
 
   it('keeps sessions after their compile is released', async () => {
@@ -116,6 +105,13 @@ describe('set and tick', () => {
     expectType(await call({ type: 'close', session: 's1' }), 'closed');
     const res = expectType(await call({ type: 'tick', session: 's1', count: 1 }), 'failed');
     expect(res.error).toBe("No session 's1' in this sandbox.");
+  });
+
+  it('fails a request it does not know, such as the removed set-input', async () => {
+    const { call } = await openCounter();
+    const old = { type: 'set-input', session: 's1', values: { en: 1 } };
+    const res = expectType(await call(old as unknown as Parameters<typeof call>[0]), 'failed');
+    expect(res.error).toBe("Unknown request 'set-input'.");
   });
 });
 
@@ -342,7 +338,7 @@ async function openLatch() {
   await host.call({ type: 'compile', compile: 'c1', source: D_LATCH });
   await host.call({ type: 'open', session: 's1', compile: 'c1', circuit: 'DLatch', history: 0 });
   const res = expectType(
-    await host.call({ type: 'set-input', session: 's1', values: { d: 1, en: 1 } }),
+    await host.call({ type: 'set', session: 's1', values: { d: 1, en: 1 } }),
     'updated',
   );
   expect(res.state.ports.get('q.in')).toBe(1);
@@ -370,13 +366,25 @@ export const Inv = circuit('Inv', {
 });
 
 describe('set', () => {
-  it('writes Switch paths before the circuit settles, as set-input did (#521)', async () => {
+  it('writes Switch paths before the circuit settles (#521)', async () => {
     const { call } = await openLatch();
     const res = expectType(
       await call({ type: 'set', session: 's1', values: { d: 0, en: 0 } }),
       'updated',
     );
     expect(res.state.ports.get('q.in')).toBe(1);
+  });
+
+  it('settles after each request, so separate writes are seen in order', async () => {
+    // The bug in #521: d falls while en is still 1, the latch follows it, and
+    // en then holds the 0.
+    const { call } = await openLatch();
+    await call({ type: 'set', session: 's1', values: { d: 0 } });
+    const res = expectType(
+      await call({ type: 'set', session: 's1', values: { en: 0 } }),
+      'updated',
+    );
+    expect(res.state.ports.get('q.in')).toBe(0);
   });
 
   it('writes nothing when one key is not an input', async () => {
@@ -602,86 +610,6 @@ const Keyed = circuit('Keyed', {
       'updated',
     );
     expect(afterReset.state.ports.get('__top__.en')).toBe(1);
-  });
-});
-
-describe('set-input (pages deployed before decision 0010)', () => {
-  it('writes every path before the circuit settles', async () => {
-    const { call } = await openLatch();
-    // d and en fall together, so the latch holds the 1 it had.
-    const res = expectType(
-      await call({ type: 'set-input', session: 's1', values: { d: 0, en: 0 } }),
-      'updated',
-    );
-    expect(res.state.ports.get('q.in')).toBe(1);
-  });
-
-  it('settles after each request, so separate writes are seen in order', async () => {
-    // The bug in #521: d falls while en is still 1, the latch follows it, and
-    // en then holds the 0.
-    const { call } = await openLatch();
-    await call({ type: 'set-input', session: 's1', values: { d: 0 } });
-    const res = expectType(
-      await call({ type: 'set-input', session: 's1', values: { en: 0 } }),
-      'updated',
-    );
-    expect(res.state.ports.get('q.in')).toBe(0);
-  });
-
-  it('writes nothing when one path is not an input', async () => {
-    const { call } = await openLatch();
-    const res = expectType(
-      await call({ type: 'set-input', session: 's1', values: { d: 0, n1: 1 } }),
-      'failed',
-    );
-    expect(res.error).toMatch(/^setInput\('n1'\): 'n1' is a Nand, not an input/);
-    // d is still 1: en = 0 latches a 1, not a 0.
-    const after = expectType(
-      await call({ type: 'set-input', session: 's1', values: { en: 0 } }),
-      'updated',
-    );
-    expect(after.state.ports.get('q.in')).toBe(1);
-  });
-
-  it('fails the single { path, value } form without writing', async () => {
-    const { call } = await openLatch();
-    // Pages built before #521 sent this. None are live, and the type no longer has it.
-    const old = { type: 'set-input', session: 's1', path: 'en', value: 0 };
-    expectType(await call(old as unknown as Parameters<typeof call>[0]), 'failed');
-    // en is still 1, so d falling still reaches q.
-    const res = expectType(
-      await call({ type: 'set-input', session: 's1', values: { d: 0 } }),
-      'updated',
-    );
-    expect(res.state.ports.get('q.in')).toBe(0);
-  });
-
-  it('writes a Switch of a harnessed circuit, for pages deployed before #531', async () => {
-    const { call } = await openCounter(10, { harness: true });
-    expectType(await call({ type: 'set-input', session: 's1', values: { en: 1 } }), 'updated');
-    const res = expectType(await call({ type: 'tick', session: 's1', count: 2 }), 'updated');
-    // The harness's display for `count` reads the counter.
-    expect(res.state.ports.get('count.in')).toBe(2);
-  });
-
-  it('rejects a register path', async () => {
-    const { call } = await openCounter();
-    const res = expectType(
-      await call({ type: 'set-input', session: 's1', values: { reg: 7 } }),
-      'failed',
-    );
-    expect(res.error).toBe(
-      "setInput('reg'): 'reg' is a Register, not an input. Only Switch and Input nodes can be set; a memory's contents go in the session's memory option.",
-    );
-  });
-
-  it('rejects a top-level input name, which is not a node path', async () => {
-    const { call } = await openCounter();
-    const res = expectType(
-      await call({ type: 'set-input', session: 's1', values: { en: 1 } }),
-      'failed',
-    );
-    expect(res.error).toBe("setInput('en'): no node has that path.");
   });
 });
 
