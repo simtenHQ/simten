@@ -18,10 +18,11 @@ import {
 import type { Circuit } from '../circuit/builder-types.js';
 import { sameDefinition } from '../circuit/circuit.js';
 import { internalsOf } from '../circuit/internals.js';
+import type { CircuitIR } from '../ir/circuit-ir.js';
 import { STDLIB_CIRCUITS } from './index.js';
 import { Combiner, Splitter } from './routing.js';
 
-let cached: Library | null = null;
+let cached: MutableLibrary | null = null;
 
 function buildStdLibrary(): MutableLibrary {
   const library = emptyLibrary();
@@ -53,6 +54,13 @@ function buildStdLibrary(): MutableLibrary {
 export function getStdLibrary(): Library {
   cached ??= buildStdLibrary();
   return cached;
+}
+
+/** Every circuit in the standard library, its dependencies included. */
+export function getStdCircuits(): CircuitIR[] {
+  cached ??= buildStdLibrary();
+  const { definitions } = cached;
+  return definitions.getAllCircuitNames().flatMap((name) => definitions.resolveCircuit(name) ?? []);
 }
 
 /** `Splitter_4w`, `Combiner_16w`: a bit splitter or combiner of one width. */

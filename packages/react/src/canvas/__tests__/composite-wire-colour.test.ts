@@ -106,7 +106,6 @@ const top: CircuitIR = {
 const library = {
   resolveCircuit: (name: string) =>
     name === 'HalfAdder' ? halfAdder : ({ implementation: { kind: 'primitive' } } as CircuitIR),
-  getAllPrimitiveNames: () => ['Xor', 'And'],
 };
 
 const positions = { h1: { x: 0, y: 0 }, h2: { x: 200, y: 0 } };
@@ -178,7 +177,6 @@ describe('a wire between two composites', () => {
           : name === 'Inner'
             ? inner
             : ({ implementation: { kind: 'primitive' } } as CircuitIR),
-      getAllPrimitiveNames: () => ['And'],
     };
 
     const { edges } = projectCircuit(nestedTop, positions, nestedLibrary);

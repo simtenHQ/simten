@@ -84,7 +84,6 @@ function buildRegfile() {
         : name === 'RV32I_RegisterFile'
           ? internalsOf(RV32I_RegisterFile).ir
           : undefined,
-    getAllPrimitiveNames: () => ['RV32I_RegisterFile'],
   };
 
   return { circuit: internalsOf(RegFileWrapper).ir, definitions };

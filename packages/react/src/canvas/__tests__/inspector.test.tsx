@@ -115,7 +115,6 @@ function drillDownValues(ports: ReadonlyMap<string, number>, path: string) {
   const primitives = {
     resolveCircuit: (name: string) =>
       ({ implementation: { kind: 'primitive' }, name }) as unknown as CircuitIR,
-    getAllPrimitiveNames: () => [],
   };
   const { nodes, edges } = projectCircuit(view, positions, primitives, path);
   const read = (key: string | undefined) => (key === undefined ? undefined : ports.get(key));
