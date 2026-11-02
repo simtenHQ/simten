@@ -8,7 +8,7 @@
  * all internal node ports — equivalent to Verilog's $dumpvars(0, top).
  */
 
-import { type BitValue, type BusValue, type FlatNode, TOP_LEVEL_NODE } from '@simten/core/internal';
+import type { BitValue, BusValue, FlatNode } from '@simten/core/internal';
 
 interface VCDExportParams {
   /** Top-level circuit name */
@@ -34,7 +34,7 @@ interface VCDVar {
   id: string;
   /** Port name (last path segment) */
   name: string;
-  /** Full portValues key: "nodeId.portName" */
+  /** Its port-value key: a top-level port's name, or "nodeId.portName" */
   key: string;
   width: number;
   isBit: boolean;
@@ -109,13 +109,13 @@ function buildScopeTree(
 
   // Add top-level ports directly under root scope
   for (const name of topLevelInputs) {
-    const key = `${TOP_LEVEL_NODE}.${name}`;
+    const key = name;
     const { isBit, width } = inferWidth(key, portValuesByTick);
     root.vars.push({ id: nextId(), name, key, width, isBit });
   }
   for (const name of topLevelOutputs) {
     if (topLevelInputs.includes(name)) continue;
-    const key = `${TOP_LEVEL_NODE}.${name}`;
+    const key = name;
     const { isBit, width } = inferWidth(key, portValuesByTick);
     root.vars.push({ id: nextId(), name, key, width, isBit });
   }

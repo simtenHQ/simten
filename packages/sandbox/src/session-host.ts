@@ -32,7 +32,6 @@ import {
   libraryOf,
   nodesOf,
   type SimulationNodes,
-  TOP_LEVEL_NODE,
 } from '@simten/core/internal';
 import type {
   BehaviorSource,
@@ -545,19 +544,13 @@ export class SessionHost {
     }
   }
 
-  /**
-   * The port value `sample` and `scan` read: one of the circuit's own ports by
-   * name (`sum`), or a node's port by path (`ha1.x.out`). The circuit's own
-   * ports are kept under TOP_LEVEL_NODE internally; callers never write that.
-   */
-  private portKey(session: HostSession, port: string, method: string): string {
-    const ports = session.nodes.ports();
-    const own = `${TOP_LEVEL_NODE}.${port}`;
-    if (ports.has(own)) return own;
-    if (ports.has(port)) return port;
-    throw new HostError(
-      `${method}: no port '${port}'. Name one of the circuit's own ports (sum), or a node's port by path (ha1.x.out).`,
-    );
+  /** `sample` and `scan` read one of the circuit's own ports by name (`sum`), or a node's by path (`ha1.x.out`). */
+  private requirePort(session: HostSession, port: string, method: string): void {
+    if (!session.nodes.ports().has(port)) {
+      throw new HostError(
+        `${method}: no port '${port}'. Name one of the circuit's own ports (sum), or a node's port by path (ha1.x.out).`,
+      );
+    }
   }
 
   // ── Ticking in slices ───────────────────────────────────────────────────
@@ -628,7 +621,8 @@ export class SessionHost {
 
   /** Tick `count` times and read `port` after each tick (audio). */
   private async sample(session: HostSession, request: Request<'sample'>): Promise<Reply> {
-    const port = this.portKey(session, request.port, 'sample');
+    const { port } = request;
+    this.requirePort(session, port, 'sample');
     if (request.inputs) session.simulation.set(request.inputs);
     const samples = new Array<number>(Math.max(0, Math.floor(request.count))).fill(0);
     await this.advanceSliced(session, request.id, samples.length, (i) => {
@@ -642,7 +636,8 @@ export class SessionHost {
    * takes) through 0..count-1, settling each time, and read `port`. Doesn't tick.
    */
   private scan(session: HostSession, request: Request<'scan'>): Reply {
-    const port = this.portKey(session, request.port, 'scan');
+    const { port } = request;
+    this.requirePort(session, port, 'scan');
     const values = new Array<number>(Math.max(0, Math.floor(request.count))).fill(0);
     for (let i = 0; i < values.length; i++) {
       session.simulation.set({ [request.path]: i });

@@ -6,7 +6,7 @@
  * per circuit, not once per update.
  */
 
-import { type CircuitDefinitions, type PortPath, TOP_LEVEL_NODE } from '@simten/core/internal';
+import type { CircuitDefinitions, PortPath } from '@simten/core/internal';
 import { hasMadeOf } from '@simten/core/std';
 import type { Edge, Node as ReactFlowNode } from '@xyflow/react';
 import type { NodeData, PixelSource } from '../nodes';
@@ -106,18 +106,18 @@ class SessionKeys {
     if (!node) return undefined;
     if (node.port !== undefined) return this.ofPort(node);
     const path = this.pathOf(node);
-    // The circuit drawn as one box is the session's top level, whose ports are `__top__`'s.
-    if (path === '') return `${TOP_LEVEL_NODE}.${end.portName}`;
+    // The circuit drawn as one box is the session's top level, whose ports are keyed by name.
+    if (path === '') return end.portName;
     return walk(end.portName, node.componentRef, path, this.definitions, new Set());
   }
 
   /**
-   * A port's node reads the port. At the session's top level that's
-   * `__top__.<port>`. Inside a composite the port was flattened away, so it
+   * A port's node reads the port. At the session's top level that's the
+   * port's name. Inside a composite the port was flattened away, so it
    * reads the other end of its first wire into the composite's insides.
    */
   private ofPort(node: DrawnNode): string | undefined {
-    if (this.path === '') return `${TOP_LEVEL_NODE}.${node.port}`;
+    if (this.path === '') return node.port;
     for (const c of this.circuit.connections) {
       const other =
         c.source.nodeId === node.id ? c.target : c.target.nodeId === node.id ? c.source : null;

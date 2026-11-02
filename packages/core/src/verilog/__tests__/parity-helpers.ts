@@ -60,7 +60,7 @@ import type { SimulatorEngine } from '../../simulator/index.js';
  *                    to the post-reset state observation, which is
  *                    always included to match Verilog cycle counting).
  * @param readPort    Reader that returns the observable value at the
- *                    current sim state (e.g., `() => sim.getPortValues().get('__top__.count')`).
+ *                    current sim state (e.g., `() => sim.getPortValues().get('count')`).
  *
  * @returns A trace of length `preCycles + 1 + postCycles` that aligns
  *          with a Verilog testbench whose vectors run `preCycles` normal

@@ -267,7 +267,9 @@ export interface CircuitIR {
 // ============================================================================
 
 /**
- * Virtual top-level node for circuit-level ports.
+ * The node id a connection uses for the circuit's own ports. Port values never
+ * carry it: the circuit's own ports are keyed by name (`sum`), a node's by
+ * path (`ha1.out`).
  */
 export const TOP_LEVEL_NODE = '__top__';
 

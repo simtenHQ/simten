@@ -6,7 +6,7 @@
  */
 
 import type { ArgumentValue, BitValue, BusValue } from '../ir/circuit-ir.js';
-import { getDefaultValue, TOP_LEVEL_NODE } from '../ir/circuit-ir.js';
+import { getDefaultValue } from '../ir/circuit-ir.js';
 import {
   compileForSimulation,
   createNumericSequentialState,
@@ -101,8 +101,7 @@ class DefaultSimulatorEngine implements SimulatorEngine {
     this.originalNodeValues = new Map();
     this.nodesById = new Map(circuit.nodes.map((n) => [n.id, n]));
     for (const input of circuit.topLevelInputs) {
-      const key = `${TOP_LEVEL_NODE}.${input.name}`;
-      this.topLevelInputs.set(key, getDefaultValue(input.portType));
+      this.topLevelInputs.set(input.name, getDefaultValue(input.portType));
     }
 
     // Run initial propagation
@@ -123,11 +122,10 @@ class DefaultSimulatorEngine implements SimulatorEngine {
 
   setInput(name: string, value: BitValue | BusValue): void {
     if (!this.flatCircuit) return;
-    const key = `${TOP_LEVEL_NODE}.${name}`;
-    if (!this.topLevelInputs.has(key)) {
+    if (!this.topLevelInputs.has(name)) {
       throw new Error(unknownInputMessage(name, this.topLevelInputs));
     }
-    this.topLevelInputs.set(key, value);
+    this.topLevelInputs.set(name, value);
     this.cacheValid = false;
   }
 
@@ -308,8 +306,7 @@ class DefaultSimulatorEngine implements SimulatorEngine {
     // Read from the cached post-commit snapshot for consistency
     // with tick() and getPortValues().
     const portValues = this.getPortValues();
-    const portKey = `${nodeId}.${portName}`;
-    return portValues.get(portKey);
+    return portValues.get(nodeId === '' ? portName : `${nodeId}.${portName}`);
   }
 
   getPortValues(): ReadonlyMap<string, BitValue | BusValue> {
@@ -476,8 +473,7 @@ export function createEngine(circuit: FlatCircuit, options: InitOptions): Simula
 
 /** The error for a `setInput` name that isn't a top-level input. Names the inputs there are. */
 function unknownInputMessage(name: string, topLevelInputs: ReadonlyMap<string, unknown>): string {
-  const prefix = `${TOP_LEVEL_NODE}.`;
-  const inputs = [...topLevelInputs.keys()].map((key) => key.slice(prefix.length));
+  const inputs = [...topLevelInputs.keys()];
   return `setInput: "${name}" is not a top-level input. Inputs: ${inputs.length > 0 ? inputs.join(', ') : '(none)'}.`;
 }
 

@@ -25,12 +25,11 @@
  */
 
 import type { Circuit, InputKey, PortMap } from '@simten/core';
-import {
-  type CircuitDefinitions,
-  type CircuitIR,
-  type MemoryContents,
-  type PeripheralValue,
-  TOP_LEVEL_NODE,
+import type {
+  CircuitDefinitions,
+  CircuitIR,
+  MemoryContents,
+  PeripheralValue,
 } from '@simten/core/internal';
 import type { ExportResult, VerilogExportOptions } from '@simten/core/verilog';
 import {
@@ -91,9 +90,8 @@ export interface SimulationState<Outs extends string = string> {
   /** The circuit's outputs by name. */
   outputs: Record<Outs, number>;
   /**
-   * Every port value, keyed `nodePath.port`, for the canvas and tooling: the
-   * circuit's own ports under `__top__` (`__top__.sum`), its nodes by path
-   * (`ha1.x.out`). Null until the first state.
+   * Every port value, for the canvas and tooling: the circuit's own ports by
+   * name (`sum`), its nodes by path (`ha1.x.out`). Null until the first state.
    */
   portValues: ReadonlyMap<string, number> | null;
   /** Screens, consoles, UARTs and the memories behind them, by session path. */
@@ -147,9 +145,9 @@ export interface SimulationActions<Keys extends string = string> {
   stepBack(): Promise<boolean>;
   stepForward(): Promise<boolean>;
   seek(index: number): Promise<boolean>;
-  /** Drive one input through 0..count-1, settling each time, and read `port` (a `portValues` key) after each. Doesn't tick. */
+  /** Drive one input through 0..count-1, settling each time, and read `port` (a port by name, or a node's by path) after each. Doesn't tick. */
   scan(input: Keys, port: string, count: number): Promise<number[]>;
-  /** Tick `count` times, after setting `inputs`, and read `port` (a `portValues` key) after each tick. */
+  /** Tick `count` times, after setting `inputs`, and read `port` (a port by name, or a node's by path) after each tick. */
   sample(port: string, count: number, inputs?: Partial<Record<Keys, number>>): Promise<number[]>;
   /** Verilog for the simulated circuit, from the same compile. */
   exportVerilog(options?: VerilogExportOptions): Promise<ExportResult>;
@@ -205,7 +203,7 @@ function pickCircuit(compiled: Compiled, choice: SourceText['circuit']): Circuit
 function outputsOf(circuit: CircuitIR, ports: ReadonlyMap<string, number>): Record<string, number> {
   const outputs: Record<string, number> = {};
   for (const port of circuit.outputs) {
-    const value = ports.get(`${TOP_LEVEL_NODE}.${port.name}`);
+    const value = ports.get(port.name);
     if (value !== undefined) outputs[port.name] = value;
   }
   return outputs;

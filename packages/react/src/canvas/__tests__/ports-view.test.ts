@@ -71,14 +71,9 @@ describe('portsView', () => {
     expect([readPort('a'), readPort('b'), readPort('sum'), readPort('carry')]).toEqual([
       1, 1, 0, 1,
     ]);
-    expect(nodes.find((n) => n.id === 'a')?.data.valueKey).toBe('__top__.a');
+    expect(nodes.find((n) => n.id === 'a')?.data.valueKey).toBe('a');
     // Every wire is on one of the circuit's own ports.
-    expect(edges.map((e) => e.data?.keys[0])).toEqual([
-      '__top__.a',
-      '__top__.b',
-      '__top__.sum',
-      '__top__.carry',
-    ]);
+    expect(edges.map((e) => e.data?.keys[0])).toEqual(['a', 'b', 'sum', 'carry']);
     // A port's switch is set by the port's name.
     expect(nodes.find((n) => n.id === 'a')?.data.path).toBe('a');
   });

@@ -234,6 +234,7 @@ export interface SimulatorEngine {
   runCombinational(): CombinationalResult;
 
   // Output access
+  /** A node's port value; `nodeId` '' reads the circuit's own port. */
   getOutput(nodeId: string, portName: string): BitValue | BusValue | undefined;
   getPortValues(): ReadonlyMap<string, BitValue | BusValue>;
   getState(): FlatSequentialState | null;

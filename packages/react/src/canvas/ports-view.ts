@@ -8,7 +8,7 @@
  * them as one box, which shows only the circuit's name.
  *
  * Each control and indicator is named after its port and tagged with it
- * (`port`), so it reads the session's own value for the port, `__top__.a`, and
+ * (`port`), so it reads the session's own value for the port, `a`, and
  * a click on `a` is `set({ a: 1 })`. The box is the session's top level
  * (`path: ''`), so double-clicking it opens the circuit itself. Its id is
  * `circuit`, the key a layout places it by.

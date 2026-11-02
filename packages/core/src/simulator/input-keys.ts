@@ -6,7 +6,7 @@
  * sandbox.
  */
 
-import { type CircuitDefinitions, type CircuitIR, TOP_LEVEL_NODE } from '../ir/circuit-ir.js';
+import type { CircuitDefinitions, CircuitIR } from '../ir/circuit-ir.js';
 import { isControlCircuit } from '../ir/controls.js';
 
 /** Whether nodes of primitive type `type` are Switches or Inputs. */
@@ -73,9 +73,9 @@ export function resolveKey(method: 'set' | 'get', name: string, scope: KeyScope)
       `${method}('${name}'): ${scope.circuitName} has both an ${isInput ? 'input' : 'output'} port and a ${type} named '${name}', so the key is ambiguous. Rename one of them.`,
     );
   }
-  if (isInput) return { kind: 'port', name, key: `${TOP_LEVEL_NODE}.${name}` };
+  if (isInput) return { kind: 'port', name, key: name };
   if (isControl) return { kind: 'path', path: name, key: `${name}.out` };
-  if (method === 'get' && isOutput) return { kind: 'output', key: `${TOP_LEVEL_NODE}.${name}` };
+  if (method === 'get' && isOutput) return { kind: 'output', key: name };
   if (type !== undefined) {
     const hint =
       method === 'set'

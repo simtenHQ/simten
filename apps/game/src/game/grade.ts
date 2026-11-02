@@ -19,14 +19,14 @@
  */
 
 import type { CircuitIR, FlatCircuit } from '@simten/core/internal';
-import { createDefinitions, elaborate, TOP_LEVEL_NODE } from '@simten/core/internal';
+import { createDefinitions, elaborate } from '@simten/core/internal';
 import type { Compiled, SandboxClient, SimulationClient } from '@simten/sandbox';
 import type { GradeFailure, GradeResult, Level } from './types';
 
 /**
  * Find one output signal in a bag of port values.
  *
- * A signal named `out` is either a top-level output port (under TOP_LEVEL_NODE) or the
+ * A signal named `out` is either a top-level output port (`out`) or the
  * input of a display node of that name (`out.in`), the two shapes a level can
  * take. Ports win, so a circuit with both is unambiguous.
  */
@@ -34,14 +34,14 @@ export function resolveOutput(
   values: Record<string, number | boolean>,
   name: string,
 ): number | undefined {
-  const raw = values[`${TOP_LEVEL_NODE}.${name}`] ?? values[`${name}.in`];
+  const raw = values[name] ?? values[`${name}.in`];
   if (raw === undefined) return undefined;
   return typeof raw === 'boolean' ? (raw ? 1 : 0) : raw;
 }
 
 /**
  * Read every named output, dropping ones the circuit does not expose. Keys out
- * are the level's bare signal names, never the sandbox's TOP_LEVEL_NODE ones.
+ * are the level's signal names.
  */
 export function readOutputs(
   values: Record<string, number | boolean>,

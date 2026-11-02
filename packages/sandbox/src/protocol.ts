@@ -39,7 +39,7 @@ export type SessionId = string;
 export interface SessionUpdate {
   /** Clock cycles since the start or the last reset. */
   cycle: number;
-  /** Every port value, keyed `nodePath.port` (top-level ports under `__top__`). */
+  /** Every port value: the circuit's own by name (`sum`), a node's by path (`ha1.x.out`). */
   ports: Map<string, number>;
   /** State of nodes on a peripheral bus (screens, consoles, UARTs); absent when there are none. */
   peripherals?: Map<string, PeripheralValue>;

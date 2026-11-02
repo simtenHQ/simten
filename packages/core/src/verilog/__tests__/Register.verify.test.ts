@@ -70,7 +70,7 @@ function runSimulator(steps: Step[]): number[] {
     sim.setInput('data', step.data);
     sim.setInput('we', step.we);
     sim.tick();
-    const v = sim.getPortValues().get('__top__.q');
+    const v = sim.getPortValues().get('q');
     outputs.push(typeof v === 'number' ? (v >>> 0) & 0xff : 0);
   }
   return outputs;

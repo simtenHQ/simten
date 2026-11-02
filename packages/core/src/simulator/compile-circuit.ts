@@ -36,8 +36,8 @@ export function compileForSimulation(flatCircuit: FlatCircuit, library: Library)
     indexToNodeId[i] = node.id;
   }
 
-  // Also map TOP_LEVEL_NODE to a special index (-1 or separate handling)
-  // We'll use -1 as a sentinel for top-level
+  // The circuit's own ports are keyed by name; a node input they drive uses -1
+  // as its source node (Step 6).
 
   // ============================================================================
   // Step 2: Count total ports and assign port indices
@@ -75,7 +75,7 @@ export function compileForSimulation(flatCircuit: FlatCircuit, library: Library)
   // Add top-level inputs first (they act as sources for nodes)
   let topLevelPortIdx = totalPorts;
   for (const input of flatCircuit.topLevelInputs) {
-    const key = `${TOP_LEVEL_NODE}.${input.name}`;
+    const key = input.name;
     portKeyToIndex.set(key, topLevelPortIdx);
     indexToPortKey[topLevelPortIdx] = key;
     portIsOutput[topLevelPortIdx] = 1; // Top-level inputs are outputs from the boundary
@@ -86,7 +86,7 @@ export function compileForSimulation(flatCircuit: FlatCircuit, library: Library)
 
   // Add top-level outputs
   for (const output of flatCircuit.topLevelOutputs) {
-    const key = `${TOP_LEVEL_NODE}.${output.name}`;
+    const key = output.name;
     portKeyToIndex.set(key, topLevelPortIdx);
     indexToPortKey[topLevelPortIdx] = key;
     portIsOutput[topLevelPortIdx] = 0; // Top-level outputs are inputs to the boundary
@@ -197,9 +197,7 @@ export function compileForSimulation(flatCircuit: FlatCircuit, library: Library)
       if (src.sourceNodeId === TOP_LEVEL_NODE) {
         // Use -1 as sentinel for top-level
         inputSourceNode[portIdx] = -1;
-        // Store the port key for top-level lookup
-        const topLevelKey = `${TOP_LEVEL_NODE}.${src.sourcePortName}`;
-        inputSourcePort[portIdx] = portKeyToIndex.get(topLevelKey) ?? -1;
+        inputSourcePort[portIdx] = portKeyToIndex.get(src.sourcePortName) ?? -1;
       } else {
         const srcNodeIdx = nodeIdToIndex.get(src.sourceNodeId);
         if (srcNodeIdx === undefined) continue;

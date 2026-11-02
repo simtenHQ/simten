@@ -15,13 +15,7 @@
 import type { Library } from '../circuit/behavior.js';
 import type { PortMap } from '../circuit/builder-types.js';
 import { isSequentialCircuit } from '../circuit/is-sequential.js';
-import {
-  type CircuitDefinitions,
-  type CircuitIR,
-  type MemoryContents,
-  type PortType,
-  TOP_LEVEL_NODE,
-} from '../ir/circuit-ir.js';
+import type { CircuitDefinitions, CircuitIR, MemoryContents, PortType } from '../ir/circuit-ir.js';
 import { memoryContentsShapeError, memoryContentsToMap } from '../ir/memory-contents.js';
 import { elaborate } from './elaboration.js';
 import { createEngine } from './engine.js';
@@ -118,7 +112,7 @@ export interface SimulationNodes {
   advance(count: number): void;
   /** Add the current state to history as one step. Does nothing with history off. */
   record(): void;
-  /** Every port value, keyed `nodePath.port` (top-level ports under `__top__`). */
+  /** Every port value: the circuit's own by name (`sum`), a node's by path (`ha1.x.out`). */
   ports(): ReadonlyMap<string, number>;
   /** State of nodes on a peripheral bus (screens, consoles, UARTs), by node path. */
   peripherals(): ReadonlyMap<string, PeripheralValue>;
@@ -176,7 +170,7 @@ function portWidthsOf(flat: FlatCircuit): Map<string, number> {
   const bits = (t: PortType) => (t.kind === 'bus' ? t.width : 1);
   const widths = new Map<string, number>();
   for (const p of [...flat.topLevelInputs, ...flat.topLevelOutputs]) {
-    widths.set(`${TOP_LEVEL_NODE}.${p.name}`, bits(p.portType));
+    widths.set(p.name, bits(p.portType));
   }
   for (const node of flat.nodes) {
     for (const p of node.outputs) widths.set(`${node.id}.${p.name}`, bits(p.portType));
@@ -287,8 +281,7 @@ class EngineSimulation implements Simulation {
   read(): Record<string, number> {
     const portValues = this.nodes.ports();
     const result: Record<string, number> = {};
-    for (const name of this.outputNames)
-      result[name] = portValues.get(`${TOP_LEVEL_NODE}.${name}`) ?? 0;
+    for (const name of this.outputNames) result[name] = portValues.get(name) ?? 0;
     return result;
   }
 

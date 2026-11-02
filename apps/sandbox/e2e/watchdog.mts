@@ -307,11 +307,7 @@ try {
     (await send({ type: 'compile', compile: 'fake', source: FAKE_ADDER })).type === 'compiled',
   );
   const fibAfter = await send({ type: 'tick', session: 'fib-2', count: 5 });
-  check(
-    'an open session keeps the std Adder',
-    fibAfter.state?.ports['__top__.fib'] === 55,
-    show(fibAfter),
-  );
+  check('an open session keeps the std Adder', fibAfter.state?.ports['fib'] === 55, show(fibAfter));
   await send({ type: 'compile', compile: 'fib-new', source: FIBONACCI });
   await send({
     type: 'open',
@@ -321,11 +317,7 @@ try {
     history: 0,
   });
   const fibFresh = await send({ type: 'tick', session: 'fib-3', count: 5 });
-  check(
-    'a new compile gets the std Adder',
-    fibFresh.state?.ports['__top__.fib'] === 5,
-    show(fibFresh),
-  );
+  check('a new compile gets the std Adder', fibFresh.state?.ports['fib'] === 5, show(fibFresh));
   await send({ type: 'compile', compile: 'fake-top', source: FAKE_ADDER_TOP });
   await send({
     type: 'open',
@@ -337,7 +329,7 @@ try {
   const fakeSum = await send({ type: 'set', session: 'fake-1', values: { a: 2, b: 3 } });
   check(
     'a design using only its own Adder runs it',
-    fakeSum.state?.ports['__top__.sum'] === 99,
+    fakeSum.state?.ports['sum'] === 99,
     show(fakeSum),
   );
   const both = await send({ type: 'compile', compile: 'both', source: BOTH_ADDERS });
@@ -347,11 +339,7 @@ try {
     show(both),
   );
   const fibStill = await send({ type: 'tick', session: 'fib-3', count: 5 });
-  check(
-    'other sessions keep the std Adder',
-    fibStill.state?.ports['__top__.fib'] === 55,
-    show(fibStill),
-  );
+  check('other sessions keep the std Adder', fibStill.state?.ports['fib'] === 55, show(fibStill));
 
   // ── Long ticks, hanging runs and hanging ticks ────────────────────────────
 
@@ -466,8 +454,8 @@ try {
   const fibAgain = await send({ type: 'tick', session: 'fib-1', count: 5 });
   check(
     'other sessions were replayed too',
-    fibAgain.state?.ports['__top__.fib'] === 5,
-    `fib ${fibAgain.state?.ports['__top__.fib']}`,
+    fibAgain.state?.ports['fib'] === 5,
+    `fib ${fibAgain.state?.ports['fib']}`,
   );
 
   // A tick that hangs: it fails as timed out, the request queued behind it as
