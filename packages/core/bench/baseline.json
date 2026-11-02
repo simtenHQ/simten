@@ -9,7 +9,7 @@
       "ticksPerSec": 117447
     },
     "hack-alu": {
-      "fingerprint": "e817a750f6eb4df7",
+      "fingerprint": "6128f8d348b081e5",
       "evalsPerTick": 20,
       "compileMs": 1.1,
       "ticksPerSec": 174847
