@@ -21,7 +21,7 @@ import type { UseSimulationResult } from '../sandbox/useSimulation';
 import { CanvasError } from './CanvasError';
 import { CompositeInspectorDialog } from './CompositeInspectorDialog';
 import { resolveDrillTarget } from './drill-target';
-import { FlowCanvas } from './FlowCanvas';
+import { CANVAS_WIDTH, FlowCanvas } from './FlowCanvas';
 import { useDetectTheme } from './hooks/useDetectTheme';
 import { hasPorts, portsView, withPortParts } from './ports-view';
 import type { DrawnCircuit, InspectorFrame } from './types';
@@ -144,7 +144,7 @@ export function CircuitCanvas({
   const error = state.error ?? (state.ready ? null : (state.compileError?.message ?? null));
   if (error) {
     return (
-      <div style={{ height }} className="flex items-center justify-center p-4">
+      <div style={{ height, ...CANVAS_WIDTH }} className="flex items-center justify-center p-4">
         <CanvasError error={error} />
       </div>
     );
@@ -153,7 +153,7 @@ export function CircuitCanvas({
   if (!state.ready) {
     return (
       <div
-        style={{ height }}
+        style={{ height, ...CANVAS_WIDTH }}
         className="flex items-center justify-center text-muted-foreground/60 text-sm"
       >
         Compiling...
