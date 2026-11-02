@@ -1,6 +1,6 @@
 {
   "name": "@simten/react",
-  "version": "0.15.6",
+  "version": "0.16.0",
   "description": "React for Simten circuits: useSimulation, the circuit canvas, clock controls and the code editor.",
   "license": "Apache-2.0",
   "author": "Charles Harris",
