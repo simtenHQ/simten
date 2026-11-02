@@ -2517,6 +2517,11 @@ export function nextLevel(id: string): Level | undefined {
   return i >= 0 ? LEVELS[i + 1] : undefined;
 }
 
+/** The level the player is up to: the first one not solved, or none once all are. */
+export function firstUnsolved(solved: ReadonlySet<string>): Level | undefined {
+  return LEVELS.find((l) => !solved.has(l.id));
+}
+
 /**
  * Every gate the campaign hands over, in unlock order.
  *
