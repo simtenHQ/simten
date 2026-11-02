@@ -4,7 +4,7 @@
  * Pure function to get primitive component catalog.
  */
 
-import type { CircuitDefinitions, PortType } from '@simten/core/internal';
+import type { CircuitIR, PortType } from '@simten/core/internal';
 
 export function getPrimitivesHandler(
   params: {
@@ -13,12 +13,10 @@ export function getPrimitivesHandler(
     sourceName?: string;
     compact?: boolean;
   },
-  definitions: CircuitDefinitions,
+  circuits: readonly CircuitIR[],
 ): string {
   const compact = params.compact ?? true;
 
-  // Get all primitives from the definitions
-  const primitiveNames = definitions.getAllPrimitiveNames?.() ?? [];
   const components: Array<{
     name: string;
     kind?: string;
@@ -28,9 +26,8 @@ export function getPrimitivesHandler(
     clocks: Array<{ name: string }>;
   }> = [];
 
-  for (const name of primitiveNames) {
-    const circuit = definitions.resolveCircuit(name);
-    if (!circuit) continue;
+  for (const circuit of circuits) {
+    if (circuit.implementation.kind !== 'primitive') continue;
 
     const kind = circuit.metadata?.timing;
     if (params.kind && kind !== params.kind) continue;

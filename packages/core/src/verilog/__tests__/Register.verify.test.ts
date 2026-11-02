@@ -54,7 +54,6 @@ function buildRegister() {
         : name === 'Register'
           ? internalsOf(Reg).ir
           : undefined,
-    getAllPrimitiveNames: () => ['Register'],
   };
 
   return { circuit: internalsOf(RegWrapper).ir, definitions };

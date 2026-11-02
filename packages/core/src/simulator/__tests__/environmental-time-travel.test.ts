@@ -55,10 +55,6 @@ function buildSim() {
   const circuitMap = new Map<string, CircuitIR>();
   const definitions: CircuitDefinitions & { addCircuit(c: CircuitIR): void } = {
     resolveCircuit: (name) => circuitMap.get(name),
-    getAllPrimitiveNames: () =>
-      [...circuitMap.entries()]
-        .filter(([, c]) => c.implementation.kind === 'primitive')
-        .map(([n]) => n),
     addCircuit: (c) => {
       circuitMap.set(c.name, c);
     },

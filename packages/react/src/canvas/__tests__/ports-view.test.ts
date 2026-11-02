@@ -25,7 +25,6 @@ const HalfAdder = circuit('ViewHalfAdder', {
 const IR = internalsOf(HalfAdder).ir;
 const definitions = withPortParts({
   resolveCircuit: (name) => (name === IR.name ? IR : undefined),
-  getAllPrimitiveNames: () => [],
 });
 
 describe('portsView', () => {

@@ -85,8 +85,6 @@ function libraryFor(circuits: CircuitIR[]): CircuitDefinitions {
   const byName = new Map(circuits.map((c) => [c.name, c]));
   return {
     resolveCircuit: (name) => byName.get(name),
-    getAllPrimitiveNames: () =>
-      [...byName.values()].filter((c) => c.implementation.kind === 'primitive').map((c) => c.name),
   };
 }
 

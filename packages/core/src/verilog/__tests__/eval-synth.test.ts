@@ -344,7 +344,6 @@ describe('top-level primitive simulation', () => {
     const definitions = {
       resolveCircuit: (name: string) =>
         name === 'TestDoubler' ? internalsOf(Doubler).ir : undefined,
-      getAllPrimitiveNames: () => ['TestDoubler'],
     };
 
     const flat = elaborate(internalsOf(Doubler).ir, definitions);
@@ -375,7 +374,6 @@ describe('top-level primitive simulation', () => {
 
     const definitions = {
       resolveCircuit: (name: string) => (name === 'TestSimReg' ? internalsOf(MyReg).ir : undefined),
-      getAllPrimitiveNames: () => ['TestSimReg'],
     };
 
     const flat = elaborate(internalsOf(MyReg).ir, definitions);

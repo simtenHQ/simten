@@ -105,7 +105,6 @@ describe('Core Simulator Standalone', () => {
     expect(definitions.resolveCircuit('And')).toBeDefined();
     expect(definitions.resolveCircuit('Or')).toBeDefined();
     expect(definitions.resolveCircuit('Not')).toBeDefined();
-    expect(definitions.getAllPrimitiveNames()).toContain('And');
   });
 
   it('should elaborate a simple circuit without browser dependencies', () => {

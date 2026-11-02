@@ -60,7 +60,6 @@ function buildRam() {
         : name === 'RAM'
           ? internalsOf(Ram).ir
           : undefined,
-    getAllPrimitiveNames: () => ['RAM'],
   };
 
   return { circuit: internalsOf(RamWrapper).ir, definitions };

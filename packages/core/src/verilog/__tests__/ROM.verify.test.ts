@@ -81,7 +81,6 @@ function buildRom() {
         : name === 'ROM'
           ? romDefWithData
           : undefined,
-    getAllPrimitiveNames: () => ['ROM'],
   };
 
   return { circuit: internalsOf(RomWrapper).ir, definitions };

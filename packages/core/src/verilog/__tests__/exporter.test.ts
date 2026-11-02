@@ -142,7 +142,6 @@ describe('exportVerilog', () => {
       ]);
       const definitions: CircuitDefinitions = {
         resolveCircuit: (name) => circuitMap.get(name),
-        getAllPrimitiveNames: () => ['RAM'],
       };
 
       const { verilog } = exportVerilogFromIR(internalsOf(RamUser).ir, {
@@ -196,7 +195,6 @@ describe('exportVerilog', () => {
       ]);
       const definitions: CircuitDefinitions = {
         resolveCircuit: (name) => circuitMap.get(name),
-        getAllPrimitiveNames: () => ['RAM'],
       };
 
       const result = exportVerilogFromIR(
