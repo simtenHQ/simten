@@ -19,7 +19,7 @@ import { HeaderBar } from '../components/HeaderBar';
 import { LevelDrilldown } from '../components/LevelDrilldown';
 import { LevelMap } from '../components/LevelMap';
 import ThemeToggle from '../components/ThemeToggle';
-import { LEVELS, LEVELS_BY_ID } from '../game/levels';
+import { firstUnsolved, LEVELS, LEVELS_BY_ID } from '../game/levels';
 import { isAutomated } from '../game/newcomer';
 import { type Drafts, isOnboarded, readDrafts, readProgress } from '../game/storage';
 
@@ -72,8 +72,7 @@ function MapPage() {
     // the map loaded. This catches what it cannot, such as client-side
     // navigation back to `/`.
     if (!isDesktop || isOnboarded() || isAutomated()) return;
-    const progress = readProgress();
-    const first = LEVELS.find((l) => !(l.id in progress)) ?? LEVELS[0];
+    const first = firstUnsolved(new Set(Object.keys(readProgress()))) ?? LEVELS[0];
     void navigate({ to: '/$levelId', params: { levelId: first.id }, replace: true });
   }, [isDesktop, navigate]);
 
@@ -95,7 +94,7 @@ function MapPage() {
 
   // Where "What is this?" replays the tour: the first level not yet solved,
   // or the first level once everything is.
-  const tourLevelId = (LEVELS.find((l) => !solved.has(l.id)) ?? LEVELS[0]).id;
+  const tourLevelId = (firstUnsolved(solved) ?? LEVELS[0]).id;
 
   return (
     <div className="flex h-screen flex-col">
