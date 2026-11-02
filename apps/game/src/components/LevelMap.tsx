@@ -29,8 +29,9 @@ import {
 } from '@xyflow/react';
 import { Crosshair } from 'lucide-react';
 import '@xyflow/react/dist/style.css';
-import { useCallback, useMemo, useState } from 'react';
-import { buildMapGraph, type LevelNodeData, MAP_ROWS, NODE_HEIGHT, NODE_WIDTH } from '../game/map';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { firstUnsolved, LEVELS } from '../game/levels';
+import { buildMapGraph, type LevelNodeData, NODE_HEIGHT, NODE_WIDTH } from '../game/map';
 import { simulateMap } from '../game/map-circuit';
 
 /** Node data plus the interaction callbacks, which are view state rather than map data. */
@@ -201,6 +202,8 @@ type MapFlowNode = LevelNode | SectionFlowNode;
 
 const NODE_TYPES: NodeTypes = { level: LevelMapNode, section: SectionBand };
 
+const NONE: ReadonlySet<string> = new Set();
+
 interface LevelMapProps {
   /** Completed level ids. Empty for the first frame, before storage is read. */
   solved?: ReadonlySet<string>;
@@ -277,25 +280,28 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
   );
 
   /**
-   * Open on the start of the campaign rather than fitting the whole graph,
-   * which would shrink it to illegibility and give away how much is left.
+   * The level the player is up to, or the last one once everything is solved.
+   * Before saved progress is read nothing is solved, so this is the first level.
    */
+  const currentId = (firstUnsolved(solved ?? NONE) ?? LEVELS[LEVELS.length - 1]).id;
+
   /**
-   * Put the start of the campaign back under the viewport.
+   * Put the player's current level under the viewport.
    *
-   * Used for the initial view and by the recenter control; the map is larger
-   * than the screen and pans freely, so it is possible to end up looking at
-   * empty grid with no way to tell which direction the levels are in.
+   * Open on it rather than fitting the whole graph, which would shrink it to
+   * illegibility and give away how much is left. The recenter control uses it
+   * too: the map is larger than the screen and pans freely, so it is possible
+   * to end up looking at empty grid with no way to tell which direction the
+   * levels are in.
    */
-  const centerOnStart = useCallback(
+  const centerOnCurrent = useCallback(
     (instance: ReactFlowInstance<MapFlowNode, Edge>, animate = false) => {
-      const first = MAP_ROWS[0]?.[0];
-      const node = first ? instance.getNode(first) : undefined;
+      const node = instance.getNode(currentId);
       if (!node) return;
       // `position` is the top-left corner, so half the node is added back to aim
       // at its middle. Then centre well above it, so it sits near the bottom of
-      // the viewport with the rest of the act climbing away above rather than
-      // dead-centre with empty canvas underneath.
+      // the viewport with the levels still to come climbing away above rather
+      // than dead-centre with empty canvas underneath.
       instance.setCenter(
         node.position.x + NODE_WIDTH / 2,
         node.position.y + NODE_HEIGHT / 2 - 240,
@@ -305,11 +311,11 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
         },
       );
     },
-    [],
+    [currentId],
   );
 
   const flow = useReactFlow<MapFlowNode, Edge>();
-  const recenter = useCallback(() => centerOnStart(flow, true), [flow, centerOnStart]);
+  const recenter = useCallback(() => centerOnCurrent(flow, true), [flow, centerOnCurrent]);
 
   /**
    * Hold the first paint until the map has been positioned.
@@ -324,13 +330,19 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
    */
   const [positioned, setPositioned] = useState(false);
 
+  // Saved progress is read after mount, so it can arrive after the map has
+  // been positioned on the first level. Move to the player's level when it does.
+  useEffect(() => {
+    if (positioned) centerOnCurrent(flow);
+  }, [positioned, flow, centerOnCurrent]);
+
   return (
     <ReactFlow
       nodes={[...sectionNodes, ...flowNodes]}
       edges={flowEdges}
       nodeTypes={NODE_TYPES}
       onInit={(instance) => {
-        centerOnStart(instance);
+        centerOnCurrent(instance);
         setPositioned(true);
       }}
       className={`transition-opacity duration-150 ${positioned ? 'opacity-100' : 'opacity-0'}`}
