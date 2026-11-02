@@ -299,12 +299,14 @@ function LevelMapCanvas({ solved, onHoverLevel, onExpandLevel }: LevelMapCanvasP
       const node = instance.getNode(currentId);
       if (!node) return;
       // `position` is the top-left corner, so half the node is added back to aim
-      // at its middle. Then centre well above it, so it sits near the bottom of
-      // the viewport with the levels still to come climbing away above rather
-      // than dead-centre with empty canvas underneath.
+      // at its middle. The first level is the bottom of the map, so centre well
+      // above it instead: it sits near the bottom of the viewport with the
+      // campaign climbing away above, rather than over a half-screen of empty
+      // canvas.
+      const lift = currentId === LEVELS[0].id ? 240 : 0;
       instance.setCenter(
         node.position.x + NODE_WIDTH / 2,
-        node.position.y + NODE_HEIGHT / 2 - 240,
+        node.position.y + NODE_HEIGHT / 2 - lift,
         {
           zoom: 1,
           duration: animate ? 400 : 0,
