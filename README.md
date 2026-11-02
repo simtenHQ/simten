@@ -21,7 +21,7 @@ No install needed to try it:
 - [simten.dev/circuit](https://simten.dev/circuit): type a circuit on the left, see it on the right.
 - [play.simten.dev](https://play.simten.dev): a puzzle game that starts at one NAND gate and ends with a CPU.
 
-## Hello world
+## Quick start
 
 **1. Write a circuit**
 
