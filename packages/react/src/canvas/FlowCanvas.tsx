@@ -144,6 +144,14 @@ interface FlowCanvasProps {
   panOnMobile?: boolean;
 }
 
+/**
+ * The canvas fills its container's width, and never collapses below this. A
+ * container that sizes to its content gives the canvas nothing to fill: Vite's
+ * starter centres `body` with flexbox, so `#root` is as wide as what's in it,
+ * and a canvas that only fills would be 0px wide and draw nothing.
+ */
+export const CANVAS_WIDTH = { width: '100%', minWidth: 280 } as const;
+
 /** Below this zoom an 11px pin label is too small to read, so the canvas drops them. */
 const PIN_LABEL_MIN_ZOOM = 0.35;
 const NO_ACTIONS: CanvasActions = {};
@@ -336,7 +344,11 @@ function FlowCanvasInner({
       data-embed-theme={theme}
       className="bg-[var(--embed-bg-primary)] overflow-hidden relative"
       style={
-        { height, '--simten-pin-labels': pinLabelsReadable ? 'block' : 'none' } as CSSProperties
+        {
+          height,
+          ...CANVAS_WIDTH,
+          '--simten-pin-labels': pinLabelsReadable ? 'block' : 'none',
+        } as CSSProperties
       }
       aria-label="Circuit diagram"
     >
