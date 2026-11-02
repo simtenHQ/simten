@@ -9,6 +9,7 @@
 import { exec } from 'node:child_process';
 import type { McpServer } from '@modelcontextprotocol/server';
 import { z } from 'zod';
+import { bundleLocalImports, hasLocalImports } from '../lib/bundle-local.js';
 import { LOCAL_SERVE, SIMTEN_URL } from '../lib/config.js';
 import { readCircuitSource } from '../lib/file-reader.js';
 import {
@@ -22,11 +23,15 @@ import type { RenderResult, SourcePush } from '../server/types.js';
 import type { StudioServer } from '../server/ws-server.js';
 import { inputsSchema, memoryDataSchema } from './run-options.js';
 
-/** Extract the first circuit name from source the MCP pushed (trusted), so the
- *  tool result never depends on a browser-reported name (viewer-only). */
+/**
+ * The circuit the canvas draws: the last one the source builds, so the top of
+ * a bundled file rather than the parts it imports. Read from the source the MCP
+ * pushed (trusted), so the tool result never depends on a browser-reported
+ * name (viewer-only).
+ */
 function circuitNameFromSource(src: string): string {
-  const m = src.match(/circuit\(\s*['"`]([A-Za-z0-9_$]+)['"`]/);
-  return m ? m[1] : 'circuit';
+  const names = [...src.matchAll(/circuit\(\s*['"`]([A-Za-z0-9_$]+)['"`]/g)];
+  return names.at(-1)?.[1] ?? 'circuit';
 }
 
 function openBrowser(url: string) {
@@ -174,6 +179,12 @@ export function registerShowTools(server: McpServer): void {
 
       const read = readCircuitSource({ source, filePath });
       if (read.error) return text(`Error: ${read.error}`, true);
+      let pushed = read.source;
+      if (read.file && hasLocalImports(read.source)) {
+        const bundled = await bundleLocalImports(read.file);
+        if ('error' in bundled) return text(`Error: ${bundled.error}`, true);
+        pushed = bundled.source;
+      }
 
       // There is no server-side pre-flight: the browser is the real execution
       // environment (incl. npm via esm.sh), so its render acknowledgment, not a
@@ -190,12 +201,12 @@ export function registerShowTools(server: McpServer): void {
       // with them in place; a key or path that doesn't resolve fails the
       // render. (The file is read once for its source above, NOT watched.)
       const push: SourcePush = {
-        source: read.source,
+        source: pushed,
         ...(memoryData ? { memory: memoryData } : {}),
         ...(inputs ? { inputs } : {}),
       };
       const render = await pushAndAwait(studio, push, session);
-      return renderReport(render, read.source, session);
+      return renderReport(render, pushed, session);
     },
   );
 }
