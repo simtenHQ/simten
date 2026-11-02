@@ -22,7 +22,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/server';
-import { EXAMPLES, type Example } from '@simten/core/examples';
+import { EXAMPLES, type Example } from '@simten/core/internal';
 import * as std from '@simten/core/std';
 import { z } from 'zod';
 
