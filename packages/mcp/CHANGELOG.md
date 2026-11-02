@@ -1,5 +1,19 @@
 # @simten/mcp
 
+## 0.11.1
+
+### Patch Changes
+
+- 41bebbb: `CircuitDefinitions` (from `@simten/core/internal`) is just `resolveCircuit` now: `getAllPrimitiveNames` is gone. Its one reader, the MCP's `list_components`, builds its list from the new `getStdCircuits()` instead, with the same output.
+- 58300ea: `show_circuit` draws a circuit file that imports other local files, such as a top file using `HalfAdder` from `./half-adder.circuit`. The MCP bundles the file and its local imports into one source before sending it to the browser, whose sandbox has no file system; package imports are left for the sandbox as before. Its result now names the circuit the canvas draws (the last one built), not the first in the source.
+- ca8cb5a: A circuit's own ports are keyed by their name in every port-value map: `portValues.get('sum')`, where it was `portValues.get('__top__.sum')`. A node's port is still keyed by path (`ha1.x.out`). `sample` and `scan` take the same keys, so `sim.scan('scan_addr', 'pixel_out', 64)` and `actions.sample('audio', n)`. The `__top__.` form is no longer accepted anywhere. A port name may not contain a dot, since dots separate node paths.
+
+  The hosted sandbox sends the new keys, so a page on `@simten/react` 0.16 or earlier no longer shows a circuit's own outputs on the canvas. Update `@simten/react` and `@simten/sandbox` together.
+
+- Updated dependencies [41bebbb]
+- Updated dependencies [ca8cb5a]
+  - @simten/core@0.24.0
+
 ## 0.11.0
 
 ### Minor Changes
