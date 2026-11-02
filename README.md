@@ -6,138 +6,120 @@
 
 **Write hardware in TypeScript. Test it with npm. Run it on an FPGA.**
 
-Write circuits as typed TypeScript, from a single NAND gate up to a RISC-V core.
-Simulate them in the browser, export Verilog, run the result on an FPGA.
-
-[**Live demo**](https://simten.dev) &nbsp;·&nbsp; [Play](https://play.simten.dev) &nbsp;·&nbsp; [Docs](https://simten.dev/docs) &nbsp;·&nbsp; [Blog](https://simten.dev/blog)
+[**Editor**](https://simten.dev/circuit) &nbsp;·&nbsp; [Game](https://play.simten.dev) &nbsp;·&nbsp; [Docs](https://simten.dev/docs) &nbsp;·&nbsp; [Blog](https://simten.dev/blog)
 
 [![CI](https://github.com/simtenHQ/simten/actions/workflows/ci.yml/badge.svg)](https://github.com/simtenHQ/simten/actions/workflows/ci.yml)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue?logo=typescript)](https://www.typescriptlang.org/)
-[![Cloudflare Workers](https://img.shields.io/badge/deployed_on-Cloudflare-F38020?logo=cloudflare)](https://developers.cloudflare.com/workers/)
 
 </div>
 
-## Why
+Simten is a digital logic simulator where circuits are TypeScript. Ports are typed, so a
+miswired circuit is a type error. Circuits run in the browser, in tests, and as Verilog
+on an FPGA, from a single NAND gate up to a RISC-V CPU.
 
-Learning digital logic usually means choosing between visual simulators that stop
-scaling after a few dozen gates, and Verilog, which needs a whole toolchain before it
-shows you anything.
+No install needed to try it:
 
-Simten circuits are TypeScript, so autocomplete, type errors on misnamed ports and
-refactoring all just work, and you can test a circuit with any npm package. Every
-component can be opened up on the canvas to show what it's made of.
+- [simten.dev/circuit](https://simten.dev/circuit): type a circuit on the left, see it on the right.
+- [play.simten.dev](https://play.simten.dev): a puzzle game that starts at one NAND gate and ends with a CPU.
 
-## Try it
+## Hello world
 
-- [simten.dev/circuit](https://simten.dev/circuit) is the editor: type on the left, watch the circuit build itself on the right.
-- [play.simten.dev](https://play.simten.dev) is a puzzle campaign that starts with a single NAND gate and ends with a 4-bit CPU built from everything you made along the way: gates, adders, latches, registers and an ALU.
-- `pnpm add @simten/core` if you would rather start in your own project.
+**1. Write a circuit**
 
-## Example
+```bash
+npm install @simten/core
+```
 
-```typescript
-import { circuit, bit } from '@simten/core'
-import { Xor, And } from '@simten/core/std'
+```ts
+import { bit, circuit } from '@simten/core'
+import { And, Xor } from '@simten/core/std'
 
-const HalfAdder = circuit('HalfAdder', {
+export const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
   outputs: { sum: bit, carry: bit },
-  nodes: { xor1: Xor, and1: And },
-  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
-    inputs.a.to(xor1.a, and1.a),
-    inputs.b.to(xor1.b, and1.b),
-    xor1.out.to(outputs.sum),
-    and1.out.to(outputs.carry),
+  nodes: { xor: Xor, and: And },
+  connect: ({ inputs, outputs, nodes: { xor, and } }) => [
+    inputs.a.to(xor.a, and.a),
+    inputs.b.to(xor.b, and.b),
+    xor.out.to(outputs.sum),
+    and.out.to(outputs.carry),
   ],
 })
 ```
 
-- `inputs` / `outputs`: the circuit's pins, typed by width (`bit`, or `bus(8)` for 8 bits)
-- `nodes`: the parts inside it
-- `connect`: the wires, written `source.to(destination)`. It's typed from everything above,
-  so pins autocomplete and a typo like `xor1.c` is a type error
+`inputs` and `outputs` are the pins, `nodes` are the parts inside, and `connect` is the
+wiring. A typo like `xor.c` doesn't compile.
 
-To show it on a web page, in a React app, run it with `useSimulation(HalfAdder)` from
-`@simten/react` and render `<CircuitCanvas simulation={sim} />`. It draws the circuit with a
-clickable switch for each input and a light for each output, so visitors can try it. On a
-page that isn't React, open the circuit on simten.dev and use Share > Embed for an iframe.
+**2. Run it**
 
-## AI assist (optional)
+```ts
+import { simulate } from '@simten/core'
 
-`@simten/mcp` is a local MCP server. Your agent writes circuits as files and calls
-tools to check, simulate, verify and draw them, so the design lives in your repo
-rather than in a chat log. `show_circuit` pushes to a browser tab over a local
-WebSocket, which is why circuits appear and animate while the agent is still working.
+const sim = simulate(HalfAdder)
+sim.set({ a: 1, b: 1 })
+sim.read() // { sum: 0, carry: 1 }
+```
+
+**3. Show it in React**
+
+```tsx
+import '@simten/react/styles.css'
+import { CircuitCanvas, useSimulation } from '@simten/react'
+
+function Demo() {
+  const sim = useSimulation(HalfAdder)
+  return <CircuitCanvas simulation={sim} height={300} />
+}
+```
+
+You get the circuit drawn with a switch on each input and a light on each output. Click
+the switches to try it.
+
+**4. Or put it on any page**
+
+Open the circuit in the [editor](https://simten.dev/circuit) and use Share → Embed to get
+an iframe.
+
+**5. Build circuits with an AI assistant**
 
 ```bash
 claude mcp add --scope user simten npx @simten/mcp
 ```
 
-![Claude generates a half-adder circuit and runs it live in the browser](claude-demo.gif)
+Your assistant writes circuits as files in your repo, tests them, and draws them in a
+browser tab. Works with any MCP client.
 
-The server runs on your machine, so nothing goes through Simten's servers, and it's
-off unless you install it. When it runs a circuit's tests, they run on your machine
-with the same access as `npm test`, so only use it on circuits you trust. For anything
-else, use the web editor, which runs code in an isolated sandbox. See
-[`packages/mcp/README.md`](packages/mcp/README.md).
+![Claude builds a half adder and runs it in the browser](claude-demo.gif)
 
 ## FPGA
 
-Circuits export to Verilog, so they run on real hardware too. A RISC-V CPU running C
-and Rust programs and an HDMI Snake both run on a ULX3S FPGA board today. Setup and
-the build/flash workflow are in the [hardware docs](https://simten.dev/docs/hardware).
+Circuits export to Verilog. A RISC-V CPU running C and Rust, and Snake over HDMI, both
+run on a ULX3S board. See the [hardware docs](https://simten.dev/docs/hardware).
 
-## Repo layout
+## Packages
 
-```
-packages/
-├── core/        simulator, circuit() builder, stdlib, Verilog exporter
-├── sandbox/     runs circuits in the sandbox iframe from any page, no framework
-├── react/       useSimulation, CircuitCanvas, ClockControls, code editor
-└── mcp/         MCP server
+| Package | Use it to |
+|---|---|
+| [`@simten/core`](packages/core) | Write and simulate circuits, export Verilog |
+| [`@simten/react`](packages/react) | Show circuits in a React app |
+| [`@simten/sandbox`](packages/sandbox) | Run circuits from any web page, without React |
+| [`@simten/mcp`](packages/mcp) | Let an AI assistant build circuits |
 
-apps/
-├── web/         simten.dev (TanStack Start, Vite, Cloudflare Workers)
-├── game/        play.simten.dev, the level campaign
-├── embed-page/  embed.simten.dev, shared circuits for other sites' iframes
-├── sandbox/     isolated origin where user circuit code executes
-├── compiler/    RISC-V cross-compiler (GCC + Rust)
-├── verifier/    Icarus Verilog, cross-checks exported Verilog against our trace
-└── synth/       Yosys, returns gate counts and netlists
-
-hardware/ulx3s/  FPGA projects and the build/flash/capture CLI
-```
-
-TanStack Start, React 19, React Flow, Zustand with Immer, Tailwind 4, Vitest,
-deployed on Cloudflare Workers.
-
-Simulation happens in the browser, so the edge stays stateless. The three container
-services run on Cloudflare Containers behind Durable Objects and sleep after two
-minutes idle. User circuit code never executes in the main frame: it runs in
-`apps/sandbox`, on its own origin, under CSP.
-
-## Running it locally
+## Working on Simten
 
 ```bash
 pnpm install
 pnpm dev           # simten.dev on :3001
-pnpm dev:sandbox   # second terminal, on :3002
+pnpm dev:sandbox   # the sandbox on :3002, needed for anything to draw
 pnpm dev:game      # play.simten.dev on :3003
-pnpm dev:embed     # embed.simten.dev on :3004
-pnpm test          # 1,000+ tests, plus the exports drift check
+pnpm test
 ```
 
-The sandbox is not optional. The canvas runs circuit code in an iframe pointed at
-`localhost:3002` in dev and `sandbox.simtenusercontent.dev` in production, so without
-`pnpm dev:sandbox` running alongside, nothing crashes and nothing draws either.
+Circuit code never runs on the page. It runs in a sandbox on its own domain, which is
+why `dev:sandbox` has to be running. [CONTRIBUTING.md](CONTRIBUTING.md) covers the rest.
 
-## Docs and contributing
-
-- Rendered docs: [simten.dev/docs](https://simten.dev/docs). Markdown source in [`apps/web/content/docs/`](./apps/web/content/docs/).
-- Blog posts working through real circuits: [simten.dev/blog](https://simten.dev/blog).
-- [CONTRIBUTING.md](./CONTRIBUTING.md) covers setup tiers, code style and how publishing works.
-- Bugs and features: [Issues](https://github.com/simtenHQ/simten/issues). Design questions: [Discussions](https://github.com/simtenHQ/simten/discussions). Security: [SECURITY.md](./SECURITY.md). Anything else: `hello@simten.dev`.
+Bugs and ideas go in [Issues](https://github.com/simtenHQ/simten/issues), and security
+reports to [SECURITY.md](SECURITY.md).
 
 ## License
 
-[Apache 2.0](./LICENSE).
+[Apache 2.0](LICENSE)

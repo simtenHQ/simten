@@ -26,7 +26,7 @@ const CLIENTS: Client[] = [
   {
     id: 'claude-code',
     label: 'Claude Code',
-    command: 'claude mcp add simten npx @simten/mcp',
+    command: 'claude mcp add --scope user simten npx @simten/mcp',
   },
   {
     id: 'codex',

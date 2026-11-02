@@ -1,57 +1,33 @@
 # @simten/mcp
 
-MCP server for [Simten](https://simten.dev). Your assistant writes circuits as TypeScript files and calls these tools to check, simulate, verify and draw them. The design lives in your repo, not in a chat log.
+Let an AI assistant build [Simten](https://simten.dev) circuits. It writes them as
+TypeScript files in your repo, then checks, simulates, tests and draws them with these
+tools.
 
 ```
-Assistant ──stdio──▸ MCP server ──WebSocket──▸ Browser canvas (view only)
+Assistant ──stdio──▸ MCP server ──WebSocket──▸ Browser tab (view only)
 ```
 
 ## Setup
-
-Register the server with Claude Code:
 
 ```bash
 claude mcp add --scope user simten npx @simten/mcp
 ```
 
-`--scope user` makes simten available in every project; drop the flag for a project-local install. Check it with `claude mcp list`. Any MCP client works the same way: the server speaks stdio.
+`--scope user` makes it available in every project. Any MCP client works: the server
+speaks stdio. It needs Node.js 20 or later.
 
-Designing and simulating need nothing else. `verify_circuit` runs the testbench on the host with `tsx`, so the project needs `@simten/core`, `fast-check` and `tsx` installed. The assistant calls `setup_project` on first use to write a `package.json` and install them (it's safe to run again). Projects that already have those dependencies work as they are.
+Writing, simulating and drawing circuits need nothing else. Running tests needs
+`@simten/core`, `fast-check` and `tsx` in the project; the assistant installs them with
+`setup_project` the first time.
 
-`check_circuit` and `simulate_circuit` load circuit files with the MCP's own copy of `@simten/core`, while `verify_circuit` uses the copy installed in the project, so a project that pins a different core version can see the tools disagree.
+## What it writes
 
-If you prefer a global install to `npx`: `npm install -g @simten/mcp`, then `claude mcp add --scope user simten simten-mcp`.
-
-The server needs Node.js 20 or later. It serves MCP protocol revision 2026-07-28 to clients that ask for it and the 2025 revisions to everything else.
-
-## Tools
-
-| Tool | What it does |
-|------|-------------|
-| `get_started` | Orientation and the bundled examples. With `example`, writes one to `circuits/<id>.circuit.ts`. No setup needed |
-| `get_grammar` | The `circuit()` API (inputs, outputs, nodes, connect) with worked examples |
-| `list_components` | Every standard component with its ports and constructor options |
-| `get_verify_api` | How to write a `.verify.ts` testbench: `simulate(top, { memory })`, `set`, `tick`, oracles |
-| `check_circuit` | Compile a circuit and report whether it builds |
-| `simulate_circuit` | Compile and simulate, return signal traces. Shows what a circuit does, not that it's correct. Never touches the canvas |
-| `show_circuit` | Paint the circuit on the browser canvas, the only tool that draws. No circuit counts the open tabs; `close: true` closes the preview |
-| `setup_project` | Make a folder ready for `verify_circuit`: an ESM `package.json`, a tsconfig, and the dependencies installed |
-| `verify_circuit` | Run a self-checking testbench file on the host with `tsx`, and report pass or fail at a declared oracle tier |
-
-`simulate_circuit` and `show_circuit` start a run the same way:
-
-- `inputs`: `{ key: number }`. A key is an input port name or the path of a Switch or `Input` node (`"d"`, `"cpu.kbd"`), as `simulate(top).set()` takes it. Keys resolve exactly; a key that names anything else, or both a port and a Switch, is an error.
-- `memoryData`: `{ nodePath: { address: value } }`, loaded before cycle 0 as `simulate(top, { memory })` does. A path that names no node is an error.
-
-Inside a checkout of the Simten repo the server also registers `run_on_fpga`, which builds, flashes and captures a project on a ULX3S board. It works on files under `hardware/ulx3s`, so the server leaves it out anywhere else. It counts as inside the repo when the working directory, or a folder above it, holds `hardware/ulx3s/run_on_fpga.ts` and a `package.json` named `simten`. `SIMTEN_REPO_ROOT` points it at a checkout explicitly.
-
-## Writing circuits
-
-A circuit is a standalone module that imports the builder from `@simten/core` and exports its top-level circuit, so a testbench can import it:
+A circuit is a module that exports its top-level circuit:
 
 ```ts
-import { bit, circuit } from '@simten/core';
-import { And, Xor } from '@simten/core/std';
+import { bit, circuit } from '@simten/core'
+import { And, Xor } from '@simten/core/std'
 
 export const HalfAdder = circuit('HalfAdder', {
   inputs: { a: bit, b: bit },
@@ -63,22 +39,42 @@ export const HalfAdder = circuit('HalfAdder', {
     xor.out.to(outputs.sum),
     and.out.to(outputs.carry),
   ],
-});
+})
 ```
 
-Files written for earlier releases import the builder from `@simten/core/circuit`. `check_circuit` and `simulate_circuit` still load them; `verify_circuit` runs plain `tsx`, so change that import to `@simten/core`.
+## Tools
 
-## The canvas
+| Tool | |
+|------|-------------|
+| `get_started` | An overview and bundled examples. Can write an example to `circuits/` |
+| `get_grammar` | How to write a circuit, with examples |
+| `list_components` | Every standard part, with its ports and options |
+| `get_verify_api` | How to write a testbench |
+| `check_circuit` | Does it compile? |
+| `simulate_circuit` | Run it and return signal traces |
+| `show_circuit` | Draw it in a browser tab. The only tool that draws |
+| `setup_project` | Install what `verify_circuit` needs. Safe to run again |
+| `verify_circuit` | Run a testbench and report pass or fail |
 
-`show_circuit` starts a local server on `127.0.0.1` (port 19847, or a free port if that one is taken), serves a bundled copy of the editor from it, and opens it in your browser with a one-time token in the URL fragment. The page and its WebSocket share one localhost origin, so there's no Local Network Access prompt.
+`simulate_circuit` and `show_circuit` take `inputs` (`{ a: 1 }`, by input name or the
+path of a Switch or Input node) and `memoryData` (`{ rom: { 0: 17 } }`, loaded before
+cycle 0).
 
-The canvas is a viewer. The server pushes the circuit, with the inputs and memory its run starts from, and the page sends back only whether it rendered. Editing the `.circuit.ts` file does not update the browser: the assistant calls `show_circuit` again to repaint. The file is the source of truth; edits made in the browser editor are local experiments and aren't written back.
+Inside a checkout of the Simten repo there's also `run_on_fpga`, which builds and flashes a
+project to a ULX3S board.
 
-## Trust model
+## The browser tab
 
-`verify_circuit` runs the testbench on the host with `tsx`: full Node and npm, no sandbox, the same trust as running `npm test`. Sandboxing one tool while the assistant can already run your build, your tests and any shell command wouldn't protect anything. Use it on circuits you wrote or trust.
+`show_circuit` starts a server on `127.0.0.1` and opens the editor in your browser. The tab
+only displays what the assistant sends. Editing the file doesn't update it; the assistant
+calls `show_circuit` again. The file is the source of truth, and edits in the browser
+aren't saved back.
 
-Open unfamiliar or shared circuits in the web `/circuit` editor, which runs them in a sandboxed worker, not locally.
+## Trust
+
+`verify_circuit` runs the testbench on your machine with full Node access, like
+`npm test`. Use it on circuits you wrote or trust. Open anything else in the
+[web editor](https://simten.dev/circuit), which runs it in a sandbox.
 
 ## License
 

@@ -423,7 +423,10 @@ function MCPBentoVisual() {
         </div>
         <div className="px-3 py-3 font-mono text-[11px] leading-relaxed text-gray-300 space-y-0.5">
           <div className="text-gray-500">
-            $ <span className="text-gray-200">claude mcp add simten npx @simten/mcp</span>
+            ${' '}
+            <span className="text-gray-200">
+              claude mcp add --scope user simten npx @simten/mcp
+            </span>
           </div>
           <div className="text-emerald-400">✓ added simten</div>
           <div className="h-2" />

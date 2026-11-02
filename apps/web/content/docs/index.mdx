@@ -1,129 +1,56 @@
 ---
 title: Overview
-description: A digital logic simulator for learning and building hardware designs
+description: Write digital circuits in TypeScript, simulate them anywhere, and run them on an FPGA
 ---
-
-Simten is a browser-based platform for learning digital hardware design. You write circuits in TypeScript using the `circuit()` factory, see them rendered live on an interactive canvas, and simulate them with time-travel debugging. An AI tutor (Claude) can help you build, debug, and understand circuits in real time.
-
-## What you can build
-
-Everything runs in the browser: no toolchain, no installation, no FPGA required.
-
-- **Logic gates and adders**: start from AND, OR, XOR and build up to full adders and ALUs
-- **Sequential circuits**: counters, shift registers, state machines using registers and flip-flops
-- **Games in hardware**: [Snake](/blog/snake-in-hardware) and [Pong](/blog/pong-in-hardware), built entirely from logic gates with no CPU
-- **A complete CPU**: a [5-stage pipelined RISC-V processor](/blog/rv32i-cpu) that runs compiled C code
-- **Accelerators**: a [TPU systolic array](/blog/how-tpus-work) doing matrix multiplication, a [CORDIC unit](/blog/computing-trig-in-hardware) computing trigonometry
-- **Networking hardware**: an [Ethernet switch](/blog/how-network-switches-work) with frame parsing, buffering, and forwarding
-
-## Hardware & FPGA
-
-Circuits that export to Verilog can go all the way to a physical FPGA bitstream. The [Hardware & FPGA](/docs/hardware) page covers the full pipeline (Yosys synthesis, nextpnr place-and-route, ecppack, and flashing) using Snake running on a ULX3S ECP5 board over HDMI as a worked example.
-
-## Verilog export
-
-Circuits export to synthesizable Verilog. The exporter maps 60+ primitives to standard RTL constructs: `assign` for combinational logic, `always @(posedge clk)` with synchronous active-low reset (`rst_n`) for sequential logic. Every module containing sequential primitives gets `input clk` and `input rst_n` ports auto-emitted (no clock or reset wiring in your `circuit()` definitions); on `rst_n` low, registers snap to their `value` arg, memories preserve contents, RV32I register files zero. The output is verified against [Icarus Verilog](https://steveicarus.github.io/iverilog/) via a containerized verification service.
-
-```typescript
-import { exportVerilog } from '@simten/core/verilog';
-
-const { verilog, files } = exportVerilog(HalfAdder, { target: 'synthesis' });
-// `verilog` is the .v source; `files` is a map of sidecar filename → contents
-// (hex files referenced by $readmemh for large preloaded memories).
-```
-
-The `target: 'synthesis'` option strips simulation-only constructs (`initial` blocks) for FPGA-ready output. Memories above `inlineMemoryThreshold` (default 2048 words) are emitted as `$readmemh("<file>.hex", reg)` with the hex contents returned alongside, matching the Yosys/Vivado/Quartus convention for large ROM/RAM initialization.
-
-## Build with an assistant over MCP
-
-Connect an MCP-capable assistant (Claude Code, Codex CLI, Gemini CLI, Cursor, and others) and it can write circuits, simulate and verify them, and show them on a canvas in your browser:
-
-```bash
-claude mcp add simten npx @simten/mcp
-```
-
-Ask it to build a counter or debug your ALU: it writes the TypeScript, checks it with a testbench, and paints the circuit on your canvas. The canvas only displays what the assistant pushes; it sends nothing back.
-
-See the [MCP Integration](/docs/mcp-integration) guide for per-client setup, available tools, and how the MCP viewer works.
-
-Circuit code runs in an isolated sandbox. See [Security Architecture](/docs/security) for how Simten protects your credentials and filesystem from untrusted circuits.
-
-## Packages
-
-```
-@simten/core       ← headless engine (no UI)
-       ↑
-@simten/sandbox    ← runs circuits in the sandbox from any page, no framework
-       ↑
-@simten/react      ← React components and hooks
-```
-
-| Package | Description |
-|---------|-------------|
-| `@simten/core` | TypeScript builder, compiler, validator, simulator engine, `Simulation`, Verilog export |
-| `@simten/sandbox` | `SandboxClient` and `SimulationClient`: compile and simulate in the sandbox iframe from any page |
-| `@simten/react` | The `useSimulation` hook, `CircuitCanvas` and `ClockControls`, and the [code editor](/docs/code-editor) (`@simten/react/code-editor`) |
-| `@simten/mcp` | MCP server for Claude Code integration |
-
-Not using React? See [Using Simten without React](/docs/without-react).
-
-## Embed a circuit
-
-Drop an interactive circuit into any React app:
-
-```tsx
-import { circuit, bit } from '@simten/core';
-import { Xor, And } from '@simten/core/std';
-
-const HalfAdder = circuit('HalfAdder', {
-  inputs:  { a: bit, b: bit },
-  outputs: { sum: bit, carry: bit },
-  nodes:   { xor1: Xor, and1: And },
-  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
-    inputs.a.to(xor1.a, and1.a),
-    inputs.b.to(xor1.b, and1.b),
-    xor1.out.to(outputs.sum),
-    and1.out.to(outputs.carry),
-  ],
-});
-```
-
-```tsx
-import '@simten/react/styles.css';
-import { CircuitCanvas, ClockControls, useSimulation } from '@simten/react';
-
-function HalfAdderDemo() {
-  const sim = useSimulation(HalfAdder);
-  return (
-    <>
-      <CircuitCanvas simulation={sim} height={250} />
-      <ClockControls simulation={sim} />
-    </>
-  );
-}
-```
-
-The canvas draws the circuit with switches for inputs and LEDs for outputs. `ClockControls` shows only for a circuit with a clock.
-
-Not a React page? Open the circuit in the editor and use Share → Embed for an iframe.
-
-Here's that circuit running live, in the card simten.dev puts around its circuits:
 
 import { CircuitCard } from '../../src/components/CircuitCard'
 import { circuit, bit } from '@simten/core'
 import { Xor, And } from '@simten/core/std'
 
 export const HalfAdder = circuit('HalfAdder', {
-  inputs:  { a: bit, b: bit },
+  inputs: { a: bit, b: bit },
   outputs: { sum: bit, carry: bit },
-  nodes:   { xor1: Xor, and1: And },
-  connect: ({ inputs, outputs, nodes: { xor1, and1 } }) => [
-    inputs.a.to(xor1.a, and1.a),
-    inputs.b.to(xor1.b, and1.b),
-    xor1.out.to(outputs.sum),
-    and1.out.to(outputs.carry),
+  nodes: { xor: Xor, and: And },
+  connect: ({ inputs, outputs, nodes: { xor, and } }) => [
+    inputs.a.to(xor.a, and.a),
+    inputs.b.to(xor.b, and.b),
+    xor.out.to(outputs.sum),
+    and.out.to(outputs.carry),
   ],
 })
+
+Simten is a digital logic simulator where circuits are TypeScript. Ports are typed, so a
+miswired circuit is a type error. Circuits run in the browser, in tests, and as Verilog on
+an FPGA.
+
+The quickest way to try it is the [editor](/circuit), or the [game](https://play.simten.dev),
+which starts at one NAND gate and ends with a CPU.
+
+## 1. Write a circuit
+
+```bash
+npm install @simten/core
+```
+
+```ts
+import { bit, circuit } from '@simten/core'
+import { And, Xor } from '@simten/core/std'
+
+export const HalfAdder = circuit('HalfAdder', {
+  inputs: { a: bit, b: bit },
+  outputs: { sum: bit, carry: bit },
+  nodes: { xor: Xor, and: And },
+  connect: ({ inputs, outputs, nodes: { xor, and } }) => [
+    inputs.a.to(xor.a, and.a),
+    inputs.b.to(xor.b, and.b),
+    xor.out.to(outputs.sum),
+    and.out.to(outputs.carry),
+  ],
+})
+```
+
+`inputs` and `outputs` are the pins, `nodes` are the parts inside, and `connect` is the
+wiring. Here it is running. Click the switches:
 
 <CircuitCard
   circuit={HalfAdder}
@@ -131,3 +58,79 @@ export const HalfAdder = circuit('HalfAdder', {
   title="Half Adder"
   description="Toggle the switches to see sum and carry"
 />
+
+## 2. Run it
+
+```ts
+import { simulate } from '@simten/core'
+
+const sim = simulate(HalfAdder)
+sim.set({ a: 1, b: 1 })
+sim.read() // { sum: 0, carry: 1 }
+```
+
+This works in Node, in the browser, and in any test runner. See the
+[API reference](/docs/api-reference).
+
+## 3. Show it in React
+
+```bash
+npm install @simten/react
+```
+
+```tsx
+import '@simten/react/styles.css'
+import { CircuitCanvas, useSimulation } from '@simten/react'
+
+function Demo() {
+  const sim = useSimulation(HalfAdder)
+  return <CircuitCanvas simulation={sim} height={300} />
+}
+```
+
+The circuit's code runs in a sandbox on another domain, never on your page. See
+[Building custom UIs](/docs/building-custom-uis) to make your own controls.
+
+## 4. Or put it on any page
+
+Open the circuit in the [editor](/circuit) and use Share → Embed to get an iframe. To
+drive it from your own code without React, see [Using Simten without React](/docs/without-react).
+
+## 5. Build circuits with an AI assistant
+
+```bash
+claude mcp add --scope user simten npx @simten/mcp
+```
+
+Your assistant writes circuits as files in your repo, tests them, and draws them in a
+browser tab. Any MCP client works. See [MCP integration](/docs/mcp-integration).
+
+## Export to Verilog
+
+```ts
+import { exportVerilog } from '@simten/core/verilog'
+
+const { verilog } = exportVerilog(HalfAdder, { target: 'synthesis' })
+```
+
+The output is checked against [Icarus Verilog](https://steveicarus.github.io/iverilog/).
+[Hardware & FPGA](/docs/hardware) takes it all the way to a ULX3S board, with Snake over
+HDMI as the example.
+
+## What people build with it
+
+- Gates, adders and ALUs
+- Counters, shift registers and state machines
+- [Snake](/blog/snake-in-hardware) and [Pong](/blog/pong-in-hardware), from logic gates with no CPU
+- A [pipelined RISC-V CPU](/blog/rv32i-cpu) that runs compiled C
+- A [TPU systolic array](/blog/how-tpus-work), a [CORDIC unit](/blog/computing-trig-in-hardware)
+  and an [Ethernet switch](/blog/how-network-switches-work)
+
+## Packages
+
+| Package | Use it to |
+|---|---|
+| `@simten/core` | Write and simulate circuits, export Verilog |
+| `@simten/react` | Show circuits in a React app |
+| `@simten/sandbox` | Run circuits from any web page, without React |
+| `@simten/mcp` | Let an AI assistant build circuits |
