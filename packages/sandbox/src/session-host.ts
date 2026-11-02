@@ -33,7 +33,6 @@ import {
   nodesOf,
   type SimulationNodes,
 } from '@simten/core/internal';
-import { autoHarness as legacyHarness } from './legacy-harness.js';
 import type {
   BehaviorSource,
   CompileId,
@@ -71,9 +70,6 @@ const SLICE_FRAME_RATE = 30;
 const PROBE_CYCLES = 16;
 /** At most one `progressed` heartbeat per this many ms. */
 const HEARTBEAT_MS = 1000;
-/** Primitives `set-input` may write: what a person at the board could change. */
-const INPUT_COMPONENTS = new Set(['Switch', 'Input']);
-
 /** A callback queued to run as soon as the event loop has handled what's waiting. */
 interface Soon {
   run: (() => void) | null;
@@ -275,56 +271,34 @@ interface HostSession {
   closed: boolean;
 }
 
-/** What `open` builds: the simulation, the IR it runs (harnessed if asked) and its library. */
+/** What `open` builds: the simulation and its library. */
 interface Opened {
   simulation: Simulation;
-  ir: CircuitIR;
   library: Library;
 }
 
-/**
- * The starting inputs `set` can write. A harness gives each input port the
- * circuit reads a Switch or Input named after it, and none to a port nothing
- * reads, so a value for one of those has nothing to set and is dropped.
- */
-function startingInputs(
-  request: Request<'open'>,
-  target: CircuitIR,
-  ir: CircuitIR,
-): Record<string, number> | null {
-  const given = Object.entries(request.initialInputs ?? {});
-  if (given.length === 0) return null;
-  if (!request.harness || ir === target) return Object.fromEntries(given);
-  const ports = new Set(target.inputs.map((p) => p.name));
-  const nodes = new Set(ir.nodes.map((n) => n.id));
-  return Object.fromEntries(given.filter(([key]) => !ports.has(key) || nodes.has(key)));
-}
-
-/** A Simulation of `target`, with std underneath for the harness's switches and displays. */
+/** A Simulation of `target`, with std underneath. */
 function openSimulation(target: Openable, request: Request<'open'>): Opened {
   const std = getStdLibrary();
-  // An empty first layer, for the legacy harness to add its circuits to.
+  // The compile's own circuits, then std's.
   const definitions = createDefinitions([], target.library.definitions, std.definitions);
   const library: Library = {
     definitions,
     behaviors: new Map([...std.behaviors, ...target.library.behaviors]),
   };
-  // Pages deployed before #531 ask for a harness and draw it; removed at the
-  // release (#424). The harness's `dut` node is the target, by name.
-  const ir = request.harness ? legacyHarness(target.ir, definitions) : target.ir;
   // The memory is in place from cycle 0, and `reset` goes back to it.
-  const simulation = createSimulation(ir, library, {
+  const simulation = createSimulation(target.ir, library, {
     history: request.history,
     memory: request.memory,
   });
   // Power-on: the inputs start here, and cycle 0 and history begin with them.
   // `reset` leaves the inputs where they are, as a reset line does.
-  const initialInputs = startingInputs(request, target.ir, ir);
-  if (initialInputs) {
+  const initialInputs = request.initialInputs ?? {};
+  if (Object.keys(initialInputs).length > 0) {
     simulation.set(initialInputs);
     simulation.reset();
   }
-  return { simulation, ir, library };
+  return { simulation, library };
 }
 
 export class SessionHost {
@@ -471,10 +445,6 @@ export class SessionHost {
         this.requireBit(session, request.name);
         simulation.set({ [request.name]: simulation.get(request.name) === 1 ? 0 : 1 });
         return this.updated(session);
-      // Kept for pages deployed before decision 0010; removed at the release (#424).
-      case 'set-input':
-        this.setLegacyInputs(session, request.values);
-        return this.updated(session);
       case 'tick':
         await this.slicedTick(session, request.id, request.count);
         return this.updated(session);
@@ -510,6 +480,8 @@ export class SessionHost {
         this.sessions.delete(session.id);
         return { type: 'closed' };
     }
+    // Only a page built for another version of the sandbox sends anything else.
+    throw new HostError(`Unknown request '${(request as { type: string }).type}'.`);
   }
 
   private async open(request: Request<'open'>): Promise<Reply> {
@@ -517,7 +489,7 @@ export class SessionHost {
       throw new HostError(`Session '${request.session}' is already open.`);
     }
     const target = await this.findCircuit(request.compile, request.circuit);
-    const { simulation, ir, library } = openSimulation(target, request);
+    const { simulation, library } = openSimulation(target, request);
     const session: HostSession = {
       id: request.session,
       target,
@@ -533,7 +505,7 @@ export class SessionHost {
     return {
       type: 'opened',
       session: session.id,
-      circuit: serializable(ir),
+      circuit: serializable(target.ir),
       isSequential: simulation.isSequential,
       state: this.snapshotState(session),
     };
@@ -568,30 +540,6 @@ export class SessionHost {
     if (width !== 1) {
       throw new HostError(
         `toggle('${name}'): '${name}' is ${width} bits wide. toggle flips one bit; use set for a bus.`,
-      );
-    }
-  }
-
-  /**
-   * The legacy `set-input`: write every path, then let the next read settle
-   * the circuit once. Every path is checked before any is written, so a bad
-   * one leaves the inputs as they were. `set` does the same for ports and
-   * paths alike. Removed at the release (#424).
-   */
-  private setLegacyInputs(session: HostSession, values: Record<string, number>): void {
-    const entries = Object.entries(values);
-    for (const [path] of entries) this.requireInput(session, path, 'setInput');
-    for (const [path, value] of entries) session.nodes.set(path, value);
-  }
-
-  /** Only what a person at the board could change: a Switch, or an Input (keyboards write those). */
-  private requireInput(session: HostSession, path: string, method: string): void {
-    const type = session.nodes.primitiveOf(path);
-    if (type === undefined) throw new HostError(`${method}('${path}'): no node has that path.`);
-    const metadata = session.library.definitions.resolveCircuit(type)?.metadata;
-    if (!INPUT_COMPONENTS.has(type) || !metadata?.interactiveArg) {
-      throw new HostError(
-        `${method}('${path}'): '${path}' is a ${type}, not an input. Only Switch and Input nodes can be set; a memory's contents go in the session's memory option.`,
       );
     }
   }

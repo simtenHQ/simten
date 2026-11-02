@@ -6,5 +6,6 @@
  */
 
 export { type InProcessSandboxOptions, inProcessSandbox } from './in-process.js';
+export type { WorkerRequest, WorkerResponse } from './protocol.js';
 export { createRelay, type Relay, type RelayOptions, type RelayWorker } from './relay.js';
 export { type HostClock, SessionHost, type SessionHostOptions } from './session-host.js';

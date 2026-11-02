@@ -13,31 +13,21 @@
  * `restarted`.
  *
  * Replay. The relay remembers every live compile by id and every open
- * session's `open` request, and the last successful compile per slot for the
- * slot messages. After a restart it replays them into the new worker, compiles
- * first, sessions at cycle 0 with history cleared and auto-run off. One that
+ * session's `open` request. After a restart it replays them into the new
+ * worker, compiles first, sessions at cycle 0 with history cleared and
+ * auto-run off. One that
  * hangs again is dropped and replay starts over on a fresh worker. Then each
  * reopened session gets a pushed `updated` frame and the page gets one
  * `restarted` message naming the reopened and dropped sessions.
- *
- * Slot replay (`slotCompiles`, `rememberSlot`, `replaySlotCompiles` and the
- * slot `error` reply on a restart) is for the slot messages. Kept: published
- * @simten/embed 0.5.x / @simten/ui 0.15.x send these; removed at the release
- * with the sandbox.simten.dev route (decision 0008, #424).
  */
 
 import type {
   SandboxMessage,
-  SandboxRequest,
-  SandboxResponse,
   SessionId,
-  SessionRequest,
   SessionUpdate,
-  SimSlot,
   WorkerRequest,
   WorkerResponse,
 } from './protocol.js';
-import { isSessionRequest } from './protocol.js';
 
 /** What the relay needs from a worker. */
 export interface RelayWorker {
@@ -49,7 +39,7 @@ export interface RelayOptions {
   /** Start a worker. Everything it sends goes to `receive`. */
   startWorker(receive: (message: WorkerResponse) => void): RelayWorker;
   /** Send to the page. */
-  respond(message: SandboxMessage | SandboxResponse): void;
+  respond(message: SandboxMessage): void;
   /** Silence allowed while the worker owes something. Default 5000. */
   timeoutMs?: number;
 }
@@ -63,11 +53,9 @@ const TIMED_OUT_ERROR = 'Execution timed out. The simulation was restarted from 
 const RESTARTED_ERROR = 'Worker restarted';
 const RESTARTED_MESSAGE =
   'The simulation stopped responding for 5 seconds and was restarted from cycle 0.';
-const DEFAULT_SLOT = 'default';
 
-type SlotCompile = Extract<SandboxRequest, { type: 'compile' | 'compile-ir' }>;
-type SessionCompile = Extract<SessionRequest, { type: 'compile' | 'compile-ir' }>;
-type SessionOpen = Extract<SessionRequest, { type: 'open' }>;
+type SessionCompile = Extract<WorkerRequest, { type: 'compile' | 'compile-ir' }>;
+type SessionOpen = Extract<WorkerRequest, { type: 'open' }>;
 
 /** The session a message's state belongs to, if it carries one. */
 function sessionOf(request: WorkerRequest | undefined): SessionId | undefined {
@@ -88,7 +76,6 @@ export function createRelay(options: RelayOptions): Relay {
   const running = new Set<SessionId>();
   let watchdog: ReturnType<typeof setTimeout> | undefined;
 
-  const slotCompiles = new Map<SimSlot, SlotCompile>();
   const compiles = new Map<string, SessionCompile>();
   const sessions = new Map<SessionId, SessionOpen>();
 
@@ -111,11 +98,10 @@ export function createRelay(options: RelayOptions): Relay {
   function onSilence() {
     watchdog = undefined;
     const stuck = inFlight.keys().next().value;
-    for (const [id, request] of inFlight) {
+    for (const id of inFlight.keys()) {
       const code = id === stuck ? 'timed-out' : 'restarted';
       const error = id === stuck ? TIMED_OUT_ERROR : RESTARTED_ERROR;
-      if (isSessionRequest(request)) options.respond({ id, type: 'failed', code, error });
-      else options.respond({ id, type: 'error', error });
+      options.respond({ id, type: 'failed', code, error });
     }
     inFlight.clear();
     running.clear();
@@ -155,7 +141,7 @@ export function createRelay(options: RelayOptions): Relay {
     trackRunning(message, request);
     if (request) remember(request, message);
     rearm();
-    options.respond(message as SandboxMessage | SandboxResponse);
+    options.respond(message);
   }
 
   function trackRunning(message: WorkerResponse, request: WorkerRequest | undefined) {
@@ -168,11 +154,6 @@ export function createRelay(options: RelayOptions): Relay {
 
   /** Keep what a new worker would need to get back to here. */
   function remember(request: WorkerRequest, message: WorkerResponse) {
-    if (isSessionRequest(request)) rememberSession(request, message);
-    else rememberSlot(request, message as SandboxResponse);
-  }
-
-  function rememberSession(request: SessionRequest, message: WorkerResponse) {
     const isCompile = request.type === 'compile' || request.type === 'compile-ir';
     if (isCompile && message.type === 'compiled') {
       compiles.set(request.compile, request);
@@ -182,18 +163,6 @@ export function createRelay(options: RelayOptions): Relay {
       sessions.set(request.session, request);
     } else if (request.type === 'close' && message.type === 'closed') {
       sessions.delete(request.session);
-    }
-  }
-
-  function rememberSlot(request: SandboxRequest, response: SandboxResponse) {
-    const compiled = response.type === 'compiled' || response.type === 'compiled-ir';
-    if (compiled && (request.type === 'compile' || request.type === 'compile-ir')) {
-      const slot = request.slot ?? DEFAULT_SLOT;
-      // Re-insert so the map stays in compile order.
-      slotCompiles.delete(slot);
-      slotCompiles.set(slot, request);
-    } else if (response.type === 'disposed' && request.type === 'dispose') {
-      slotCompiles.delete(request.slot);
     }
   }
 
@@ -232,21 +201,8 @@ export function createRelay(options: RelayOptions): Relay {
    * caller starts over with a fresh worker, because the hung one is busy.
    */
   async function replayAll(dropped: SessionId[]): Promise<Map<SessionId, SessionUpdate> | null> {
-    if (!(await replaySlotCompiles()) || !(await replayCompiles())) return null;
+    if (!(await replayCompiles())) return null;
     return replaySessions(dropped);
-  }
-
-  /** Source compiles first: a slot compile-ir can use what a source compile registered. */
-  async function replaySlotCompiles(): Promise<boolean> {
-    const ordered = [...slotCompiles.entries()].sort(
-      ([, a], [, b]) => Number(a.type === 'compile-ir') - Number(b.type === 'compile-ir'),
-    );
-    for (const [slot, request] of ordered) {
-      const result = await replay(request);
-      if (result === 'timeout' || result.type === 'error') slotCompiles.delete(slot);
-      if (result === 'timeout') return false;
-    }
-    return true;
   }
 
   async function replayCompiles(): Promise<boolean> {

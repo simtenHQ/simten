@@ -6,20 +6,16 @@
  *
  * Compiles and sessions are named by ids the page makes up. `SandboxClient`
  * and `SimulationClient` send these requests; the worker's `SessionHost`
- * answers them. The sandbox also still answers the older slot messages, which
- * are in `protocol-legacy.ts`.
+ * answers them.
  *
  * Request types are verbs, response types are past tense, kebab-case.
  *
  * The format is internal (decision 0010): pages use the clients, hosts use
- * `@simten/sandbox/host`. It is still exported as `@simten/sandbox/protocol`
- * because the sandbox app's legacy slot handlers need its types; that export
- * goes at the release, with them (#424).
+ * `@simten/sandbox/host`.
  */
 
 import type { CircuitIR, MemoryContents, PeripheralValue } from '@simten/core/internal';
 import type { ExportResult, VerilogExportOptions } from '@simten/core/verilog';
-import type { SandboxRequest, SandboxResponse } from './protocol-legacy.js';
 
 /** An eval or onTick function sent as source text (compile-ir) and rebuilt with `new Function`. */
 export interface BehaviorSource {
@@ -71,12 +67,6 @@ export type SessionRequest =
       compile: CompileId;
       /** The name given to `circuit(...)`. */
       circuit: string;
-      /**
-       * Wrap the circuit in Switch/Input and Led/HexDisplay nodes. Kept: pages
-       * deployed before #531 send it; removed at the release (#424). The canvas
-       * now draws a circuit's ports itself.
-       */
-      harness?: boolean;
       initialInputs?: Record<string, number>;
       /** Cycles of history. */
       history: number;
@@ -111,17 +101,6 @@ export type SessionRequest =
        * sent back to back each flip what the one before left.
        */
       name: string;
-    }
-  | {
-      id: string;
-      type: 'set-input';
-      session: SessionId;
-      /**
-       * Values by Switch or Input node path. Kept: pages deployed before
-       * decision 0010 send this instead of `set`; removed at the release, with
-       * the slot messages (#424).
-       */
-      values: Record<string, number>;
     }
   | { id: string; type: 'tick'; session: SessionId; count: number }
   | { id: string; type: 'run'; session: SessionId; speed: number; frameRate: number }
@@ -174,7 +153,7 @@ export type SessionResponse =
       id: string;
       type: 'opened';
       session: SessionId;
-      /** The simulated circuit (harnessed for pages that still ask for one). */
+      /** The simulated circuit. */
       circuit: CircuitIR;
       isSequential: boolean;
       state: SessionUpdate;
@@ -230,10 +209,7 @@ export type HostMessage = SessionResponse | ProgressedMessage;
 
 /**
  * The iframe's main thread only relays: the worker handles every page request
- * and its responses go back to the page unchanged, except `progressed`. Both
- * include the slot messages (`protocol-legacy.ts`).
+ * and its responses go back to the page unchanged, except `progressed`.
  */
-export type WorkerRequest = SessionRequest | SandboxRequest;
-export type WorkerResponse = HostMessage | SandboxResponse;
-
-export * from './protocol-legacy.js';
+export type WorkerRequest = SessionRequest;
+export type WorkerResponse = HostMessage;
