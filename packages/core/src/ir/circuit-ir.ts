@@ -34,10 +34,8 @@ export type BusValue = number;
 
 /**
  * Circuit definitions by name: the IR half of a library, without behavior.
- * This decouples the simulator from Zustand/React.
- *
- * The Zustand store in features/visual-editor/stores/ implements this interface
- * for UI integration, but the core simulator only depends on this interface.
+ * `createDefinitions` builds one; elaboration and the simulator only need to
+ * look a name up.
  */
 export interface CircuitDefinitions {
   /**
@@ -45,11 +43,6 @@ export interface CircuitDefinitions {
    * Returns the Circuit definition or undefined if not found.
    */
   resolveCircuit(name: string): CircuitIR | undefined;
-
-  /**
-   * Get all registered primitive names.
-   */
-  getAllPrimitiveNames(): string[];
 }
 
 export interface MutableCircuitDefinitions extends CircuitDefinitions {

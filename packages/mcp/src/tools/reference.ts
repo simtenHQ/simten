@@ -10,7 +10,7 @@
  */
 
 import type { McpServer } from '@modelcontextprotocol/server';
-import { getStdLibrary } from '@simten/core/internal';
+import { getStdCircuits } from '@simten/core/internal';
 import { z } from 'zod';
 import {
   annotatePrimitivesWithOptions,
@@ -25,7 +25,7 @@ import { GRAMMAR } from './grammar.js';
 // don't reveal factory options.
 const grammar = GRAMMAR;
 const components = annotatePrimitivesWithOptions(
-  getPrimitivesHandler({ compact: true }, getStdLibrary().definitions),
+  getPrimitivesHandler({ compact: true }, getStdCircuits()),
   getFactoryOptionSignatures(),
 );
 

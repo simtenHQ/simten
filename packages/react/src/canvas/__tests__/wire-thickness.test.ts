@@ -61,7 +61,6 @@ const circuit: CircuitIR = {
 
 const library = {
   resolveCircuit: () => undefined,
-  getAllPrimitiveNames: () => ['Input', 'Switch', 'Register'],
 };
 
 describe('wire thickness', () => {

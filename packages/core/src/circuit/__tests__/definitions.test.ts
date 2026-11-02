@@ -21,11 +21,6 @@ const primitive = (name: string, description = name): CircuitIR => ({
   metadata: { description },
 });
 
-const composite = (name: string): CircuitIR => ({
-  ...primitive(name),
-  implementation: { kind: 'composite' },
-});
-
 describe('createDefinitions', () => {
   it('looks a name up in its own circuits, then in each fallback in order', () => {
     const std = createDefinitions([primitive('Nand', 'std'), primitive('Led', 'std')]);
@@ -53,11 +48,5 @@ describe('createDefinitions', () => {
     expect(definitions.resolveCircuit('Led')?.metadata?.description).toBe('added');
     expect(std.resolveCircuit('Led')?.metadata?.description).toBe('std');
     expect(definitions.getAllCircuitNames()).toEqual(['Led']);
-  });
-
-  it('lists the primitives of every layer once', () => {
-    const std = createDefinitions([primitive('Nand'), primitive('Led')]);
-    const own = createDefinitions([primitive('Led'), composite('HalfAdder')], std);
-    expect(own.getAllPrimitiveNames().sort()).toEqual(['Led', 'Nand']);
   });
 });

@@ -57,7 +57,6 @@ function buildCounter() {
   for (const [, dep] of internalsOf(Counter).dependencies) map.set(dep.name, internalsOf(dep).ir);
   const definitions: CircuitDefinitions = {
     resolveCircuit: (name) => map.get(name),
-    getAllPrimitiveNames: () => [...map.keys()],
   };
 
   return { circuit: internalsOf(Counter).ir, definitions };

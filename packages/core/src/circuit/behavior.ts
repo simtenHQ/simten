@@ -71,8 +71,6 @@ export function createDefinitions(
 ): MutableCircuitDefinitions {
   const byName = new Map<string, CircuitIR>();
   for (const c of circuits) byName.set(c.name, c);
-  const own = (filter: (c: CircuitIR) => boolean) =>
-    [...byName.values()].filter(filter).map((c) => c.name);
   return {
     resolveCircuit: (name) => {
       const found = byName.get(name);
@@ -83,12 +81,6 @@ export function createDefinitions(
       }
       return undefined;
     },
-    getAllPrimitiveNames: () => [
-      ...new Set([
-        ...own((c) => c.implementation.kind === 'primitive'),
-        ...fallbacks.flatMap((layer) => layer.getAllPrimitiveNames()),
-      ]),
-    ],
     addCircuit: (c) => {
       byName.set(c.name, c);
     },
