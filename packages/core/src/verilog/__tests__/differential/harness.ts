@@ -121,7 +121,7 @@ function topSignals(top: CircuitIR): Signal[] {
     .filter((p) => widthOf(p.portType) <= 32)
     .map((p) => ({
       label: p.name,
-      simKey: `__top__.${p.name}`,
+      simKey: `${p.name}`,
       expr: p.name,
       width: widthOf(p.portType),
     }));

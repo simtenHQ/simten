@@ -34,7 +34,7 @@ interface VCDVar {
   id: string;
   /** Port name (last path segment) */
   name: string;
-  /** Full portValues key: "nodeId.portName" */
+  /** Its port-value key: a top-level port's name, or "nodeId.portName" */
   key: string;
   width: number;
   isBit: boolean;
@@ -109,13 +109,13 @@ function buildScopeTree(
 
   // Add top-level ports directly under root scope
   for (const name of topLevelInputs) {
-    const key = `__top__.${name}`;
+    const key = name;
     const { isBit, width } = inferWidth(key, portValuesByTick);
     root.vars.push({ id: nextId(), name, key, width, isBit });
   }
   for (const name of topLevelOutputs) {
     if (topLevelInputs.includes(name)) continue;
-    const key = `__top__.${name}`;
+    const key = name;
     const { isBit, width } = inferWidth(key, portValuesByTick);
     root.vars.push({ id: nextId(), name, key, width, isBit });
   }

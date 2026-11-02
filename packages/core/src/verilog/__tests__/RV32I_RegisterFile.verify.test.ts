@@ -111,7 +111,7 @@ function runSimulator(steps: Step[]): SampleOut[] {
     sim.tick();
     const pv = sim.getPortValues();
     const pick = (name: string) => {
-      const v = pv.get(`__top__.${name}`);
+      const v = pv.get(`${name}`);
       return typeof v === 'number' ? v >>> 0 : 0;
     };
     outputs.push({

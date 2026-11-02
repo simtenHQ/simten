@@ -86,7 +86,7 @@ function buildResetVectors(): SequentialTestVector[] {
 }
 
 function readCount(sim: ReturnType<typeof createEngine>): number {
-  const v = sim.getPortValues().get('__top__.count');
+  const v = sim.getPortValues().get('count');
   return typeof v === 'number' ? (v >>> 0) & 0xff : 0;
 }
 

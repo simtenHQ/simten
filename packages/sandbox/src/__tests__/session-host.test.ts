@@ -62,7 +62,7 @@ describe('compile and open', () => {
     expectType(await call({ type: 'release', compile: 'c1' }), 'released');
     expectType(await call({ type: 'set', session: 's1', values: { en: 1 } }), 'updated');
     const ticked = expectType(await call({ type: 'tick', session: 's1', count: 3 }), 'updated');
-    expect(ticked.state.ports.get('__top__.count')).toBe(3);
+    expect(ticked.state.ports.get('count')).toBe(3);
     const reopen = expectType(
       await call({ type: 'open', session: 's2', compile: 'c1', circuit: 'Counter', history: 0 }),
       'failed',
@@ -77,7 +77,7 @@ describe('set and tick', () => {
     await call({ type: 'set', session: 's1', values: { en: 1 } });
     const res = expectType(await call({ type: 'tick', session: 's1', count: 5 }), 'updated');
     expect(res.state.cycle).toBe(5);
-    expect(res.state.ports.get('__top__.count')).toBe(5);
+    expect(res.state.ports.get('count')).toBe(5);
   });
 
   it('settles a combinational circuit after set', async () => {
@@ -88,7 +88,7 @@ describe('set and tick', () => {
       await call({ type: 'set', session: 's1', values: { a: 2, b: 3 } }),
       'updated',
     );
-    expect(res.state.ports.get('__top__.sum')).toBe(5);
+    expect(res.state.ports.get('sum')).toBe(5);
   });
 
   it('rejects a node that is not an input', async () => {
@@ -129,7 +129,7 @@ describe('history', () => {
     expect(forward.state.cycle).toBe(5);
     const seek = expectType(await call({ type: 'seek', session: 's1', index: 0 }), 'updated');
     expect(seek.moved).toBe(true);
-    expect(seek.state.ports.get('__top__.count')).toBe(0);
+    expect(seek.state.ports.get('count')).toBe(0);
   });
 
   it('stepBack moves nothing with history 0', async () => {
@@ -196,7 +196,7 @@ const SlowCounter = circuit('SlowCounter', {
     const start = slowClock.now;
     const res = expectType(await call({ type: 'tick', session: 's1', count: 3000 }), 'updated');
     expect(res.state.cycle).toBe(3000);
-    expect(res.state.ports.get('__top__.count')).toBe(3000 & 0xff);
+    expect(res.state.ports.get('count')).toBe(3000 & 0xff);
     // One history entry for the whole request, after the initial one.
     expect(res.state.history).toEqual({ length: 2, index: 1 });
     // Slices of about 80% of a 33ms frame.
@@ -361,7 +361,7 @@ export const Inv = circuit('Inv', {
     expectType(compiled, 'compiled');
     await call({ type: 'open', session: 's1', compile: 'c1', circuit: 'Inv', history: 0 });
     const res = expectType(await call({ type: 'set', session: 's1', values: { a: 1 } }), 'updated');
-    expect(res.state.ports.get('__top__.y')).toBe(0);
+    expect(res.state.ports.get('y')).toBe(0);
   });
 });
 
@@ -419,7 +419,7 @@ const Gate = circuit('Gate', {
       await call({ type: 'set', session: 's1', values: { a: 1, sw: 1 } }),
       'updated',
     );
-    expect(res.state.ports.get('__top__.y')).toBe(1);
+    expect(res.state.ports.get('y')).toBe(1);
   });
 
   it('starts at initialInputs, and reset leaves the inputs where they are', async () => {
@@ -536,7 +536,7 @@ describe('toggle', () => {
       await callCounter({ type: 'toggle', session: 's1', name: 'en' }),
       'updated',
     );
-    expect(on.state.ports.get('__top__.en')).toBe(1);
+    expect(on.state.ports.get('en')).toBe(1);
   });
 
   it('flips twice when two are sent without waiting, so a double click ends where it started', async () => {
@@ -583,7 +583,7 @@ const Keyed = circuit('Keyed', {
       "toggle('a'): 'a' is 8 bits wide. toggle flips one bit; use set for a bus.",
     );
     const after = expectType(await call({ type: 'set', session: 's1', values: {} }), 'updated');
-    expect(after.state.ports.get('__top__.a')).toBe(5);
+    expect(after.state.ports.get('a')).toBe(5);
 
     await call({ type: 'open', session: 's2', compile: 'c1', circuit: 'Keyed', history: 0 });
     const node = expectType(await call({ type: 'toggle', session: 's2', name: 'kbd' }), 'failed');
@@ -602,14 +602,14 @@ const Keyed = circuit('Keyed', {
       await call({ type: 'toggle', session: 's1', name: 'en' }),
       'updated',
     );
-    expect(fromPast.state.ports.get('__top__.en')).toBe(0);
+    expect(fromPast.state.ports.get('en')).toBe(0);
     // Reset leaves the input where it is, so the next toggle turns it back on.
     await call({ type: 'reset', session: 's1' });
     const afterReset = expectType(
       await call({ type: 'toggle', session: 's1', name: 'en' }),
       'updated',
     );
-    expect(afterReset.state.ports.get('__top__.en')).toBe(1);
+    expect(afterReset.state.ports.get('en')).toBe(1);
   });
 });
 
@@ -626,13 +626,13 @@ describe('scan and sample', () => {
       initialInputs: { b: 10 },
     });
     const res = expectType(
-      await call({ type: 'scan', session: 's1', path: 'a', port: '__top__.sum', count: 4 }),
+      await call({ type: 'scan', session: 's1', path: 'a', port: 'sum', count: 4 }),
       'scanned',
     );
     expect(res.values).toEqual([10, 11, 12, 13]);
   });
 
-  it('scan takes a Switch path, as set does', async () => {
+  it('scan reads a node port by path, and drives a Switch path, as set does', async () => {
     const { call } = await openLatch();
     const res = expectType(
       await call({ type: 'scan', session: 's1', path: 'd', port: 'q.in', count: 2 }),
@@ -645,7 +645,7 @@ describe('scan and sample', () => {
     const { call } = await openCounter(10);
     await call({ type: 'set', session: 's1', values: { en: 1 } });
     const res = expectType(
-      await call({ type: 'sample', session: 's1', port: '__top__.count', count: 5 }),
+      await call({ type: 'sample', session: 's1', port: 'count', count: 5 }),
       'sampled',
     );
     expect(res.samples).toEqual([1, 2, 3, 4, 5]);
@@ -653,13 +653,22 @@ describe('scan and sample', () => {
     expect(res.state.history).toEqual({ length: 2, index: 1 });
   });
 
+  it('sample does not take the internal key of an own port', async () => {
+    const { call } = await openCounter();
+    const res = expectType(
+      await call({ type: 'sample', session: 's1', port: '__top__.count', count: 2 }),
+      'failed',
+    );
+    expect(res.error).toMatch(/^sample: no port '__top__.count'/);
+  });
+
   it('sample rejects a port that is not there', async () => {
     const { call } = await openCounter();
     const res = expectType(
-      await call({ type: 'sample', session: 's1', port: 'count', count: 5 }),
+      await call({ type: 'sample', session: 's1', port: 'nope', count: 5 }),
       'failed',
     );
-    expect(res.error).toMatch(/^sample: no port 'count'/);
+    expect(res.error).toMatch(/^sample: no port 'nope'/);
   });
 });
 
@@ -688,14 +697,14 @@ const RomReader = circuit('RomReader', {
       'opened',
     );
     expect(opened.state.cycle).toBe(0);
-    expect(opened.state.ports.get('__top__.out')).toBe(0x11);
+    expect(opened.state.ports.get('out')).toBe(0x11);
     // The first history entry has the memory in it.
     expect(opened.state.history).toEqual({ length: 1, index: 0 });
 
     await call({ type: 'set', session: 's1', values: { addr: 1 } });
     await call({ type: 'tick', session: 's1', count: 1 });
     const back = expectType(await call({ type: 'seek', session: 's1', index: 0 }), 'updated');
-    expect(back.state.ports.get('__top__.out')).toBe(0x11);
+    expect(back.state.ports.get('out')).toBe(0x11);
 
     await call({ type: 'reset', session: 's1' });
     const res = expectType(
@@ -703,7 +712,7 @@ const RomReader = circuit('RomReader', {
       'updated',
     );
     expect(res.state.cycle).toBe(0);
-    expect(res.state.ports.get('__top__.out')).toBe(0x22);
+    expect(res.state.ports.get('out')).toBe(0x22);
   });
 
   it('rejects contents for a path that is not a node', async () => {

@@ -125,7 +125,7 @@ describe('get', () => {
 describe('nodesOf(sim).resolve', () => {
   it('gives what get reads and how wide it is', () => {
     const nodes = nodesOf(simulate(Board));
-    expect(nodes.resolve('a')).toEqual({ kind: 'port', name: 'a', key: '__top__.a', width: 1 });
+    expect(nodes.resolve('a')).toEqual({ kind: 'port', name: 'a', key: 'a', width: 1 });
     expect(nodes.resolve('latch.d')).toMatchObject({ kind: 'path', key: 'latch.d.out', width: 1 });
     expect(nodes.resolve('kbd')).toMatchObject({ kind: 'path', key: 'kbd.out', width: 8 });
     expect(nodes.resolve('y')).toMatchObject({ kind: 'output', width: 1 });

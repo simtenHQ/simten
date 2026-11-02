@@ -356,7 +356,7 @@ describe('top-level primitive simulation', () => {
     sim.setInput('a', 5);
     sim.runCombinational();
     const vals = sim.getPortValues();
-    expect(vals.get('__top__.result')).toBe(10);
+    expect(vals.get('result')).toBe(10);
   });
 
   it('elaborates and simulates a Register with state', async () => {
@@ -386,6 +386,6 @@ describe('top-level primitive simulation', () => {
     sim.setInput('we', 1);
     sim.tick(); // clock edge: value ← 42
     const vals = sim.getPortValues();
-    expect(vals.get('__top__.q')).toBe(42);
+    expect(vals.get('q')).toBe(42);
   });
 });

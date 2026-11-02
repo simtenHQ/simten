@@ -150,7 +150,7 @@ describe('useSimulation', () => {
       await hook.result.current.actions.toggle('b');
     });
     expect(hook.result.current.state.outputs).toEqual({ y: 1 });
-    expect(hook.result.current.state.portValues?.get('__top__.y')).toBe(1);
+    expect(hook.result.current.state.portValues?.get('y')).toBe(1);
   });
 
   it('simulates source text and keeps the last good session after a failed compile', async () => {
@@ -307,7 +307,7 @@ describe('useSimulation', () => {
     await act(async () => {
       await Promise.all([actions.set({ a: 1, b: 1 }), actions.toggle('a')]);
     });
-    expect(hook.result.current.state.portValues?.get('__top__.a')).toBe(0);
+    expect(hook.result.current.state.portValues?.get('a')).toBe(0);
     expect(hook.result.current.state.outputs).toEqual({ y: 0 });
   });
 
@@ -333,7 +333,7 @@ describe('useSimulation', () => {
       await actions.stepBack();
       await actions.toggle('en');
     });
-    expect(hook.result.current.state.portValues?.get('__top__.en')).toBe(0);
+    expect(hook.result.current.state.portValues?.get('en')).toBe(0);
   });
 
   it('forgets a rejected set, so a toggle flips from the real value', async () => {
@@ -349,7 +349,7 @@ describe('useSimulation', () => {
     await act(async () => {
       await actions.toggle('a');
     });
-    expect(hook.result.current.state.portValues?.get('__top__.a')).toBe(0);
+    expect(hook.result.current.state.portValues?.get('a')).toBe(0);
   });
 
   it('keeps a later write when an earlier one to the same path is rejected', async () => {
@@ -365,7 +365,7 @@ describe('useSimulation', () => {
       // a = 0 is still in flight, so the toggle must flip from it, not from 1.
       await Promise.all([later, actions.toggle('a')]);
     });
-    expect(hook.result.current.state.portValues?.get('__top__.a')).toBe(1);
+    expect(hook.result.current.state.portValues?.get('a')).toBe(1);
   });
 
   it('drops a compile that finishes after a newer one started', async () => {
@@ -445,7 +445,7 @@ describe('inputs by name', () => {
     // en stayed off through the reset, so the counter didn't count.
     expect(hook.result.current.state.cycle).toBe(3);
     expect(hook.result.current.state.outputs).toEqual({ count: 0 });
-    expect(hook.result.current.state.portValues?.get('__top__.en')).toBe(0);
+    expect(hook.result.current.state.portValues?.get('en')).toBe(0);
   });
 
   it('restarts from power-on, where reset settles a latch on the inputs it was left with', async () => {

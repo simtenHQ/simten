@@ -68,7 +68,7 @@ export function useLiveVoice(sample: SimulationActions['sample'], controls: Voic
     // gets a run of its own.
     const count = pos.sample === 0 ? 1 : Math.min(CHUNK_SAMPLES, remaining);
     // The voice's `audio` output port.
-    const raw = await sample('__top__.audio', count, {
+    const raw = await sample('audio', count, {
       inc: incFor(note.hz),
       trig: pos.sample === 0 ? 1 : 0,
       wave: controlsRef.current.wave,

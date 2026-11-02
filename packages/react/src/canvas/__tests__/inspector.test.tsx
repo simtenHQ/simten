@@ -288,7 +288,7 @@ describe('useReferenceSession', () => {
     const { client, calls, opens, sets } = sandbox();
     const hook = renderReference(client);
 
-    await waitFor(() => expect(hook.result.current.ports?.get('__top__.sum')).toBe(7));
+    await waitFor(() => expect(hook.result.current.ports?.get('sum')).toBe(7));
     expect(opens).toHaveLength(1);
     expect(opens[0]).toMatchObject({ circuit: 'Adder4_madeOf', history: 0 });
 
@@ -301,7 +301,7 @@ describe('useReferenceSession', () => {
         ['dut.add.carry_in', 1],
       ]),
     });
-    await waitFor(() => expect(hook.result.current.ports?.get('__top__.sum')).toBe(14));
+    await waitFor(() => expect(hook.result.current.ports?.get('sum')).toBe(14));
     expect(sets.at(-1)).toEqual({ a: 9, carry_in: 1 });
 
     // A parent update with the same inputs sends nothing.

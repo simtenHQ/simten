@@ -85,3 +85,21 @@ describe('hierarchy is load-bearing (not decorative)', () => {
     }).toThrow(/sub/i);
   });
 });
+
+describe('port names', () => {
+  it('rejects a dot in a port name, as circuit() does', () => {
+    // `module top(input \a.b , output y);`: yosys keeps the escaped name as `a.b`.
+    const dotted: YosysNetlist = {
+      modules: {
+        top: {
+          ports: {
+            'a.b': { direction: 'input', bits: [2] },
+            y: { direction: 'output', bits: [2] },
+          },
+          cells: {},
+        },
+      },
+    };
+    expect(() => importNetlist(dotted, 'top')).toThrow("top: port 'a.b' contains a dot");
+  });
+});

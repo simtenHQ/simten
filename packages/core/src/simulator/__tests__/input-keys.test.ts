@@ -38,8 +38,8 @@ describe('resolveKey on a port and a Switch with the same name', () => {
 
   it('takes the same names apart', () => {
     const apart = scope({ inputs: ['a'], outputs: ['y'] }, ['s']);
-    expect(resolveKey('set', 'a', apart)).toEqual({ kind: 'port', name: 'a', key: '__top__.a' });
+    expect(resolveKey('set', 'a', apart)).toEqual({ kind: 'port', name: 'a', key: 'a' });
     expect(resolveKey('set', 's', apart)).toEqual({ kind: 'path', path: 's', key: 's.out' });
-    expect(resolveKey('get', 'y', apart)).toEqual({ kind: 'output', key: '__top__.y' });
+    expect(resolveKey('get', 'y', apart)).toEqual({ kind: 'output', key: 'y' });
   });
 });

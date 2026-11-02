@@ -9,8 +9,8 @@
  * the output-side candidates, which broke when anyone tried to read
  * outputs through it).
  *
- * The map is keyed by `<nodeId>.<portName>`. A circuit's own ports are under
- * `__top__` (`__top__.a`). A circuit without ports is read off its own nodes:
+ * A circuit's own ports are keyed by name, its nodes' by `<nodeId>.<portName>`.
+ * A circuit without ports is read off its own nodes:
  * a Switch `a` at `a.out`, a lamp `s` at `s.in`.
  */
 
@@ -27,10 +27,9 @@ export function readPortBit(
 ): number | null {
   if (!portValues) return null;
   const candidates = [
-    `__top__.${portName}`, // the circuit's own port
+    portName, // the circuit's own port
     `${portName}.out`, // a Switch node
     `${portName}.in`, // a Led or display node
-    portName, // bare last-resort
   ];
   for (const key of candidates) {
     const v = portValues.get(key);

@@ -442,7 +442,7 @@ describe('nodesOf', () => {
     const ports = nodesOf(sim).ports();
     expect(ports.get('reg.q')).toBe(9);
     expect(ports.get('inc.y')).toBe(10);
-    expect(ports.get('__top__.q')).toBe(9);
+    expect(ports.get('q')).toBe(9);
   });
 
   it('advance then record is tick(n): one history entry', () => {

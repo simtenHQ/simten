@@ -74,9 +74,8 @@ function buildSim() {
 }
 
 function qOut(sim: ReturnType<typeof createEngine>): boolean {
-  // Top-level output 'q' is wired to dff.q. The simulator exposes it via the
-  // top-level alias under __top__.
-  const v = sim.getOutput('__top__', 'q');
+  // Top-level output 'q' is wired to dff.q. The simulator exposes it by name.
+  const v = sim.getOutput('', 'q');
   return Boolean(v);
 }
 

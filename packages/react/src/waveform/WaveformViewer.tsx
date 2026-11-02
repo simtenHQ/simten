@@ -72,13 +72,13 @@ function signalsOf(circuit: CircuitIR): Omit<Signal, 'values'>[] {
     }));
   const ports = [
     ...circuit.inputs.map((p) => ({
-      key: `__top__.${p.name}`,
+      key: p.name,
       name: p.name,
       isInput: true,
       width: widthOf(p.portType),
     })),
     ...circuit.outputs.map((p) => ({
-      key: `__top__.${p.name}`,
+      key: p.name,
       name: p.name,
       isInput: false,
       width: widthOf(p.portType),

@@ -672,6 +672,10 @@ function moduleShapes(netlist: YosysNetlist): Map<string, ModuleShape> {
     const inputs: PortDescriptor[] = [];
     const outputs: PortDescriptor[] = [];
     for (const [pn, p] of Object.entries(mod.ports)) {
+      // As in `circuit()`: a port's value is read by its name and a node's by
+      // path, so a dot (an escaped identifier like `\a.b`) could read as a path.
+      if (pn.includes('.'))
+        throw new Error(`${name}: port '${pn}' contains a dot; dots separate node paths`);
       const desc: PortDescriptor = { name: pn, portType: portTypeOf(p.bits.length) };
       if (p.direction === 'input') inputs.push(desc);
       else outputs.push(desc); // treat inout as output for the spike
