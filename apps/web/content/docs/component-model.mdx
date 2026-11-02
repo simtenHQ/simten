@@ -13,20 +13,15 @@ Search for any primitive, see its ports and parameters, and interact with a live
 
 ---
 
-## The Core Invariant
+## Composites and primitives
 
-**Circuits are either structural (nodes + connections) or behavioral (eval/onTick functions). Structural circuits have zero runtime overhead: they're elaborated away before simulation.**
+A circuit is either a composite, built from `nodes` and `connect`, or a primitive, with an `eval` function (and `state` and `onTick` if it has a clock).
 
-When you write a composite like `HalfAdder` using `nodes` and `connect`, you're defining structure. The simulator expands it to primitives before running. This is called **elaboration**. All runtime behavior ultimately comes from circuits with `eval` or `onTick` functions.
+Before simulating, the simulator replaces every composite with the parts inside it, all the way down to primitives. This is called **elaboration**, and it means composites cost nothing at run time. Everything the simulation does comes from primitives.
 
 You can also write your own behavioral circuits using `eval` (combinational) or `state` + `onTick` (sequential). See the [API Reference](/docs/api-reference#behavioral-circuits) for details.
 
-## Component Resolution
-
-When the system encounters a node:
-1. Check for `eval` / `onTick` on the circuit; if found, treat as a behavioral leaf
-2. Check for `nodes` / `connect`; if found, elaborate (expand recursively)
-3. Error: circuit has neither
+A circuit with `nodes` is a composite, even if it also has an `eval`: its nodes are what run. A circuit with only an `eval` is a primitive.
 
 ---
 
