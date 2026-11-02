@@ -19,7 +19,7 @@
  */
 
 import type { CircuitIR, FlatCircuit } from '@simten/core/internal';
-import { elaborate } from '@simten/core/internal';
+import { createDefinitions, elaborate } from '@simten/core/internal';
 import type { Compiled, SandboxClient, SimulationClient } from '@simten/sandbox';
 import type { GradeFailure, GradeResult, Level } from './types';
 
@@ -221,12 +221,7 @@ export async function grade(
     if (problems.length > 0) return fail({ kind: 'interface', problems });
 
     // ── 3. built only from what the level permits ──
-    const byName = new Map(all.map((c) => [c.name, c]));
-    const flat = elaborate(target, {
-      resolveCircuit: (name: string) => byName.get(name),
-      getAllPrimitiveNames: () =>
-        all.filter((c) => c.implementation?.kind === 'primitive').map((c) => c.name),
-    });
+    const flat = elaborate(target, createDefinitions(all));
 
     const forbidden = forbiddenPrimitives(flat, level.allowed);
     if (forbidden.length > 0) {

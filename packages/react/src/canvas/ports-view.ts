@@ -19,6 +19,7 @@
 import {
   type CircuitDefinitions,
   type CircuitIR,
+  createDefinitions,
   internalsOf,
   TOP_LEVEL_NODE,
 } from '@simten/core/internal';
@@ -129,22 +130,13 @@ export function portsView(circuit: CircuitIR): DrawnCircuit {
   };
 }
 
-/** The components the drawing adds, by name. */
-let parts: Map<string, CircuitIR> | null = null;
-function part(name: string): CircuitIR | undefined {
-  parts ??= new Map(
-    [Switch, Led, Input(), HexDisplay()].map((c) => {
-      const { ir } = internalsOf(c);
-      return [ir.name, ir];
-    }),
-  );
-  return parts.get(name);
-}
+/** The controls and indicators the drawing adds, built once. */
+let portParts: CircuitDefinitions | null = null;
 
 /** `definitions`, plus the controls and indicators the drawing adds. */
 export function withPortParts(definitions: CircuitDefinitions): CircuitDefinitions {
-  return {
-    resolveCircuit: (name) => definitions.resolveCircuit(name) ?? part(name),
-    getAllPrimitiveNames: () => definitions.getAllPrimitiveNames(),
-  };
+  portParts ??= createDefinitions(
+    [Switch, Led, Input(), HexDisplay()].map((c) => internalsOf(c).ir),
+  );
+  return createDefinitions([], definitions, portParts);
 }
