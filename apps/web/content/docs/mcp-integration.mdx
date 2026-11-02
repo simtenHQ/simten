@@ -3,25 +3,19 @@ title: MCP Integration
 description: Drive Simten from any MCP-compatible AI assistant. Build, simulate, and verify circuits from your terminal
 ---
 
-Simten ships an MCP server (`@simten/mcp`) that any MCP-compatible AI assistant can drive: Claude Code, Codex CLI, Gemini CLI, Cursor, and others. You talk to your assistant in the terminal; it writes TypeScript circuit files, pushes them to a live viewer in your browser, and runs simulations and verification, so you watch the circuit take shape on a canvas as it's built.
+`@simten/mcp` lets an AI assistant build circuits: Claude Code, Codex CLI, Gemini CLI, Cursor, or any other MCP client. When you ask it for a circuit, it:
 
-It's a standard stdio MCP server, so the tools below are the same whatever client you point at it. The examples on this page use [Claude Code](https://claude.ai/claude-code) as the reference client.
+1. Writes the circuit to a TypeScript file in your repo
+2. Draws it in a browser tab
+3. Simulates it, or runs a testbench, to check it works
 
-## What it looks like
-
-You run your assistant in the terminal. When you ask it to build something, it:
-
-1. Writes the TypeScript circuit definition to a file
-2. Pushes it to a live viewer in your browser, and the circuit appears on the canvas instantly
-3. Runs a simulation, or a self-checking testbench, to confirm it behaves correctly
-
-The browser is a **viewer**: the assistant pushes circuits to it for display. It is one-way by design: the page shows what was built and sends nothing actionable back (see [Security](/docs/security#local-studio-server)). You drive the conversation from the terminal, where your assistant already lives.
+The browser tab only displays what the assistant sends. Nothing you do there goes back to the assistant (see [Security](/docs/security#local-studio-server)).
 
 ## Setup
 
 ### 1. Install a client
 
-If you don't already have one, install an MCP-capable assistant. Any of these work; the rest of this page uses Claude Code.
+Any MCP client works. This page uses Claude Code in its examples.
 
 ### 2. Add the MCP server
 
@@ -29,15 +23,13 @@ Pick your client:
 
 <McpInstall />
 
-This registers the Simten MCP server with your assistant, which now has access to the circuit design tools.
+### 3. Ask for a circuit
 
-### 3. That's it, and the viewer opens itself
-
-When the assistant calls `show_circuit`, the MCP serves a small bundled editor from `localhost` and opens it in your browser automatically. Because the page and its WebSocket share a single localhost origin, there's no "Local Network Access" prompt and it works in every browser (including Safari). You don't need to visit simten.dev.
+The first time the assistant draws one, the server opens a viewer in your browser, served from `localhost`. You don't need to visit simten.dev.
 
 ## Available tools
 
-Once the MCP server is registered, your assistant has access to these tools:
+The assistant gets these tools:
 
 | Tool | What it does |
 |------|-------------|
@@ -88,9 +80,8 @@ Browser viewer
 
 **The assistant:**
 1. Writes the circuit: Register + Adder + Constant + HexDisplay
-2. Calls `show_circuit`, and the circuit appears in your browser viewer
-3. Calls `simulate_circuit` (or `verify_circuit`) to confirm it counts correctly
-4. Replies in the terminal: "I've built a 4-bit counter. Click play to watch it count from 0 to F."
+2. Calls `show_circuit`, and the circuit appears in your browser
+3. Calls `simulate_circuit` or `verify_circuit` to check it counts
 
 **You:** "Can you add a reset button?"
 
@@ -99,12 +90,4 @@ Browser viewer
 2. Adds a Switch and Mux for reset logic
 3. Calls `show_circuit` again, and the viewer repaints with the reset switch
 
-## Running without an assistant
-
-The app works without any AI assistant. You can:
-
-- Write circuit code directly in the editor
-- Explore the interactive blog posts
-- Embed circuits in your own React app
-
-An assistant is an addition, not a requirement: everything on the site works without one.
+Everything else in Simten works without an assistant.
