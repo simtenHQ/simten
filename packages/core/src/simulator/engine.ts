@@ -69,10 +69,14 @@ class DefaultSimulatorEngine implements SimulatorEngine {
   private originalNodeValues: Map<string, ArgumentValue | undefined> = new Map();
   private nodesById: Map<string, FlatNode> = new Map();
 
-  // Cached flat state (lazily computed on getState())
+  // The string-keyed views of the numeric state, built on first read. A tick
+  // drops them rather than rebuilding them, since most ticks are never read.
   private cachedFlatSeqState: FlatSequentialState | null = null;
   private cachedPortValues: Map<string, BitValue | BusValue> | null = null;
-  private cacheValid = false;
+  // The numeric values have propagated since the last input or state write.
+  private settled = false;
+  // Bumped whenever the state moves, so a TickResult read late can tell.
+  private generation = 0;
 
   // Metrics
   private totalTicks = 0;
@@ -109,7 +113,7 @@ class DefaultSimulatorEngine implements SimulatorEngine {
 
     this.totalTicks = 0;
     this.totalEvaluations = 0;
-    this.cacheValid = false;
+    this.invalidate();
   }
 
   /**
@@ -136,7 +140,7 @@ class DefaultSimulatorEngine implements SimulatorEngine {
       throw new Error(unknownInputMessage(name, this.topLevelInputs));
     }
     this.topLevelInputs.set(name, value);
-    this.cacheValid = false;
+    this.invalidate();
   }
 
   setNode(path: string, value: PrimitiveState): void {
@@ -156,9 +160,7 @@ class DefaultSimulatorEngine implements SimulatorEngine {
       this.numericSeqState.currentState[idx] !== undefined
     ) {
       this.numericSeqState.currentState[idx] = value;
-      this.cacheValid = false;
-
-      this.cachedFlatSeqState = null; // force recomputation
+      this.invalidate();
 
       // Persist memory data so reset() preserves it (like flashing ROM)
       if (value instanceof Map && this.options) {
@@ -177,7 +179,7 @@ class DefaultSimulatorEngine implements SimulatorEngine {
         this.originalNodeValues.set(node.id, node.arguments.value);
       }
       node.arguments = { ...node.arguments, value };
-      this.cacheValid = false;
+      this.invalidate();
     }
   }
 
@@ -229,43 +231,54 @@ class DefaultSimulatorEngine implements SimulatorEngine {
 
     // ── Observable snapshot: post-commit (Phase 4) ──
     //
-    // Each tick() = one completed clock cycle.
-    // Returned values reflect the settled state AFTER the clock edge,
-    // equivalent to Verilog: @(posedge clk); #1;
-    //
-    // This matches the intuitive "tick → see new value" mental model:
+    // Each tick() = one completed clock cycle. Reads reflect the settled state
+    // AFTER the clock edge, equivalent to Verilog: @(posedge clk); #1;
     //   counter starts at 0 → tick() → counter is now 1
     //
-    // For pre-edge inspection (pipeline timing analysis), a future
-    // tick({ phase: 1 }) option could expose the Phase 1 snapshot.
-    const portValues = toFlatPortValueMap(
-      this.numericCircuit,
-      this.numericValues,
-      this.topLevelInputs,
-    );
-    propagateToTopLevelOutputs(this.numericCircuit, this.numericValues, portValues);
-
-    // Cache as the canonical observable state. getPortValues() and
-    // getOutput() read from this cache until the next tick() or setNode().
-    this.cachedPortValues = portValues;
-    this.cachedFlatSeqState = null; // Force recomputation on next getState()
-    this.cacheValid = true;
+    // The string-keyed snapshot is built only if something reads it: a run of
+    // ticks reads at most the last one.
+    this.invalidate();
+    this.settled = true;
 
     const totalEvals = phase1Evals + phase2Evals;
     this.totalTicks++;
     this.totalEvaluations += totalEvals;
 
-    const seqState = toFlatSequentialState(this.numericCircuit, this.numericSeqState);
+    return this.tickResult({ phase1Evals, phase2Evals, totalEvals });
+  }
 
-    return {
-      portValues,
-      sequentialState: seqState,
-      metrics: {
-        phase1Evals,
-        phase2Evals,
-        totalEvals,
-      },
+  /** The values a tick left, read on demand; reading after the state moves on throws. */
+  private tickResult(metrics: TickResult['metrics']): TickResult {
+    const engine = this;
+    const generation = this.generation;
+    const current = () => {
+      if (engine.generation !== generation) {
+        throw new Error(
+          'TickResult read after the simulation moved on; read it before the next tick or write.',
+        );
+      }
     };
+    return {
+      get portValues() {
+        current();
+        return engine.getPortValues();
+      },
+      get sequentialState() {
+        current();
+        const state = engine.getState();
+        if (!state) throw new Error('Simulator not initialized');
+        return state;
+      },
+      metrics,
+    };
+  }
+
+  /** The state moved: drop both views and mark the values unsettled. */
+  private invalidate(): void {
+    this.cachedPortValues = null;
+    this.cachedFlatSeqState = null;
+    this.settled = false;
+    this.generation++;
   }
 
   runCombinational(): CombinationalResult {
@@ -273,9 +286,9 @@ class DefaultSimulatorEngine implements SimulatorEngine {
       throw new Error('Simulator not initialized');
     }
 
-    // Nothing changed since last propagation — return cached result.
-    if (this.cacheValid && this.cachedPortValues) {
-      return { portValues: this.cachedPortValues, metrics: { totalEvals: 0 } };
+    // Nothing changed since last propagation.
+    if (this.settled) {
+      return { portValues: this.getPortValues(), metrics: { totalEvals: 0 } };
     }
 
     this.eventQueue.clear();
@@ -311,7 +324,7 @@ class DefaultSimulatorEngine implements SimulatorEngine {
 
     // Cache the result so getPortValues() stays consistent
     this.cachedPortValues = portValues;
-    this.cacheValid = true;
+    this.settled = true;
 
     return {
       portValues,
@@ -331,26 +344,22 @@ class DefaultSimulatorEngine implements SimulatorEngine {
   getPortValues(): ReadonlyMap<string, BitValue | BusValue> {
     if (!this.numericCircuit || !this.numericValues) return new Map();
 
-    if (!this.cacheValid) {
-      // No tick has run yet — compute from current (initial) state.
-      // After tick() runs, this branch is only hit if setNode()
-      // invalidated the cache.
+    if (!this.cachedPortValues) {
       this.cachedPortValues = toFlatPortValueMap(
         this.numericCircuit,
         this.numericValues,
         this.topLevelInputs,
       );
       propagateToTopLevelOutputs(this.numericCircuit, this.numericValues, this.cachedPortValues);
-      this.cacheValid = true;
     }
 
-    return this.cachedPortValues!;
+    return this.cachedPortValues;
   }
 
   getState(): FlatSequentialState | null {
     if (!this.numericCircuit || !this.numericSeqState) return null;
 
-    if (!this.cacheValid || !this.cachedFlatSeqState) {
+    if (!this.cachedFlatSeqState) {
       this.cachedFlatSeqState = toFlatSequentialState(this.numericCircuit, this.numericSeqState);
     }
 
@@ -405,16 +414,7 @@ class DefaultSimulatorEngine implements SimulatorEngine {
     // Restore port values
     fromFlatPortValueMap(this.numericCircuit, this.numericValues, snapshot.portValues);
 
-    this.cacheValid = false;
-    // Force getState() to rebuild from the restored sequential state. cacheValid
-    // is shared with getPortValues(); if a getPortValues() call lands between
-    // this restore and the next getState() (as it does in the session's seekTo),
-    // it re-validates cacheValid without rebuilding cachedFlatSeqState, so
-    // getState() would otherwise hand back the pre-restore (latest) snapshot —
-    // which is why memory/console state failed to rewind under time-travel while
-    // registers (read via port values) rewound fine. The tick and reset paths
-    // already null this; restore must too.
-    this.cachedFlatSeqState = null;
+    this.invalidate();
   }
 
   /** A node written after the snapshot goes back to its value from before any write. */
@@ -448,7 +448,7 @@ class DefaultSimulatorEngine implements SimulatorEngine {
 
     this.totalTicks = 0;
     this.totalEvaluations = 0;
-    this.cacheValid = false;
+    this.invalidate();
   }
 
   getMetrics(): SimulatorMetrics {

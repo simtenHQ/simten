@@ -306,7 +306,8 @@ Propagates the committed state through combinational logic. Only seeds state-out
 *after* the clock edge, equivalent to Verilog `@(posedge clk); #1`. This matches the
 intuitive "tick → see new value" model: a counter at 0 reads 1 after one `tick()`.
 `getPortValues()` and `getOutput()` read from this same post-edge snapshot until the next
-`tick()` or `setNode()`.
+`tick()` or `setNode()`. The snapshot is built on first read, so a run of ticks that nobody
+reads in between costs no snapshots; a tick result read after the next tick throws.
 
 ## Memory Handling
 
