@@ -37,7 +37,7 @@ describe('extractAndRewriteImports', () => {
     const out = extractAndRewriteImports("import fc from 'fast-check';\nconst x = fc;");
     expect(out.localNames).toEqual(['fc']);
     expect(out.loaderModule).toBe("import fc from 'https://esm.sh/fast-check';\nexport { fc };");
-    expect(out.codeWithoutImports).toBe('const x = fc;');
+    expect(out.codeWithoutImports).toBe('\nconst x = fc;');
   });
 
   it('uses the alias for renamed named imports', () => {
@@ -62,14 +62,15 @@ describe('extractAndRewriteImports', () => {
       "import {\n  a,\n  b as bee,\n} from 'pkg';\nconst y = a + bee;",
     );
     expect(out.localNames).toEqual(['a', 'bee']);
-    expect(out.codeWithoutImports).toBe('const y = a + bee;');
+    // Every line after the import keeps its number.
+    expect(out.codeWithoutImports).toBe('\n\n\n\nconst y = a + bee;');
   });
 
   it('keeps side-effect imports in the loader without binding anything', () => {
     const out = extractAndRewriteImports("import 'polyfill';\nconst z = 1;");
     expect(out.localNames).toEqual([]);
     expect(out.loaderModule).toBe("import 'https://esm.sh/polyfill';\nexport {};");
-    expect(out.codeWithoutImports).toBe('const z = 1;');
+    expect(out.codeWithoutImports).toBe('\nconst z = 1;');
   });
 
   it('drops @simten/* imports, whose names are already in scope', () => {
@@ -78,7 +79,7 @@ describe('extractAndRewriteImports', () => {
     );
     expect(out.localNames).toEqual(['fc']);
     expect(out.loaderModule).not.toContain('simten');
-    expect(out.codeWithoutImports).toBe("circuit('A', {});");
+    expect(out.codeWithoutImports).toBe("\n\ncircuit('A', {});");
   });
 
   it('leaves dynamic import() alone for the caller to reject', () => {

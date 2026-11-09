@@ -15,7 +15,10 @@ interface ExtractedImports {
   loaderModule: string;
   /** Local binding names re-exported by the loader module */
   localNames: string[];
-  /** Source with all import statements removed */
+  /**
+   * Source with all import statements removed. Their line breaks stay, so every
+   * other line keeps its number and an error's line points into the user's code.
+   */
   codeWithoutImports: string;
 }
 
@@ -209,8 +212,9 @@ export function extractAndRewriteImports(jsCode: string): ExtractedImports {
   let codeWithoutImports = jsCode;
 
   for (const imp of imports) {
-    // Remove the import statement from the code (first occurrence only)
-    codeWithoutImports = codeWithoutImports.replace(imp.raw, '');
+    // Remove the import statement from the code (first occurrence only), keeping
+    // its line breaks
+    codeWithoutImports = codeWithoutImports.replace(imp.raw, imp.raw.replace(/[^\n]/g, ''));
 
     // @simten/* is already in scope — skip (don't add to loader module)
     if (isSimtenSpecifier(imp.specifier)) continue;
@@ -231,6 +235,6 @@ export function extractAndRewriteImports(jsCode: string): ExtractedImports {
   return {
     loaderModule: loaderLines.join('\n'),
     localNames: allLocalNames,
-    codeWithoutImports: codeWithoutImports.trim(),
+    codeWithoutImports: codeWithoutImports.trimEnd(),
   };
 }

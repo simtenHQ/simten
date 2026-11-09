@@ -69,6 +69,14 @@ type CircuitPortRole = 'input' | 'output';
 /** Probed by promise resolution and JSON.stringify; must not throw. */
 const PASSTHROUGH_PROPS = new Set(['then', 'toJSON']);
 
+/**
+ * Where each connection's `.to(...)` was called, as an Error whose stack
+ * starts there (#513). Recorded only while `connect` is re-run to place an
+ * error, so building a valid circuit captures no stacks.
+ */
+const callSites = new WeakMap<ConnectionDef, Error>();
+let recordCallSites = false;
+
 function createPortRef(
   nodeId: string,
   portName: string,
@@ -79,11 +87,13 @@ function createPortRef(
     _path: { nodeId, portName },
     _type: portType,
     to(...targets: SinkPortRef[]): ConnectionDef {
-      return {
+      const def = {
         source: { nodeId, portName },
         targets: targets.map((t) => ({ nodeId: t._path.nodeId, portName: t._path.portName })),
         portType,
       };
+      if (recordCallSites) callSites.set(def, new Error());
+      return def;
     },
   };
   // A port is already the end of a wire, so `.out` or `.in` on one is the
@@ -401,12 +411,15 @@ function buildCircuit(
   const nodes = expandNodes(declaredNodes, errors);
   validateConfig(config, ports, declaredNodes, errors);
   checkControlNames(ports, nodes, errors);
-  const defs = evaluateConnect(config, ports, declaredNodes, errors);
-  const connectionDefs = validateNetlist(name, defs, ports, nodes, errors);
+  const connected = evaluateConnect(config, ports, declaredNodes, errors);
+  const blame = new Map<number, ConnectionDef>();
+  const connectionDefs = validateNetlist(name, connected.defs, ports, nodes, errors, blame);
   const dependencies = collectDependencies(nodes, errors);
 
   if (errors.length > 0) {
-    throw new Error(`Circuit '${name}' validation failed:\n  - ${errors.join('\n  - ')}`);
+    const at =
+      connected.thrown ?? connectionCallSite(config, ports, declaredNodes, connected.defs, blame);
+    throw validationError(name, errors, at);
   }
 
   const ir = buildIR(name, config, ports, nodes, connectionDefs);
@@ -552,14 +565,17 @@ function checkControlNames(
   }
 }
 
-/** Run `connect` against port refs and return the connections it built. */
+/**
+ * Run `connect` against port refs and return the connections it built, and
+ * the error it threw if it threw one: that error's stack is at the user's line.
+ */
 function evaluateConnect(
   config: AnyCircuitConfig,
   { inputs, outputs }: Ports,
   declaredNodes: Record<string, NodeEntry>,
   errors: string[],
-): ConnectionDef[] {
-  if (!config.connect) return [];
+): { defs: ConnectionDef[]; thrown?: Error } {
+  if (!config.connect) return { defs: [] };
 
   const refsFor = (nodeId: string, comp: Circuit) => {
     const allPorts = new Map<string, PortType>();
@@ -589,9 +605,56 @@ function evaluateConnect(
     result = config.connect(arg as unknown as Parameters<NonNullable<typeof config.connect>>[0]);
   } catch (e) {
     errors.push(e instanceof Error ? e.message : String(e));
-    return [];
+    return { defs: [], thrown: e instanceof Error ? e : undefined };
   }
-  return checkConnectResult(result, errors);
+  return { defs: checkConnectResult(result, errors) };
+}
+
+/**
+ * Where the first connection an error is about was made: `connect` run again
+ * with `.to` recording its call sites, which costs a stack per connection, so
+ * it only happens once there is an error to place. Undefined when no error is
+ * about a connection, or the second run doesn't build the same list.
+ */
+function connectionCallSite(
+  config: AnyCircuitConfig,
+  ports: Ports,
+  declaredNodes: Record<string, NodeEntry>,
+  defs: ConnectionDef[],
+  blame: Map<number, ConnectionDef>,
+): Error | undefined {
+  if (blame.size === 0) return undefined;
+  const first = blame.get(Math.min(...blame.keys()));
+  const index = first ? defs.indexOf(first) : -1;
+  if (index < 0) return undefined;
+  recordCallSites = true;
+  let again: ConnectionDef[];
+  try {
+    again = evaluateConnect(config, ports, declaredNodes, []).defs;
+  } finally {
+    recordCallSites = false;
+  }
+  if (again.length !== defs.length) return undefined;
+  const def = again[index];
+  if (formatPath(def.source) !== formatPath(defs[index].source)) return undefined;
+  return callSites.get(def);
+}
+
+/**
+ * The error `circuit()` throws for `errors`. With `at`, its stack is `at`'s, so
+ * the editor and the MCP, which take the location from the first stack frame
+ * in the user's code, point at the line with the mistake rather than at the
+ * `circuit(...)` call (#513).
+ */
+function validationError(name: string, errors: string[], at?: Error): Error {
+  const error = new Error(`Circuit '${name}' validation failed:\n  - ${errors.join('\n  - ')}`);
+  if (at?.stack) {
+    // V8 starts a stack with the error's own `Name: message`; others don't.
+    const head = String(at);
+    const frames = at.stack.startsWith(head) ? at.stack.slice(head.length + 1) : at.stack;
+    error.stack = `${String(error)}\n${frames}`;
+  }
+  return error;
 }
 
 /**
@@ -656,30 +719,48 @@ function validateNetlist(
   { inputs, outputs }: Ports,
   nodes: Record<string, Circuit>,
   errors: string[],
+  blame: Map<number, ConnectionDef>,
 ): ConnectionDef[] {
+  // Every error pushed while `def` is checked is about `def`.
+  const about = (def: ConnectionDef, check: () => void) => {
+    const before = errors.length;
+    check();
+    for (let i = before; i < errors.length; i++) blame.set(i, def);
+  };
+
   // Validate connection port references, then their direction
   for (const conn of defs) {
-    const sourceExists = validatePortRef(conn.source, inputs, outputs, nodes, errors);
-    for (const target of conn.targets) {
-      const targetExists = validatePortRef(target, inputs, outputs, nodes, errors);
-      if (sourceExists && targetExists) {
-        checkDirection(conn.source, target, inputs, nodes, errors);
+    about(conn, () => {
+      const sourceExists = validatePortRef(conn.source, inputs, outputs, nodes, errors);
+      for (const target of conn.targets) {
+        const targetExists = validatePortRef(target, inputs, outputs, nodes, errors);
+        if (sourceExists && targetExists) {
+          checkDirection(conn.source, target, inputs, nodes, errors);
+        }
       }
-    }
+    });
   }
 
-  const { connectionDefs, conflictsByTarget } = dedupeDrivers(defs);
+  const { connectionDefs, conflictsByTarget, originOf } = dedupeDrivers(defs);
 
-  checkBusWidths(name, connectionDefs, inputs, outputs, nodes, errors);
+  checkBusWidths(name, connectionDefs, inputs, outputs, nodes, (conn, message) =>
+    about(originOf.get(conn) ?? conn, () => errors.push(message)),
+  );
 
   // Sort conflict keys for deterministic error ordering across runs.
   const sortedConflictKeys = [...conflictsByTarget.keys()].sort();
   for (const key of sortedConflictKeys) {
-    const sources = [...conflictsByTarget.get(key)!].join(', ');
-    errors.push(`${key} has multiple drivers: ${sources}`);
+    const { sources, def } = conflictsByTarget.get(key) as Conflict;
+    about(def, () => errors.push(`${key} has multiple drivers: ${[...sources].join(', ')}`));
   }
 
   return connectionDefs;
+}
+
+/** A sink with more than one driver: the drivers, and the connection that added the second. */
+interface Conflict {
+  sources: Set<string>;
+  def: ConnectionDef;
 }
 
 /**
@@ -693,10 +774,13 @@ function validateNetlist(
  */
 function dedupeDrivers(defs: ConnectionDef[]): {
   connectionDefs: ConnectionDef[];
-  conflictsByTarget: Map<string, Set<string>>;
+  conflictsByTarget: Map<string, Conflict>;
+  /** The connection `connect` returned that each deduplicated one was copied from. */
+  originOf: Map<ConnectionDef, ConnectionDef>;
 } {
   const seenByTarget = new Map<string, PortPath>();
-  const conflictsByTarget = new Map<string, Set<string>>();
+  const conflictsByTarget = new Map<string, Conflict>();
+  const originOf = new Map<ConnectionDef, ConnectionDef>();
   const dedupedDefs: ConnectionDef[] = [];
   for (const def of defs) {
     const newTargets: typeof def.targets = [];
@@ -707,22 +791,24 @@ function dedupeDrivers(defs: ConnectionDef[]): {
         if (existing.nodeId === def.source.nodeId && existing.portName === def.source.portName) {
           continue; // identical duplicate
         }
-        let set = conflictsByTarget.get(targetKey);
-        if (!set) {
-          set = new Set([formatPath(existing)]);
-          conflictsByTarget.set(targetKey, set);
+        let conflict = conflictsByTarget.get(targetKey);
+        if (!conflict) {
+          conflict = { sources: new Set([formatPath(existing)]), def };
+          conflictsByTarget.set(targetKey, conflict);
         }
-        set.add(formatPath(def.source));
+        conflict.sources.add(formatPath(def.source));
         continue; // drop conflicting target; error pushed by the caller
       }
       seenByTarget.set(targetKey, { nodeId: def.source.nodeId, portName: def.source.portName });
       newTargets.push(target);
     }
     if (newTargets.length > 0) {
-      dedupedDefs.push({ ...def, targets: newTargets });
+      const copy = { ...def, targets: newTargets };
+      originOf.set(copy, def);
+      dedupedDefs.push(copy);
     }
   }
-  return { connectionDefs: dedupedDefs, conflictsByTarget };
+  return { connectionDefs: dedupedDefs, conflictsByTarget, originOf };
 }
 
 function checkBusWidths(
@@ -731,7 +817,7 @@ function checkBusWidths(
   inputs: Map<string, PortType>,
   outputs: Map<string, PortType>,
   nodes: Record<string, Circuit>,
-  errors: string[],
+  reportError: (conn: ConnectionDef, message: string) => void,
 ): void {
   // Bus width validation, split by direction because the two directions are not
   // the same kind of event.
@@ -776,7 +862,7 @@ function checkBusWidths(
         `${formatPath(conn.source)} ${typeName(sourceType)} ` +
         `into ${formatPath(target)} ${typeName(targetType)}`;
       if (sourceWidth > targetWidth) {
-        errors.push(`truncates ${describe} (take the bits you need with Slice)`);
+        reportError(conn, `truncates ${describe} (take the bits you need with Slice)`);
       } else {
         wideningWarnings.push(`widens ${describe}`);
       }
