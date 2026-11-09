@@ -62,6 +62,7 @@ import {
   Not,
   Or,
   RAM,
+  RasterDisplay,
   ReduceAnd,
   ReduceOr,
   ReduceXnor,
@@ -70,6 +71,7 @@ import {
   RightShifter,
   ROM,
   romFromBytes,
+  Screen,
   SignExtend,
   SignedAdder,
   SignedComparator,
@@ -112,7 +114,6 @@ const BUG = {
   xMemory: '#436: unwritten memory reads 0 in the simulator and x in Verilog',
   negedge: '#430: imported negedge $dff becomes posedge',
   shiftWidth: '#430: imported shift amount is sliced to the result width',
-  screen: "#500: a Screen's addrB output is left undriven, then #436: unwritten RAM reads x",
 } as const;
 
 /** Top circuit plus every transitive dependency and their behavior. */
@@ -339,6 +340,10 @@ cases.push({
   opts: { inputMask: { addr: 0x40003fff } },
 });
 std('UART_TX', () => UART_TX);
+
+// ── simulation-only displays: their outputs still have to be driven ─────
+std('Screen', () => Screen());
+std('RasterDisplay', () => RasterDisplay());
 
 // ── small composites ────────────────────────────────────────────────────
 cases.push({
@@ -661,7 +666,7 @@ for (const [id, cycles, bug] of [
   ['half-adder', 32, undefined],
   ['alu', 64, undefined],
   ['tpu-3x3', 64, undefined],
-  ['snake', 200, BUG.screen],
+  ['snake', 200, BUG.xMemory],
   ['rv32i-computer', 300, undefined],
   ['6502-computer', 300, BUG.xMemory],
 ] as const) {
