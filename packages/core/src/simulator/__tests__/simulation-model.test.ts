@@ -224,6 +224,24 @@ describe('propagation loop cap', () => {
     expect(() => ticking.tick()).toThrow(/oscillating/);
   });
 
+  it('set, get and a combinational tick report the oscillation (#569)', () => {
+    const Ring = circuit('NandRing', {
+      inputs: { en: bit },
+      outputs: { o: bit },
+      nodes: { n: Nand },
+      connect: ({ inputs, outputs, nodes: { n } }) => [inputs.en.to(n.a), n.out.to(n.b, outputs.o)],
+    });
+    const sim = simulate(Ring);
+    expect(sim.get('o')).toBe(1);
+    sim.set({ en: 1 });
+    expect(() => sim.get('o')).toThrow(/oscillating.*Still changing: n/);
+    expect(() => sim.read()).toThrow(/oscillating/);
+    expect(() => sim.tick()).toThrow(/oscillating/);
+    // Breaking the loop clears it.
+    sim.set({ en: 0 });
+    expect(sim.get('o')).toBe(1);
+  });
+
   it('a loop that nothing seeds is still evaluated (#570)', () => {
     // An inverter fed only by itself reads no input and holds no state, so the
     // usual seeds never reach it. It must still be found oscillating.
