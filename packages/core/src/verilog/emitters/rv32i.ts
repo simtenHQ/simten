@@ -381,11 +381,15 @@ export const rv32iEmitters: Readonly<Record<string, Emitter>> = {
     const { i, o } = pins(wires);
     const id = sanitizeId(ctx.nodeId);
     const busId = `bus_${id}`;
-    // Address decode with hardcoded ranges (default MemBusMux params)
+    // Address decode with hardcoded ranges (default MemBusMux params).
+    // local_addr is the address within the matched range, 0 when none matches.
+    const a = i('addr');
+    const sel = (k: number) => `${busId}_sel[${k}]`;
     return {
       declarations: [`reg [31:0] ${busId}_read_data;`, `reg [4:0] ${busId}_sel;`],
       lines: [
-        `assign ${o('local_addr')} = ${i('addr')};`,
+        `assign ${o('local_addr')} = ${sel(0)} ? ${a} - 32'h00010000 : ${sel(1)} ? ${a} - 32'h80000000 :`,
+        `  ${sel(2)} ? ${a} - 32'h80001000 : ${sel(3)} ? ${a} - 32'h80002000 : ${sel(4)} ? ${a} : 32'd0;`,
         `assign ${o('write_data_out')} = ${i('write_data')};`,
         `assign ${o('funct3_out')} = ${i('funct3')};`,
         `// Address decode`,

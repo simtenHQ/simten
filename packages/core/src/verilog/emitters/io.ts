@@ -8,12 +8,8 @@ import { type Emitter, getWidth, isConnected, pins, sanitizeId } from './helpers
 /** These become module ports — no logic emitted here */
 const port: Emitter = () => ({ lines: [], declarations: [] });
 
-const stub: Emitter = ({ primitiveType, nodeId }) => ({
-  lines: [
-    `// Stub: ${primitiveType} "${sanitizeId(nodeId)}" (simulation-only sink, no Verilog equivalent)`,
-  ],
-  declarations: [],
-});
+/** A simulation-only sink with no outputs: its state lives only in the simulator. */
+const stub: Emitter = () => ({ lines: [], declarations: [] });
 
 export const ioEmitters: Readonly<Record<string, Emitter>> = {
   // ── I/O ──────────────────────────────────────────────────────────
@@ -48,7 +44,16 @@ export const ioEmitters: Readonly<Record<string, Emitter>> = {
   Screen: stub,
   RasterDisplay: stub,
   Console: stub,
-  UART_TX: stub,
+  // Its transmit buffer is simulation-only, but a read returns 1 (ready).
+  UART_TX: ({ wires }) => {
+    const { i, o } = pins(wires);
+    return {
+      lines: isConnected(wires, 'read_data', 'output')
+        ? [`assign ${o('read_data')} = {31'd0, ${i('mem_read')}};`]
+        : [],
+      declarations: [],
+    };
+  },
 
   NIC_FIFO: ({ nodeId }) => ({
     lines: [
