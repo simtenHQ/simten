@@ -29,7 +29,8 @@ function portKey(nodeId: string, portName: string): string {
  *
  * @param flatCircuit - The flattened circuit
  * @param definitions - Circuit definitions to resolve components against
- * @param memoryData - Optional pre-loaded memory data (nodeId -> address -> value)
+ * @param memoryData - Optional pre-loaded memory data (node path -> address -> value).
+ *   Each key is a memory node's exact path; one that names no memory node throws.
  */
 export function initializeFlatSequentialState(
   flatCircuit: FlatCircuit,
@@ -39,10 +40,7 @@ export function initializeFlatSequentialState(
   const currentState = new Map<string, PrimitiveState>();
   const nextState = new Map<string, PrimitiveState>();
   const clocks = new Map<string, { value: boolean; edge: 'rising' | 'falling' | 'none' }>();
-
-  if (memoryData) {
-    // memoryData patterns available for matching
-  }
+  const loadedNodes = new Set<string>();
 
   for (const node of flatCircuit.nodes) {
     const component = definitions.resolveCircuit(node.primitiveType);
@@ -53,9 +51,13 @@ export function initializeFlatSequentialState(
     // Field-names-always: no magic `initial`/`init` keywords — the factory
     // option name === the state field name.
     if (component.implementation.kind === 'primitive' && component.state.length > 0) {
+      const loaded = memoryData?.get(node.id);
       const blockValues = component.state.map((block) =>
-        resolveBlockInitial(block, node.id, node.arguments, node.primitiveType, memoryData),
+        resolveBlockInitial(block, node.id, node.arguments, loaded),
       );
+      if (loaded && component.state.some((block) => block.stateType.kind === 'memory')) {
+        loadedNodes.add(node.id);
+      }
 
       const primitiveState: PrimitiveState = (
         component.state.length === 1
@@ -76,6 +78,12 @@ export function initializeFlatSequentialState(
     }
   }
 
+  for (const path of memoryData?.keys() ?? []) {
+    if (!loadedNodes.has(path)) {
+      throw new Error(`Memory contents for '${path}': no memory node has that path.`);
+    }
+  }
+
   return {
     currentState,
     nextState,
@@ -89,14 +97,13 @@ export function initializeFlatSequentialState(
  *
  * Default = block.initialValue. Override = `node.arguments[block.name]` if set
  * (the "field-names-always" rule — factory option name === state field name).
- * Memory blocks additionally overlay any runtime-injected `memoryData`.
+ * Memory blocks additionally overlay `loaded`, the contents loaded for this node.
  */
 function resolveBlockInitial(
   block: StateBlock,
   nodeId: string,
   args: Record<string, ArgumentValue>,
-  primitiveType: string,
-  memoryData?: Map<string, Map<number, number>>,
+  loaded?: Map<number, number>,
 ): BitValue | BusValue | Map<number, number> | string {
   const kind = block.stateType.kind;
   const override = args[block.name];
@@ -114,12 +121,9 @@ function resolveBlockInitial(
       if (shapeError) throw new Error(`Node '${nodeId}' state '${block.name}': ${shapeError}`);
       addContents(memory, override as MemoryContents);
     }
-    // Runtime memoryData overlay (e.g. user-uploaded ROM) wins.
-    if (memoryData) {
-      const loadedData = getMemoryDataForNode(nodeId, memoryData, primitiveType);
-      if (loadedData) {
-        for (const [addr, value] of loadedData.entries()) memory.set(addr, value);
-      }
+    // Contents loaded at runtime (a program, an uploaded ROM) win.
+    if (loaded) {
+      for (const [addr, value] of loaded) memory.set(addr, value);
     }
     return memory;
   }
@@ -146,37 +150,4 @@ function addContents(memory: Map<number, number>, contents: MemoryContents): voi
     const addr = Number(key);
     if (Number.isInteger(addr) && typeof value === 'number') memory.set(addr, value);
   }
-}
-
-/**
- * Convert a glob pattern (with * wildcards) to a RegExp.
- * "cpu0*imem" → /cpu0.*imem/i
- * Plain strings without * still work as substring matches.
- */
-function globToRegex(pattern: string): RegExp {
-  const escaped = pattern.replace(/[.+^${}()|[\]\\]/g, '\\$&');
-  const withWildcards = escaped.replace(/\*/g, '.*');
-  return new RegExp(withWildcards, 'i');
-}
-
-/**
- * Helper to get memory data for a node from the injected memory data map.
- * Glob matching: "cpu0*imem" matches "cpu0_abc.RV32I_CPU_imem_xyz"
- * Also checks primitive type, so "instrmem" matches any RV32I_InstrMem node.
- */
-function getMemoryDataForNode(
-  nodeId: string,
-  memoryData: Map<string, Map<number, number>>,
-  primitiveType?: string,
-): Map<number, number> | undefined {
-  for (const [pattern, data] of memoryData) {
-    const regex = globToRegex(pattern);
-    if (regex.test(nodeId)) {
-      return data;
-    }
-    if (primitiveType && regex.test(primitiveType)) {
-      return data;
-    }
-  }
-  return undefined;
 }

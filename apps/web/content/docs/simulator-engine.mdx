@@ -320,8 +320,8 @@ Memory primitives (ROM, RAM, DualPortRAM) are initialized from two sources:
 2. **Injected memory data**: Runtime data passed via `initialMemory` option (e.g., compiled
    RISC-V binaries loaded into instruction memory)
 
-Memory data uses glob-pattern matching for node identification:
-`"cpu0*imem"` matches `"cpu0_abc_RV32I_CPU_imem_xyz"`.
+Each key is a memory node's exact path (`imem`, `cpu.rom`). A key that names no memory
+node throws.
 
 Injected data overwrites builder-embedded data for overlapping addresses.
 
@@ -340,7 +340,7 @@ state sharing between cycles.
 ```typescript
 const engine = createEngine(flatCircuit, {
   library,         // definitions + behavior, e.g. libraryOf(top)
-  initialMemory,   // Map<pattern, Map<address, value>>
+  initialMemory,   // Map<node path, Map<address, value>>
 });
 
 // Combinational only
