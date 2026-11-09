@@ -5,6 +5,77 @@
 
 import { type Emitter, emitMemoryInit, isConnected, pins, sanitizeId } from './helpers.js';
 
+/** MemBusMux's ranges, `[base, end]` inclusive, when `baseN`/`endN` aren't given. */
+const MEM_BUS_DEFAULTS: readonly (readonly [number, number])[] = [
+  [0x00010000, 0x0001ffff],
+  [0x80000000, 0x80000fff],
+  [0x80001000, 0x80001fff],
+  [0x80002000, 0x80002fff],
+  [0x00000000, 0x0000ffff],
+];
+
+const hex32 = (n: number) => `32'h${n.toString(16).toUpperCase().padStart(8, '0')}`;
+
+/**
+ * Routes an address to the first of five ranges that holds it, as the eval
+ * does: `local_addr` is the offset into that range, `read_data` that port's
+ * data, and the port's read/write strobes follow `mem_read`/`mem_write`.
+ */
+const memBusMux: Emitter = ({ wires, nodeId, args }) => {
+  const { i, o } = pins(wires);
+  const bus = `bus_${sanitizeId(nodeId)}`;
+  const a = i('addr');
+  const arg = (name: string, fallback: number) => {
+    const v = args[name];
+    return (typeof v === 'number' ? v : fallback) >>> 0;
+  };
+  const ranges = MEM_BUS_DEFAULTS.map(([base, end], k) => ({
+    k,
+    base: arg(`base${k}`, base),
+    end: arg(`end${k}`, end),
+  }));
+
+  const decode = ranges.map(({ k, base, end }) => {
+    const lo = base === 0 ? '' : `${a} >= ${hex32(base)} && `;
+    const test = `${k === 0 ? 'if' : 'else if'} (${lo}${a} <= ${hex32(end)})`;
+    return `  ${test} ${bus}_sel = 5'd${1 << k};`;
+  });
+  const local = ranges
+    .map(({ k, base }) => `${bus}_sel[${k}] ? ${base === 0 ? a : `${a} - ${hex32(base)}`} : `)
+    .join('');
+  const strobes = ranges.flatMap(({ k }) =>
+    (['read', 'write'] as const)
+      .filter((op) => isConnected(wires, `p${k}_${op}`, 'output'))
+      .map((op) => `assign ${o(`p${k}_${op}`)} = ${i(`mem_${op}`)} & ${bus}_sel[${k}];`),
+  );
+  const cases = ranges.map(
+    ({ k }) => `    5'd${1 << k}: ${bus}_read_data = ${i(`read_data_${k}`)};`,
+  );
+
+  return {
+    declarations: [`reg [31:0] ${bus}_read_data;`, `reg [4:0] ${bus}_sel;`],
+    lines: [
+      `assign ${o('local_addr')} = ${local}32'd0;`,
+      `assign ${o('write_data_out')} = ${i('write_data')};`,
+      `assign ${o('funct3_out')} = ${i('funct3')};`,
+      `// Address decode`,
+      `always @(*) begin`,
+      `  ${bus}_sel = 5'd0;`,
+      ...decode,
+      `end`,
+      ...strobes,
+      `// Read data mux`,
+      `always @(*) begin`,
+      `  case (${bus}_sel)`,
+      ...cases,
+      `    default: ${bus}_read_data = 32'd0;`,
+      `  endcase`,
+      `end`,
+      `assign ${o('read_data')} = ${bus}_read_data;`,
+    ],
+  };
+};
+
 export const rv32iEmitters: Readonly<Record<string, Emitter>> = {
   // ── RV32I Behavioral Primitives ─────────────────────────────────
   // These are too complex for reference circuits (they'd be hundreds
@@ -376,54 +447,5 @@ export const rv32iEmitters: Readonly<Record<string, Emitter>> = {
     };
   },
 
-  MemBusMux: (ctx) => {
-    const { wires } = ctx;
-    const { i, o } = pins(wires);
-    const id = sanitizeId(ctx.nodeId);
-    const busId = `bus_${id}`;
-    // Address decode with hardcoded ranges (default MemBusMux params)
-    return {
-      declarations: [`reg [31:0] ${busId}_read_data;`, `reg [4:0] ${busId}_sel;`],
-      lines: [
-        `assign ${o('local_addr')} = ${i('addr')};`,
-        `assign ${o('write_data_out')} = ${i('write_data')};`,
-        `assign ${o('funct3_out')} = ${i('funct3')};`,
-        `// Address decode`,
-        `always @(*) begin`,
-        `  ${busId}_sel = 5'd0;`,
-        `  if (${i('addr')} >= 32'h00010000 && ${i('addr')} <= 32'h0001FFFF) ${busId}_sel = 5'd1;`,
-        `  else if (${i('addr')} >= 32'h80000000 && ${i('addr')} <= 32'h80000FFF) ${busId}_sel = 5'd2;`,
-        `  else if (${i('addr')} >= 32'h80001000 && ${i('addr')} <= 32'h80001FFF) ${busId}_sel = 5'd4;`,
-        `  else if (${i('addr')} >= 32'h80002000 && ${i('addr')} <= 32'h80002FFF) ${busId}_sel = 5'd8;`,
-        `  else if (${i('addr')} <= 32'h0000FFFF) ${busId}_sel = 5'd16;`,
-        `end`,
-        `assign ${o('p0_read')} = ${i('mem_read')} & ${busId}_sel[0];`,
-        `assign ${o('p0_write')} = ${i('mem_write')} & ${busId}_sel[0];`,
-        `assign ${o('p1_read')} = ${i('mem_read')} & ${busId}_sel[1];`,
-        `assign ${o('p1_write')} = ${i('mem_write')} & ${busId}_sel[1];`,
-        `assign ${o('p2_read')} = ${i('mem_read')} & ${busId}_sel[2];`,
-        `assign ${o('p2_write')} = ${i('mem_write')} & ${busId}_sel[2];`,
-        `assign ${o('p3_read')} = ${i('mem_read')} & ${busId}_sel[3];`,
-        `assign ${o('p3_write')} = ${i('mem_write')} & ${busId}_sel[3];`,
-        ...(isConnected(wires, 'p4_read', 'output')
-          ? [`assign ${o('p4_read')} = ${i('mem_read')} & ${busId}_sel[4];`]
-          : []),
-        ...(isConnected(wires, 'p4_write', 'output')
-          ? [`assign ${o('p4_write')} = ${i('mem_write')} & ${busId}_sel[4];`]
-          : []),
-        `// Read data mux`,
-        `always @(*) begin`,
-        `  case (${busId}_sel)`,
-        `    5'd1: ${busId}_read_data = ${i('read_data_0')};`,
-        `    5'd2: ${busId}_read_data = ${i('read_data_1')};`,
-        `    5'd4: ${busId}_read_data = ${i('read_data_2')};`,
-        `    5'd8: ${busId}_read_data = ${i('read_data_3')};`,
-        `    5'd16: ${busId}_read_data = ${i('read_data_4')};`,
-        `    default: ${busId}_read_data = 32'd0;`,
-        `  endcase`,
-        `end`,
-        `assign ${o('read_data')} = ${busId}_read_data;`,
-      ],
-    };
-  },
+  MemBusMux: memBusMux,
 };

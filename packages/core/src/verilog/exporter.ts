@@ -31,12 +31,7 @@ import {
   sanitizeId,
 } from './emitters/helpers.js';
 import type { SynthValidation } from './eval-synth.js';
-import {
-  emitPrimitive,
-  isSequentialPrimitive,
-  isSinkPrimitive,
-  usesStdMapping,
-} from './primitive-map.js';
+import { emitPrimitive, isSequentialPrimitive, usesStdMapping } from './primitive-map.js';
 import type { ExportResult, VerilogExportOptions } from './types.js';
 import { INLINE_MEMORY_THRESHOLD } from './types.js';
 
@@ -211,11 +206,6 @@ function emitFlatModule(
     return std;
   };
 
-  // Filter to logic nodes only (I/O becomes module ports via topLevelInputs/Outputs)
-  const logicNodes = flat.nodes.filter(
-    (n) => !(isSinkPrimitive(n.primitiveType) && isStd(n.primitiveType)),
-  );
-
   // ── Build wire map (connection source → wire name) ─────────────────
   const wireMap = new Map<string, string>(); // "nodeId.portName" → wire name
   const wireDeclarations = new Map<string, string>(); // wire name → declaration
@@ -363,7 +353,8 @@ function emitFlatModule(
   /** Each node's logic, for the combinational loop check. */
   const emitted: EmittedNode[] = [];
 
-  for (const node of logicNodes) {
+  // Every node, sinks included: a simulation-only sink still drives its outputs.
+  for (const node of flat.nodes) {
     const wires: PrimitiveWires = {
       inputs: new Map(),
       outputs: new Map(),

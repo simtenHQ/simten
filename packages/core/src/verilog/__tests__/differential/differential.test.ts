@@ -52,6 +52,7 @@ import {
   LogicAnd,
   LogicNot,
   LogicOr,
+  MemBusMux,
   Modulo,
   Multiplier,
   Mux,
@@ -79,6 +80,7 @@ import {
   Slice,
   Splitter,
   Subtractor,
+  UART_TX,
   WrappingMultiplier,
   Xnor,
   Xor,
@@ -108,8 +110,6 @@ interface Case {
 // this test and still need an issue.
 const BUG = {
   xMemory: '#436: unwritten memory reads 0 in the simulator and x in Verilog',
-  busMux:
-    "#499: MemBusMux's local_addr isn't offset by its range base, and a sink's outputs (Console read_data) are left undriven",
   negedge: '#430: imported negedge $dff becomes posedge',
   shiftWidth: '#430: imported shift amount is sliced to the result width',
   screen: "#500: a Screen's addrB output is left undriven, then #436: unwritten RAM reads x",
@@ -145,6 +145,14 @@ function wrap(name: string, inner: Circuit, outputs?: readonly string[]): DiffTa
     },
   });
   return target(top);
+}
+
+/** `t` with the top's node `id` given `args`, as a primitive set by arguments alone. */
+function withArguments(t: DiffTarget, id: string, args: Record<string, number>): DiffTarget {
+  const nodes = t.top.nodes.map((n) =>
+    n.id === id ? { ...n, arguments: { ...n.arguments, ...args } } : n,
+  );
+  return { ...t, top: { ...t.top, nodes } };
 }
 
 function example(id: string): DiffTarget {
@@ -307,6 +315,30 @@ std(
   { opts: { inputMask: { addrA: 63, addrB: 0x1003f } } },
 );
 std('RAM, uninitialised', () => RAM(), { bug: BUG.xMemory });
+
+// ── memory-mapped bus and peripherals ───────────────────────────────────
+// The mask lands addresses in every range, and between them (0x80003xxx).
+std('MemBusMux', () => MemBusMux, { opts: { inputMask: { addr: 0x80013fff } } });
+// Ranges from the node's arguments: range 3 sits below range 4 and wins, as
+// the first match does; the mask hits every range and the gaps.
+cases.push({
+  name: 'MemBusMux, ranges from arguments',
+  target: () =>
+    withArguments(wrap('MemBusMux args', MemBusMux), 'u', {
+      base0: 0x2000,
+      end0: 0x2fff,
+      base1: 0x3000,
+      end1: 0x37ff,
+      base2: 0x40000000,
+      end2: 0x40000fff,
+      base3: 0x100,
+      end3: 0x1ff,
+      base4: 0x800,
+      end4: 0xfff,
+    }),
+  opts: { inputMask: { addr: 0x40003fff } },
+});
+std('UART_TX', () => UART_TX);
 
 // ── small composites ────────────────────────────────────────────────────
 cases.push({
@@ -630,7 +662,7 @@ for (const [id, cycles, bug] of [
   ['alu', 64, undefined],
   ['tpu-3x3', 64, undefined],
   ['snake', 200, BUG.screen],
-  ['rv32i-computer', 300, BUG.busMux],
+  ['rv32i-computer', 300, undefined],
   ['6502-computer', 300, BUG.xMemory],
 ] as const) {
   cases.push({ name: `example ${id}`, target: () => example(id), opts: { cycles }, bug });
@@ -684,9 +716,8 @@ describe.skipIf(!available)('simulator vs iverilog', () => {
   }
 });
 
-// The rv32i-computer example still disagrees with the simulator (see its
-// case), but its Verilog has to compile: DualPortROM used to read a memory it
-// never declared (#460).
+// The rv32i-computer example exports every primitive and compiles: DualPortROM
+// used to read a memory it never declared (#460).
 describe.skipIf(!available)('iverilog compiles', () => {
   it('example rv32i-computer', () => {
     const { top, library } = example('rv32i-computer');
