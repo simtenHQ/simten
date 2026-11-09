@@ -147,6 +147,14 @@ function wrap(name: string, inner: Circuit, outputs?: readonly string[]): DiffTa
   return target(top);
 }
 
+/** `t` with the top's node `id` given `args`, as a primitive set by arguments alone. */
+function withArguments(t: DiffTarget, id: string, args: Record<string, number>): DiffTarget {
+  const nodes = t.top.nodes.map((n) =>
+    n.id === id ? { ...n, arguments: { ...n.arguments, ...args } } : n,
+  );
+  return { ...t, top: { ...t.top, nodes } };
+}
+
 function example(id: string): DiffTarget {
   const ex = EXAMPLES.find((e) => e.id === id);
   if (!ex) throw new Error(`no example '${id}'`);
@@ -311,6 +319,25 @@ std('RAM, uninitialised', () => RAM(), { bug: BUG.xMemory });
 // ── memory-mapped bus and peripherals ───────────────────────────────────
 // The mask lands addresses in every range, and between them (0x80003xxx).
 std('MemBusMux', () => MemBusMux, { opts: { inputMask: { addr: 0x80013fff } } });
+// Ranges from the node's arguments: range 3 sits below range 4 and wins, as
+// the first match does; the mask hits every range and the gaps.
+cases.push({
+  name: 'MemBusMux, ranges from arguments',
+  target: () =>
+    withArguments(wrap('MemBusMux args', MemBusMux), 'u', {
+      base0: 0x2000,
+      end0: 0x2fff,
+      base1: 0x3000,
+      end1: 0x37ff,
+      base2: 0x40000000,
+      end2: 0x40000fff,
+      base3: 0x100,
+      end3: 0x1ff,
+      base4: 0x800,
+      end4: 0xfff,
+    }),
+  opts: { inputMask: { addr: 0x40003fff } },
+});
 std('UART_TX', () => UART_TX);
 
 // ── small composites ────────────────────────────────────────────────────
