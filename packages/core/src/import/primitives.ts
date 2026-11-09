@@ -53,7 +53,7 @@ export const RtlSlice = circuit(
   ({ inWidth = 8, width = 1 }: { inWidth?: number; offset?: number; width?: number } = {}) => ({
     inputs: { in: bus(inWidth) },
     outputs: { out: portOf(width) },
-    eval: ({ in: v, offset: off = 0, width: w = width }) => {
+    eval: ({ in: v, offset: off = 0, width: w = 1 }) => {
       const off2 = (off as number) | 0;
       const w2 = (w as number) | 0;
       return { out: (((v as number) >>> off2) & maskOf(w2)) >>> 0 };
@@ -82,7 +82,7 @@ export const RtlAdd = circuit(
   } = {}) => ({
     inputs: { a: bus(aWidth), b: bus(bWidth) },
     outputs: { out: bus(yWidth) },
-    eval: ({ a, b, yWidth: yw = yWidth }) => {
+    eval: ({ a, b, yWidth: yw = 8 }) => {
       const m = maskOf(yw as number);
       return { out: ((((a as number) >>> 0) + ((b as number) >>> 0)) & m) >>> 0 };
     },
@@ -107,7 +107,7 @@ export const RtlSub = circuit(
   } = {}) => ({
     inputs: { a: bus(aWidth), b: bus(bWidth) },
     outputs: { out: bus(yWidth) },
-    eval: ({ a, b, yWidth: yw = yWidth }) => {
+    eval: ({ a, b, yWidth: yw = 8 }) => {
       const m = maskOf(yw as number);
       return { out: ((((a as number) >>> 0) - ((b as number) >>> 0)) & m) >>> 0 };
     },
@@ -132,7 +132,7 @@ const bitwiseBin = (name: string, icon: string, op: (a: number, b: number) => nu
   circuit(name, ({ aWidth = 8, bWidth = 8, yWidth = 8 }: BinOpts = {}) => ({
     inputs: { a: bus(aWidth), b: bus(bWidth) },
     outputs: { out: bus(yWidth) },
-    eval: ({ a, b, yWidth: yw = yWidth }) => ({
+    eval: ({ a, b, yWidth: yw = 8 }) => ({
       out: (op((a as number) >>> 0, (b as number) >>> 0) & maskOf(yw as number)) >>> 0,
     }),
     meta: { category: 'rtl-import', icon, description: `Bitwise ${name}` },
@@ -145,7 +145,7 @@ export const RtlXor = bitwiseBin('RtlXor', '^', (a, b) => a ^ b);
 export const RtlNot = circuit('RtlNot', ({ aWidth = 8, yWidth = 8 }: UnOpts = {}) => ({
   inputs: { a: bus(aWidth) },
   outputs: { out: bus(yWidth) },
-  eval: ({ a, yWidth: yw = yWidth }) => ({
+  eval: ({ a, yWidth: yw = 8 }) => ({
     out: (~((a as number) >>> 0) & maskOf(yw as number)) >>> 0,
   }),
   meta: { category: 'rtl-import', icon: '~', description: 'Bitwise NOT' },
@@ -159,7 +159,7 @@ const reduce = (name: string, icon: string, fn: (v: number, w: number) => number
   circuit(name, ({ aWidth = 8 }: { aWidth?: number } = {}) => ({
     inputs: { a: bus(aWidth) },
     outputs: { out: bit },
-    eval: ({ a, aWidth: aw = aWidth }) => ({ out: fn((a as number) >>> 0, aw as number) }),
+    eval: ({ a, aWidth: aw = 8 }) => ({ out: fn((a as number) >>> 0, aw as number) }),
     meta: { category: 'rtl-import', icon, description: name },
   }));
 
@@ -202,7 +202,7 @@ const compare = (name: string, icon: string, cmp: (a: number, b: number) => bool
   circuit(name, ({ aWidth = 8, bWidth = 8 }: CmpOpts = {}) => ({
     inputs: { a: bus(aWidth), b: bus(bWidth) },
     outputs: { out: bit },
-    eval: ({ a, b, aWidth: aw = aWidth, bWidth: bw = bWidth, aSigned = 0, bSigned = 0 }) => {
+    eval: ({ a, b, aWidth: aw = 8, bWidth: bw = 8, aSigned = 0, bSigned = 0 }) => {
       const av = aSigned ? sext((a as number) >>> 0, aw as number) : (a as number) >>> 0;
       const bv = bSigned ? sext((b as number) >>> 0, bw as number) : (b as number) >>> 0;
       return { out: cmp(av, bv) ? 1 : 0 };
@@ -223,7 +223,7 @@ export const RtlNe = compare('RtlNe', '≠', (a, b) => a !== b);
 export const RtlShl = circuit('RtlShl', ({ aWidth = 8, bWidth = 8, yWidth = 8 }: BinOpts = {}) => ({
   inputs: { a: bus(aWidth), b: bus(bWidth) },
   outputs: { out: bus(yWidth) },
-  eval: ({ a, b, yWidth: yw = yWidth }) => ({
+  eval: ({ a, b, yWidth: yw = 8 }) => ({
     out: ((((a as number) >>> 0) * 2 ** ((b as number) >>> 0)) & maskOf(yw as number)) >>> 0,
   }),
   meta: { category: 'rtl-import', icon: '≪', description: 'Logical shift left' },
@@ -232,7 +232,7 @@ export const RtlShl = circuit('RtlShl', ({ aWidth = 8, bWidth = 8, yWidth = 8 }:
 export const RtlShr = circuit('RtlShr', ({ aWidth = 8, bWidth = 8, yWidth = 8 }: BinOpts = {}) => ({
   inputs: { a: bus(aWidth), b: bus(bWidth) },
   outputs: { out: bus(yWidth) },
-  eval: ({ a, b, yWidth: yw = yWidth }) => ({
+  eval: ({ a, b, yWidth: yw = 8 }) => ({
     out: (((a as number) >>> ((b as number) >>> 0)) & maskOf(yw as number)) >>> 0,
   }),
   meta: { category: 'rtl-import', icon: '≫', description: 'Logical shift right' },
@@ -243,7 +243,7 @@ export const RtlSshr = circuit(
   ({ aWidth = 8, bWidth = 8, yWidth = 8 }: BinOpts & { aSigned?: number } = {}) => ({
     inputs: { a: bus(aWidth), b: bus(bWidth) },
     outputs: { out: bus(yWidth) },
-    eval: ({ a, b, aWidth: aw = aWidth, yWidth: yw = yWidth }) => {
+    eval: ({ a, b, aWidth: aw = 8, yWidth: yw = 8 }) => {
       const sv = sext((a as number) >>> 0, aw as number);
       return { out: ((sv >> ((b as number) >>> 0)) & maskOf(yw as number)) >>> 0 };
     },
@@ -301,7 +301,7 @@ export const RtlConcat2 = circuit(
   ({ hiWidth = 4, loWidth = 4 }: { hiWidth?: number; loWidth?: number } = {}) => ({
     inputs: { hi: portOf(hiWidth), lo: portOf(loWidth) },
     outputs: { out: bus(hiWidth + loWidth) },
-    eval: ({ hi, lo, loWidth: lw = loWidth }) => {
+    eval: ({ hi, lo, loWidth: lw = 4 }) => {
       const lw2 = (lw as number) | 0;
       const out = (((hi as number) >>> 0) * 2 ** lw2 + ((lo as number) >>> 0)) >>> 0;
       return { out };

@@ -47,6 +47,11 @@ import type {
   SourcePortRef,
   StateShape,
 } from './builder-types.js';
+import {
+  type CapturedVariable,
+  capturedFactoryVariables,
+  type FactoryCapture,
+} from './captured-options.js';
 import { internalsOf, makeCircuit } from './internals.js';
 
 // ============================================================================
@@ -262,8 +267,36 @@ function specializeFactory(name: string, factory: CircuitFactory) {
   return (opts?: FactoryOptions): Circuit => {
     const config = factory(opts);
     assertMemoryOptions(name, config, opts ?? {});
-    return buildCircuit(name, config, opts ?? {});
+    return buildCircuit(name, config, opts ?? {}, factoryCaptures(factory, config));
   };
+}
+
+/** Variables each factory's behavior reads from the factory, by behavior source. */
+const capturedByFactory = new WeakMap<CircuitFactory, Map<string, CapturedVariable[]>>();
+
+/**
+ * The factory's variables that its `eval` and `onTick` read (#118). Parsed once
+ * per factory and behavior source, since factories are called in hot loops.
+ */
+function factoryCaptures(factory: CircuitFactory, config: AnyCircuitConfig): FactoryCapture[] {
+  let cache = capturedByFactory.get(factory);
+  if (!cache) {
+    cache = new Map();
+    capturedByFactory.set(factory, cache);
+  }
+  const captures: FactoryCapture[] = [];
+  for (const behavior of ['eval', 'onTick'] as const) {
+    const fn = config[behavior];
+    if (typeof fn !== 'function') continue;
+    const source = String(fn);
+    let captured = cache.get(source);
+    if (!captured) {
+      captured = capturedFactoryVariables(String(factory), source);
+      cache.set(source, captured);
+    }
+    for (const c of captured) captures.push({ ...c, behavior });
+  }
+  return captures;
 }
 
 /**
@@ -352,12 +385,14 @@ function resetStateInitials(state: StateBlock[]): void {
 /**
  * Validate the config, then build its IR and behavior. `factoryOpts` is what a
  * factory was called with; a factory's instances keep their state initials in
- * their options rather than in the IR they share.
+ * their options rather than in the IR they share. `captured` is the factory
+ * variables the behavior reads.
  */
 function buildCircuit(
   name: string,
   config: AnyCircuitConfig,
   factoryOpts?: FactoryOptions,
+  captured: FactoryCapture[] = [],
 ): Circuit {
   const ports = normalizePorts(config);
   const declaredNodes = (config.nodes ?? {}) as Record<string, NodeEntry>;
@@ -378,7 +413,13 @@ function buildCircuit(
   const args = factoryOpts ? withResolvedStateInitials(ir.state, factoryOpts) : {};
   if (factoryOpts) resetStateInitials(ir.state);
   const behavior = ir.implementation.kind === 'primitive' ? behaviorFor(config, ir) : undefined;
-  return makeCircuit({ ir, dependencies, args, behavior });
+  return makeCircuit({
+    ir,
+    dependencies,
+    args,
+    behavior,
+    ...(captured.length > 0 && { captured }),
+  });
 }
 
 function normalizePorts(config: AnyCircuitConfig): Ports {
@@ -957,14 +998,20 @@ function collectDependencies(
     const existing = deps.get(depName);
     if (!existing) {
       deps.set(depName, depComp);
-    } else if (!reported.has(depName) && !sameDefinition(existing, depComp)) {
+      return;
+    }
+    if (reported.has(depName)) return;
+    const problems = sameDefinition(existing, depComp)
+      ? capturedDisagreements(existing, depComp)
+      : [
+          `Two different circuits are named '${depName}' in this design (two definitions, ` +
+            'or a factory called with options that change its insides). A name means one ' +
+            "circuit, so rename one of them. If one is the standard library's " +
+            `'${depName}', rename yours.`,
+        ];
+    if (problems.length > 0) {
       reported.add(depName);
-      errors.push(
-        `Two different circuits are named '${depName}' in this design (two definitions, ` +
-          'or a factory called with options that change its insides). A name means one ' +
-          "circuit, so rename one of them. If one is the standard library's " +
-          `'${depName}', rename yours.`,
-      );
+      errors.push(...problems);
     }
   };
   for (const comp of Object.values(nodes)) {
@@ -973,6 +1020,42 @@ function collectDependencies(
     for (const [depName, depComp] of internalsOf(comp).dependencies) add(depName, depComp);
   }
   return deps;
+}
+
+/**
+ * Instances of one factory share one behavior, so a variable that behavior reads
+ * from the factory holds one instance's value for all of them (#118). Two
+ * instances whose options could make that variable differ are an error, naming
+ * the variable. A variable that holds one option is compared on that option;
+ * anything else (the whole options object, a variable the factory computes)
+ * could depend on any of them, so all are compared.
+ */
+function capturedDisagreements(a: Circuit, b: Circuit): string[] {
+  const { captured = [], args: argsA } = internalsOf(a);
+  if (captured.length === 0) return [];
+  const { args: argsB } = internalsOf(b);
+  const same = (x: unknown, y: unknown) => JSON.stringify(x) === JSON.stringify(y);
+  const problems: string[] = [];
+  for (const { name, binding, option, behavior } of captured) {
+    if (option !== undefined ? same(argsA[option], argsB[option]) : same(argsA, argsB)) continue;
+    const differ = option !== undefined ? `differ in '${option}'` : 'differ in their options';
+    const what =
+      binding === 'local'
+        ? `'${name}', a variable declared in the factory`
+        : `'${name}' from the factory`;
+    const fix =
+      option !== undefined
+        ? `Destructure '${option}' from the ${behavior}'s argument instead, where each ` +
+          `instance gets its own: ${behavior}: ({ ..., ${option} }) => ... ` +
+          '(with a literal default if the option has one)'
+        : `Destructure the options it uses from the ${behavior}'s argument instead, where ` +
+          `each instance gets its own, and compute it inside the ${behavior}`;
+    problems.push(
+      `Instances of '${a.name}' ${differ}, but its ${behavior} reads ${what}, so every ` +
+        `instance would run with one value. ${fix}`,
+    );
+  }
+  return problems;
 }
 
 /**
