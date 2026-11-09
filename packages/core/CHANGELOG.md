@@ -1,5 +1,11 @@
 # @simten/core
 
+## 0.25.1
+
+### Patch Changes
+
+- fb94656: tick() builds its port and state snapshot only when read. 30-70% more ticks/s on the bundled examples.
+
 ## 0.25.0
 
 ### Minor Changes
