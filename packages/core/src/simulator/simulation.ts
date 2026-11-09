@@ -230,7 +230,7 @@ class EngineSimulation implements Simulation {
       isControl: options.isControl,
     };
 
-    engine.runCombinational();
+    this.settleNow();
     this.startHistory();
 
     let widths: ReadonlyMap<string, number> | null = null;
@@ -318,9 +318,9 @@ class EngineSimulation implements Simulation {
   restore(snapshot: Snapshot): void {
     const saved = snapshot as unknown as SimulatorSnapshot;
     this.engine.restore(saved);
-    this.engine.runCombinational();
     this.cycleCount = saved.cycleCount;
-    this.dirty = false;
+    this.dirty = true;
+    this.settle();
   }
 
   private primitiveTypesOf(): ReadonlyMap<string, string> {
@@ -345,8 +345,19 @@ class EngineSimulation implements Simulation {
 
   private settle(): void {
     if (!this.dirty) return;
-    this.engine.runCombinational();
+    this.settleNow();
     this.dirty = false;
+  }
+
+  /**
+   * Settle the logic, and throw if a loop never does. The engine reports that
+   * as a result rather than throwing; dropping it would leave `get` reading
+   * whatever value the loop was on when the cap hit. `dirty` stays set, so
+   * every read throws until an input breaks the loop.
+   */
+  private settleNow(): void {
+    const { error } = this.engine.runCombinational();
+    if (error) throw new Error(error);
   }
 
   /** A clock edge propagates from the current inputs, so it settles too. */
