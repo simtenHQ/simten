@@ -13,6 +13,7 @@
 import type { ArgumentValue, CircuitIR, PortDescriptor, PortType } from '../ir/circuit-ir.js';
 import type { Behavior } from './behavior.js';
 import type { Circuit } from './builder-types.js';
+import type { FactoryCapture } from './captured-options.js';
 
 export interface CircuitInternals {
   readonly ir: CircuitIR;
@@ -22,6 +23,8 @@ export interface CircuitInternals {
   readonly args: Record<string, ArgumentValue>;
   /** A primitive's `eval` and `onTick`. */
   readonly behavior?: Behavior;
+  /** The factory's variables its `eval` or `onTick` reads, if any (#118). */
+  readonly captured?: readonly FactoryCapture[];
 }
 
 const internals = new WeakMap<Circuit, CircuitInternals>();

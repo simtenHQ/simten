@@ -479,6 +479,16 @@ export const UART_TX = circuit('UART_TX', {
   meta: { category: 'io', icon: 'TX', description: 'UART transmitter', synthesizable: false },
 });
 
+/** What UART_RX's `onTick` reads: its pin, its state and its `cyclesPerBit` option. */
+interface UartTick {
+  rx: number;
+  countdown: number;
+  index: number;
+  shift: number;
+  byte: number;
+  cyclesPerBit?: number;
+}
+
 /**
  * UART receiver — turns a serial pin into bytes.
  *
@@ -515,11 +525,9 @@ export const UART_TX = circuit('UART_TX', {
  */
 export const UART_RX = circuit(
   'UART_RX',
-  ({ cyclesPerBit = 16 }: { cyclesPerBit?: number } = {}) => {
-    const period = Math.max(1, Math.floor(cyclesPerBit));
-    // One and a half bit times from the falling edge lands in the middle of data
-    // bit 0: half a bit to the centre of the start bit, one more to the next.
-    const toFirstSample = period + Math.floor(period / 2);
+  // The factory takes `cyclesPerBit` only to type it: `onTick` reads it from its
+  // argument, where each instance gets its own (#118).
+  (_opts: { cyclesPerBit?: number } = {}) => {
     return {
       inputs: { rx: bit },
       outputs: { data: bus(8), valid: bit },
@@ -534,7 +542,11 @@ export const UART_RX = circuit(
       // so `data` stays readable after `valid` drops.
       state: { countdown: 0, index: 0, shift: 0, byte: 0, pulse: 0 },
       eval: ({ byte, pulse }) => ({ data: (byte as number) & 0xff, valid: pulse as number }),
-      onTick: ({ rx, countdown, index, shift, byte }) => {
+      onTick: ({ rx, countdown, index, shift, byte, cyclesPerBit = 16 }: UartTick) => {
+        const period = Math.max(1, Math.floor(cyclesPerBit));
+        // One and a half bit times from the falling edge lands in the middle of
+        // data bit 0: half a bit to the centre of the start bit, one more to the next.
+        const toFirstSample = period + Math.floor(period / 2);
         const level = rx ? 1 : 0;
         const idx = index as number;
         const held = byte as number;
