@@ -23,27 +23,43 @@ import { readInput, writeOutput } from './evaluators/types.js';
 // Map-as-array Proxy for memory state
 // ============================================================================
 
+/** Map methods that change the Map. */
+const MAP_WRITES = new Set<PropertyKey>(['set', 'delete', 'clear']);
+
+/** Why an eval can't write memory: the write would skip the clock edge. */
+function evalWriteError(key: string): Error {
+  return new Error(
+    `eval wrote to memory '${key}'. eval only reads memory; memory writes belong in onTick, ` +
+      'where they take effect on the clock edge.',
+  );
+}
+
 /**
- * Wrap a Map<number, number> in a Proxy that supports array-like indexing.
- * This allows eval functions to use `memory[addr]` syntax for reads
- * and `memory[addr] = value` for writes.
+ * Wrap a Map<number, number> in a read-only Proxy that supports array-like
+ * indexing, so eval reads `memory[addr]`. Writes throw: this is the committed
+ * Map, which snapshots alias, and a write here would change memory with no
+ * clock edge. onTick gets a copy-on-write proxy instead (propagate.ts).
  */
-function wrapMapAsArray(map: Map<number, number>): Map<number, number> {
+function wrapMapAsArray(map: Map<number, number>, key: string): Map<number, number> {
   return new Proxy(map, {
     get(target, prop) {
       if (typeof prop === 'string' && /^\d+$/.test(prop)) {
         return target.get(Number(prop)) ?? 0;
       }
-      // Pass through Map methods (get, set, has, etc.) for backward compat
+      if (MAP_WRITES.has(prop)) {
+        return () => {
+          throw evalWriteError(key);
+        };
+      }
+      // Pass through the reading Map methods (get, has, size, entries, ...)
       const val: unknown = Reflect.get(target, prop);
       return typeof val === 'function' ? val.bind(target) : val;
     },
-    set(target, prop, value) {
-      if (typeof prop === 'string' && /^\d+$/.test(prop)) {
-        target.set(Number(prop), value);
-        return true;
-      }
-      return false;
+    set() {
+      throw evalWriteError(key);
+    },
+    deleteProperty() {
+      throw evalWriteError(key);
     },
   });
 }
@@ -66,10 +82,11 @@ function mergeState(ctx: EvalContext, stateKeys: string[], inputs: Record<string
     for (const key of stateKeys) {
       const val = stateObj[key];
       // Wrap Map state in Proxy for array-indexable access: memory[addr]
-      inputs[key] = val instanceof Map ? wrapMapAsArray(val) : val;
+      inputs[key] = val instanceof Map ? wrapMapAsArray(val, key) : val;
     }
   } else if (nodeState != null) {
-    inputs[stateKeys[0]] = nodeState instanceof Map ? wrapMapAsArray(nodeState) : nodeState;
+    inputs[stateKeys[0]] =
+      nodeState instanceof Map ? wrapMapAsArray(nodeState, stateKeys[0]) : nodeState;
   }
 }
 
