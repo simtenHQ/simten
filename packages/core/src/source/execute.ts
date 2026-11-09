@@ -137,8 +137,13 @@ export function stripTypes(code: string): string {
 export function stripImports(code: string): string {
   return code.replace(
     /^[ \t]*import\b[\s\S]*?(?:from[ \t]*['"][^'"]+['"]|['"][^'"]+['"])[ \t]*;?[ \t]*$/gm,
-    '',
+    keepLineBreaks,
   );
+}
+
+/** What's left of removed code: its line breaks, so the lines after it keep their numbers. */
+function keepLineBreaks(removed: string): string {
+  return removed.replace(/[^\n]/g, '');
 }
 
 /**
@@ -153,7 +158,10 @@ export function stripImports(code: string): string {
  */
 export function stripExports(code: string): string {
   return code
-    .replace(/^[ \t]*export\s+\{[\s\S]*?\}[ \t]*(?:from[ \t]*['"][^'"]+['"])?[ \t]*;?[ \t]*$/gm, '')
+    .replace(
+      /^[ \t]*export\s+\{[\s\S]*?\}[ \t]*(?:from[ \t]*['"][^'"]+['"])?[ \t]*;?[ \t]*$/gm,
+      keepLineBreaks,
+    )
     .replace(/^([ \t]*)export\s+default\s+/gm, '$1')
     .replace(/^([ \t]*)export\s+(?=(?:const|let|var|function|class|async)\b)/gm, '$1');
 }
@@ -208,6 +216,48 @@ function exportedNames(code: string): string[] {
 }
 
 // ============================================================================
+// Error locations
+// ============================================================================
+
+/** Named in the code `executeJsCode` runs, so its frames are findable in a stack. */
+const SOURCE_URL = 'simten-circuit.js';
+
+/**
+ * Lines the engine puts before a `new Function` body (`function anonymous(...`),
+ * measured rather than assumed, since engines differ. Undefined when the
+ * engine's stacks don't name the source.
+ */
+let functionHeaderLines: number | undefined | null = null;
+function headerLines(): number | undefined {
+  if (functionHeaderLines === null) {
+    const probe = new Function('a', 'return new Error();\n//# sourceURL=simten-probe.js');
+    const at = /simten-probe\.js:(\d+):\d+/.exec(String((probe() as Error).stack));
+    functionHeaderLines = at ? Number(at[1]) - 1 : undefined;
+  }
+  return functionHeaderLines;
+}
+
+/**
+ * Where in the user's code `error` was thrown, from the first stack frame in
+ * the code `executeJsCode` ran: the line of a `.to(...)` call for a wiring
+ * mistake (#513), or the line of any other throw. `firstLine` is the line of
+ * the run code the user's code starts on, and `lineCount` how many it has.
+ */
+function locate(
+  error: unknown,
+  firstLine: number,
+  lineCount: number,
+): { line: number; column: number } | undefined {
+  const header = headerLines();
+  if (header === undefined || !(error instanceof Error) || !error.stack) return undefined;
+  const at = /simten-circuit\.js:(\d+):(\d+)/.exec(error.stack);
+  if (!at) return undefined;
+  const line = Number(at[1]) - header - firstLine + 1;
+  if (line < 1 || line > lineCount) return undefined;
+  return { line, column: Number(at[2]) };
+}
+
+// ============================================================================
 // Execute
 // ============================================================================
 
@@ -243,8 +293,10 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
     const exportedList = exportedNames(withoutImports).map(
       (n) => `(typeof ${n} !== 'undefined' ? ${n} : undefined)`,
     );
-    // Wrap: intercept circuit()/component() calls to collect all created circuits
-    const wrappedCode = `
+    // Wrap: intercept circuit()/component() calls to collect all created circuits.
+    // The user's code starts a line of its own, at column 1, so a stack frame in
+    // it maps back to its line and column.
+    const prelude = `
       "use strict";
       const __collector = [];
       const __exported = [];
@@ -257,17 +309,25 @@ export function executeJsCode(jsCode: string, extraScope?: Record<string, unknow
       {
         const circuit = __trackingCircuit;
         const component = __trackingCircuit;
-        ${cleaned}
+`;
+    const wrappedCode = `${prelude}${cleaned}
         __exported.push(${exportedList.join(', ')});
       }
       return { collected: __collector, exported: __exported };
-    `;
+//# sourceURL=${SOURCE_URL}`;
 
     const fn = new Function(...allNames, wrappedCode);
-    const { collected, exported: exportedValues } = fn(...allValues) as {
-      collected: unknown[];
-      exported: unknown[];
-    };
+    let ran: { collected: unknown[]; exported: unknown[] };
+    try {
+      ran = fn(...allValues) as typeof ran;
+    } catch (e) {
+      const at = locate(e, prelude.split('\n').length, cleaned.split('\n').length);
+      if (!at) throw e;
+      // `(line:column)` is how a compile error carries its place to the editor,
+      // as the parser's own syntax errors do.
+      throw new Error(`${e instanceof Error ? e.message : String(e)} (${at.line}:${at.column})`);
+    }
+    const { collected, exported: exportedValues } = ran;
 
     for (const built of collected) {
       if (isCircuit(built)) {

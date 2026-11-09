@@ -166,6 +166,18 @@ export const BadPort = circuit('BadPort', {
   ],
 });
 `,
+  'two-drivers.circuit.ts': `
+import { bit, circuit } from '@simten/core';
+
+export const TwoDrivers = circuit('TwoDrivers', {
+  inputs: { a: bit, b: bit },
+  outputs: { y: bit },
+  connect: ({ inputs, outputs }) => [
+    inputs.a.to(outputs.y),
+    inputs.b.to(outputs.y),
+  ],
+});
+`,
   'uses-bad-port.circuit.ts': `
 import { bit, circuit } from '@simten/core';
 import { BadPort } from './bad-port.circuit.js';
@@ -439,20 +451,36 @@ describe('an error in a circuit file', () => {
   );
 
   it(
-    'a throw inside circuit() comes back with the file and line, not a stack',
+    'a throw inside circuit() comes back with the line of the mistake, not a stack',
     async () => {
       const file = join(project, 'bad-port.circuit.ts');
       const report = JSON.parse((await check({ filePath: file })).content[0].text);
       expect(report.valid).toBe(false);
-      expect(report.diagnostics[0].line).toBe(5);
+      // The `.to(n.nope)` line, not the `circuit(...)` call on line 5 (#513).
+      expect(report.diagnostics[0].line).toBe(10);
       const message: string = report.diagnostics[0].message;
-      expect(message).toMatch(/^bad-port\.circuit\.ts:5:\d+: Circuit 'BadPort' validation failed/);
+      expect(message).toMatch(/^bad-port\.circuit\.ts:10:\d+: Circuit 'BadPort' validation failed/);
       expect(message).toContain("Port 'nope' does not exist on node 'n'");
       expect(message).not.toContain('    at ');
 
       const result = await simulate({ filePath: file, ticks: 1 });
       expect(result.isError).toBe(true);
       expect(result.content[0].text).toBe(message);
+    },
+    TIMEOUT,
+  );
+
+  it(
+    'an error found after connect returns points at the connection',
+    async () => {
+      const file = join(project, 'two-drivers.circuit.ts');
+      const report = JSON.parse((await check({ filePath: file })).content[0].text);
+      expect(report.valid).toBe(false);
+      // The second `.to(outputs.y)`, which added the second driver.
+      expect(report.diagnostics[0].line).toBe(9);
+      expect(report.diagnostics[0].message).toMatch(
+        /^two-drivers\.circuit\.ts:9:\d+: Circuit 'TwoDrivers' validation failed:\n {2}- y has multiple drivers: a, b$/,
+      );
     },
     TIMEOUT,
   );
@@ -466,7 +494,7 @@ describe('an error in a circuit file', () => {
       expect(report.valid).toBe(false);
       // The line is in bad-port.circuit.ts, not the file being checked.
       expect(report.diagnostics[0].line).toBeUndefined();
-      expect(report.diagnostics[0].message).toMatch(/^bad-port\.circuit\.ts:5:\d+: /);
+      expect(report.diagnostics[0].message).toMatch(/^bad-port\.circuit\.ts:10:\d+: /);
     },
     TIMEOUT,
   );
