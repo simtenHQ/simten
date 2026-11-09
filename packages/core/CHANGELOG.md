@@ -1,5 +1,23 @@
 # @simten/core
 
+## 0.25.0
+
+### Minor Changes
+
+- 46f1ce4: Breaking: instances of a factory that differ in an option their `eval` or `onTick` reads from the factory's closure are now a compile error naming the variable; before, every instance silently ran with one instance's value. `UART_RX` instances with different `cyclesPerBit` now each keep their own rate.
+
+### Patch Changes
+
+- 73b9714: A circuit validation error about a connection points at the line of its `.to(...)` call, not at `circuit(...)`, both in its stack and as `(line:column)` on errors from `executeCircuitCode`.
+- 007c2b8: Memory state is read-only in `eval`: a write throws and says memory writes belong in `onTick`, instead of changing memory with no clock edge.
+- e9c287c: Verilog export throws on a combinational loop, naming the nodes on it; `checkSynthesizable` reports it. The simulator still settles loops.
+- 328116a: Verilog export: `MemBusMux` reads its `baseN`/`endN` range arguments and offsets `local_addr` by the matched range's base, and `UART_TX.read_data` is driven.
+- 1806ea0: `simulate(C, { memory })` loads each key into the one memory node at exactly that path, instead of every node whose path contains it or whose type matches it. A key with no memory node throws.
+- ebf4fba: `onTick` reads its inputs as `eval` does: an unconnected input is 0 instead of undefined, and a top-level input arrives masked to its width.
+- 8e23718: Verilog export: `Screen` and `RasterDisplay` outputs are tied to 0, as in the simulator, instead of left undriven.
+- e8beb26: A combinational loop that no input, source or register reaches is now evaluated, so one that never settles reports the loop error instead of reading 0.
+- 44df86c: `Simulation.get`, `read` and `tick` on a combinational circuit now throw when a loop oscillates, instead of reading whatever value it stopped on.
+
 ## 0.24.0
 
 ### Minor Changes
