@@ -200,7 +200,7 @@ class DefaultSimulatorEngine implements SimulatorEngine {
       this.numericCircuit,
       this.numericValues,
       this.numericSeqState,
-      this.topLevelInputs,
+      this.eventQueue,
     );
 
     // Phase 3: Commit state (registers update)

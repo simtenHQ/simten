@@ -16,7 +16,6 @@ packages/core/src/simulator/elaboration.ts flattenCircuit
 packages/core/src/simulator/elaboration.ts stitchCompositeConnections
 packages/core/src/simulator/elaboration.ts topologicalSortFlat
 packages/core/src/simulator/elaboration.ts traceCompositePorts
-packages/core/src/simulator/propagate.ts updateSequentialStates
 packages/core/src/simulator/sequential-init.ts resolveBlockInitial
 packages/core/src/std/mos6502.ts (anonymous)
 packages/core/src/std/mos6502.ts eval

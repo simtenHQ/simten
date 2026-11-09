@@ -5,8 +5,9 @@
  * Hot path uses evaluator table lookup — no switch statements, no Map allocations.
  */
 
+import type { BehaviorValues } from '../circuit/behavior.js';
 import type { BitValue, BusValue } from '../ir/circuit-ir.js';
-import type { EvalContext } from './evaluators/types.js';
+import { type EvalContext, readInput } from './evaluators/types.js';
 import type { NumericEventQueue } from './numeric-event-queue.js';
 import type { NumericCircuit, NumericSequentialState } from './numeric-types.js';
 import type { NumericPortValues } from './numeric-values.js';
@@ -39,7 +40,7 @@ const PROXY_TO_MAP = new WeakMap<object, { current: Map<number, number>; copied:
  * Maps by reference (`toFlatSequentialState`), so mutating one in place would
  * rewrite history. Every mutating path here must go through `ensureCopy`.
  */
-function wrapMapForOnTick(map: Map<number, number>): any {
+function wrapMapForOnTick(map: Map<number, number>): Map<number, number> {
   const holder = { current: map, copied: false };
   const ensureCopy = (): Map<number, number> => {
     if (!holder.copied) {
@@ -54,9 +55,10 @@ function wrapMapForOnTick(map: Map<number, number>): any {
         return holder.current.get(Number(prop)) ?? 0;
       }
       if (prop === 'set' || prop === 'delete' || prop === 'clear') {
-        return (...args: any[]) => (ensureCopy() as any)[prop](...args);
+        const method = Reflect.get(Map.prototype, prop) as (...args: unknown[]) => unknown;
+        return (...args: unknown[]) => method.apply(ensureCopy(), args);
       }
-      const val = (holder.current as any)[prop];
+      const val: unknown = Reflect.get(holder.current, prop);
       return typeof val === 'function' ? val.bind(holder.current) : val;
     },
     set(_target, prop, value) {
@@ -296,13 +298,27 @@ export function setDebugStateUpdate(enabled: boolean) {
 
 /**
  * Update sequential states for all stateful nodes.
+ *
+ * onTick reads its inputs the way eval does, through `readInput`: an
+ * unconnected input is 0 and a top-level input arrives masked to its width.
+ * Phase 1's propagate has already synced the top-level inputs into `values`.
  */
 export function updateSequentialStates(
   circuit: NumericCircuit,
   values: NumericPortValues,
   seqState: NumericSequentialState,
-  topLevelInputs?: FlatPortValueMap,
+  queue: NumericEventQueue,
 ): void {
+  const ctx: EvalContext = {
+    circuit,
+    values,
+    state: seqState,
+    queue,
+    nodeIndex: 0,
+    portStart: 0,
+    inputCount: 0,
+    outputCount: 0,
+  };
   for (let nodeIdx = 0; nodeIdx < circuit.nodeCount; nodeIdx++) {
     if (!circuit.hasState[nodeIdx]) continue;
 
@@ -310,33 +326,15 @@ export function updateSequentialStates(
     const onTick = circuit.onTicks[circuit.primitiveTypeIndex[nodeIdx]];
     if (!onTick) continue;
 
-    // Build inputs Map (same as evaluateNode fallback path)
-    const inputs = new Map<string, BitValue | BusValue>();
     const portStart = circuit.nodePortStart[nodeIdx];
     const inputCount = circuit.nodeInputCount[nodeIdx];
-
-    for (let i = 0; i < inputCount; i++) {
-      const portIdx = portStart + i;
-      const srcNodeIdx = circuit.inputSourceNode[portIdx];
-      const srcPortIdx = circuit.inputSourcePort[portIdx];
-      const portName = circuit.inputPortNames[portIdx];
-
-      if (srcNodeIdx === -1) {
-        if (topLevelInputs && srcPortIdx >= 0) {
-          const topKey = circuit.indexToPortKey[srcPortIdx];
-          const val = topLevelInputs.get(topKey);
-          if (val !== undefined) {
-            inputs.set(portName, val);
-          }
-        }
-      } else if (srcPortIdx >= 0) {
-        inputs.set(portName, values.values[srcPortIdx]);
-      }
-    }
+    ctx.nodeIndex = nodeIdx;
+    ctx.portStart = portStart;
+    ctx.inputCount = inputCount;
+    ctx.outputCount = circuit.nodeOutputCount[nodeIdx];
 
     // Update state via onTick
-    const currentState = seqState.currentState[nodeIdx];
-    const obj: Record<string, any> = {};
+    const obj: BehaviorValues = {};
     // Node arguments first (lowest precedence), under their plain names — this
     // matches the eval path (eval-bridge.ts) so onTick sees construction params
     // like `width`/`value` the same way eval does. Ports and state below
@@ -344,26 +342,10 @@ export function updateSequentialStates(
     if (node.arguments) {
       for (const [key, value] of Object.entries(node.arguments)) obj[key] = value;
     }
-    for (const [k, v] of inputs) obj[k] = v;
-    if (
-      currentState != null &&
-      typeof currentState === 'object' &&
-      !(currentState instanceof Map)
-    ) {
-      // Memory fields get the same copy-on-write wrapper as a lone memory, so an
-      // in-place write can't reach the committed Map that snapshots alias.
-      for (const key of onTick.stateKeys) {
-        const field = (currentState as any)[key];
-        obj[key] = field instanceof Map ? wrapMapForOnTick(field) : field;
-      }
-    } else if (currentState != null && onTick.stateKeys.length === 1) {
-      // Wrap Map in Proxy for array-indexable access in onTick: memory[addr] = value
-      if (currentState instanceof Map) {
-        obj[onTick.stateKeys[0]] = wrapMapForOnTick(currentState);
-      } else {
-        obj[onTick.stateKeys[0]] = currentState;
-      }
+    for (let i = 0; i < inputCount; i++) {
+      obj[circuit.inputPortNames[portStart + i]] = readInput(ctx, i);
     }
+    bindOnTickState(obj, seqState.currentState[nodeIdx], onTick.stateKeys);
     const result = onTick.fn(obj);
     seqState.nextState[nodeIdx] =
       onTick.stateKeys.length === 1
@@ -372,25 +354,42 @@ export function updateSequentialStates(
   }
 }
 
-/** A proxy handed to onTick comes back as whichever Map now backs it. */
-function unwrapOnTickMap(value: any): PrimitiveState {
-  if (value != null && typeof value === 'object' && PROXY_TO_MAP.has(value)) {
-    return PROXY_TO_MAP.get(value)!.current;
+/**
+ * Add a node's current state to onTick's arguments. A memory, alone or as a
+ * field, gets the copy-on-write wrapper, so an in-place write can't reach the
+ * committed Map that snapshots alias.
+ */
+function bindOnTickState(obj: BehaviorValues, state: PrimitiveState, stateKeys: string[]): void {
+  if (state == null) return;
+  if (typeof state === 'object' && !(state instanceof Map)) {
+    const fields = state as Record<string, unknown>;
+    for (const key of stateKeys) {
+      const field = fields[key];
+      obj[key] = field instanceof Map ? wrapMapForOnTick(field) : field;
+    }
+  } else if (stateKeys.length === 1) {
+    obj[stateKeys[0]] = state instanceof Map ? wrapMapForOnTick(state) : state;
   }
-  return value;
+}
+
+/** A proxy handed to onTick comes back as whichever Map now backs it. */
+function unwrapOnTickMap(value: unknown): PrimitiveState {
+  const holder = value != null && typeof value === 'object' ? PROXY_TO_MAP.get(value) : undefined;
+  return holder ? holder.current : (value as PrimitiveState);
 }
 
 /** Same, for each field of a multi-block state object. */
-function unwrapOnTickFields(result: any): any {
+function unwrapOnTickFields(result: BehaviorValues): PrimitiveState {
   if (result == null || typeof result !== 'object') return result;
-  const keys = Object.keys(result).filter((key) => {
-    const field = result[key];
-    return field != null && typeof field === 'object' && PROXY_TO_MAP.has(field);
-  });
-  if (keys.length === 0) return result;
-  const out: Record<string, any> = { ...result };
-  for (const key of keys) out[key] = PROXY_TO_MAP.get(result[key])!.current;
-  return out;
+  let out: BehaviorValues | undefined;
+  for (const [key, field] of Object.entries(result)) {
+    const holder = field != null && typeof field === 'object' ? PROXY_TO_MAP.get(field) : undefined;
+    if (!holder) continue;
+    out ??= { ...result };
+    out[key] = holder.current;
+  }
+  // A multi-block state is stored as its plain object of fields.
+  return (out ?? result) as unknown as PrimitiveState;
 }
 
 /**

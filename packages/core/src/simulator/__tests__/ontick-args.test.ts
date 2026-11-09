@@ -11,7 +11,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { bit, bus, circuit } from '../../circuit/index.js';
+import { bit, bus, circuit, reg } from '../../circuit/index.js';
 import { simulate } from '../simulate.js';
 
 describe('onTick receives node arguments', () => {
@@ -68,5 +68,40 @@ describe('onTick receives node arguments', () => {
     sim.set({ d: 42 }); // drive the port to 42
     sim.tick();
     expect(sim.get('out')).toBe(42); // port (42) wins over arg (200)
+  });
+});
+
+describe('onTick reads inputs the way eval does', () => {
+  it('an unconnected input reads 0, not undefined (#572)', () => {
+    const Probe = circuit('UnconnectedProbe', {
+      inputs: { d: bus(8) },
+      outputs: { q: bus(8) },
+      state: { v: reg(8) },
+      eval: ({ v }) => ({ q: v }),
+      onTick: ({ d }) => ({ v: d === undefined ? 7 : d + 1 }),
+    });
+    const Wrap = circuit('UnconnectedProbeWrap', {
+      inputs: { x: bit },
+      outputs: { q: bus(8) },
+      nodes: { p: Probe },
+      connect: ({ outputs, nodes: { p } }) => [p.q.to(outputs.q)],
+    });
+    const sim = simulate(Wrap);
+    sim.tick();
+    expect(sim.get('q')).toBe(1);
+  });
+
+  it('a top-level input arrives masked to its width (#571)', () => {
+    const Lat8 = circuit('MaskedLatch8', {
+      inputs: { d: bus(8) },
+      outputs: { q: bus(8), big: bit },
+      state: { v: reg(8) },
+      eval: ({ v }) => ({ q: v, big: v > 255 ? 1 : 0 }),
+      onTick: ({ d }) => ({ v: d }),
+    });
+    const sim = simulate(Lat8);
+    sim.set({ d: 0x1ff });
+    sim.tick();
+    expect([sim.get('q'), sim.get('big')]).toEqual([255, 0]);
   });
 });

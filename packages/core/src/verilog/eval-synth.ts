@@ -12,9 +12,8 @@
  * unsupported instead of emitting Verilog that differs from the simulator.
  *
  * What the simulator does, and so what the translation follows:
- * - `eval` gets the node's arguments, then its inputs (an unconnected input
- *   reads 0), then its state. `onTick` the same, except an unconnected input
- *   is left out, so it falls back to an argument of that name or is undefined.
+ * - `eval` and `onTick` get the node's arguments, then its inputs (an
+ *   unconnected input reads 0), then its state.
  * - An output is stored masked to its port width. State is stored as returned,
  *   unmasked, so a next-state value must provably fit the state's width.
  * - `onTick` returns the next state. With one scalar state field, leaving it
@@ -666,13 +665,12 @@ function argument(key: string, value: ArgumentValue): Value {
   return unsupported(`it reads argument '${key}', which isn't an integer`);
 }
 
-/** What a parameter of `role` reads, before falling back to its default. */
+/** What a parameter reads, before falling back to its default. */
 function resolve(
   key: string,
   ctx: PrimitiveContext,
   behavior: Behavior,
   state: (key: string) => Binding | undefined,
-  role: Role['name'],
 ): Binding | undefined {
   const fromState = state(key);
   if (fromState) return fromState;
@@ -680,7 +678,7 @@ function resolve(
     const wire = ctx.wires.inputs.get(key);
     if (wire)
       return { kind: 'value', value: port(wire, ctx.ports?.inputs.get(key) ?? 32), mutable: false };
-    if (role === 'eval') return { kind: 'value', value: literal(0n), mutable: false };
+    return { kind: 'value', value: literal(0n), mutable: false };
   }
   const arg = ctx.args[key];
   if (arg !== undefined) return { kind: 'value', value: argument(key, arg), mutable: false };
@@ -760,7 +758,7 @@ function translate(
           ? { key: only as string, value: held.value }
           : undefined,
     };
-    const lookup = (key: string) => resolve(key, ctx, behavior, state, 'onTick');
+    const lookup = (key: string) => resolve(key, ctx, behavior, state);
     ({ values: next, writes } = within('onTick', () =>
       run(behavior.onTickFn as BehaviorFn, role, nets, lookup),
     ));
@@ -769,7 +767,7 @@ function translate(
     }
   }
   const role: Role = { name: 'eval', keys: new Set(behavior.outputNames) };
-  const lookup = (key: string) => resolve(key, ctx, behavior, state, 'eval');
+  const lookup = (key: string) => resolve(key, ctx, behavior, state);
   const { values: outputs } = within('eval', () => run(behavior.evalFn, role, nets, lookup));
   return { outputs, next, writes, nets };
 }

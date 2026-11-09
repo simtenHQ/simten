@@ -152,6 +152,25 @@ describe('eval-synth translates', () => {
     expect(exportVerilog(Top).verilog).toContain('assign w_u_y = (a | 0);');
   });
 
+  it('an unconnected input to onTick as 0, as the simulator reads it', () => {
+    const C = circuit('UnconnectedOnTick', {
+      inputs: { d: bus(8) },
+      outputs: { q: bus(8) },
+      state: { v: reg(8) },
+      eval: ({ v }) => ({ q: v }),
+      onTick: ({ d }) => ({ v: d }),
+    });
+    const Top = circuit('UnconnectedOnTickTop', {
+      inputs: { x: bit },
+      outputs: { q: bus(8) },
+      nodes: { u: C },
+      connect: ({ outputs, nodes: { u } }) => [u.q.to(outputs.q)],
+    });
+    const { verilog, unsupported } = exportVerilog(Top);
+    expect(unsupported).toBeUndefined();
+    expect(verilog).toContain('u_v <= 0;');
+  });
+
   it("every eval in the 6502's datapath", () => {
     expect(reason(MOS6502_ALU)).toBeUndefined();
   });
