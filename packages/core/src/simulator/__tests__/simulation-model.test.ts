@@ -224,6 +224,33 @@ describe('propagation loop cap', () => {
     expect(() => ticking.tick()).toThrow(/oscillating/);
   });
 
+  it('a loop that nothing seeds is still evaluated (#570)', () => {
+    // An inverter fed only by itself reads no input and holds no state, so the
+    // usual seeds never reach it. It must still be found oscillating.
+    const NotLoop = circuit('UnseededNotLoop', {
+      inputs: { x: bit },
+      outputs: { o: bit },
+      nodes: { n: Not },
+      connect: ({ outputs, nodes: { n } }) => [n.out.to(n.in, outputs.o)],
+    });
+    expect(() => simulate(NotLoop)).toThrow(/oscillating.*Still changing: n/);
+
+    // Two inverters in a ring settle, and the values they settle on agree.
+    const Pair = circuit('UnseededNotPair', {
+      inputs: { x: bit },
+      outputs: { a: bit, b: bit },
+      nodes: { n1: Not, n2: Not },
+      connect: ({ outputs, nodes: { n1, n2 } }) => [
+        n1.out.to(n2.in, outputs.a),
+        n2.out.to(n1.in, outputs.b),
+      ],
+    });
+    const sim = simulate(Pair);
+    expect(sim.get('a') + sim.get('b')).toBe(1);
+    sim.reset();
+    expect(sim.get('a') + sim.get('b')).toBe(1);
+  });
+
   it('a large stable circuit does not trip the cap', () => {
     // 20 000 buffers in a chain: one evaluation each, twice the old fixed cap.
     const length = 20000;

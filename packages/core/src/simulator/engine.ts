@@ -22,6 +22,7 @@ import {
   fromFlatPortValueMap,
   propagate,
   propagateToTopLevelOutputs,
+  seedAllNodes,
   seedInitialQueue,
   seedStateOutputNodes,
   toFlatPortValueMap,
@@ -104,20 +105,29 @@ class DefaultSimulatorEngine implements SimulatorEngine {
       this.topLevelInputs.set(input.name, getDefaultValue(input.portType));
     }
 
-    // Run initial propagation
-    this.eventQueue.clear();
-    seedInitialQueue(this.numericCircuit, this.eventQueue);
-    propagate(
-      this.numericCircuit,
-      this.eventQueue,
-      this.numericValues,
-      this.numericSeqState,
-      this.topLevelInputs,
-    );
+    this.settleFromScratch();
 
     this.totalTicks = 0;
     this.totalEvaluations = 0;
     this.cacheValid = false;
+  }
+
+  /**
+   * The first propagate after compile or reset. The usual seeds go first, so
+   * every loop they reach settles exactly as it always has; then every node
+   * runs once more. A settled node recomputes the same outputs and wakes
+   * nothing, so this only reaches the nodes the seeds never did: a loop of
+   * gates fed only by itself.
+   */
+  private settleFromScratch(): void {
+    const { numericCircuit: circuit, eventQueue: queue, numericValues: values } = this;
+    if (!circuit || !queue || !values) return;
+    const state = this.numericSeqState ?? undefined;
+    queue.clear();
+    seedInitialQueue(circuit, queue);
+    propagate(circuit, queue, values, state, this.topLevelInputs);
+    seedAllNodes(circuit, queue);
+    propagate(circuit, queue, values, state, this.topLevelInputs);
   }
 
   setInput(name: string, value: BitValue | BusValue): void {
@@ -425,16 +435,7 @@ class DefaultSimulatorEngine implements SimulatorEngine {
     // Reset port values
     this.numericValues = createNumericPortValues(this.numericCircuit.portCount);
 
-    // Re-run initial propagation
-    this.eventQueue!.clear();
-    seedInitialQueue(this.numericCircuit, this.eventQueue!);
-    propagate(
-      this.numericCircuit,
-      this.eventQueue!,
-      this.numericValues,
-      this.numericSeqState,
-      this.topLevelInputs,
-    );
+    this.settleFromScratch();
 
     this.totalTicks = 0;
     this.totalEvaluations = 0;

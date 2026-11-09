@@ -249,6 +249,16 @@ export function seedInitialQueue(circuit: NumericCircuit, queue: NumericEventQue
 }
 
 /**
+ * Seed every node, for the first propagate after compile or reset. A loop of
+ * ordinary gates reads no input, holds no state and has no source in it, so
+ * `seedInitialQueue` never reaches it; evaluating it once here gives it a
+ * consistent value, or trips the cap if it never settles.
+ */
+export function seedAllNodes(circuit: NumericCircuit, queue: NumericEventQueue): void {
+  for (let i = 0; i < circuit.nodeCount; i++) queue.enqueue(i);
+}
+
+/**
  * Seed the event queue with state-output nodes only.
  */
 export function seedStateOutputNodes(circuit: NumericCircuit, queue: NumericEventQueue): void {
