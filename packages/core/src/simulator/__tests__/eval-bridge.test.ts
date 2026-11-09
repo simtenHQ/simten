@@ -5,6 +5,7 @@
 
 import { describe, expect, it } from 'vitest';
 import type { Behavior, BehaviorFn } from '../../circuit/behavior.js';
+import { bus, circuit, mem } from '../../circuit/index.js';
 import {
   createDispatchTables,
   generateEvalWrapper as generateFromBehavior,
@@ -13,6 +14,7 @@ import {
 import type { EvalContext } from '../evaluators/types.js';
 import type { NumericCircuit, NumericSequentialState } from '../numeric-types.js';
 import type { NumericPortValues } from '../numeric-values.js';
+import { simulate } from '../simulate.js';
 
 /** The tests' evals take numbers; behavior in general takes any named values. */
 function generateEvalWrapper(
@@ -262,5 +264,40 @@ describe('dispatch tables', () => {
     const second = createTestContext([1, 1], 1);
     b.evaluators[0]?.(second.ctx);
     expect([first.values[2], second.values[2]]).toEqual([0, 1]);
+  });
+});
+
+describe('memory in eval is read-only (#575)', () => {
+  it('an indexed write throws, naming onTick', () => {
+    const EvalWrites = circuit('EvalWritesMemory', {
+      inputs: { a: bus(8) },
+      outputs: { q: bus(8) },
+      state: { m: mem(4, 8) },
+      eval: ({ a, m }) => {
+        const old = m[0];
+        m[0] = a;
+        return { q: old };
+      },
+      onTick: ({ m }) => ({ m }),
+    });
+    expect(() => simulate(EvalWrites)).toThrow(/eval wrote to memory 'm'.*belong in onTick/);
+  });
+
+  it('Map writes throw too, and reads still work', () => {
+    const Rom = circuit('EvalMapMethods', ({ write = false }: { write?: boolean } = {}) => ({
+      inputs: { addr: bus(2) },
+      outputs: { q: bus(8) },
+      state: { m: mem(4, 8, { 1: 42 }) },
+      eval: ({ addr, m }) => {
+        if (write) m.set(addr, 1);
+        return { q: m.has(addr) ? m[addr] : m.size };
+      },
+      onTick: ({ m }) => ({ m }),
+    }));
+    const sim = simulate(Rom());
+    expect(sim.get('q')).toBe(1);
+    sim.set({ addr: 1 });
+    expect(sim.get('q')).toBe(42);
+    expect(() => simulate(Rom({ write: true }))).toThrow(/eval wrote to memory 'm'/);
   });
 });
