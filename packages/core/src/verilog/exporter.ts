@@ -8,7 +8,7 @@
  * - One clock domain (no async crossings, no derived clocks)
  * - All operations unsigned (overflow wraps)
  * - Memory is write-first
- * - No combinational loops
+ * - No combinational loops (refused with a CombinationalLoopError)
  */
 
 import { type BehaviorTable, type Library, libraryOf } from '../circuit/behavior.js';
@@ -23,6 +23,7 @@ import type {
   FlatConnection,
   FlatNode,
 } from '../simulator/types.js';
+import { CombinationalLoopError, type EmittedNode, findCombinationalLoop } from './comb-loops.js';
 import {
   type PrimitiveContext,
   type PrimitiveWires,
@@ -138,6 +139,9 @@ export function exportVerilogFlat(top: Circuit, options?: VerilogExportOptions):
  * map of sidecar filename → contents for any `$readmemh` hex files the
  * exporter emitted for large memories. Callers should write each file
  * next to the `.v` for the Verilog to compile.
+ *
+ * Throws when the circuit's combinational logic has a loop: the simulator
+ * settles a latch built from gates, but synthesis doesn't (ADR 0002).
  */
 export function exportVerilog(top: Circuit, options?: VerilogExportOptions): ExportResult {
   // TODO: hierarchical mode (emit sub-modules). For now every mode is flat.
@@ -148,10 +152,17 @@ export function exportVerilog(top: Circuit, options?: VerilogExportOptions): Exp
  * Whether `exportVerilog(top)` translates every primitive in the circuit:
  * each has a hand-written mapping or an `eval` the exporter can translate.
  * Each error names a primitive that can't be exported and, when its `eval`
- * is the reason, what in it can't be translated.
+ * is the reason, what in it can't be translated. A combinational loop, which
+ * `exportVerilog` throws on, is reported as the one error.
  */
 export function checkSynthesizable(top: Circuit): SynthValidation {
-  const { reasons } = exportWithReasons(internalsOf(top).ir, libraryOf(top));
+  let reasons: Map<string, string>;
+  try {
+    ({ reasons } = exportWithReasons(internalsOf(top).ir, libraryOf(top)));
+  } catch (e) {
+    if (e instanceof CombinationalLoopError) return { valid: false, errors: [e.message] };
+    throw e;
+  }
   const errors = [...reasons].map(([name, reason]) => `${name}: ${reason}`);
   return { valid: errors.length === 0, errors };
 }
@@ -349,6 +360,8 @@ function emitFlatModule(
   // ── Register declarations + logic ──────────────────────────────────
   const allDeclarations: string[] = [];
   const allLogicLines: string[] = [];
+  /** Each node's logic, for the combinational loop check. */
+  const emitted: EmittedNode[] = [];
 
   for (const node of logicNodes) {
     const wires: PrimitiveWires = {
@@ -407,8 +420,12 @@ function emitFlatModule(
       allLogicLines.push(`  // ${node.primitiveType} "${sanitizeId(node.id)}"`);
       allLogicLines.push(...result.lines.map((l) => `  ${l}`));
       allLogicLines.push('');
+      emitted.push({ nodeId: node.id, lines: result.lines });
     }
   }
+
+  const loop = findCombinationalLoop(emitted);
+  if (loop) throw new CombinationalLoopError(loop);
 
   // ── Module header ──────────────────────────────────────────────────
   const ports: string[] = [];
