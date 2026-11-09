@@ -144,6 +144,9 @@ class DefaultSimulatorEngine implements SimulatorEngine {
 
     const node = this.nodesById.get(path);
     if (!node) throw new Error(unknownNodeMessage(path, this.flatCircuit));
+    if (value instanceof Map && !this.hasMemory(node)) {
+      throw new Error(`setNode: '${path}' has no memory to load contents into.`);
+    }
 
     // If it has sequential state (ROM, RAM, Register, DFlipFlop) → write state
     const idx = this.numericCircuit.nodeIdToIndex.get(node.id);
@@ -176,6 +179,12 @@ class DefaultSimulatorEngine implements SimulatorEngine {
       node.arguments = { ...node.arguments, value };
       this.cacheValid = false;
     }
+  }
+
+  /** Whether `node` has a memory state block, so memory contents can load into it. */
+  private hasMemory(node: FlatNode): boolean {
+    const component = this.options?.library.definitions.resolveCircuit(node.primitiveType);
+    return component?.state.some((block) => block.stateType.kind === 'memory') ?? false;
   }
 
   tick(): TickResult {

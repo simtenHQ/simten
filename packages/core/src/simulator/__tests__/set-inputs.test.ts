@@ -10,8 +10,10 @@ import { describe, expect, it } from 'vitest';
 import { libraryOf } from '../../circuit/behavior.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { internalsOf } from '../../circuit/internals.js';
-import { Input, Led, Nand, Register, ROM, Switch } from '../../std/index.js';
+import { Input, Led, Nand, RAM, Register, ROM, Switch } from '../../std/index.js';
+import { elaborate } from '../elaboration.js';
 import { primitivePaths } from '../input-keys.js';
+import { initializeFlatSequentialState } from '../sequential-init.js';
 import { simulate } from '../simulate.js';
 import { nodesOf, type Simulation } from '../simulation.js';
 
@@ -180,5 +182,57 @@ describe('simulate(top, { memory })', () => {
 
   it('rejects contents for a path with no node', () => {
     expect(() => simulate(Reader, { memory: { nope: { 0: 1 } } })).toThrow();
+  });
+
+  it('loads only the memory whose path is the key (#573)', () => {
+    // `program` contains "ram", and both nodes are RAMs: neither may match.
+    const TwoRam = circuit('SetTwoRam', {
+      inputs: { addr: bus(8) },
+      outputs: { a: bus(8), b: bus(8) },
+      nodes: { ram: RAM(), program: RAM() },
+      connect: ({ inputs, outputs, nodes: { ram, program } }) => [
+        inputs.addr.to(ram.addr, program.addr),
+        ram.data_out.to(outputs.a),
+        program.data_out.to(outputs.b),
+      ],
+    });
+    const sim = simulate(TwoRam, { memory: { ram: { 0: 42 } } });
+    sim.set({ addr: 0 });
+    expect([sim.get('a'), sim.get('b')]).toEqual([42, 0]);
+  });
+
+  it('takes the full dotted path of a nested memory', () => {
+    const Outer = circuit('SetOuterReader', {
+      inputs: { addr: bus(16) },
+      outputs: { data: bus(8) },
+      nodes: { inner: Reader },
+      connect: ({ inputs, outputs, nodes: { inner } }) => [
+        inputs.addr.to(inner.addr),
+        inner.data.to(outputs.data),
+      ],
+    });
+    const sim = simulate(Outer, { memory: { 'inner.rom': { 0: 5 } } });
+    expect(sim.get('data')).toBe(5);
+  });
+
+  it('rejects contents for a node with no memory', () => {
+    expect(() => simulate(Reader, { memory: { reg: { 0: 1 } } })).toThrow(
+      /'reg' has no memory to load contents into/,
+    );
+  });
+
+  it('state init rejects a key that is only part of a memory path', () => {
+    const library = libraryOf(Reader);
+    const flat = elaborate(internalsOf(Reader).ir, library.definitions);
+    const contents = new Map([[0, 1]]);
+    expect(() =>
+      initializeFlatSequentialState(flat, library.definitions, new Map([['ro', contents]])),
+    ).toThrow(/Memory contents for 'ro': no memory node has that path/);
+    const state = initializeFlatSequentialState(
+      flat,
+      library.definitions,
+      new Map([['rom', contents]]),
+    );
+    expect((state.currentState.get('rom') as Map<number, number>).get(0)).toBe(1);
   });
 });
