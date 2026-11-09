@@ -11,6 +11,15 @@ const port: Emitter = () => ({ lines: [], declarations: [] });
 /** A simulation-only sink with no outputs: its state lives only in the simulator. */
 const stub: Emitter = () => ({ lines: [], declarations: [] });
 
+/**
+ * A simulation-only display. Its outputs read 0 in the simulator (the canvas
+ * does the scanning), so each connected one is tied to 0.
+ */
+const display: Emitter = ({ wires }) => ({
+  lines: [...wires.outputs.values()].map((net) => `assign ${net} = 0;`),
+  declarations: [],
+});
+
 export const ioEmitters: Readonly<Record<string, Emitter>> = {
   // ── I/O ──────────────────────────────────────────────────────────
   // A Switch or Input drives its `value` argument, which is what the
@@ -41,8 +50,8 @@ export const ioEmitters: Readonly<Record<string, Emitter>> = {
   SevenSegment: port,
 
   // ── Display sinks (simulation-only, no hardware equivalent) ──────
-  Screen: stub,
-  RasterDisplay: stub,
+  Screen: display,
+  RasterDisplay: display,
   Console: stub,
   // Its transmit buffer is simulation-only, but a read returns 1 (ready).
   UART_TX: ({ wires }) => {
