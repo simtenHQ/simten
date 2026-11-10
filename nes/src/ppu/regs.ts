@@ -4,8 +4,9 @@
  *   $2000  PPUCTRL    write. Bit 7: raise NMI at vblank.
  *   $2001  PPUMASK    write. Bits 3-4 turn rendering on.
  *   $2002  PPUSTATUS  read. Bit 7 vblank; reading clears it.
- *   $2003  OAMADDR    write.
- *   $2004  OAMDATA    write increments OAMADDR (OAM itself comes with sprites).
+ *   $2002  bits 6-5   sprite 0 hit and sprite overflow (sprites.ts, oam.ts)
+ *   $2003  OAMADDR    write, and
+ *   $2004  OAMDATA    read and write OAM (oam.ts); reads come in on `data4`
  *   $2005, $2006      scroll and address (scroll.ts)
  *   $2007  PPUDATA    read or write PPU memory at v (data.ts); reads come in
  *                     on `data7`
@@ -14,8 +15,7 @@
  *
  * Reads of write-only registers return the PPU's I/O latch: the last value
  * written to or read from any register (decay is not modelled). PPUSTATUS
- * fills its low 5 bits from it. Bits 6 and 5 (sprite 0 hit, overflow) read
- * 0 until the sprite unit exists.
+ * fills its low 5 bits from it.
  *
  * `nmi` is vblank AND PPUCTRL bit 7, so setting bit 7 during vblank raises it
  * at once. A $2002 read on the tick the flag would go up (241, 0) reads 0 and
@@ -31,10 +31,12 @@ const PpuRegsLogic = circuit('PpuRegsLogic', {
     rw: bit,
     addr: bus(3),
     data_in: bus(8),
+    data4: bus(8),
     data7: bus(8),
+    hit: bit,
+    overflow: bit,
     ctrl: bus(8),
     mask: bus(8),
-    oamaddr: bus(8),
     vbl: bit,
     latch: bus(8),
     vbl_set: bit,
@@ -45,7 +47,6 @@ const PpuRegsLogic = circuit('PpuRegsLogic', {
     nmi: bit,
     next_ctrl: bus(8),
     next_mask: bus(8),
-    next_oamaddr: bus(8),
     next_vbl: bit,
     next_latch: bus(8),
   },
@@ -55,10 +56,12 @@ const PpuRegsLogic = circuit('PpuRegsLogic', {
     rw,
     addr,
     data_in,
+    data4,
     data7,
+    hit,
+    overflow,
     ctrl,
     mask,
-    oamaddr,
     vbl,
     latch,
     vbl_set,
@@ -67,10 +70,11 @@ const PpuRegsLogic = circuit('PpuRegsLogic', {
     const reg = addr as number;
     const write = cs === 1 && rw === 0;
     const readStatus = cs === 1 && rw === 1 && reg === 2;
-    const readData = cs === 1 && rw === 1 && reg === 7;
-    const status = ((vbl as number) << 7) | ((latch as number) & 0x1f);
+    const readData = cs === 1 && rw === 1 && (reg === 4 || reg === 7);
+    const flags = ((vbl as number) << 7) | ((hit as number) << 6) | ((overflow as number) << 5);
     let out = latch as number;
-    if (reg === 2) out = status;
+    if (reg === 2) out = flags | ((latch as number) & 0x1f);
+    else if (reg === 4) out = data4 as number;
     else if (reg === 7) out = data7 as number;
 
     let nextVbl = vbl as number;
@@ -81,16 +85,11 @@ const PpuRegsLogic = circuit('PpuRegsLogic', {
     if (write) nextLatch = data_in as number;
     else if (readStatus || readData) nextLatch = out;
 
-    let nextOamaddr = oamaddr as number;
-    if (write && reg === 3) nextOamaddr = data_in as number;
-    else if (write && reg === 4) nextOamaddr = ((oamaddr as number) + 1) & 0xff;
-
     return {
       data_out: out,
       nmi: vbl === 1 && ((ctrl as number) & 0x80) !== 0 ? 1 : 0,
       next_ctrl: write && reg === 0 ? (data_in as number) : (ctrl as number),
       next_mask: write && reg === 1 ? (data_in as number) : (mask as number),
-      next_oamaddr: nextOamaddr,
       next_vbl: nextVbl,
       next_latch: nextLatch,
     };
@@ -103,7 +102,10 @@ export const PpuRegs = circuit('PpuRegs', {
     rw: bit,
     addr: bus(3),
     data_in: bus(8),
+    data4: bus(8),
     data7: bus(8),
+    hit: bit,
+    overflow: bit,
     vbl_set: bit,
     flags_clear: bit,
   },
@@ -111,29 +113,29 @@ export const PpuRegs = circuit('PpuRegs', {
   nodes: {
     ctrl: Register({ width: 8 }),
     mask: Register({ width: 8 }),
-    oamaddr: Register({ width: 8 }),
     vbl: Register({ width: 1 }),
     latch: Register({ width: 8 }),
     logic: PpuRegsLogic,
     always: Constant({ value: 1 }),
   },
   connect: ({ inputs, outputs, nodes: n }) => [
-    n.always.out.to(n.ctrl.we, n.mask.we, n.oamaddr.we, n.vbl.we, n.latch.we),
+    n.always.out.to(n.ctrl.we, n.mask.we, n.vbl.we, n.latch.we),
     inputs.cs.to(n.logic.cs),
     inputs.rw.to(n.logic.rw),
     inputs.addr.to(n.logic.addr),
     inputs.data_in.to(n.logic.data_in),
+    inputs.data4.to(n.logic.data4),
     inputs.data7.to(n.logic.data7),
+    inputs.hit.to(n.logic.hit),
+    inputs.overflow.to(n.logic.overflow),
     inputs.vbl_set.to(n.logic.vbl_set),
     inputs.flags_clear.to(n.logic.flags_clear),
     n.ctrl.q.to(n.logic.ctrl, outputs.ctrl),
     n.mask.q.to(n.logic.mask, outputs.mask),
-    n.oamaddr.q.to(n.logic.oamaddr),
     n.vbl.q.to(n.logic.vbl),
     n.latch.q.to(n.logic.latch),
     n.logic.next_ctrl.to(n.ctrl.data),
     n.logic.next_mask.to(n.mask.data),
-    n.logic.next_oamaddr.to(n.oamaddr.data),
     n.logic.next_vbl.to(n.vbl.data),
     n.logic.next_latch.to(n.latch.data),
     n.logic.data_out.to(outputs.data_out),
