@@ -149,6 +149,7 @@ function createRunner(rom: INesRom) {
         'timing.pending': 0,
         'timing.nmi_prev': 0,
         'timing.nmi_latch': 0,
+        'timing.nmi_seen': 0,
         'pc.pcl': s.pc & 0xff,
         'pc.pch': s.pc >> 8,
         'ab.abl': s.pc & 0xff,
