@@ -7,8 +7,7 @@
  */
 
 import { describe, expect, it } from 'vitest';
-import { createNes } from '../board.js';
-import type { INesRom } from '../ines.js';
+import { cartridge as build, differences, frame, randomChr, type TestRom } from './test-frame.js';
 
 const PALETTE = [
   0x0f, 0x16, 0x27, 0x18, 0x0f, 0x1a, 0x30, 0x27, 0x0f, 0x12, 0x2c, 0x30, 0x0f, 0x14, 0x24, 0x34,
@@ -19,7 +18,7 @@ const SCROLL_Y = 21;
 /** Byte `i` of nametable RAM ($2000-$27FF) as the program fills it. */
 const fill = (i: number) => (i & 0xff) ^ (((i >> 8) * 0x35) & 0xff);
 
-function cartridge(mask: number): INesRom {
+function cartridge(mask: number): TestRom {
   const code = [
     [0xa2, 0x00], // LDX #0
     [0x8e, 0x01, 0x20], // STX $2001        rendering off
@@ -36,26 +35,11 @@ function cartridge(mask: number): INesRom {
     [0xa9, 0x00, 0x8d, 0x00, 0x20], // $2000 = 0: nametable 0, background at $0000
     [0xa9, mask, 0x8d, 0x01, 0x20], // $2001 = mask
   ].flat();
-  const end = 0x8000 + code.length;
-  code.push(0x4c, end & 0xff, end >> 8);
-  const prg = new Uint8Array(0x4000);
-  prg.set(code);
-  prg.set(PALETTE, 0x100);
-  prg.set([0x00, 0x80], 0x3ffc);
-  // Every pattern bit matters, so fill CHR with a fixed pseudo-random sequence.
-  const chr = new Uint8Array(0x2000);
-  let seed = 0x1234;
-  for (let i = 0; i < chr.length; i++) {
-    seed = (seed * 1103515245 + 12345) >>> 0;
-    chr[i] = seed >>> 24;
-  }
-  return { prg, chr, mapper: 0, mirroring: 'vertical', battery: false, end } as INesRom & {
-    end: number;
-  };
+  return build(code, [{ at: 0x100, bytes: PALETTE }], randomChr());
 }
 
 /** The frame the background should draw, colour by colour. */
-function reference(rom: INesRom, mask: number): number[] {
+function reference(rom: TestRom, mask: number): number[] {
   const out: number[] = [];
   for (let y = 0; y < 240; y++) {
     for (let x = 0; x < 256; x++) {
@@ -78,47 +62,14 @@ function reference(rom: INesRom, mask: number): number[] {
   return out;
 }
 
-/** Runs the program, then takes the next whole frame from the video pins. */
-function frame(rom: INesRom & { end?: number }) {
-  const sim = createNes(rom, { debug: true });
-  const until = (done: () => boolean, ticks: number, step = 1) => {
-    for (let n = 0; !done(); n += step) {
-      if (n > ticks) throw new Error(`gave up after ${ticks} ticks`);
-      sim.tick(step);
-    }
-  };
-  until(() => sim.get('sync') === 1 && sim.get('pc') === rom.end, 2 * 341 * 262, 3);
-  // The frame the background was turned on in is partial; skip to the next.
-  until(() => sim.get('video_y') === 239, 341 * 262);
-  until(
-    () => sim.get('video_we') === 1 && sim.get('video_x') === 0 && sim.get('video_y') === 0,
-    341 * 262,
-  );
-  const out: number[] = new Array(256 * 240).fill(-1);
-  for (let n = 0; n < 341 * 262; n++) {
-    if (sim.get('video_we')) out[sim.get('video_y') * 256 + sim.get('video_x')] = sim.get('color');
-    sim.tick();
-  }
-  return out;
-}
-
-/** The first few mismatches, readable. */
-function differences(got: number[], want: number[]) {
-  const out: string[] = [];
-  for (let i = 0; i < want.length && out.length < 5; i++) {
-    if (got[i] !== want[i]) out.push(`(${i % 256}, ${i >> 8}): got ${got[i]}, want ${want[i]}`);
-  }
-  return out;
-}
-
 describe('PPU background', () => {
   it('draws a scrolled screen across two nametables, pixel for pixel', () => {
     const rom = cartridge(0x0a);
-    expect(differences(frame(rom), reference(rom, 0x0a))).toEqual([]);
+    expect(differences(frame(rom).pixels, reference(rom, 0x0a))).toEqual([]);
   });
 
   it('shows the backdrop in the left 8 pixels with PPUMASK bit 1 clear', () => {
     const rom = cartridge(0x08);
-    expect(differences(frame(rom), reference(rom, 0x08))).toEqual([]);
+    expect(differences(frame(rom).pixels, reference(rom, 0x08))).toEqual([]);
   });
 });

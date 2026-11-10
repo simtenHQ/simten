@@ -1,8 +1,8 @@
 /**
  * The NES picture processor (2C02), built up block by block (#601). So far:
  * timing (dot and scanline, vblank), the CPU-facing registers with NMI, the
- * scroll/address registers, the $2007 data port with palette RAM, and the
- * background.
+ * scroll/address registers, the $2007 data port with palette RAM, the
+ * background, and sprites with OAM.
  *
  * One tick is one dot. The CPU side is `cs` (high for one tick per CPU access
  * to $2000-$3FFF), `rw`, `addr` (the low 3 address bits) and the data buses.
@@ -18,6 +18,7 @@ import { PpuBackground } from './background.js';
 import { PpuData } from './data.js';
 import { PpuRegs } from './regs.js';
 import { PpuScroll } from './scroll.js';
+import { PpuSprites } from './sprites.js';
 import { PpuTiming } from './timing.js';
 
 /** Where the dot lands on screen, if it does. */
@@ -53,28 +54,44 @@ export const Ppu = circuit('Ppu', {
     scroll: PpuScroll,
     data: PpuData,
     background: PpuBackground,
+    sprites: PpuSprites,
     video: PpuVideo,
   },
-  connect: ({ inputs, outputs, nodes: { timing, regs, scroll, data, background, video } }) => [
-    inputs.cs.to(regs.cs, scroll.cs, data.cs),
-    inputs.rw.to(regs.rw, scroll.rw, data.rw),
-    inputs.addr.to(regs.addr, scroll.addr, data.addr),
-    inputs.data_in.to(regs.data_in, scroll.data_in, data.data_in, outputs.vram_wdata),
-    inputs.vram_rdata.to(data.vram_rdata, background.vram_rdata),
-    regs.mask.to(timing.mask, scroll.mask, background.mask, data.mask),
-    regs.ctrl.to(scroll.ctrl, background.ctrl),
-    timing.dot.to(scroll.dot, background.dot, video.dot, outputs.dot),
-    timing.line.to(scroll.line, background.line, video.line, outputs.line),
-    scroll.v.to(data.v, background.v),
+  connect: ({
+    inputs,
+    outputs,
+    nodes: { timing, regs, scroll, data, background, sprites, video },
+  }) => [
+    inputs.cs.to(regs.cs, scroll.cs, data.cs, sprites.cs),
+    inputs.rw.to(regs.rw, scroll.rw, data.rw, sprites.rw),
+    inputs.addr.to(regs.addr, scroll.addr, data.addr, sprites.addr),
+    inputs.data_in.to(
+      regs.data_in,
+      scroll.data_in,
+      data.data_in,
+      sprites.data_in,
+      outputs.vram_wdata,
+    ),
+    inputs.vram_rdata.to(data.vram_rdata, background.vram_rdata, sprites.vram_rdata),
+    regs.mask.to(timing.mask, scroll.mask, background.mask, sprites.mask, data.mask),
+    regs.ctrl.to(scroll.ctrl, background.ctrl, sprites.ctrl),
+    timing.dot.to(scroll.dot, background.dot, sprites.dot, video.dot, outputs.dot),
+    timing.line.to(scroll.line, background.line, sprites.line, video.line, outputs.line),
+    scroll.v.to(data.v, background.v, sprites.v),
     scroll.x.to(background.x),
     data.data_out.to(regs.data7),
     data.vram_addr.to(background.data_addr),
-    background.vram_addr.to(outputs.vram_addr),
+    background.vram_addr.to(sprites.bg_addr),
+    sprites.vram_addr.to(outputs.vram_addr),
+    sprites.data_out.to(regs.data4),
+    sprites.hit.to(regs.hit),
+    sprites.overflow.to(regs.overflow),
     data.vram_we.to(outputs.vram_we),
-    background.pixel.to(data.pixel),
+    background.pixel.to(sprites.bg_pixel),
+    sprites.pixel.to(data.pixel),
     data.color.to(outputs.color),
     timing.vbl_set.to(regs.vbl_set),
-    timing.flags_clear.to(regs.flags_clear),
+    timing.flags_clear.to(regs.flags_clear, sprites.flags_clear),
     regs.data_out.to(outputs.data_out),
     regs.nmi.to(outputs.nmi),
     video.video_x.to(outputs.video_x),
