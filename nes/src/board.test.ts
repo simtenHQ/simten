@@ -54,8 +54,40 @@ describe('NesBoard', () => {
     expect(runTo(rom, 0x8003).a).toBe(0x5a);
   });
 
+  it('reaches CHR ROM and the mirrored nametables through $2006/$2007', () => {
+    const seek = (hi: number, lo: number) => [
+      0xa9,
+      hi,
+      0x8d,
+      0x06,
+      0x20,
+      0xa9,
+      lo,
+      0x8d,
+      0x06,
+      0x20,
+    ];
+    const program = [
+      seek(0x20, 0x00), // v = $2000
+      [0xa9, 0xab, 0x8d, 0x07, 0x20], // LDA #$AB / STA $2007
+      seek(0x24, 0x00),
+      [0xad, 0x07, 0x20, 0xae, 0x07, 0x20], // LDA $2007 (fills the buffer) / LDX $2007
+      seek(0x28, 0x00),
+      [0xad, 0x07, 0x20, 0xac, 0x07, 0x20], // LDA $2007 / LDY $2007
+      seek(0x00, 0x10),
+      [0xad, 0x07, 0x20, 0xad, 0x07, 0x20], // LDA $2007 / LDA $2007: CHR $0010
+    ].flat();
+    const end = 0x8000 + program.length;
+    program.push(0x4c, end & 0xff, end >> 8);
+    const rom = cartridge(program);
+    rom.chr[0x10] = 0x5c;
+    expect(runTo(rom, end)).toEqual({ a: 0x5c, x: 0xab, y: 0 });
+    expect(runTo({ ...rom, mirroring: 'vertical' }, end)).toEqual({ a: 0x5c, x: 0, y: 0xab });
+  });
+
   it('rejects mappers other than NROM', () => {
     expect(() => createNes({ ...cartridge([]), mapper: 1 })).toThrow(/mapper 1/);
     expect(() => createNes(cartridge([], 0x2000))).toThrow(/16 or 32 KB/);
+    expect(() => createNes({ ...cartridge([]), chr: new Uint8Array(0) })).toThrow(/CHR ROM/);
   });
 });
