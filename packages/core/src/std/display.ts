@@ -121,6 +121,88 @@ export const RasterDisplay = circuit(
   }),
 );
 
+/** What PaletteDisplay's `onTick` reads: its pins, its pixels and its size options. */
+interface PaletteTick {
+  x: number;
+  y: number;
+  color: number;
+  we: number;
+  pixels: string;
+  width?: number;
+  height?: number;
+}
+
+/** Bits needed to address `count` positions (at least 1). */
+const bitsFor = (count: number): number => Math.max(1, Math.ceil(Math.log2(count)));
+
+/**
+ * Colour pixel display. Each clock edge with `we` high writes colour `color`
+ * (a 6-bit palette index) to pixel (`x`, `y`); writes outside the screen are
+ * ignored. The canvas draws the framebuffer through `palette`. Built for a
+ * video chip that outputs one pixel per dot: drive `x`/`y` from its dot and
+ * line counters and `we` from its visible-area signal. Pixels written in
+ * raster order cost O(1) each; out-of-order writes cost O(width × height).
+ * Simulation-only peripheral — not synthesizable to Verilog.
+ *
+ * **Inputs:** `x` — `bus(⌈log2 width⌉)`; `y` — `bus(⌈log2 height⌉)`;
+ * `color` — `bus(6)`; `we` — `bit`
+ *
+ * **Options:** `width` (default 256), `height` (default 240), `palette` —
+ * up to 64 colours as `0xRRGGBB` (default `PALETTE_2C02`); an index past the
+ * end draws black.
+ *
+ * **Example:** one pixel per clock
+ * ```ts
+ * circuit('Video', {
+ *   inputs:  { x: bus(8), y: bus(8), color: bus(6), visible: bit },
+ *   nodes:   { tv: PaletteDisplay() },
+ *   connect: ({ inputs, nodes: { tv } }) => [
+ *     inputs.x.to(tv.x),
+ *     inputs.y.to(tv.y),
+ *     inputs.color.to(tv.color),
+ *     inputs.visible.to(tv.we),
+ *   ],
+ * })
+ * ```
+ */
+export const PaletteDisplay = circuit(
+  'PaletteDisplay',
+  ({
+    width = 256,
+    height = 240,
+  }: {
+    width?: number;
+    height?: number;
+    palette?: readonly number[];
+  } = {}) => ({
+    inputs: { x: bus(bitsFor(width)), y: bus(bitsFor(height)), color: bus(6), we: bit },
+    // One char per pixel, then the pixels drawn in raster order since (see
+    // `paletteFrame`). A string is immutable, so history keeps every frame
+    // without a copy, and appending a pixel doesn't copy the frame.
+    state: { pixels: '' as string },
+    onTick: ({ x, y, color, we, pixels, width = 256, height = 240 }: PaletteTick) => {
+      const size = width * height;
+      const frame = pixels.length >= size ? pixels : '\0'.repeat(size);
+      if (!we || x >= width || y >= height) return { pixels: frame };
+      const at = y * width + x;
+      const pixel = String.fromCharCode(color & 0x3f);
+      const drawn = frame.length - size;
+      if (at === drawn) {
+        const next = frame + pixel;
+        return { pixels: next.length === 2 * size ? next.slice(size) : next };
+      }
+      const flat = frame.slice(size) + frame.slice(drawn, size);
+      return { pixels: flat.slice(0, at) + pixel + flat.slice(at + 1) };
+    },
+    meta: {
+      category: 'display',
+      icon: '🎨',
+      description: 'Colour pixel display',
+      synthesizable: false,
+    },
+  }),
+);
+
 /**
  * Text console output. Append-only ASCII terminal — write a byte with
  * `we` high to push a character. Byte 0 (NUL) is ignored; byte 12 (FF)
@@ -143,7 +225,7 @@ export const RasterDisplay = circuit(
  */
 export const Console = circuit('Console', {
   inputs: { data: bus(8), we: bit },
-  state: { text: '' as any },
+  state: { text: '' as string },
   onTick: ({ data, we, text }) => {
     if (!we) return { text };
     const byte = (data as number) & 0xff;

@@ -38,7 +38,7 @@ import {
 } from 'acorn';
 import type { Behavior, BehaviorFn } from '../circuit/behavior.js';
 import type { ArgumentValue, MemoryValue, StateBlock } from '../ir/circuit-ir.js';
-import { memoryContentsToMap } from '../ir/memory-contents.js';
+import { isMemoryContents, memoryContentsToMap } from '../ir/memory-contents.js';
 import { type PrimitiveContext, sanitizeId, zeroMemoryBody } from './emitters/helpers.js';
 import {
   and,
@@ -180,8 +180,7 @@ function memoryOf(key: string, block: StateBlock, prefix: string, args: Primitiv
   const declared = (block.initialValue as MemoryValue | undefined)?.data;
   if (declared) for (const [a, v] of memoryContentsToMap(declared)) contents.set(a, v);
   const own = args[key];
-  if (own && typeof own === 'object')
-    for (const [a, v] of memoryContentsToMap(own)) contents.set(a, v);
+  if (isMemoryContents(own)) for (const [a, v] of memoryContentsToMap(own)) contents.set(a, v);
   return {
     name: key,
     reg: `${prefix}_${key}`,

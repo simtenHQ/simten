@@ -43,6 +43,7 @@ import {
   Not,
   Or,
   Output,
+  PaletteDisplay,
   Probe,
   RAM,
   RasterDisplay,
@@ -119,6 +120,7 @@ describe('stdlib circuits load', () => {
     ['HexDisplay', HexDisplay()],
     ['Screen', Screen()],
     ['RasterDisplay', RasterDisplay()],
+    ['PaletteDisplay', PaletteDisplay()],
     ['Console', Console],
   ];
 

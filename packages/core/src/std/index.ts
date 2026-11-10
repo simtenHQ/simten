@@ -38,7 +38,14 @@ export {
   WrappingMultiplier,
 } from './arithmetic.js';
 // Display
-export { Console, HexDisplay, RasterDisplay, Screen, SevenSegment } from './display.js';
+export {
+  Console,
+  HexDisplay,
+  PaletteDisplay,
+  RasterDisplay,
+  Screen,
+  SevenSegment,
+} from './display.js';
 // I/O
 export { Constant, Input, Led, Output, Switch } from './io.js';
 // Logic Gates + bus-width logical / reduction operators
@@ -63,7 +70,6 @@ export {
 // elaborated into a netlist. Re-exported here (not via `_allExports`) so the
 // builders stay out of STDLIB_CIRCUITS; see made-of.ts and its test.
 export { hasMadeOf, MADE_OF, MADE_OF_NAMES, type MadeOfBuilder } from './made-of.js';
-
 // Memory
 export { DualPortRAM, RAM, ROM, romFromBytes, romFromEntries, romFromWords } from './memory.js';
 // MOS 6502 (cycle-accurate core — see ./mos6502-cpu.ts). Its bus and decode
@@ -82,6 +88,7 @@ export {
   UART_RX,
   UART_TX,
 } from './networking.js';
+export { PALETTE_2C02 } from './palette.js';
 // Routing / Plexers / Utilities
 export {
   AddressCombiner,

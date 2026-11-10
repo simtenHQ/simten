@@ -254,6 +254,7 @@ const PARAMETERIZED_STDLIB = new Set<string>([
   'Mux',
   'Screen',
   'RasterDisplay',
+  'PaletteDisplay',
 ]);
 
 function emitNodes(nodes: Node[], idOf: (name: string) => string): string {
@@ -288,6 +289,7 @@ function jsLiteral(v: ArgumentValue | boolean): string {
   if (typeof v === 'boolean') return v ? 'true' : 'false';
   if (typeof v === 'number') return String(v);
   if (typeof v === 'string') return JSON.stringify(v);
+  if (Array.isArray(v)) return `[${v.join(', ')}]`;
   // Memory contents, `{ address: value }`.
   const entries = Object.entries(v).map(([k, val]) => `${k}: ${val}`);
   return `{ ${entries.join(', ')} }`;

@@ -84,7 +84,9 @@ export function isIOPrimitive(primitiveType: string): boolean {
  * Check if a primitive type is a sink (no Verilog output).
  */
 export function isSinkPrimitive(primitiveType: string): boolean {
-  return ['Screen', 'RasterDisplay', 'Console', 'UART_TX'].includes(primitiveType);
+  return ['Screen', 'RasterDisplay', 'PaletteDisplay', 'Console', 'UART_TX'].includes(
+    primitiveType,
+  );
 }
 
 /**
@@ -103,6 +105,7 @@ export function isSequentialPrimitive(primitiveType: string): boolean {
     'ROM',
     'DualPortRAM',
     'Console',
+    'PaletteDisplay',
     'UART_TX',
     'RV32I_RegisterFile',
     'RV32I_InstrMem',

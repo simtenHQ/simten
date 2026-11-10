@@ -1,12 +1,13 @@
 /**
  * The components on a page with no `SandboxProvider`: a canvas whose circuit
- * swaps, a counter with clock controls, source text that doesn't compile, and
- * a canvas of a NOT gate. They share the page-wide sandbox.
+ * swaps, a counter with clock controls, source text that doesn't compile, a
+ * canvas of a NOT gate, and a colour display drawing a test pattern. They
+ * share the page-wide sandbox.
  */
 
 import '../../src/styles/embed.css';
-import { bit, bus, circuit } from '@simten/core';
-import { And, Led, Not, Register, Switch, Xor } from '@simten/core/std';
+import { bit, bus, circuit, reg } from '@simten/core';
+import { And, Constant, Led, Not, PaletteDisplay, Register, Switch, Xor } from '@simten/core/std';
 import { useMemo, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { CircuitCanvas, ClockControls, useSimulation } from '../../src';
@@ -96,6 +97,44 @@ function Gate() {
   );
 }
 
+/** Raster position: x then y, one pixel per clock, wrapping at the end of a 256x240 frame. */
+const Beam = circuit('Beam', {
+  outputs: { x: bus(8), y: bus(8) },
+  state: { at: reg(16) },
+  eval: ({ at }) => ({ x: at & 0xff, y: at >> 8 }),
+  onTick: ({ at }) => ({ at: at + 1 >= 256 * 240 ? 0 : at + 1 }),
+});
+
+/** 64 colour bars, four pixels wide. */
+const BarColor = circuit('BarColor', {
+  inputs: { x: bus(8) },
+  outputs: { color: bus(6) },
+  eval: ({ x }) => ({ color: x >> 2 }),
+});
+
+const ColourBars = circuit('ColourBars', {
+  nodes: { beam: Beam, bar: BarColor, tv: PaletteDisplay(), on: Constant({ value: 1 }) },
+  connect: ({ nodes: { beam, bar, tv, on } }) => [
+    beam.x.to(bar.x, tv.x),
+    beam.y.to(tv.y),
+    bar.color.to(tv.color),
+    on.out.to(tv.we),
+  ],
+});
+
+function Bars() {
+  const simulation = useSimulation(ColourBars);
+  return (
+    <>
+      <button type="button" onClick={() => simulation.actions.tick(256 * 240)}>
+        Draw frame
+      </button>
+      <output>cycle {simulation.state.cycle}</output>
+      <CircuitCanvas simulation={simulation} height={700} />
+    </>
+  );
+}
+
 function App() {
   return (
     <>
@@ -110,6 +149,9 @@ function App() {
       </section>
       <section id="test-isolation">
         <Gate />
+      </section>
+      <section id="test-palette">
+        <Bars />
       </section>
     </>
   );

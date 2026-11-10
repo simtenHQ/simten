@@ -44,5 +44,6 @@ export {
   stripTypes,
 } from './source/execute.js';
 export { getStdCircuits, getStdLibrary } from './std/library.js';
+export { paletteFrame } from './std/palette.js';
 export { slugify } from './verify/test-name.js';
 export { exportVerilogFromIR } from './verilog/exporter.js';
