@@ -127,7 +127,7 @@ describe.skipIf(!tools)('CXXRTL build', () => {
         return (seed >>> 16) % n;
       };
       const frame = new Array(16).fill(0);
-      const outs = ['count', 'rdata', 'x', 'y', 'vwe'];
+      const outs = ['count', 'rdata', 'x', 'y', 'vwe'] as const;
       for (let t = 0; t < 300; t++) {
         const ins = {
           step: rand(256),
