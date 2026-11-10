@@ -8,15 +8,19 @@
  *                ignored, $2002 (PPUSTATUS) reads $80 (vblank set) so the
  *                usual "wait for vblank" loops at boot fall through, and the
  *                other registers read $00.
- *   $4000-$401F  APU and I/O registers. Stub: reads $00, writes ignored.
- *                $4014 (OAM DMA) is not implemented yet; it needs the core's
- *                RDY pin to stall the CPU.
+ *   $4000-$401F  APU and I/O registers. Stub: reads $00, writes ignored,
+ *                except $4014 (OAM DMA, see dma.ts), which halts the CPU
+ *                and copies a page to $2004.
  *   $4020-$7FFF  Cartridge space NROM leaves empty. Reads $00 (open bus is
  *                not modelled).
  *   $8000-$FFFF  PRG ROM: 32 KB, or 16 KB mirrored at $C000.
  *
+ * The CPU is the 2A03's: a 6502 with decimal mode disconnected (D still sets
+ * and clears, ADC and SBC stay binary) and RDY driven by the OAM DMA unit.
  * irq and nmi are tied low until the PPU and APU exist. The core runs its
  * reset sequence at power-on and starts at the reset vector in $FFFC.
+ *
+ * `addr`, `rw` and `data` are the bus, so during a DMA they show the copy.
  *
  * The PRG ROM node is `prg`: load a cartridge with
  * `simulate(NesBoard(...), { memory: { prg: ... } })`, or use `createNes`.
@@ -24,6 +28,7 @@
 
 import { bit, bus, circuit, simulate } from '@simten/core';
 import { Constant, DualPortRAM, MOS6502_Core, ROM, romFromBytes } from '@simten/core/std';
+import { OamDma } from './dma.js';
 import type { INesRom } from './ines.js';
 
 type B = ReturnType<typeof bus>;
@@ -82,25 +87,30 @@ export const NesBoard = circuit(
     return {
       outputs,
       nodes: {
-        cpu: MOS6502_Core({ debug }),
+        cpu: MOS6502_Core({ debug, decimal: false, rdy: true }),
+        dma: OamDma,
         bus: NesBus({ prgSize }),
         ram: DualPortRAM({ addressWidth: 11, dataWidth: 8 }),
         prg: ROM(),
         low: Constant({ value: 0 }),
       },
-      connect: ({ outputs: o, nodes: { cpu, bus: b, ram, prg, low } }) => {
+      connect: ({ outputs: o, nodes: { cpu, dma, bus: b, ram, prg, low } }) => {
         const rows = [
           low.out.to(cpu.irq, cpu.nmi, cpu.reset),
-          cpu.addr.to(b.addr, o.addr),
-          cpu.rw.to(b.rw, o.rw),
+          cpu.addr.to(dma.cpu_addr),
+          cpu.rw.to(dma.cpu_rw),
+          cpu.data_out.to(dma.cpu_out),
+          dma.rdy.to(cpu.rdy),
+          dma.addr.to(b.addr, o.addr),
+          dma.rw.to(b.rw, o.rw),
+          dma.out.to(ram.dataA, b.cpu_out),
           cpu.sync.to(o.sync),
           b.ram_addr.to(ram.addrA, ram.addrB),
           b.ram_we.to(ram.weA),
-          cpu.data_out.to(ram.dataA, b.cpu_out),
           ram.outA.to(b.ram_data),
           b.prg_addr.to(prg.addr),
           prg.data_out.to(b.prg_data),
-          b.cpu_in.to(cpu.data_in),
+          b.cpu_in.to(cpu.data_in, dma.read),
           b.data.to(o.data),
         ];
         if (debug) {
