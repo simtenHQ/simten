@@ -22,6 +22,12 @@
  *
  * `addr`, `rw` and `data` are the bus, so during a DMA they show the copy.
  *
+ * One tick is one PPU dot. The CPU runs on every third tick (`ce`), as the
+ * 2A03 does from the same crystal, and work RAM and the DMA unit act only on
+ * those ticks, so a CPU cycle reads or writes each device once. Between them
+ * the bus holds the cycle the next CPU tick runs. Step one CPU cycle with
+ * `sim.tick(3)`.
+ *
  * The PRG ROM node is `prg`: load a cartridge with
  * `simulate(NesBoard(...), { memory: { prg: ... } })`, or use `createNes`.
  */
@@ -35,22 +41,37 @@ type B = ReturnType<typeof bus>;
 
 /** Address decode and the CPU's read data mux. */
 const NesBus = circuit('NesBus', ({ prgSize = 0x8000 }: { prgSize?: number } = {}) => ({
-  inputs: { addr: bus(16), rw: bit, cpu_out: bus(8), ram_data: bus(8), prg_data: bus(8) },
+  inputs: {
+    addr: bus(16),
+    rw: bit,
+    ce: bit,
+    cpu_out: bus(8),
+    ram_data: bus(8),
+    prg_data: bus(8),
+  },
   outputs: { ram_addr: bus(11), ram_we: bit, prg_addr: bus(16), cpu_in: bus(8), data: bus(8) },
-  eval: ({ addr, rw, cpu_out, ram_data, prg_data }) => {
+  eval: ({ addr, rw, ce, cpu_out, ram_data, prg_data }) => {
     let read = 0;
     if (addr < 0x2000) read = ram_data;
     else if (addr < 0x4000) read = (addr & 7) === 2 ? 0x80 : 0;
     else if (addr >= 0x8000) read = prg_data;
     return {
       ram_addr: addr & 0x7ff,
-      ram_we: !rw && addr < 0x2000 ? 1 : 0,
+      ram_we: ce && !rw && addr < 0x2000 ? 1 : 0,
       prg_addr: addr & (prgSize - 1),
       cpu_in: read,
       data: rw ? read : cpu_out,
     };
   },
 }));
+
+/** The CPU's clock enable: high on every third tick, starting with the first. */
+const CpuClock = circuit('CpuClock', {
+  outputs: { ce: bit },
+  state: { phase: 0 },
+  eval: ({ phase }) => ({ ce: phase === 0 ? 1 : 0 }),
+  onTick: ({ phase }) => ({ phase: phase === 2 ? 0 : (phase as number) + 1 }),
+});
 
 type BoardOuts = {
   addr: B;
@@ -87,15 +108,17 @@ export const NesBoard = circuit(
     return {
       outputs,
       nodes: {
-        cpu: MOS6502_Core({ debug, decimal: false, rdy: true }),
+        clock: CpuClock,
+        cpu: MOS6502_Core({ debug, decimal: false, rdy: true, ce: true }),
         dma: OamDma,
         bus: NesBus({ prgSize }),
         ram: DualPortRAM({ addressWidth: 11, dataWidth: 8 }),
         prg: ROM(),
         low: Constant({ value: 0 }),
       },
-      connect: ({ outputs: o, nodes: { cpu, dma, bus: b, ram, prg, low } }) => {
+      connect: ({ outputs: o, nodes: { clock, cpu, dma, bus: b, ram, prg, low } }) => {
         const rows = [
+          clock.ce.to(cpu.ce, dma.ce, b.ce),
           low.out.to(cpu.irq, cpu.nmi, cpu.reset),
           cpu.addr.to(dma.cpu_addr),
           cpu.rw.to(dma.cpu_rw),

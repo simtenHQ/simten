@@ -18,7 +18,7 @@ function runTo(rom: INesRom, pc: number) {
     if (sim.get('sync') && sim.get('addr') === pc) {
       return { a: sim.get('a'), x: sim.get('x'), y: sim.get('y') };
     }
-    sim.tick();
+    sim.tick(3);
   }
   throw new Error(`never reached $${pc.toString(16)}`);
 }

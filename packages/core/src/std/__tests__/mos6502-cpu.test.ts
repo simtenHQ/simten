@@ -129,7 +129,7 @@ interface Cycle {
   halted: boolean;
 }
 
-function boot(options: { rdy?: boolean; decimal?: boolean } = {}, code = program) {
+function boot(options: { rdy?: boolean; decimal?: boolean; ce?: boolean } = {}, code = program) {
   const sim = simulate(MOS6502_Core({ debug: true, ...options }));
   const mem = new Uint8Array(0x10000);
   mem.set(code, 0x0400);
@@ -231,6 +231,38 @@ describe('MOS6502_Core RDY', () => {
     const got = trace(m, N + 4, (i) => ({ rdy: i >= 30 && i < 34 ? 0 : 1, nmi: i >= 31 ? 1 : 0 }));
     expect(got.filter((c) => c.addr === 0x0500 && !c.halted).length).toBe(1);
     expect(m.sim.get('y')).toBe(1);
+  });
+});
+
+describe('MOS6502_Core CE', () => {
+  it('runs one cycle per enabled tick and holds every pin in between', () => {
+    const N = 90;
+    const ref = boot();
+    const want = trace(ref, N);
+    const m = boot({ ce: true });
+    const got: Cycle[] = [];
+    const pins: { addr: number; rw: number }[] = [];
+    for (let i = 0; i < N * 3; i++) {
+      const ce = i % 3 === 0 ? 1 : 0;
+      m.sim.set({ ce });
+      const addr = m.sim.get('addr');
+      const rw = m.sim.get('rw');
+      pins.push({ addr, rw });
+      if (ce) {
+        const read = rw === 1;
+        const data = read ? m.mem[addr] : m.sim.get('data_out');
+        if (read) m.sim.set({ data_in: data });
+        else m.mem[addr] = data;
+        got.push({ addr, data, kind: read ? 'read' : 'write', halted: false });
+      }
+      m.sim.tick();
+    }
+    // While CE is low the pins show the cycle the next enabled tick runs, writes included.
+    for (let i = 3; i < N * 3; i += 3) {
+      expect([pins[i - 2], pins[i - 1]]).toEqual([pins[i], pins[i]]);
+    }
+    expect(got).toEqual(want);
+    expect(regs(m)).toEqual(regs(ref));
   });
 });
 

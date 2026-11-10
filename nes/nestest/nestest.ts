@@ -110,8 +110,9 @@ function createRunner(rom: INesRom) {
   // up one cycle into it (T1), so the count starts at 1.
   let cyc = 1;
 
+  // One CPU cycle is three ticks (PPU dots).
   const tick = () => {
-    sim.tick();
+    sim.tick(3);
     cyc++;
   };
 

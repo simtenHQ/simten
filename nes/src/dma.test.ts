@@ -37,7 +37,7 @@ function run(rom: INesRom) {
   for (let cycle = 0; cycle < 20000; cycle++) {
     if (sim.get('sync') && sim.get('addr') === end) return { cycles: cycle, bus };
     bus.push({ addr: sim.get('addr'), rw: sim.get('rw'), data: sim.get('data') });
-    sim.tick();
+    sim.tick(3);
   }
   throw new Error('never reached the end');
 }
