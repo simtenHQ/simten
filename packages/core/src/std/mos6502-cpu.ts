@@ -36,7 +36,9 @@
  * 2A03. `rdy: true` adds the RDY input: low on a read cycle, it halts the core
  * (every block's `run` goes low, so registers and flip-flops hold) and the read
  * repeats until RDY goes high. A write cycle always completes. Without `rdy`
- * the core never halts.
+ * the core never halts. `ce: true` adds a clock enable: while `ce` is low the
+ * core holds, writes included, so a board can run it every Nth tick of a
+ * faster clock (the NES runs it every third PPU dot).
  */
 
 import { bit, bus } from '../circuit/bit-bus.js';
@@ -347,13 +349,14 @@ const MOS6502_Status = circuit('MOS6502_Status', () => ({
 // ─── The core ───────────────────────────────────────────────────────────────
 const MOS6502_CoreFactory = circuit(
   'MOS6502_Core',
-  ({ debug = false, decimal = true, rdy = false }: CoreOptions = {}) => {
+  ({ debug = false, decimal = true, rdy = false, ce = false }: CoreOptions = {}) => {
     const inputs = {
       data_in: bus(8),
       irq: bit,
       nmi: bit,
       reset: bit,
       ...(rdy ? { rdy: bit } : {}),
+      ...(ce ? { ce: bit } : {}),
     } as CoreIns;
     // Debug ports exist only when `debug` is on, but stay in the type so the
     // connect below can name them without casts.
@@ -394,8 +397,10 @@ const MOS6502_CoreFactory = circuit(
         adl: MOS6502_ADLBus,
         adh: MOS6502_ADHBus,
         writing: Not,
-        run: Or,
+        ready_or_write: Or,
+        run: And,
         ...(rdy ? {} : { ready: Constant({ value: 1 }) }),
+        ...(ce ? {} : { enabled: Constant({ value: 1 }) }),
         ...(decimal ? {} : { binary: Constant({ value: 0 }) }),
         ...(debug ? { pc_join: AddressCombiner } : {}),
       } as {
@@ -413,8 +418,10 @@ const MOS6502_CoreFactory = circuit(
         adl: typeof MOS6502_ADLBus;
         adh: typeof MOS6502_ADHBus;
         writing: typeof Not;
-        run: typeof Or;
+        ready_or_write: typeof Or;
+        run: typeof And;
         ready: ReturnType<typeof Constant>;
+        enabled: ReturnType<typeof Constant>;
         binary: ReturnType<typeof Constant>;
         pc_join: typeof AddressCombiner;
       },
@@ -430,10 +437,13 @@ const MOS6502_CoreFactory = circuit(
           n.latch.rw.to(outputs.rw),
           n.timing.sync.to(outputs.sync),
 
-          // Halt while RDY is low on a read cycle; a write always completes.
-          (rdy ? inputs.rdy : n.ready.out).to(n.run.a),
+          // Halt while RDY is low on a read cycle (a write always completes),
+          // and on every tick CE is low.
+          (rdy ? inputs.rdy : n.ready.out).to(n.ready_or_write.a),
           n.latch.rw.to(n.writing.in),
-          n.writing.out.to(n.run.b),
+          n.writing.out.to(n.ready_or_write.b),
+          n.ready_or_write.out.to(n.run.a),
+          (ce ? inputs.ce : n.enabled.out).to(n.run.b),
           n.run.out.to(
             n.timing.run,
             n.decode.run,
@@ -511,11 +521,11 @@ const MOS6502_CoreFactory = circuit(
   },
 );
 
-type CoreOptions = { debug?: boolean; decimal?: boolean; rdy?: boolean };
+type CoreOptions = { debug?: boolean; decimal?: boolean; rdy?: boolean; ce?: boolean };
 
 // Spell the ports out so the export's type doesn't drag every internal node
 // into the shipped .d.ts bundle (see RV32I_Core).
-type CoreIns = { data_in: B; irq: Bit; nmi: Bit; reset: Bit; rdy: Bit };
+type CoreIns = { data_in: B; irq: Bit; nmi: Bit; reset: Bit; rdy: Bit; ce: Bit };
 type CoreOuts = {
   addr: B;
   data_out: B;
@@ -536,4 +546,5 @@ export const MOS6502_Core = MOS6502_CoreFactory as unknown as (opts?: {
   debug?: boolean;
   decimal?: boolean;
   rdy?: boolean;
+  ce?: boolean;
 }) => Circuit<CoreIns, CoreOuts>;

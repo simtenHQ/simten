@@ -18,8 +18,9 @@
  * During the halt and align cycles the CPU's own address stays on the bus, as
  * a read.
  *
- * Get and put cycles alternate from power-on: even cycles are gets. The real
- * chip takes the phase from its APU clock divider, which this doesn't model.
+ * It steps on CPU cycles only (`ce`). Get and put cycles alternate from
+ * power-on: even CPU cycles are gets. The real chip takes the phase from its
+ * APU clock divider, which this doesn't model.
  */
 
 import { bit, bus, circuit } from '@simten/core';
@@ -43,6 +44,7 @@ interface DmaState {
 }
 
 interface DmaIn extends DmaState {
+  ce: number;
   cpu_addr: number;
   cpu_rw: number;
   cpu_out: number;
@@ -51,7 +53,7 @@ interface DmaIn extends DmaState {
 }
 
 export const OamDma = circuit('OamDma', {
-  inputs: { cpu_addr: bus(16), cpu_rw: bit, cpu_out: bus(8), read: bus(8) },
+  inputs: { ce: bit, cpu_addr: bus(16), cpu_rw: bit, cpu_out: bus(8), read: bus(8) },
   outputs: { rdy: bit, addr: bus(16), rw: bit, out: bus(8) },
   state: { phase: 0, page: 0, n: 0, held: 0, latch: 0, odd: 0 },
   eval: ({ cpu_addr, cpu_rw, cpu_out, phase, page, n, held, latch, odd }: DmaIn) => {
@@ -60,7 +62,8 @@ export const OamDma = circuit('OamDma', {
     if (phase === COPYING && !odd) return { rdy, addr: (page << 8) | n, rw: 1, out: cpu_out };
     return { rdy, addr: cpu_addr, rw: cpu_rw, out: cpu_out };
   },
-  onTick: ({ cpu_addr, cpu_rw, cpu_out, read, phase, page, n, held, latch, odd }: DmaIn) => {
+  onTick: ({ ce, cpu_addr, cpu_rw, cpu_out, read, phase, page, n, held, latch, odd }: DmaIn) => {
+    if (!ce) return { phase, page, n, held, latch, odd };
     const s: DmaState = { phase, page, n, held, latch, odd: odd ^ 1 };
     if (phase === IDLE) {
       if (!cpu_rw && cpu_addr === 0x4014) return { ...s, phase: HALTING, page: cpu_out };
