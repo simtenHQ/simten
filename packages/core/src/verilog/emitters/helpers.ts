@@ -111,6 +111,21 @@ export function emitMemoryInit(regName: string, init: StateInit, ctx?: Primitive
   return body.length > 0 ? ['initial begin', ...body, 'end'] : [];
 }
 
+/**
+ * Statements that zero a memory, for the top of an `initial` block. Unwritten
+ * words read 0 in the simulator; iverilog would read x without these. Yosys
+ * defines SYNTHESIS and skips them: it unrolls the loop, which takes minutes
+ * for a 64K memory, and its memories (CXXRTL, ECP5 block RAM) start at 0.
+ */
+export function zeroMemoryBody(regName: string, depth: number, width: number): string[] {
+  return [
+    '`ifndef SYNTHESIS',
+    '  integer k;',
+    `  for (k = 0; k < ${depth}; k = k + 1) ${regName}[k] = ${width}'d0;`,
+    '`endif',
+  ];
+}
+
 /** The statements inside `emitMemoryInit`'s `initial` block. */
 export function memoryInitBody(regName: string, init: StateInit, ctx?: PrimitiveContext): string[] {
   if (init.data.size === 0) return [];
