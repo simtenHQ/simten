@@ -1,0 +1,18 @@
+{
+  "name": "@simten/nes",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run",
+    "nestest:fetch": "tsx nestest/fetch.ts",
+    "nestest": "tsx nestest/run.ts"
+  },
+  "dependencies": {
+    "@simten/core": "workspace:*"
+  },
+  "devDependencies": {
+    "@types/node": "^20",
+    "vitest": "^5.0.5"
+  }
+}

@@ -31,6 +31,9 @@
     "demos": {
       "entry": ["cli/*.ts"]
     },
+    "nes": {
+      "entry": ["src/board.ts", "nestest/{fetch,run}.ts"]
+    },
     "hardware/ulx3s": {
       "entry": [
         "run_on_fpga.ts",
