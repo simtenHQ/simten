@@ -16,6 +16,7 @@ import {
   type PrimitiveContext,
   pins,
   sanitizeId,
+  zeroMemoryBody,
 } from './helpers.js';
 
 /**
@@ -157,8 +158,7 @@ export const memoryEmitters: Readonly<Record<string, Emitter>> = {
       ctx.target === 'simulation'
         ? [
             `initial begin : ${memName}_init`,
-            `  integer k;`,
-            `  for (k = 0; k < ${depth}; k = k + 1) ${memName}[k] = 8'd0;`,
+            ...zeroMemoryBody(memName, depth, 8),
             ...(argMemoryInitBody(memName, ctx.args.memory, 8) ?? []),
             ...(ctx.stateInits ?? []).flatMap((init) => memoryInitBody(memName, init, ctx)),
             `end`,
