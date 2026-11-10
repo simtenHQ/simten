@@ -11,7 +11,10 @@
  * Each test ends in a `JMP *` loop: the runner stops when the CPU fetches the
  * same instruction twice in a row, then checks where it stopped.
  *
- *   npx tsx src/std/__tests__/mos6502/run-dormann.ts [functional|decimal]
+ *   npx tsx src/std/__tests__/mos6502/run-dormann.ts [functional|decimal] [--stall]
+ *
+ * With --stall the core is built with RDY and held low before a fifth of the
+ * reads (see machine.ts).
  */
 
 import { execFileSync } from 'node:child_process';
@@ -22,6 +25,10 @@ import { createMachine } from './machine.js';
 
 const REPO = 'https://raw.githubusercontent.com/Klaus2m5/6502_65C02_functional_tests/master';
 const DIR = join(import.meta.dirname, 'vectors', 'dormann');
+
+const args = process.argv.slice(2);
+const stall = args.includes('--stall') ? 0.2 : 0;
+const which = args.find((a) => !a.startsWith('--'));
 
 async function fetchOnce(path: string): Promise<Buffer> {
   const local = join(DIR, path.split('/').pop()!);
@@ -101,7 +108,7 @@ function assembleDecimal(src: string): Uint8Array {
 
 /** Runs from `start` until the CPU loops on one instruction; returns that address. */
 function runToTrap(image: Uint8Array, at: number, start: number, report: string) {
-  const m = createMachine();
+  const m = createMachine({ stall });
   m.mem.set(image, at);
   m.load({ pc: start, s: 0xff, a: 0, x: 0, y: 0, p: 0x24 });
   let last = -1;
@@ -122,7 +129,6 @@ function runToTrap(image: Uint8Array, at: number, start: number, report: string)
   }
 }
 
-const which = process.argv[2];
 let failed = false;
 
 if (!which || which === 'functional') {

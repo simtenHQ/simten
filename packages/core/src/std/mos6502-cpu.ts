@@ -31,12 +31,19 @@
  * `debug` flag (default off): adds outputs for the registers (`a`, `x`, `y`,
  * `s`, `p`), the program counter `pc`, the instruction register `ir` and the
  * timing state `t`. With it off they are absent from the circuit.
+ *
+ * `decimal: false` makes ADC and SBC binary even with D set, as on the NES
+ * 2A03. `rdy: true` adds the RDY input: low on a read cycle, it halts the core
+ * (every block's `run` goes low, so registers and flip-flops hold) and the read
+ * repeats until RDY goes high. A write cycle always completes. Without `rdy`
+ * the core never halts.
  */
 
 import { bit, bus } from '../circuit/bit-bus.js';
 import type { Circuit } from '../circuit/builder-types.js';
 import { circuit } from '../circuit/circuit.js';
 import { Constant } from './io.js';
+import { And, Not, Or } from './logic.js';
 import {
   MOS6502_ADHBus,
   MOS6502_ADLBus,
@@ -63,6 +70,10 @@ const line = (inWidth: number, offset: number) => Slice({ inWidth, offset, width
 // ─── Timing generator ───────────────────────────────────────────────────────
 // T counts the cycles of the current instruction. Power-on state is T1 of the
 // reset sequence, so the core runs its reset sequence without a reset pulse.
+//
+// While halted, an NMI edge is caught in `nmi_seen` and reaches the edge
+// detector on the cycle the core resumes, so it is taken as if it had arrived
+// then. A pulse that ends before the halt does is not lost.
 const MOS6502_TimingGenerator = circuit('MOS6502_TimingGenerator', () => ({
   inputs: {
     ctrl: bus(5),
@@ -72,6 +83,7 @@ const MOS6502_TimingGenerator = circuit('MOS6502_TimingGenerator', () => ({
     irq: bit,
     nmi: bit,
     reset: bit,
+    run: bit,
   },
   outputs: {
     state: bus(8),
@@ -90,30 +102,56 @@ const MOS6502_TimingGenerator = circuit('MOS6502_TimingGenerator', () => ({
     nmi_prev: DFlipFlop(),
     nmi_latch: DFlipFlop(),
     logic: MOS6502_TimingLogic,
-    one: Constant({ value: 1 }),
+    acr_hold: Mux(),
+    adir_hold: Mux(),
+    pending_hold: Mux(),
+    nmi_prev_hold: Mux(),
+    nmi_latch_hold: Mux(),
+    halted: Not,
+    nmi_seen: DFlipFlop(),
+    nmi_seen_next: And,
+    nmi_in: Or,
   },
   connect: ({ inputs, outputs, nodes: n }) => [
-    n.one.out.to(n.t.we, n.kind.we),
+    inputs.run.to(
+      n.t.we,
+      n.kind.we,
+      n.halted.in,
+      n.acr_hold.sel,
+      n.adir_hold.sel,
+      n.pending_hold.sel,
+      n.nmi_prev_hold.sel,
+      n.nmi_latch_hold.sel,
+    ),
     n.t.q.to(n.logic.t, outputs.t),
     n.kind.q.to(n.logic.kind),
-    n.acr.q.to(n.logic.acr),
-    n.adir.q.to(n.logic.adir),
-    n.pending.q.to(n.logic.pending),
-    n.nmi_prev.q.to(n.logic.nmi_prev),
-    n.nmi_latch.q.to(n.logic.nmi_latch),
+    n.acr.q.to(n.logic.acr, n.acr_hold.in0),
+    n.adir.q.to(n.logic.adir, n.adir_hold.in0),
+    n.pending.q.to(n.logic.pending, n.pending_hold.in0),
+    n.nmi_prev.q.to(n.logic.nmi_prev, n.nmi_prev_hold.in0),
+    n.nmi_latch.q.to(n.logic.nmi_latch, n.nmi_latch_hold.in0),
     inputs.ctrl.to(n.logic.ctrl),
     inputs.alu_c.to(n.logic.alu_c),
     inputs.db.to(n.logic.db),
     inputs.p.to(n.logic.p),
     inputs.irq.to(n.logic.irq),
-    inputs.nmi.to(n.logic.nmi, n.nmi_prev.d),
+    inputs.nmi.to(n.nmi_in.a),
+    n.nmi_seen.q.to(n.nmi_in.b),
+    n.nmi_in.out.to(n.logic.nmi, n.nmi_prev_hold.in1, n.nmi_seen_next.a),
+    n.halted.out.to(n.nmi_seen_next.b),
+    n.nmi_seen_next.out.to(n.nmi_seen.d),
     inputs.reset.to(n.logic.reset),
     n.logic.t_next.to(n.t.data),
     n.logic.kind_next.to(n.kind.data),
-    n.logic.acr_next.to(n.acr.d),
-    n.logic.adir_next.to(n.adir.d),
-    n.logic.pending_next.to(n.pending.d),
-    n.logic.nmi_latch_next.to(n.nmi_latch.d),
+    n.logic.acr_next.to(n.acr_hold.in1),
+    n.logic.adir_next.to(n.adir_hold.in1),
+    n.logic.pending_next.to(n.pending_hold.in1),
+    n.logic.nmi_latch_next.to(n.nmi_latch_hold.in1),
+    n.acr_hold.out.to(n.acr.d),
+    n.adir_hold.out.to(n.adir.d),
+    n.pending_hold.out.to(n.pending.d),
+    n.nmi_prev_hold.out.to(n.nmi_prev.d),
+    n.nmi_latch_hold.out.to(n.nmi_latch.d),
     n.logic.state.to(outputs.state),
     n.logic.sync.to(outputs.sync),
     n.logic.ir_load.to(outputs.ir_load),
@@ -127,18 +165,21 @@ const MOS6502_TimingGenerator = circuit('MOS6502_TimingGenerator', () => ({
 // The opcode table turns it into `seq` (how the instruction sequences its
 // cycles) and `exec` (what it computes).
 const MOS6502_InstructionDecode = circuit('MOS6502_InstructionDecode', () => ({
-  inputs: { data_in: bus(8), load: bit, clear: bit },
+  inputs: { data_in: bus(8), load: bit, clear: bit, run: bit },
   outputs: { ir: bus(8), seq: bus(10), exec: bus(23) },
   nodes: {
     ir: Register({ width: 8 }),
     brk: Mux({ width: 8 }),
     table: MOS6502_OpcodeTable,
+    load_ir: And,
   },
-  connect: ({ inputs, outputs, nodes: { ir, brk, table } }) => [
+  connect: ({ inputs, outputs, nodes: { ir, brk, table, load_ir } }) => [
     inputs.data_in.to(brk.in0),
     inputs.clear.to(brk.sel),
     brk.out.to(ir.data),
-    inputs.load.to(ir.we),
+    inputs.load.to(load_ir.a),
+    inputs.run.to(load_ir.b),
+    load_ir.out.to(ir.we),
     ir.q.to(table.ir, outputs.ir),
     table.seq.to(outputs.seq),
     table.exec.to(outputs.exec),
@@ -149,7 +190,7 @@ const MOS6502_InstructionDecode = circuit('MOS6502_InstructionDecode', () => ({
 // PCL/PCH and the incrementer. `pcls`/`pchs` (PC, plus one when incrementing)
 // feed the address buses; a jump loads PC from the ADL/ADH buses instead.
 const MOS6502_ProgramCounter = circuit('MOS6502_ProgramCounter', () => ({
-  inputs: { ctrl: bus(2), adl: bus(8), adh: bus(8) },
+  inputs: { ctrl: bus(2), adl: bus(8), adh: bus(8), run: bit },
   outputs: { pcl: bus(8), pch: bus(8), pcls: bus(8), pchs: bus(8) },
   nodes: {
     increment: line(2, 0),
@@ -159,11 +200,10 @@ const MOS6502_ProgramCounter = circuit('MOS6502_ProgramCounter', () => ({
     incr: MOS6502_PCIncrementer,
     load_l: Mux({ width: 8 }),
     load_h: Mux({ width: 8 }),
-    one: Constant({ value: 1 }),
   },
   connect: ({ inputs, outputs, nodes: n }) => [
     inputs.ctrl.to(n.increment.in, n.load.in),
-    n.one.out.to(n.pcl.we, n.pch.we),
+    inputs.run.to(n.pcl.we, n.pch.we),
     n.pcl.q.to(n.incr.pcl, outputs.pcl),
     n.pch.q.to(n.incr.pch, outputs.pch),
     n.increment.out.to(n.incr.inc),
@@ -181,16 +221,15 @@ const MOS6502_ProgramCounter = circuit('MOS6502_ProgramCounter', () => ({
 // ABL/ABH latch the ADL/ADH buses every cycle: the address for cycle N is
 // formed during cycle N-1, as on the real chip.
 const MOS6502_AddressBus = circuit('MOS6502_AddressBus', () => ({
-  inputs: { adl: bus(8), adh: bus(8) },
+  inputs: { adl: bus(8), adh: bus(8), run: bit },
   outputs: { abl: bus(8), abh: bus(8), addr: bus(16) },
   nodes: {
     abl: Register({ width: 8 }),
     abh: Register({ width: 8 }),
     join: AddressCombiner,
-    one: Constant({ value: 1 }),
   },
-  connect: ({ inputs, outputs, nodes: { abl, abh, join, one } }) => [
-    one.out.to(abl.we, abh.we),
+  connect: ({ inputs, outputs, nodes: { abl, abh, join } }) => [
+    inputs.run.to(abl.we, abh.we),
     inputs.adl.to(abl.data),
     inputs.adh.to(abh.data),
     abl.q.to(join.lo, outputs.abl),
@@ -215,6 +254,7 @@ const MOS6502_DataLatch = circuit('MOS6502_DataLatch', () => ({
     pchs: bus(8),
     pcls: bus(8),
     alu: bus(8),
+    run: bit,
   },
   outputs: { data: bus(8), dl: bus(8), data_out: bus(8), rw: bit },
   nodes: {
@@ -224,12 +264,15 @@ const MOS6502_DataLatch = circuit('MOS6502_DataLatch', () => ({
     dor: Register({ width: 8 }),
     select: MOS6502_DORSelect,
     wr: DFlipFlop(),
-    one: Constant({ value: 1 }),
+    load_dl: And,
+    wr_hold: Mux(),
   },
   connect: ({ inputs, outputs, nodes: n }) => [
     inputs.ctrl.to(n.dl_load.in, n.write.in, n.select.ctrl),
     inputs.data_in.to(n.dl.data, n.select.data, outputs.data),
-    n.dl_load.out.to(n.dl.we),
+    n.dl_load.out.to(n.load_dl.a),
+    inputs.run.to(n.load_dl.b, n.dor.we, n.wr_hold.sel),
+    n.load_dl.out.to(n.dl.we),
     n.dl.q.to(outputs.dl),
     inputs.a.to(n.select.a),
     inputs.x.to(n.select.x),
@@ -239,9 +282,10 @@ const MOS6502_DataLatch = circuit('MOS6502_DataLatch', () => ({
     inputs.pcls.to(n.select.pcls),
     inputs.alu.to(n.select.alu),
     n.select.out.to(n.dor.data),
-    n.one.out.to(n.dor.we),
     n.dor.q.to(outputs.data_out),
-    n.write.out.to(n.wr.d),
+    n.write.out.to(n.wr_hold.in1),
+    n.wr.q.to(n.wr_hold.in0),
+    n.wr_hold.out.to(n.wr.d),
     n.wr.q_bar.to(outputs.rw),
   ],
 }));
@@ -249,7 +293,7 @@ const MOS6502_DataLatch = circuit('MOS6502_DataLatch', () => ({
 // ─── Registers ──────────────────────────────────────────────────────────────
 // A, X, Y and the stack pointer S, each loaded from the ALU result.
 const MOS6502_Registers = circuit('MOS6502_Registers', () => ({
-  inputs: { result: bus(8), ctrl: bus(4) },
+  inputs: { result: bus(8), ctrl: bus(4), run: bit },
   outputs: { a: bus(8), x: bus(8), y: bus(8), s: bus(8) },
   nodes: {
     load_a: line(4, 0),
@@ -260,9 +304,13 @@ const MOS6502_Registers = circuit('MOS6502_Registers', () => ({
     x: Register({ width: 8 }),
     y: Register({ width: 8 }),
     s: Register({ width: 8 }),
+    // Passes the load lines while running; in0 is unconnected, so 0 when halted.
+    gate: Mux({ width: 4 }),
   },
   connect: ({ inputs, outputs, nodes: n }) => [
-    inputs.ctrl.to(n.load_a.in, n.load_x.in, n.load_y.in, n.load_s.in),
+    inputs.ctrl.to(n.gate.in1),
+    inputs.run.to(n.gate.sel),
+    n.gate.out.to(n.load_a.in, n.load_x.in, n.load_y.in, n.load_s.in),
     inputs.result.to(n.a.data, n.x.data, n.y.data, n.s.data),
     n.load_a.out.to(n.a.we),
     n.load_x.out.to(n.x.we),
@@ -277,15 +325,14 @@ const MOS6502_Registers = circuit('MOS6502_Registers', () => ({
 
 // ─── Status register ────────────────────────────────────────────────────────
 const MOS6502_Status = circuit('MOS6502_Status', () => ({
-  inputs: { n: bit, z: bit, c: bit, v: bit, data: bus(8), ctrl: bus(8) },
+  inputs: { n: bit, z: bit, c: bit, v: bit, data: bus(8), ctrl: bus(8), run: bit },
   outputs: { p: bus(8) },
   nodes: {
     p: Register({ width: 8, value: 0x24 }),
     logic: MOS6502_StatusLogic,
-    one: Constant({ value: 1 }),
   },
-  connect: ({ inputs, outputs, nodes: { p, logic, one } }) => [
-    one.out.to(p.we),
+  connect: ({ inputs, outputs, nodes: { p, logic } }) => [
+    inputs.run.to(p.we),
     p.q.to(logic.p, outputs.p),
     inputs.n.to(logic.n),
     inputs.z.to(logic.z),
@@ -300,8 +347,14 @@ const MOS6502_Status = circuit('MOS6502_Status', () => ({
 // ─── The core ───────────────────────────────────────────────────────────────
 const MOS6502_CoreFactory = circuit(
   'MOS6502_Core',
-  ({ debug = false }: { debug?: boolean } = {}) => {
-    const inputs = { data_in: bus(8), irq: bit, nmi: bit, reset: bit };
+  ({ debug = false, decimal = true, rdy = false }: CoreOptions = {}) => {
+    const inputs = {
+      data_in: bus(8),
+      irq: bit,
+      nmi: bit,
+      reset: bit,
+      ...(rdy ? { rdy: bit } : {}),
+    } as CoreIns;
     // Debug ports exist only when `debug` is on, but stay in the type so the
     // connect below can name them without casts.
     const outputs = {
@@ -340,6 +393,10 @@ const MOS6502_CoreFactory = circuit(
         sb: MOS6502_SBBus,
         adl: MOS6502_ADLBus,
         adh: MOS6502_ADHBus,
+        writing: Not,
+        run: Or,
+        ...(rdy ? {} : { ready: Constant({ value: 1 }) }),
+        ...(decimal ? {} : { binary: Constant({ value: 0 }) }),
         ...(debug ? { pc_join: AddressCombiner } : {}),
       } as {
         timing: ReturnType<typeof MOS6502_TimingGenerator>;
@@ -355,6 +412,10 @@ const MOS6502_CoreFactory = circuit(
         sb: typeof MOS6502_SBBus;
         adl: typeof MOS6502_ADLBus;
         adh: typeof MOS6502_ADHBus;
+        writing: typeof Not;
+        run: typeof Or;
+        ready: ReturnType<typeof Constant>;
+        binary: ReturnType<typeof Constant>;
         pc_join: typeof AddressCombiner;
       },
       connect: ({ inputs, outputs, nodes: n }) => {
@@ -369,6 +430,20 @@ const MOS6502_CoreFactory = circuit(
           n.latch.rw.to(outputs.rw),
           n.timing.sync.to(outputs.sync),
 
+          // Halt while RDY is low on a read cycle; a write always completes.
+          (rdy ? inputs.rdy : n.ready.out).to(n.run.a),
+          n.latch.rw.to(n.writing.in),
+          n.writing.out.to(n.run.b),
+          n.run.out.to(
+            n.timing.run,
+            n.decode.run,
+            n.pc.run,
+            n.ab.run,
+            n.latch.run,
+            n.regs.run,
+            n.status.run,
+          ),
+
           // Control: instruction and timing state in, one bundle per block out
           n.timing.ir_load.to(n.decode.load),
           n.timing.ir_clear.to(n.decode.clear),
@@ -381,7 +456,7 @@ const MOS6502_CoreFactory = circuit(
           n.pla.bus_ctrl.to(n.db.ctrl, n.sb.ctrl, n.adl.ctrl, n.adh.ctrl),
           n.pla.alu_op.to(n.alu.op),
           n.pla.alu_cin.to(n.alu.cin),
-          n.pla.decimal.to(n.alu.decimal),
+          (decimal ? n.pla.decimal : n.binary.out).to(n.alu.decimal),
           n.pla.reg_ctrl.to(n.regs.ctrl),
           n.pla.p_ctrl.to(n.status.ctrl),
           n.pla.latch_ctrl.to(n.latch.ctrl),
@@ -436,9 +511,11 @@ const MOS6502_CoreFactory = circuit(
   },
 );
 
+type CoreOptions = { debug?: boolean; decimal?: boolean; rdy?: boolean };
+
 // Spell the ports out so the export's type doesn't drag every internal node
 // into the shipped .d.ts bundle (see RV32I_Core).
-type CoreIns = { data_in: B; irq: Bit; nmi: Bit; reset: Bit };
+type CoreIns = { data_in: B; irq: Bit; nmi: Bit; reset: Bit; rdy: Bit };
 type CoreOuts = {
   addr: B;
   data_out: B;
@@ -457,4 +534,6 @@ type CoreOuts = {
 /** A cycle-accurate NMOS 6502 core; memory and I/O connect to its bus pins. */
 export const MOS6502_Core = MOS6502_CoreFactory as unknown as (opts?: {
   debug?: boolean;
+  decimal?: boolean;
+  rdy?: boolean;
 }) => Circuit<CoreIns, CoreOuts>;

@@ -53,6 +53,7 @@ import {
   LogicNot,
   LogicOr,
   MemBusMux,
+  MOS6502_Core,
   Modulo,
   Multiplier,
   Mux,
@@ -673,6 +674,11 @@ for (const [id, cycles, bug] of [
   cases.push({ name: `example ${id}`, target: () => example(id), opts: { cycles }, bug });
 }
 
+// The bare 6502 with random pins, built with RDY and without decimal mode.
+std('MOS6502_Core rdy binary', () => MOS6502_Core({ rdy: true, decimal: false }), {
+  opts: { cycles: 300 },
+});
+
 // ── imported designs, against their source ──────────────────────────────
 const source = fixture('imports.v');
 cases.push({
@@ -726,6 +732,13 @@ describe.skipIf(!available)('simulator vs iverilog', () => {
 describe.skipIf(!available)('iverilog compiles', () => {
   it('example rv32i-computer', () => {
     const { top, library } = example('rv32i-computer');
+    const { verilog, files, unsupported } = exportVerilogFromIR(top, library);
+    expect(unsupported).toBeUndefined();
+    expect(compileErrors(verilog, files)).toBe('');
+  });
+
+  it('example 6502-computer', () => {
+    const { top, library } = example('6502-computer');
     const { verilog, files, unsupported } = exportVerilogFromIR(top, library);
     expect(unsupported).toBeUndefined();
     expect(compileErrors(verilog, files)).toBe('');
