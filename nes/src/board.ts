@@ -4,10 +4,7 @@
  *
  * CPU memory map:
  *   $0000-$1FFF  2 KB work RAM, mirrored every $0800
- *   $2000-$3FFF  PPU registers, mirrored every 8 bytes. Stub: writes are
- *                ignored, $2002 (PPUSTATUS) reads $80 (vblank set) so the
- *                usual "wait for vblank" loops at boot fall through, and the
- *                other registers read $00.
+ *   $2000-$3FFF  PPU registers, mirrored every 8 bytes (ppu/regs.ts).
  *   $4000-$401F  APU and I/O registers. Stub: reads $00, writes ignored,
  *                except $4014 (OAM DMA, see dma.ts), which halts the CPU
  *                and copies a page to $2004.
@@ -17,7 +14,7 @@
  *
  * The CPU is the 2A03's: a 6502 with decimal mode disconnected (D still sets
  * and clears, ADC and SBC stay binary) and RDY driven by the OAM DMA unit.
- * irq and nmi are tied low until the PPU and APU exist. The core runs its
+ * The PPU drives nmi. irq is tied low until the APU exists. The core runs its
  * reset sequence at power-on and starts at the reset vector in $FFFC.
  *
  * `addr`, `rw` and `data` are the bus, so during a DMA they show the copy.
@@ -36,6 +33,7 @@ import { bit, bus, circuit, simulate } from '@simten/core';
 import { Constant, DualPortRAM, MOS6502_Core, ROM, romFromBytes } from '@simten/core/std';
 import { OamDma } from './dma.js';
 import type { INesRom } from './ines.js';
+import { Ppu } from './ppu/ppu.js';
 
 type B = ReturnType<typeof bus>;
 
@@ -47,17 +45,29 @@ const NesBus = circuit('NesBus', ({ prgSize = 0x8000 }: { prgSize?: number } = {
     ce: bit,
     cpu_out: bus(8),
     ram_data: bus(8),
+    ppu_data: bus(8),
     prg_data: bus(8),
   },
-  outputs: { ram_addr: bus(11), ram_we: bit, prg_addr: bus(16), cpu_in: bus(8), data: bus(8) },
-  eval: ({ addr, rw, ce, cpu_out, ram_data, prg_data }) => {
+  outputs: {
+    ram_addr: bus(11),
+    ram_we: bit,
+    ppu_cs: bit,
+    ppu_addr: bus(3),
+    prg_addr: bus(16),
+    cpu_in: bus(8),
+    data: bus(8),
+  },
+  eval: ({ addr, rw, ce, cpu_out, ram_data, ppu_data, prg_data }) => {
+    const ppu = addr >= 0x2000 && addr < 0x4000;
     let read = 0;
     if (addr < 0x2000) read = ram_data;
-    else if (addr < 0x4000) read = (addr & 7) === 2 ? 0x80 : 0;
+    else if (ppu) read = ppu_data;
     else if (addr >= 0x8000) read = prg_data;
     return {
       ram_addr: addr & 0x7ff,
       ram_we: ce && !rw && addr < 0x2000 ? 1 : 0,
+      ppu_cs: ce && ppu ? 1 : 0,
+      ppu_addr: addr & 7,
       prg_addr: addr & (prgSize - 1),
       cpu_in: read,
       data: rw ? read : cpu_out,
@@ -111,22 +121,27 @@ export const NesBoard = circuit(
         clock: CpuClock,
         cpu: MOS6502_Core({ debug, decimal: false, rdy: true, ce: true }),
         dma: OamDma,
+        ppu: Ppu,
         bus: NesBus({ prgSize }),
         ram: DualPortRAM({ addressWidth: 11, dataWidth: 8 }),
         prg: ROM(),
         low: Constant({ value: 0 }),
       },
-      connect: ({ outputs: o, nodes: { clock, cpu, dma, bus: b, ram, prg, low } }) => {
+      connect: ({ outputs: o, nodes: { clock, cpu, dma, ppu, bus: b, ram, prg, low } }) => {
         const rows = [
           clock.ce.to(cpu.ce, dma.ce, b.ce),
-          low.out.to(cpu.irq, cpu.nmi, cpu.reset),
+          low.out.to(cpu.irq, cpu.reset),
+          ppu.nmi.to(cpu.nmi),
+          b.ppu_cs.to(ppu.cs),
+          b.ppu_addr.to(ppu.addr),
+          ppu.data_out.to(b.ppu_data),
           cpu.addr.to(dma.cpu_addr),
           cpu.rw.to(dma.cpu_rw),
           cpu.data_out.to(dma.cpu_out),
           dma.rdy.to(cpu.rdy),
           dma.addr.to(b.addr, o.addr),
-          dma.rw.to(b.rw, o.rw),
-          dma.out.to(ram.dataA, b.cpu_out),
+          dma.rw.to(b.rw, o.rw, ppu.rw),
+          dma.out.to(ram.dataA, b.cpu_out, ppu.data_in),
           cpu.sync.to(o.sync),
           b.ram_addr.to(ram.addrA, ram.addrB),
           b.ram_we.to(ram.weA),

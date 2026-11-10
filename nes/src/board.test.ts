@@ -30,14 +30,14 @@ describe('NesBoard', () => {
       [0x8d, 0x05, 0x08], // 8002 STA $0805  RAM $0005 through the first mirror
       [0xa9, 0x00], // 8005 LDA #$00
       [0xae, 0x05, 0x18], // 8007 LDX $1805  RAM $0005 through the last mirror
-      [0xac, 0x0a, 0x3f], // 800A LDY $3F0A  $2002 (PPUSTATUS) through a mirror
+      [0xac, 0x0a, 0x3f], // 800A LDY $3F0A  $2002 (PPUSTATUS) through a mirror: 0 before vblank
       [0xad, 0x00, 0xc0], // 800D LDA $C000  PRG $8000 through the 16 KB mirror
       [0x4c, 0x10, 0x80], // 8010 JMP $8010
     ];
-    expect(runTo(cartridge(program.flat()), 0x8010)).toEqual({ a: 0xa9, x: 0x42, y: 0x80 });
+    expect(runTo(cartridge(program.flat()), 0x8010)).toEqual({ a: 0xa9, x: 0x42, y: 0 });
   });
 
-  it('reads 0 from the other PPU registers, APU/IO and unmapped space', () => {
+  it('reads 0 from an unwritten PPU register, APU/IO and unmapped space', () => {
     const program = [
       [0xa9, 0xff, 0xaa, 0xa8], // 8000 LDA #$FF / TAX / TAY
       [0xad, 0x00, 0x20], // 8004 LDA $2000
