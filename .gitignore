@@ -95,3 +95,7 @@ packages/core/src/std/__tests__/mos6502/vectors/
 
 # Playwright run state
 **/test-results/
+
+# NES ROMs: never committed. nestest is fetched into nes/nestest/.cache
+*.nes
+nes/nestest/.cache/
