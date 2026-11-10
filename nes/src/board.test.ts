@@ -1,5 +1,6 @@
+import { checkSynthesizable } from '@simten/core/verilog';
 import { describe, expect, it } from 'vitest';
-import { createNes } from './board.js';
+import { createNes, NesBoard } from './board.js';
 import type { INesRom } from './ines.js';
 
 /** An NROM cartridge with `program` at $8000 and the reset vector pointing at it. */
@@ -83,6 +84,12 @@ describe('NesBoard', () => {
     rom.chr[0x10] = 0x5c;
     expect(runTo(rom, end)).toEqual({ a: 0x5c, x: 0xab, y: 0 });
     expect(runTo({ ...rom, mirroring: 'vertical' }, end)).toEqual({ a: 0x5c, x: 0, y: 0xab });
+  });
+
+  // The whole board, not just the PPU: the compiled (CXXRTL) build and FPGA
+  // export start from this Verilog.
+  it('exports to Verilog', () => {
+    expect(checkSynthesizable(NesBoard({ prgSize: 0x4000, vertical: 1 })).errors).toEqual([]);
   });
 
   it('rejects mappers other than NROM', () => {

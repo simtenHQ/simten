@@ -43,7 +43,7 @@ import { Ppu } from './ppu/ppu.js';
 type B = ReturnType<typeof bus>;
 
 /** Address decode and the CPU's read data mux. */
-const NesBus = circuit('NesBus', ({ prgSize = 0x8000 }: { prgSize?: number } = {}) => ({
+const NesBus = circuit('NesBus', (_opts: { prgSize?: number } = {}) => ({
   inputs: {
     addr: bus(16),
     rw: bit,
@@ -62,7 +62,7 @@ const NesBus = circuit('NesBus', ({ prgSize = 0x8000 }: { prgSize?: number } = {
     cpu_in: bus(8),
     data: bus(8),
   },
-  eval: ({ addr, rw, ce, cpu_out, ram_data, ppu_data, prg_data }) => {
+  eval: ({ addr, rw, ce, cpu_out, ram_data, ppu_data, prg_data, prgSize = 0x8000 }) => {
     const ppu = addr >= 0x2000 && addr < 0x4000;
     let read = 0;
     if (addr < 0x2000) read = ram_data;
@@ -73,7 +73,7 @@ const NesBus = circuit('NesBus', ({ prgSize = 0x8000 }: { prgSize?: number } = {
       ram_we: ce && !rw && addr < 0x2000 ? 1 : 0,
       ppu_cs: ce && ppu ? 1 : 0,
       ppu_addr: addr & 7,
-      prg_addr: addr & (prgSize - 1),
+      prg_addr: addr & ((prgSize as number) - 1),
       cpu_in: read,
       data: rw ? read : cpu_out,
     };
@@ -81,10 +81,10 @@ const NesBus = circuit('NesBus', ({ prgSize = 0x8000 }: { prgSize?: number } = {
 }));
 
 /** PPU address decode: CHR ROM, or nametable RAM through the mirroring. */
-const NesVramBus = circuit('NesVramBus', ({ vertical = 0 }: { vertical?: number } = {}) => ({
+const NesVramBus = circuit('NesVramBus', (_opts: { vertical?: number } = {}) => ({
   inputs: { addr: bus(14), we: bit, chr_data: bus(8), ciram_data: bus(8) },
   outputs: { chr_addr: bus(16), ciram_addr: bus(11), ciram_we: bit, data: bus(8) },
-  eval: ({ addr, we, chr_data, ciram_data }) => {
+  eval: ({ addr, we, chr_data, ciram_data, vertical = 0 }) => {
     const nametable = addr >= 0x2000;
     const page = vertical ? (addr >> 10) & 1 : (addr >> 11) & 1;
     return {
@@ -101,7 +101,7 @@ const CpuClock = circuit('CpuClock', {
   outputs: { ce: bit },
   state: { phase: 0 },
   eval: ({ phase }) => ({ ce: phase === 0 ? 1 : 0 }),
-  onTick: ({ phase }) => ({ phase: phase === 2 ? 0 : (phase as number) + 1 }),
+  onTick: ({ phase }) => ({ phase: phase === 2 ? 0 : ((phase as number) + 1) & 3 }),
 });
 
 type BoardOuts = {
