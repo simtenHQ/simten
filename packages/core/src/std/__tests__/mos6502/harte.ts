@@ -9,7 +9,7 @@
  * compares every cycle and the final state.
  */
 
-import { type BusCycle, type CpuState, createMachine } from './machine.js';
+import { type BusCycle, type CpuState, createMachine, type MachineOptions } from './machine.js';
 
 export interface HarteState extends CpuState {
   ram: [number, number][];
@@ -39,8 +39,8 @@ export const DOCUMENTED_OPCODES = [
 const hex = (v: number, digits = 2) => `$${v.toString(16).padStart(digits, '0')}`;
 
 /** A reusable runner: one machine, reloaded for every case. */
-export function createHarteRunner() {
-  const m = createMachine();
+export function createHarteRunner(options: MachineOptions = {}) {
+  const m = createMachine(options);
 
   /** Runs one case. Returns null on a match, or a description of the first mismatch. */
   function run(c: HarteCase): string | null {

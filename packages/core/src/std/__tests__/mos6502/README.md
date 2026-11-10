@@ -16,6 +16,8 @@ npx tsx src/std/__tests__/mos6502/run-harte.ts 69 7d --limit 500
 npx tsx src/std/__tests__/mos6502/make-sample.ts   # regenerate the CI slice
 ```
 
+With `--stall`, both runners build the core with `rdy: true` and hold RDY low for 1-3 cycles before a fifth of the reads. The bus trace must still match once the halted cycles are dropped, and the address must not move during a halt.
+
 ## Klaus Dormann's functional and decimal tests
 
 [6502_65C02_functional_tests](https://github.com/Klaus2m5/6502_65C02_functional_tests) (GPL-3.0, so downloaded at run time, not committed). The functional test exercises every documented instruction and addressing mode; the decimal test checks ADC and SBC in decimal mode for every pair of operands and both carry values, including invalid BCD. The decimal test is assembled with ca65, so it needs cc65 installed.

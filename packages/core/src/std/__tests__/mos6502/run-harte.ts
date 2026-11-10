@@ -5,6 +5,7 @@
  *   npx tsx src/std/__tests__/mos6502/run-harte.ts            # every opcode
  *   npx tsx src/std/__tests__/mos6502/run-harte.ts a9 7d      # some opcodes
  *   npx tsx src/std/__tests__/mos6502/run-harte.ts --limit 500
+ *   npx tsx src/std/__tests__/mos6502/run-harte.ts --stall    # with RDY halts
  */
 
 import { readFileSync } from 'node:fs';
@@ -18,8 +19,11 @@ const picked = args.filter(
   (a, i) => /^[0-9a-f]{2}$/i.test(a) && (limitAt < 0 || i !== limitAt + 1),
 );
 const opcodes = picked.length ? picked.map((a) => Number.parseInt(a, 16)) : DOCUMENTED_OPCODES;
+// With --stall, RDY is held low before a fifth of the reads; the bus trace
+// must still match cycle for cycle once the halted cycles are dropped.
+const stall = args.includes('--stall') ? 0.2 : 0;
 
-const runner = createHarteRunner();
+const runner = createHarteRunner({ stall });
 let failedOps = 0;
 let total = 0;
 const started = Date.now();
