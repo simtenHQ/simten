@@ -150,10 +150,14 @@ static ${cls} *top;
 ${video ? `static uint8_t frame[${video.width * video.height}];` : ''}
 
 // The clock is held high; each tick tells CXXRTL it was low, then steps.
+// 'was' sets CXXRTL's record of the clock's last level: 0 makes the next
+// step a rising edge, 1 makes it a plain settle.
 template <typename T>
-static auto edge(T *t, int) -> decltype(t->prev_p_clk, void()) { t->prev_p_clk = value<1>{0u}; }
+static auto was(T *t, uint32_t level, int) -> decltype(t->prev_p_clk, void()) {
+  t->prev_p_clk = value<1>{level};
+}
 template <typename T>
-static void edge(T *, long) {}
+static void was(T *, uint32_t, long) {}
 template <typename T>
 static auto hold(T *t, int) -> decltype(t->p_clk, void()) { t->p_clk.set(true); }
 template <typename T>
@@ -170,6 +174,7 @@ void sim_init() {
   top = new ${cls};
   unreset(top, 0);
   hold(top, 0);
+  was(top, 1u, 0);
   top->step();
 }
 
@@ -179,7 +184,7 @@ void sim_init() {
 // end brings the outputs up to date for sim_get.
 void sim_tick(uint32_t n) {
   for (uint32_t i = 0; i < n; i++) {
-    edge(top, 0);
+    was(top, 0u, 0);
     top->step();
 ${capture}  }
   top->step();

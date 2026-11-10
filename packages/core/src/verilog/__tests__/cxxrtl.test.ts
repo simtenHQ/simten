@@ -20,19 +20,28 @@ const Step = circuit('CxxStep', {
   eval: ({ q, step }) => ({ next: ((q as number) + (step as number)) & 0xff }),
 });
 
-/** A counter that adds `step` each tick, and a RAM written from the inputs. */
+/**
+ * A counter that adds `step` each tick, a free-running tick counter, and a RAM
+ * written from the inputs.
+ */
 const Top = circuit('CxxTop', {
   inputs: { step: bus(8), addr: bus(4), wdata: bus(8), we: bit },
-  outputs: { count: bus(8), rdata: bus(8), x: bus(4), y: bus(4), vwe: bit },
+  outputs: { count: bus(8), ticks: bus(8), rdata: bus(8), x: bus(4), y: bus(4), vwe: bit },
   nodes: {
     q: Register({ width: 8 }),
     add: Step,
+    t: Register({ width: 8 }),
+    inc: Step,
+    one: Constant({ value: 1, width: 8 }),
     ram: DualPortRAM({ addressWidth: 4, dataWidth: 8 }),
     always: Constant({ value: 1 }),
     zero: Constant({ value: 0, width: 4 }),
   },
   connect: ({ inputs, outputs, nodes: n }) => [
-    n.always.out.to(n.q.we),
+    n.always.out.to(n.q.we, n.t.we),
+    n.t.q.to(n.inc.q, outputs.ticks),
+    n.one.out.to(n.inc.step),
+    n.inc.next.to(n.t.data),
     n.q.q.to(n.add.q, outputs.count),
     inputs.step.to(n.add.step),
     n.add.next.to(n.q.data),
@@ -58,6 +67,7 @@ describe('cxxrtlManifest', () => {
       { name: 'wdata', width: 8, direction: 'input' },
       { name: 'we', width: 1, direction: 'input' },
       { name: 'count', width: 8, direction: 'output' },
+      { name: 'ticks', width: 8, direction: 'output' },
       { name: 'rdata', width: 8, direction: 'output' },
       { name: 'x', width: 4, direction: 'output' },
       { name: 'y', width: 4, direction: 'output' },
@@ -120,6 +130,8 @@ describe.skipIf(!tools)('CXXRTL build', () => {
         'ram',
         Array.from({ length: 16 }, (_, i) => i * 3),
       );
+      // Starting up must not clock: both at tick 0.
+      expect(fast.get('ticks')).toBe(ref.get('ticks'));
 
       let seed = 99;
       const rand = (n: number) => {
@@ -127,7 +139,7 @@ describe.skipIf(!tools)('CXXRTL build', () => {
         return (seed >>> 16) % n;
       };
       const frame = new Array(16).fill(0);
-      const outs = ['count', 'rdata', 'x', 'y', 'vwe'] as const;
+      const outs = ['count', 'ticks', 'rdata', 'x', 'y', 'vwe'] as const;
       for (let t = 0; t < 300; t++) {
         const ins = {
           step: rand(256),
