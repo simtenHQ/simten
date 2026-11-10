@@ -200,7 +200,7 @@ jobs:
 
   e2e:
     name: browser tests (@simten/react, sandbox)
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04 # Playwright 1.58 has no headless shell for 26.04
     timeout-minutes: 10
     steps:
       - name: Checkout
