@@ -25,10 +25,8 @@
 
 import { bit, bus, circuit } from '@simten/core';
 
-/** Idle, waiting for the CPU to halt, copying. */
-const IDLE = 0;
-const HALTING = 1;
-const COPYING = 2;
+// `phase`: 0 idle, 1 waiting for the CPU to halt, 2 copying. Numbers, not
+// named constants, so the Verilog export can translate onTick.
 
 interface DmaState {
   phase: number;
@@ -57,26 +55,44 @@ export const OamDma = circuit('OamDma', {
   outputs: { rdy: bit, addr: bus(16), rw: bit, out: bus(8) },
   state: { phase: 0, page: 0, n: 0, held: 0, latch: 0, odd: 0 },
   eval: ({ cpu_addr, cpu_rw, cpu_out, phase, page, n, held, latch, odd }: DmaIn) => {
-    const rdy = phase === IDLE ? 1 : 0;
-    if (phase === COPYING && held) return { rdy, addr: 0x2004, rw: 0, out: latch };
-    if (phase === COPYING && !odd) return { rdy, addr: (page << 8) | n, rw: 1, out: cpu_out };
+    const rdy = phase === 0 ? 1 : 0; // idle
+    if (phase === 2 && held) return { rdy, addr: 0x2004, rw: 0, out: latch };
+    if (phase === 2 && !odd) return { rdy, addr: (page << 8) | n, rw: 1, out: cpu_out };
     return { rdy, addr: cpu_addr, rw: cpu_rw, out: cpu_out };
   },
   onTick: ({ ce, cpu_addr, cpu_rw, cpu_out, read, phase, page, n, held, latch, odd }: DmaIn) => {
-    if (!ce) return { phase, page, n, held, latch, odd };
-    const s: DmaState = { phase, page, n, held, latch, odd: odd ^ 1 };
-    if (phase === IDLE) {
-      if (!cpu_rw && cpu_addr === 0x4014) return { ...s, phase: HALTING, page: cpu_out };
-    } else if (phase === HALTING) {
-      // RDY was low: on a read cycle the CPU halted, on a write it carried on.
-      if (cpu_rw) return { ...s, phase: COPYING, n: 0, held: 0 };
-    } else if (held) {
-      const done = n + 1 === 256;
-      return { ...s, phase: done ? IDLE : COPYING, n: done ? 0 : n + 1, held: 0 };
-    } else if (!odd) {
-      return { ...s, held: 1, latch: read };
+    // Off CPU cycles nothing changes; on them parity flips and the phase steps.
+    const flip = (ce ? odd ^ 1 : odd) & 1;
+    let nPhase = phase;
+    let nPage = page;
+    let nN = n;
+    let nHeld = held;
+    let nLatch = latch;
+    if (!ce) {
+      return { phase, page, n, held, latch, odd };
     }
-    return s;
+    if (phase === 0) {
+      if (!cpu_rw && cpu_addr === 0x4014) {
+        nPhase = 1;
+        nPage = cpu_out;
+      }
+    } else if (phase === 1) {
+      // RDY was low: on a read cycle the CPU halted, on a write it carried on.
+      if (cpu_rw) {
+        nPhase = 2;
+        nN = 0;
+        nHeld = 0;
+      }
+    } else if (held) {
+      const done = n === 255;
+      nPhase = done ? 0 : 2;
+      nN = done ? 0 : (n + 1) & 0xff;
+      nHeld = 0;
+    } else if (!odd) {
+      nHeld = 1;
+      nLatch = read;
+    }
+    return { phase: nPhase, page: nPage, n: nN, held: nHeld, latch: nLatch, odd: flip };
   },
-  meta: { category: 'io', icon: 'DMA', description: 'NES OAM DMA ($4014)', synthesizable: false },
+  meta: { category: 'io', icon: 'DMA', description: 'NES OAM DMA ($4014)' },
 });
