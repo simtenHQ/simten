@@ -251,6 +251,10 @@
       "inputs": ["in"],
       "outputs": []
     },
+    "PaletteDisplay": {
+      "inputs": ["color", "we", "x", "y"],
+      "outputs": []
+    },
     "Probe": {
       "inputs": ["in"],
       "outputs": ["out"]

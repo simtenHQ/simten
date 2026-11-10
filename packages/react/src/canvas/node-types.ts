@@ -8,6 +8,7 @@ import {
   NicFifoNode,
   NumericInputNode,
   OutputNode,
+  PaletteDisplayNode,
   RAMNode,
   RasterDisplayNode,
   RegisterNode,
@@ -36,6 +37,7 @@ export const NODE_TYPES: NodeTypes = {
   nicFifoNode: NicFifoNode,
   screenNode: ScreenNode,
   rasterDisplayNode: RasterDisplayNode,
+  paletteDisplayNode: PaletteDisplayNode,
 };
 
 /** Wires, coloured by their value. */

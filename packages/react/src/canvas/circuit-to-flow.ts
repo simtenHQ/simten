@@ -46,6 +46,7 @@ function getNodeTypeForComponent(
     SevenSegment: 'outputNode',
     Screen: 'screenNode',
     RasterDisplay: 'rasterDisplayNode',
+    PaletteDisplay: 'paletteDisplayNode',
     Console: 'consoleNode',
     UART_TX: 'uartTxNode',
     NIC_FIFO: 'nicFifoNode',

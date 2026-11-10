@@ -52,6 +52,7 @@ export const ioEmitters: Readonly<Record<string, Emitter>> = {
   // ── Display sinks (simulation-only, no hardware equivalent) ──────
   Screen: display,
   RasterDisplay: display,
+  PaletteDisplay: stub,
   Console: stub,
   // Its transmit buffer is simulation-only, but a read returns 1 (ready).
   UART_TX: ({ wires }) => {

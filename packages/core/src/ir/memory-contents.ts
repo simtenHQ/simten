@@ -4,13 +4,18 @@
  * compiled; the simulator converts them to the `Map` its memories run on.
  */
 
-import type { MemoryContents } from './circuit-ir.js';
+import type { ArgumentValue, MemoryContents } from './circuit-ir.js';
 
 /** Past this many problems in one memory, the rest are counted, not listed. */
 const MAX_LISTED = 5;
 
 const DENSE_HINT =
   'build dense contents with romFromBytes(bytes) or romFromWords(words, width) from @simten/core/std';
+
+/** Whether a node option holds memory contents rather than a number, string or list. */
+export function isMemoryContents(value: ArgumentValue | undefined): value is MemoryContents {
+  return typeof value === 'object' && !Array.isArray(value);
+}
 
 /**
  * Why `contents` is not a plain object, or `undefined` if it is. Arrays and

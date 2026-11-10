@@ -159,7 +159,11 @@ export interface Connection {
 // Nodes (Component Instances)
 // ============================================================================
 
-export type ArgumentValue = number | string | boolean | MemoryContents; // Memory contents (ROM data, RAM init)
+/**
+ * A node's option value: a number, string or boolean, memory contents (ROM
+ * data, RAM init), or a list of numbers (a display's palette).
+ */
+export type ArgumentValue = number | string | boolean | MemoryContents | readonly number[];
 
 export interface Node {
   id: string;

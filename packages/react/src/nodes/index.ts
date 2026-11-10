@@ -15,6 +15,7 @@ export type { NodeData, PixelSource } from './NodeData';
 export { NumericInputNode } from './NumericInputNode';
 // Output / display nodes
 export { OutputNode } from './OutputNode';
+export { PaletteDisplayNode } from './PaletteDisplayNode';
 export { RAMNode } from './RAMNode';
 export { RasterDisplayNode } from './RasterDisplayNode';
 export { RegisterNode } from './RegisterNode';
