@@ -109,6 +109,10 @@ type BoardOuts = {
   rw: typeof bit;
   sync: typeof bit;
   data: B;
+  video_x: B;
+  video_y: B;
+  video_we: typeof bit;
+  color: B;
   pc: B;
   a: B;
   x: B;
@@ -122,7 +126,8 @@ type BoardOuts = {
  * `vertical` is 1 for vertical nametable mirroring.
  * `debug` adds the core's register outputs (`pc`, `a`, `x`, `y`, `s`, `p`).
  * `addr`, `rw`, `sync` and `data` (the byte the CPU reads or writes this
- * cycle) are always outputs.
+ * cycle) are always outputs, and so is the PPU's video: `color` for pixel
+ * (`video_x`, `video_y`) on ticks where `video_we` is high.
  */
 export const NesBoard = circuit(
   'NesBoard',
@@ -142,6 +147,10 @@ export const NesBoard = circuit(
       rw: bit,
       sync: bit,
       data: bus(8),
+      video_x: bus(8),
+      video_y: bus(8),
+      video_we: bit,
+      color: bus(6),
       ...(debug ? { pc: bus(16), a: bus(8), x: bus(8), y: bus(8), s: bus(8), p: bus(8) } : {}),
     } as unknown as BoardOuts;
 
@@ -195,6 +204,10 @@ export const NesBoard = circuit(
           vbus.ciram_we.to(ciram.weA),
           ciram.outA.to(vbus.ciram_data),
           vbus.data.to(ppu.vram_rdata),
+          ppu.video_x.to(o.video_x),
+          ppu.video_y.to(o.video_y),
+          ppu.video_we.to(o.video_we),
+          ppu.color.to(o.color),
         ];
         if (debug) {
           rows.push(
