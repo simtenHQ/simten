@@ -5,9 +5,10 @@
  * CPU memory map:
  *   $0000-$1FFF  2 KB work RAM, mirrored every $0800
  *   $2000-$3FFF  PPU registers, mirrored every 8 bytes (ppu/regs.ts).
- *   $4000-$401F  APU and I/O registers. Stub: reads $00, writes ignored,
- *                except $4014 (OAM DMA, see dma.ts), which halts the CPU
- *                and copies a page to $2004.
+ *   $4000-$401F  APU and I/O registers. $4014 is OAM DMA (dma.ts), which
+ *                halts the CPU and copies a page to $2004; $4016 and $4017
+ *                are the controller ports (pads.ts). The rest are a stub
+ *                until the APU exists: reads $00, writes ignored.
  *   $4020-$7FFF  Cartridge space NROM leaves empty. Reads $00 (open bus is
  *                not modelled).
  *   $8000-$FFFF  PRG ROM: 32 KB, or 16 KB mirrored at $C000.
@@ -38,6 +39,7 @@ import { bit, bus, circuit, simulate } from '@simten/core';
 import { Constant, DualPortRAM, MOS6502_Core, ROM, romFromBytes } from '@simten/core/std';
 import { OamDma } from './dma.js';
 import type { INesRom } from './ines.js';
+import { NesPads } from './pads.js';
 import { Ppu } from './ppu/ppu.js';
 
 type B = ReturnType<typeof bus>;
@@ -51,6 +53,7 @@ const NesBus = circuit('NesBus', (_opts: { prgSize?: number } = {}) => ({
     cpu_out: bus(8),
     ram_data: bus(8),
     ppu_data: bus(8),
+    pads_data: bus(8),
     prg_data: bus(8),
   },
   outputs: {
@@ -58,21 +61,27 @@ const NesBus = circuit('NesBus', (_opts: { prgSize?: number } = {}) => ({
     ram_we: bit,
     ppu_cs: bit,
     ppu_addr: bus(3),
+    pads_cs: bit,
+    pads_port: bit,
     prg_addr: bus(16),
     cpu_in: bus(8),
     data: bus(8),
   },
-  eval: ({ addr, rw, ce, cpu_out, ram_data, ppu_data, prg_data, prgSize = 0x8000 }) => {
+  eval: ({ addr, rw, ce, cpu_out, ram_data, ppu_data, pads_data, prg_data, prgSize = 0x8000 }) => {
     const ppu = addr >= 0x2000 && addr < 0x4000;
+    const pads = addr === 0x4016 || addr === 0x4017;
     let read = 0;
     if (addr < 0x2000) read = ram_data;
     else if (ppu) read = ppu_data;
+    else if (pads) read = pads_data;
     else if (addr >= 0x8000) read = prg_data;
     return {
       ram_addr: addr & 0x7ff,
       ram_we: ce && !rw && addr < 0x2000 ? 1 : 0,
       ppu_cs: ce && ppu ? 1 : 0,
       ppu_addr: addr & 7,
+      pads_cs: ce && pads ? 1 : 0,
+      pads_port: addr & 1,
       prg_addr: addr & ((prgSize as number) - 1),
       cpu_in: read,
       data: rw ? read : cpu_out,
@@ -128,6 +137,8 @@ type BoardOuts = {
  * `addr`, `rw`, `sync` and `data` (the byte the CPU reads or writes this
  * cycle) are always outputs, and so is the PPU's video: `color` for pixel
  * (`video_x`, `video_y`) on ticks where `video_we` is high.
+ * Inputs `pad1` and `pad2` are the controllers' buttons, 1 = pressed (see
+ * `BUTTON` in pads.ts).
  */
 export const NesBoard = circuit(
   'NesBoard',
@@ -155,12 +166,14 @@ export const NesBoard = circuit(
     } as unknown as BoardOuts;
 
     return {
+      inputs: { pad1: bus(8), pad2: bus(8) },
       outputs,
       nodes: {
         clock: CpuClock,
         cpu: MOS6502_Core({ debug, decimal: false, rdy: true, ce: true }),
         dma: OamDma,
         ppu: Ppu,
+        pads: NesPads,
         bus: NesBus({ prgSize }),
         ram: DualPortRAM({ addressWidth: 11, dataWidth: 8 }),
         prg: ROM(),
@@ -170,8 +183,9 @@ export const NesBoard = circuit(
         low: Constant({ value: 0 }),
       },
       connect: ({
+        inputs: i,
         outputs: o,
-        nodes: { clock, cpu, dma, ppu, bus: b, ram, prg, vbus, chr, ciram, low },
+        nodes: { clock, cpu, dma, ppu, pads, bus: b, ram, prg, vbus, chr, ciram, low },
       }) => {
         const rows = [
           clock.ce.to(cpu.ce, dma.ce, b.ce),
@@ -180,13 +194,18 @@ export const NesBoard = circuit(
           b.ppu_cs.to(ppu.cs),
           b.ppu_addr.to(ppu.addr),
           ppu.data_out.to(b.ppu_data),
+          b.pads_cs.to(pads.cs),
+          b.pads_port.to(pads.port),
+          pads.data_out.to(b.pads_data),
+          i.pad1.to(pads.pad1),
+          i.pad2.to(pads.pad2),
           cpu.addr.to(dma.cpu_addr),
           cpu.rw.to(dma.cpu_rw),
           cpu.data_out.to(dma.cpu_out),
           dma.rdy.to(cpu.rdy),
           dma.addr.to(b.addr, o.addr),
-          dma.rw.to(b.rw, o.rw, ppu.rw),
-          dma.out.to(ram.dataA, b.cpu_out, ppu.data_in),
+          dma.rw.to(b.rw, o.rw, ppu.rw, pads.rw),
+          dma.out.to(ram.dataA, b.cpu_out, ppu.data_in, pads.data_in),
           cpu.sync.to(o.sync),
           b.ram_addr.to(ram.addrA, ram.addrB),
           b.ram_we.to(ram.weA),
