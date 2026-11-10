@@ -39,7 +39,7 @@ import {
 import type { Behavior, BehaviorFn } from '../circuit/behavior.js';
 import type { ArgumentValue, MemoryValue, StateBlock } from '../ir/circuit-ir.js';
 import { memoryContentsToMap } from '../ir/memory-contents.js';
-import { type PrimitiveContext, sanitizeId } from './emitters/helpers.js';
+import { type PrimitiveContext, sanitizeId, zeroMemoryBody } from './emitters/helpers.js';
 import {
   and,
   binary,
@@ -843,8 +843,7 @@ function memoryLines(memory: Memory, target: PrimitiveContext['target']): string
   // Unwritten words read 0 in the simulator, so the memory starts zeroed.
   const lines = [
     `initial begin : ${memory.reg}_init`,
-    '  integer k;',
-    `  for (k = 0; k < ${memory.depth}; k = k + 1) ${memory.reg}[k] = ${memory.width}'d0;`,
+    ...zeroMemoryBody(memory.reg, memory.depth, memory.width),
   ];
   for (const addr of [...memory.contents.keys()].sort((a, b) => a - b)) {
     lines.push(`  ${memory.reg}[${addr}] = ${memory.width}'d${memory.contents.get(addr)};`);
