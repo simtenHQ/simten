@@ -75,7 +75,7 @@ export function createMachine({ stall = 0 }: MachineOptions = {}) {
       set('regs.y', state.y);
       set('regs.s', state.s);
       set('status.p', (state.p & 0xef) | 0x20);
-      if (stall) set('timing.nmi_seen', 0);
+      set('timing.nmi_seen', 0);
       sim.set({ data_in: 0, irq: 0, nmi: 0, reset: 0, ...(stall ? { rdy: 1 } : {}) });
     },
 

@@ -27,8 +27,8 @@
       "ticksPerSec": 14061
     },
     "6502-computer": {
-      "fingerprint": "1ad7334e247dc924",
-      "evalsPerTick": 117.7,
+      "fingerprint": "7b326638169f5e99",
+      "evalsPerTick": 113.4,
       "compileMs": 4.8,
       "ticksPerSec": 30472
     }
