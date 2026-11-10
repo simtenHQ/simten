@@ -26,7 +26,7 @@ const code = [
 const vblank = (f: number) => f * 341 * 262 + 241 * 341 + 1;
 
 describe('NES boot on the board', () => {
-  it('waits out two vblanks, then takes an NMI every frame', { timeout: 60_000 }, () => {
+  it('waits out two vblanks, then takes an NMI every frame', () => {
     const prg = new Uint8Array(0x4000);
     prg.set(code);
     prg.set([0x15, 0x80, 0x00, 0x80], 0x3ffa); // NMI $8015, reset $8000
