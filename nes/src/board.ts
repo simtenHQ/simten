@@ -14,6 +14,11 @@
  *
  * The CPU is the 2A03's: a 6502 with decimal mode disconnected (D still sets
  * and clears, ADC and SBC stay binary) and RDY driven by the OAM DMA unit.
+ * PPU memory: CHR ROM (8 KB) at $0000-$1FFF, and 2 KB of nametable RAM at
+ * $2000-$3EFF, mirrored as the cartridge's header says: horizontal mirroring
+ * (iNES flag 0) makes $2000 = $2400 and $2800 = $2C00, vertical makes
+ * $2000 = $2800 and $2400 = $2C00. Palette RAM is inside the PPU.
+ *
  * The PPU drives nmi. irq is tied low until the APU exists. The core runs its
  * reset sequence at power-on and starts at the reset vector in $FFFC.
  *
@@ -75,6 +80,22 @@ const NesBus = circuit('NesBus', ({ prgSize = 0x8000 }: { prgSize?: number } = {
   },
 }));
 
+/** PPU address decode: CHR ROM, or nametable RAM through the mirroring. */
+const NesVramBus = circuit('NesVramBus', ({ vertical = 0 }: { vertical?: number } = {}) => ({
+  inputs: { addr: bus(14), we: bit, chr_data: bus(8), ciram_data: bus(8) },
+  outputs: { chr_addr: bus(16), ciram_addr: bus(11), ciram_we: bit, data: bus(8) },
+  eval: ({ addr, we, chr_data, ciram_data }) => {
+    const nametable = addr >= 0x2000;
+    const page = vertical ? (addr >> 10) & 1 : (addr >> 11) & 1;
+    return {
+      chr_addr: addr & 0x1fff,
+      ciram_addr: (page << 10) | (addr & 0x3ff),
+      ciram_we: we && nametable ? 1 : 0,
+      data: nametable ? ciram_data : chr_data,
+    };
+  },
+}));
+
 /** The CPU's clock enable: high on every third tick, starting with the first. */
 const CpuClock = circuit('CpuClock', {
   outputs: { ce: bit },
@@ -97,14 +118,23 @@ type BoardOuts = {
 };
 
 /**
- * The board. `prgSize` is 0x4000 (16 KB, mirrored) or 0x8000 (32 KB).
+ * The board. `prgSize` is 0x4000 (16 KB, mirrored) or 0x8000 (32 KB);
+ * `vertical` is 1 for vertical nametable mirroring.
  * `debug` adds the core's register outputs (`pc`, `a`, `x`, `y`, `s`, `p`).
  * `addr`, `rw`, `sync` and `data` (the byte the CPU reads or writes this
  * cycle) are always outputs.
  */
 export const NesBoard = circuit(
   'NesBoard',
-  ({ prgSize = 0x8000, debug = false }: { prgSize?: number; debug?: boolean } = {}) => {
+  ({
+    prgSize = 0x8000,
+    vertical = 0,
+    debug = false,
+  }: {
+    prgSize?: number;
+    vertical?: number;
+    debug?: boolean;
+  } = {}) => {
     // The register ports exist only with `debug`, but stay in the type so the
     // connect below can name them.
     const outputs = {
@@ -125,9 +155,15 @@ export const NesBoard = circuit(
         bus: NesBus({ prgSize }),
         ram: DualPortRAM({ addressWidth: 11, dataWidth: 8 }),
         prg: ROM(),
+        vbus: NesVramBus({ vertical }),
+        chr: ROM(),
+        ciram: DualPortRAM({ addressWidth: 11, dataWidth: 8 }),
         low: Constant({ value: 0 }),
       },
-      connect: ({ outputs: o, nodes: { clock, cpu, dma, ppu, bus: b, ram, prg, low } }) => {
+      connect: ({
+        outputs: o,
+        nodes: { clock, cpu, dma, ppu, bus: b, ram, prg, vbus, chr, ciram, low },
+      }) => {
         const rows = [
           clock.ce.to(cpu.ce, dma.ce, b.ce),
           low.out.to(cpu.irq, cpu.reset),
@@ -150,6 +186,15 @@ export const NesBoard = circuit(
           prg.data_out.to(b.prg_data),
           b.cpu_in.to(cpu.data_in, dma.read),
           b.data.to(o.data),
+          ppu.vram_addr.to(vbus.addr),
+          ppu.vram_we.to(vbus.we),
+          ppu.vram_wdata.to(ciram.dataA),
+          vbus.chr_addr.to(chr.addr),
+          chr.data_out.to(vbus.chr_data),
+          vbus.ciram_addr.to(ciram.addrA, ciram.addrB),
+          vbus.ciram_we.to(ciram.weA),
+          ciram.outA.to(vbus.ciram_data),
+          vbus.data.to(ppu.vram_rdata),
         ];
         if (debug) {
           rows.push(
@@ -175,7 +220,11 @@ export function createNes(rom: INesRom, { debug = false }: { debug?: boolean } =
   if (rom.prg.length !== 0x4000 && rom.prg.length !== 0x8000) {
     throw new Error(`NES board: NROM PRG ROM must be 16 or 32 KB, got ${rom.prg.length} bytes`);
   }
-  return simulate(NesBoard({ prgSize: rom.prg.length, debug }), {
-    memory: { prg: romFromBytes(rom.prg) },
+  if (rom.chr.length !== 0x2000) {
+    throw new Error(`NES board: NROM needs 8 KB of CHR ROM, got ${rom.chr.length} bytes`);
+  }
+  const vertical = rom.mirroring === 'vertical' ? 1 : 0;
+  return simulate(NesBoard({ prgSize: rom.prg.length, vertical, debug }), {
+    memory: { prg: romFromBytes(rom.prg), chr: romFromBytes(rom.chr) },
   });
 }

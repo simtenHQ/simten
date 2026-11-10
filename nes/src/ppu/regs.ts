@@ -6,7 +6,9 @@
  *   $2002  PPUSTATUS  read. Bit 7 vblank; reading clears it.
  *   $2003  OAMADDR    write.
  *   $2004  OAMDATA    write increments OAMADDR (OAM itself comes with sprites).
- *   $2005-$2007       scroll, address and data: next step.
+ *   $2005, $2006      scroll and address (scroll.ts)
+ *   $2007  PPUDATA    read or write PPU memory at v (data.ts); reads come in
+ *                     on `data7`
  *
  * `cs` is high for one tick per CPU access, so each access counts once.
  *
@@ -29,6 +31,7 @@ const PpuRegsLogic = circuit('PpuRegsLogic', {
     rw: bit,
     addr: bus(3),
     data_in: bus(8),
+    data7: bus(8),
     ctrl: bus(8),
     mask: bus(8),
     oamaddr: bus(8),
@@ -47,12 +50,28 @@ const PpuRegsLogic = circuit('PpuRegsLogic', {
     next_latch: bus(8),
   },
   meta: { category: 'nes', icon: 'R', description: 'PPU register logic: CPU reads and writes' },
-  eval: ({ cs, rw, addr, data_in, ctrl, mask, oamaddr, vbl, latch, vbl_set, flags_clear }) => {
+  eval: ({
+    cs,
+    rw,
+    addr,
+    data_in,
+    data7,
+    ctrl,
+    mask,
+    oamaddr,
+    vbl,
+    latch,
+    vbl_set,
+    flags_clear,
+  }) => {
     const reg = addr as number;
     const write = cs === 1 && rw === 0;
     const readStatus = cs === 1 && rw === 1 && reg === 2;
+    const readData = cs === 1 && rw === 1 && reg === 7;
     const status = ((vbl as number) << 7) | ((latch as number) & 0x1f);
-    const out = reg === 2 ? status : (latch as number);
+    let out = latch as number;
+    if (reg === 2) out = status;
+    else if (reg === 7) out = data7 as number;
 
     let nextVbl = vbl as number;
     if (flags_clear || readStatus) nextVbl = 0;
@@ -60,7 +79,7 @@ const PpuRegsLogic = circuit('PpuRegsLogic', {
 
     let nextLatch = latch as number;
     if (write) nextLatch = data_in as number;
-    else if (readStatus) nextLatch = status;
+    else if (readStatus || readData) nextLatch = out;
 
     let nextOamaddr = oamaddr as number;
     if (write && reg === 3) nextOamaddr = data_in as number;
@@ -84,6 +103,7 @@ export const PpuRegs = circuit('PpuRegs', {
     rw: bit,
     addr: bus(3),
     data_in: bus(8),
+    data7: bus(8),
     vbl_set: bit,
     flags_clear: bit,
   },
@@ -103,6 +123,7 @@ export const PpuRegs = circuit('PpuRegs', {
     inputs.rw.to(n.logic.rw),
     inputs.addr.to(n.logic.addr),
     inputs.data_in.to(n.logic.data_in),
+    inputs.data7.to(n.logic.data7),
     inputs.vbl_set.to(n.logic.vbl_set),
     inputs.flags_clear.to(n.logic.flags_clear),
     n.ctrl.q.to(n.logic.ctrl, outputs.ctrl),
