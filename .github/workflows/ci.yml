@@ -36,11 +36,27 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      # Icarus Verilog, for core's differential test (simulator vs iverilog on
+      # the exported Verilog). The test fails rather than skips when CI is set
+      # and iverilog is missing. The .deb is cached so a run only needs
+      # Ubuntu's mirrors when the runner image changes; its dependencies are
+      # already on the image.
+      - name: Restore Icarus Verilog package
+        id: iverilog-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/iverilog-deb
+          key: iverilog-${{ runner.os }}-${{ env.ImageOS }}-v1
+
+      - name: Download Icarus Verilog package
+        if: steps.iverilog-cache.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          mkdir -p ~/iverilog-deb
+          cd ~/iverilog-deb && apt-get download iverilog
+
       - name: Install Icarus Verilog
-        # For core's differential test (simulator vs iverilog on the exported
-        # Verilog). The test fails rather than skips when CI is set and
-        # iverilog is missing.
-        run: sudo apt-get update && sudo apt-get install -y iverilog && iverilog -V | head -1
+        run: sudo dpkg -i ~/iverilog-deb/*.deb && iverilog -V | head -1
 
       - name: Lint & format check (Biome)
         # Runs the pinned @simten/biome devDep (not the setup-biome action) so
