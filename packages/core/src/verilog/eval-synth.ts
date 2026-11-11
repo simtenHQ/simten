@@ -838,8 +838,11 @@ function outputLines(ctx: PrimitiveContext, t: Translation, outputNames: string[
 }
 
 function memoryLines(memory: Memory, target: PrimitiveContext['target']): string[] {
-  if (target !== 'simulation') return [];
-  // Unwritten words read 0 in the simulator, so the memory starts zeroed.
+  // Contents go out for every target: a lookup table without them reads 0 on
+  // an FPGA. With none, synthesis needs nothing.
+  if (target !== 'simulation' && memory.contents.size === 0) return [];
+  // Unwritten words read 0 in the simulator, so the memory starts zeroed
+  // (outside synthesis, where the loop is skipped).
   const lines = [
     `initial begin : ${memory.reg}_init`,
     ...zeroMemoryBody(memory.reg, memory.depth, memory.width),
