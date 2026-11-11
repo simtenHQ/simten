@@ -38,22 +38,23 @@ jobs:
 
       # Icarus Verilog, for core's differential test (simulator vs iverilog on
       # the exported Verilog). The test fails rather than skips when CI is set
-      # and iverilog is missing. The .deb is cached so a run only needs
-      # Ubuntu's mirrors when the runner image changes; its dependencies are
-      # already on the image.
+      # and iverilog is missing. The Ubuntu 26.04 .deb is pinned by hash,
+      # fetched from kernel.org's Ubuntu mirror (archive.ubuntu.com has gone
+      # unresolvable from hosted runners before) and cached; its dependencies
+      # are already on the image.
       - name: Restore Icarus Verilog package
         id: iverilog-cache
         uses: actions/cache@v4
         with:
           path: ~/iverilog-deb
-          key: iverilog-${{ runner.os }}-${{ env.ImageOS }}-v1
+          key: iverilog-12.0-3-amd64
 
       - name: Download Icarus Verilog package
         if: steps.iverilog-cache.outputs.cache-hit != 'true'
         run: |
-          sudo apt-get update
-          mkdir -p ~/iverilog-deb
-          cd ~/iverilog-deb && apt-get download iverilog
+          mkdir -p ~/iverilog-deb && cd ~/iverilog-deb
+          curl -fsSL --retry 3 -o iverilog.deb https://mirrors.edge.kernel.org/ubuntu/pool/universe/i/iverilog/iverilog_12.0-3_amd64.deb
+          echo "b3fd8becbaae83492c26b458e89a66fe3c0ad6547ababad9adda35388c381606  iverilog.deb" | sha256sum -c
 
       - name: Install Icarus Verilog
         run: sudo dpkg -i ~/iverilog-deb/*.deb && iverilog -V | head -1
