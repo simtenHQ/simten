@@ -54,6 +54,7 @@ const Top = circuit('CxxTop', {
 });
 
 const VIDEO = { we: 'vwe', x: 'x', y: 'y', data: 'count', width: 16, height: 1 };
+const AUDIO = { data: 'count', ticksPerSample: 2.5 };
 
 describe('cxxrtlManifest', () => {
   const { verilog } = exportVerilog(Top);
@@ -80,6 +81,15 @@ describe('cxxrtlManifest', () => {
     expect(() => cxxrtlManifest(verilog, { ...VIDEO, we: 'we' })).toThrow(/we is not an output/);
   });
 
+  it('rejects an audio sink on an input, or sampling faster than the clock', () => {
+    expect(() => cxxrtlManifest(verilog, undefined, { data: 'step', ticksPerSample: 2 })).toThrow(
+      /step is not an output/,
+    );
+    expect(() =>
+      cxxrtlManifest(verilog, undefined, { data: 'count', ticksPerSample: 0.5 }),
+    ).toThrow(/at least 1/);
+  });
+
   it('names ports and memories the way CXXRTL mangles them', () => {
     const cc = cxxrtlHarness(cxxrtlManifest(verilog, VIDEO));
     expect(cc).toContain('cxxrtl_design::p_CxxTop');
@@ -97,7 +107,7 @@ describe.skipIf(!tools)('CXXRTL build', () => {
     const dir = mkdtempSync(join(tmpdir(), 'cxxrtl-'));
     try {
       const { verilog } = exportVerilog(Top);
-      const manifest = cxxrtlManifest(verilog, VIDEO);
+      const manifest = cxxrtlManifest(verilog, VIDEO, AUDIO);
       writeFileSync(join(dir, 'design.v'), verilog);
       writeFileSync(join(dir, 'harness.cc'), cxxrtlHarness(manifest));
       execFileSync(
@@ -139,6 +149,8 @@ describe.skipIf(!tools)('CXXRTL build', () => {
         return (seed >>> 16) % n;
       };
       const frame = new Array(16).fill(0);
+      // What the audio sink sees: the outputs of every tick, before its edge.
+      const heard: number[] = [];
       const outs = ['count', 'ticks', 'rdata', 'x', 'y', 'vwe'] as const;
       for (let t = 0; t < 300; t++) {
         const ins = {
@@ -151,6 +163,7 @@ describe.skipIf(!tools)('CXXRTL build', () => {
         fast.set(ins);
         for (const o of outs) expect([t, o, fast.get(o)]).toEqual([t, o, ref.get(o)]);
         if (ref.get('vwe')) frame[ref.get('x')] = ref.get('count');
+        heard.push(ref.get('count'));
         ref.tick();
         fast.tick();
       }
@@ -162,12 +175,30 @@ describe.skipIf(!tools)('CXXRTL build', () => {
         const n = 1 + rand(40);
         for (let t = 0; t < n; t++) {
           frame[ref.get('x')] = ref.get('count');
+          heard.push(ref.get('count'));
           ref.tick();
         }
         fast.tick(n);
         for (const o of outs) expect([batch, o, fast.get(o)]).toEqual([batch, o, ref.get(o)]);
       }
       expect(Array.from(fast.video() ?? [])).toEqual(frame);
+      const samples: number[] = [];
+      let phase = 0;
+      let sum = 0;
+      let n = 0;
+      for (const v of heard) {
+        sum += v;
+        n++;
+        phase += 1;
+        if (phase >= AUDIO.ticksPerSample) {
+          phase -= AUDIO.ticksPerSample;
+          samples.push(Math.floor(sum / n));
+          sum = 0;
+          n = 0;
+        }
+      }
+      expect(Array.from(fast.audio() ?? [])).toEqual(samples);
+      expect(Array.from(fast.audio() ?? [])).toEqual([]);
       expect(fast.readMemory('ram', 0, 16)).toEqual(ramOf(ref));
     } finally {
       rmSync(dir, { recursive: true, force: true });
