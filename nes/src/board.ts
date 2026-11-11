@@ -7,10 +7,10 @@
  * CPU memory map:
  *   $0000-$1FFF  2 KB work RAM, mirrored every $0800
  *   $2000-$3FFF  PPU registers, mirrored every 8 bytes (ppu/regs.ts).
- *   $4000-$401F  APU and I/O registers. $4014 is OAM DMA (dma.ts), which
+ *   $4000-$401F  APU and I/O registers. The APU (apu/) has $4000-$4013,
+ *                $4015 and $4017 writes. $4014 is OAM DMA (dma.ts), which
  *                halts the CPU and copies a page to $2004; $4016 and $4017
- *                are the controller ports (pads.ts). The rest are a stub
- *                until the APU exists: reads $00, writes ignored.
+ *                reads are the controller ports (pads.ts). The rest read $00.
  *   $4020-$FFFF  The cartridge. NROM puts PRG ROM at $8000 (16 KB mirrored
  *                at $C000, or 32 KB) and reads $00 below it, or its PRG RAM
  *                at $6000 if it has one. Open bus is not modelled.
@@ -23,7 +23,8 @@
  * vertical makes $2000 = $2800 and $2400 = $2C00. Palette RAM is inside the
  * PPU.
  *
- * The PPU drives nmi and the cartridge irq. The core runs its reset sequence
+ * The PPU drives nmi; the APU's frame IRQ and the cartridge drive irq. `audio`
+ * is the APU's mixed output, one 16-bit sample per tick. The core runs its reset sequence
  * at power-on and starts at the reset vector in $FFFC.
  *
  * `addr`, `rw` and `data` are the bus, so during a DMA they show the copy.
@@ -41,6 +42,7 @@
 
 import { bit, bus, circuit, simulate } from '@simten/core';
 import { Constant, DualPortRAM, MOS6502_Core, romFromBytes } from '@simten/core/std';
+import { Apu } from './apu/apu.js';
 import { CART_INPUTS, CART_OUTPUTS, NromCart } from './cart.js';
 import { OamDma } from './dma.js';
 import type { INesRom } from './ines.js';
@@ -62,7 +64,10 @@ const NesBus = circuit('NesBus', {
     ram_data: bus(8),
     ppu_data: bus(8),
     pads_data: bus(8),
+    apu_data: bus(8),
     cart_data: bus(8),
+    apu_irq: bit,
+    cart_irq: bit,
   },
   outputs: {
     ram_addr: bus(11),
@@ -71,18 +76,36 @@ const NesBus = circuit('NesBus', {
     ppu_addr: bus(3),
     pads_cs: bit,
     pads_port: bit,
+    apu_cs: bit,
+    apu_addr: bus(5),
     cart_addr: bus(15),
     romsel: bit,
     cpu_in: bus(8),
     data: bus(8),
+    irq: bit,
   },
-  eval: ({ addr, rw, ce, cpu_out, ram_data, ppu_data, pads_data, cart_data }) => {
+  eval: ({
+    addr,
+    rw,
+    ce,
+    cpu_out,
+    ram_data,
+    ppu_data,
+    pads_data,
+    apu_data,
+    cart_data,
+    apu_irq,
+    cart_irq,
+  }) => {
     const ppu = addr >= 0x2000 && addr < 0x4000;
-    const pads = addr === 0x4016 || addr === 0x4017;
+    const pads = addr === 0x4016 || (addr === 0x4017 && rw);
+    // $4000-$4013, $4015 and $4017 writes. $4014 is OAM DMA.
+    const apu = (addr >= 0x4000 && addr < 0x4014) || addr === 0x4015 || (addr === 0x4017 && !rw);
     let read = 0;
     if (addr < 0x2000) read = ram_data;
     else if (ppu) read = ppu_data;
     else if (pads) read = pads_data;
+    else if (addr === 0x4015) read = apu_data;
     else if (addr >= 0x4020) read = cart_data;
     return {
       ram_addr: addr & 0x7ff,
@@ -91,10 +114,13 @@ const NesBus = circuit('NesBus', {
       ppu_addr: addr & 7,
       pads_cs: ce && pads ? 1 : 0,
       pads_port: addr & 1,
+      apu_cs: ce && apu ? 1 : 0,
+      apu_addr: addr & 0x1f,
       cart_addr: addr & 0x7fff,
       romsel: (addr >> 15) & 1,
       cpu_in: read,
       data: rw ? read : cpu_out,
+      irq: apu_irq || cart_irq ? 1 : 0,
     };
   },
 });
@@ -137,6 +163,7 @@ type BoardOuts = {
   video_y: B;
   video_we: typeof bit;
   color: B;
+  audio: B;
   pc: B;
   a: B;
   x: B;
@@ -156,6 +183,7 @@ const consoleOutputs = (debug: boolean) =>
     video_y: bus(8),
     video_we: bit,
     color: bus(6),
+    audio: bus(16),
     ...(debug ? { pc: bus(16), a: bus(8), x: bus(8), y: bus(8), s: bus(8), p: bus(8) } : {}),
   }) as unknown as BoardOuts;
 
@@ -177,6 +205,7 @@ export const NesConsole = circuit('NesConsole', ({ debug = false }: { debug?: bo
     dma: OamDma,
     ppu: Ppu,
     pads: NesPads,
+    apu: Apu,
     bus: NesBus,
     ram: DualPortRAM({ addressWidth: 11, dataWidth: 8 }),
     vbus: NesVramBus,
@@ -186,12 +215,18 @@ export const NesConsole = circuit('NesConsole', ({ debug = false }: { debug?: bo
   connect: ({
     inputs: i,
     outputs: o,
-    nodes: { clock, cpu, dma, ppu, pads, bus: b, ram, vbus, ciram, low },
+    nodes: { clock, cpu, dma, ppu, pads, apu, bus: b, ram, vbus, ciram, low },
   }) => {
     const rows = [
-      clock.ce.to(cpu.ce, dma.ce, b.ce, o.m2),
+      clock.ce.to(cpu.ce, dma.ce, b.ce, apu.ce, o.m2),
       low.out.to(cpu.reset),
-      i.irq.to(cpu.irq),
+      i.irq.to(b.cart_irq),
+      apu.irq.to(b.apu_irq),
+      b.irq.to(cpu.irq),
+      b.apu_cs.to(apu.cs),
+      b.apu_addr.to(apu.addr),
+      apu.data_out.to(b.apu_data),
+      apu.audio.to(o.audio),
       ppu.nmi.to(cpu.nmi),
       b.ppu_cs.to(ppu.cs),
       b.ppu_addr.to(ppu.addr),
@@ -206,8 +241,8 @@ export const NesConsole = circuit('NesConsole', ({ debug = false }: { debug?: bo
       cpu.data_out.to(dma.cpu_out),
       dma.rdy.to(cpu.rdy),
       dma.addr.to(b.addr, o.addr),
-      dma.rw.to(b.rw, o.rw, ppu.rw, pads.rw, o.cpu_rw),
-      dma.out.to(ram.dataA, b.cpu_out, ppu.data_in, pads.data_in, o.cpu_wdata),
+      dma.rw.to(b.rw, o.rw, ppu.rw, pads.rw, apu.rw, o.cpu_rw),
+      dma.out.to(ram.dataA, b.cpu_out, ppu.data_in, pads.data_in, apu.data, o.cpu_wdata),
       cpu.sync.to(o.sync),
       b.ram_addr.to(ram.addrA, ram.addrB),
       b.ram_we.to(ram.weA),
@@ -296,6 +331,7 @@ export const Nes = circuit(
         c.video_y.to(o.video_y),
         c.video_we.to(o.video_we),
         c.color.to(o.color),
+        c.audio.to(o.audio),
       ];
       if (debug) {
         rows.push(c.pc.to(o.pc), c.a.to(o.a), c.x.to(o.x), c.y.to(o.y), c.s.to(o.s), c.p.to(o.p));
