@@ -1,4 +1,4 @@
-import { EXAMPLES } from '@simten/core/examples';
+import { EXAMPLES, exampleSource } from '@simten/core/examples';
 import { executeCircuitCode } from '@simten/core/internal';
 import { exportVerilog } from '@simten/core/verilog';
 import { afterEach, describe, expect, it, vi } from 'vitest';
@@ -755,11 +755,12 @@ describe('export', () => {
   ])('exports the %s example as headless does, with nothing unsupported', async (id, top) => {
     const example = EXAMPLES.find((e) => e.id === id);
     if (!example) throw new Error(`no example ${id}`);
+    const source = await exampleSource(example);
     const { call } = startHost();
-    expectType(await call({ type: 'compile', compile: 'c1', source: example.code }), 'compiled');
+    expectType(await call({ type: 'compile', compile: 'c1', source }), 'compiled');
     const res = expectType(await call({ type: 'export', compile: 'c1', circuit: top }), 'exported');
 
-    const headless = executeCircuitCode(example.code);
+    const headless = executeCircuitCode(source);
     const circuit = headless.circuits.find((c) => c.name === top);
     if (!circuit) throw new Error(`no circuit ${top}`);
     const expected = exportVerilog(circuit);
