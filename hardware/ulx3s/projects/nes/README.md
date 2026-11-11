@@ -45,4 +45,4 @@ Select has no button.
 
 LEDs: 0 PLL locked (flickers while a game loads), 1 running, 2 blinks as frames are drawn, 3 CPU in cartridge code, 4-7 the direction buttons.
 
-No sound yet: the APU isn't built.
+Sound comes out of the 3.5 mm jack: the APU's 16-bit sample, delta-sigma modulated onto the board's 4-bit resistor DAC, mono, at a fixed level that suits earphones.

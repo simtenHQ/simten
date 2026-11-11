@@ -111,6 +111,8 @@ module nes_top (
     input  wire [6:0] btn,        // [0]=PWR (active low) [1]=F1 [2]=F2 [3]=up [4]=down [5]=left [6]=right
     input  wire       ftdi_txd,   // USB serial from the computer
     output wire [7:0] led,
+    output wire [3:0] audio_l,    // 3.5 mm jack, through the board's 4-bit resistor DACs
+    output wire [3:0] audio_r,
     output wire [3:0] gpdi_dp,
     output wire [3:0] gpdi_dn
 );
@@ -232,6 +234,7 @@ module nes_top (
     wire [7:0] video_x, video_y;
     wire       video_we;
     wire [5:0] color;
+    wire [15:0] audio;
     wire [15:0] cpu_addr;
     wire [7:0]  cpu_data;
     wire        cpu_rw, cpu_sync;
@@ -263,7 +266,8 @@ module nes_top (
         .video_x   (video_x),
         .video_y   (video_y),
         .video_we  (video_we),
-        .color     (color)
+        .color     (color),
+        .audio     (audio)
     );
 
     // ── Frame buffer: written at the NES clock, read at the pixel clock ──
@@ -325,6 +329,17 @@ module nes_top (
     tmds_serializer ser_g   (.clk_shift(clk_shift), .tmds(tmds_g),         .q(gpdi_dp[1]), .qn(gpdi_dn[1]));
     tmds_serializer ser_r   (.clk_shift(clk_shift), .tmds(tmds_r),         .q(gpdi_dp[2]), .qn(gpdi_dn[2]));
     tmds_serializer ser_clk (.clk_shift(clk_shift), .tmds(10'b0000011111), .q(gpdi_dp[3]), .qn(gpdi_dn[3]));
+
+    // ── Sound ───────────────────────────────────────────────
+    // The APU's 16-bit sample, delta-sigma modulated onto the jack's 4-bit
+    // DAC at the NES clock: each dot adds the sample scaled to 0-15 and puts
+    // out the whole part, keeping the fraction for the next. The DAC and the
+    // earphones average it out to ~120x the audio rate. Mono, at about an eighth of
+    // full scale: louder is uncomfortable in earphones.
+    reg [19:0] sd = 20'd0;
+    always @(posedge clk_nes) sd <= {4'd0, sd[15:0]} + {4'd0, audio} * 20'd2;
+    assign audio_l = sd[19:16];
+    assign audio_r = sd[19:16];
 
     // ── LEDs, for when the screen is blank ──────────────────
     // [0] PLL locked  [1] running  [2] frames (toggles every 32)
