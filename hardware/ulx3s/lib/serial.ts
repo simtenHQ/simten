@@ -29,7 +29,7 @@ interface CaptureResult {
   matchIndex?: number;
 }
 
-function discoverUsbSerial(): string | null {
+export function discoverUsbSerial(): string | null {
   let devEntries: string[] = [];
   try {
     devEntries = readdirSync('/dev');

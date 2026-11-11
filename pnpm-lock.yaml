@@ -425,6 +425,9 @@ importers:
       '@simten/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@simten/nes':
+        specifier: workspace:*
+        version: link:../../nes
     devDependencies:
       '@types/node':
         specifier: ^20
