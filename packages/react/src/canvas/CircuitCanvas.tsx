@@ -13,7 +13,7 @@
  * here is how it looks.
  */
 
-import type { PeripheralValue } from '@simten/core/internal';
+import type { CircuitDefinitions, CircuitIR, PeripheralValue } from '@simten/core/internal';
 import { type ReactElement, useCallback, useMemo, useRef, useState } from 'react';
 import { useByValue } from '../lib/useByValue';
 import type { NodeData } from '../nodes';
@@ -24,6 +24,7 @@ import { resolveDrillTarget } from './drill-target';
 import { CANVAS_WIDTH, FlowCanvas } from './FlowCanvas';
 import { useDetectTheme } from './hooks/useDetectTheme';
 import { hasPorts, portsView, withPortParts } from './ports-view';
+import { type SidePart, sideParts } from './side-parts';
 import type { DrawnCircuit, InspectorFrame } from './types';
 import { type CanvasActions, useValueStore } from './values';
 
@@ -60,20 +61,18 @@ export interface CircuitCanvasProps {
 }
 
 /**
- * Consoles and UARTs the canvas doesn't draw as nodes of their own, by session
- * path: nested inside a composite, or inside the box. Kept by value, so it
- * changes only when the set of consoles does, not on every update.
+ * Consoles, UARTs and displays the canvas doesn't draw as nodes of their own,
+ * by session path: nested inside a composite, or inside the box. Kept by
+ * value, so it changes only when the set of them does, not on every update.
  */
-function useHiddenConsoles(
+function useSideParts(
   peripherals: ReadonlyMap<string, PeripheralValue>,
   drawn: DrawnCircuit | null,
-): readonly string[] {
-  const paths: string[] = [];
+  circuit: CircuitIR | null,
+  definitions: CircuitDefinitions | null,
+): readonly SidePart[] {
   const onCanvas = new Set(drawn?.nodes.map((n) => n.id));
-  for (const [path, value] of peripherals) {
-    if (typeof value === 'string' && !onCanvas.has(path)) paths.push(path);
-  }
-  return useByValue(paths);
+  return useByValue(sideParts(peripherals, onCanvas, circuit, definitions));
 }
 
 export function CircuitCanvas({
@@ -101,7 +100,7 @@ export function CircuitCanvas({
     [definitions],
   );
   const values = useValueStore(state.portValues, state.peripheralState);
-  const consoles = useHiddenConsoles(state.peripheralState, drawn);
+  const side = useSideParts(state.peripheralState, drawn, circuit, definitions);
 
   // One identity for the canvas's life, so an update redraws only what changed.
   const loadMemoryRef = useRef(onLoadMemory);
@@ -168,7 +167,7 @@ export function CircuitCanvas({
         definitions={drawnDefinitions}
         values={values}
         actions={canvasActions}
-        consoles={consoles}
+        sideParts={side}
         onNodeDoubleClick={open}
         height={height}
         theme={theme}

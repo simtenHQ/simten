@@ -285,7 +285,8 @@ export const NesConsole = circuit('NesConsole', ({ debug = false }: { debug?: bo
  * The console with an NROM cartridge plugged in. `prgSize` is 0x4000 (16 KB,
  * mirrored) or 0x8000 (32 KB); `vertical` is 1 for vertical nametable
  * mirroring; `wram` 1 adds 8 KB of PRG RAM at $6000. Ports as `NesConsole`'s,
- * less the connector. The ROMs are nodes `cart.prg` and `cart.chr`.
+ * less the connector. The ROMs are nodes `cart.prg` and `cart.chr`; `prg`
+ * and `chr` bake contents in instead.
  */
 export const Nes = circuit(
   'Nes',
@@ -294,17 +295,21 @@ export const Nes = circuit(
     vertical = 0,
     wram = 0,
     debug = false,
+    prg,
+    chr,
   }: {
     prgSize?: number;
     vertical?: number;
     wram?: number;
+    prg?: ReturnType<typeof romFromBytes>;
+    chr?: ReturnType<typeof romFromBytes>;
     debug?: boolean;
   } = {}) => ({
     inputs: { pad1: bus(8), pad2: bus(8) },
     outputs: consoleOutputs(debug),
     nodes: {
       console: NesConsole({ debug }),
-      cart: NromCart({ prgSize, vertical, wram }),
+      cart: NromCart({ prgSize, vertical, wram, prg, chr }),
     },
     connect: ({ inputs: i, outputs: o, nodes: { console: c, cart } }) => {
       const rows = [
@@ -340,6 +345,8 @@ export const Nes = circuit(
     },
   }),
 );
+
+// editor-example:end (the /circuit example stops here: below is test tooling)
 
 /** A running NES with `rom` inserted. Throws for anything but NROM. */
 export function createNes(
