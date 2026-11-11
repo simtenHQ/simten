@@ -36,7 +36,7 @@ import {
   useState,
 } from 'react';
 import type { NodeData } from '../nodes';
-import { type Projection, projectCircuit } from './circuit-to-flow';
+import { opensIn, type Projection, projectCircuit } from './circuit-to-flow';
 import { type Change, classifyChange, type Shape } from './classify-change';
 import { computeDagreLayout } from './dagre-layout';
 import { useDetectTheme } from './hooks/useDetectTheme';
@@ -237,7 +237,9 @@ export const FlowCanvas = memo(function FlowCanvas({
   const drawing = useMemo((): Drawing => {
     if (!circuit || !definitions) return NOTHING;
     const cleaned = cleanCircuitLabels(circuit);
-    const positions = layout ? positionsFromLayout(cleaned, layout) : computeDagreLayout(cleaned);
+    const positions = layout
+      ? positionsFromLayout(cleaned, layout)
+      : computeDagreLayout(cleaned, opensIn(definitions));
     const projected = projectCircuit(cleaned, positions, definitions, path, sideParts);
     const drawn = focusLabels ? dimOutOfFocus(projected, focusLabels) : projected;
     return { ...drawn, shape: shapeOf(cleaned.name, drawn.nodes) };

@@ -43,34 +43,42 @@ export function nodeWidth(componentRef: string): number {
 /** Roughly one character of the node's name and component text. */
 const TITLE_CHAR_WIDTH = 7;
 
+/** The "double-click to inspect" line under a box that opens. */
+const DRILL_CAPTION_WIDTH = 100;
+
 /**
  * The size a node will render at, for spacing. A block's height follows its
  * busier pin column and its width makes room for both columns of pin labels,
  * the same sums `BaseNode` uses, so a 9-output block isn't laid out as if it
  * were 80px tall and then drawn on top of its neighbour.
  */
-function nodeDimensions(node: DrawnNode) {
+function nodeDimensions(node: DrawnNode, opens: boolean) {
   const base = getDimensions(node.componentRef);
   const pins = Math.max(node.inputs.length, node.outputs.length);
   const height = Math.max(base.height, pinColumnHeight(pins));
   // A port's switch or lamp shows no pin labels.
   if (node.port !== undefined) return { width: base.width, height };
   const title = Math.max((node.label ?? node.id).length, node.componentRef.length);
+  const middle = Math.max(title * TITLE_CHAR_WIDTH, opens ? DRILL_CAPTION_WIDTH : 0);
   const labelled =
     pinLabelGutter(node.inputs.map((p) => p.name)) +
     pinLabelGutter(node.outputs.map((p) => p.name)) +
-    title * TITLE_CHAR_WIDTH;
+    middle;
   return { width: Math.max(base.width, labelled), height };
 }
 
 /**
  * Compute dagre layout for a circuit, left to right. Returns node positions by
- * id, in top-left coordinates.
+ * id, in top-left coordinates. `opens` says which components draw as a box
+ * that can be opened, which is wider for its caption.
  *
  * Synchronous — dagre.layout() does no I/O. Callers can use the result
  * immediately on first render.
  */
-export function computeDagreLayout(circuit: DrawnCircuit): Positions {
+export function computeDagreLayout(
+  circuit: DrawnCircuit,
+  opens: (componentRef: string) => boolean = () => false,
+): Positions {
   const g = new dagre.graphlib.Graph();
   g.setGraph({
     rankdir: 'LR',
@@ -84,7 +92,7 @@ export function computeDagreLayout(circuit: DrawnCircuit): Positions {
   // Add nodes with their dimensions.
   const nodeIds = new Set<string>();
   for (const node of circuit.nodes) {
-    const dims = nodeDimensions(node);
+    const dims = nodeDimensions(node, opens(node.componentRef));
     g.setNode(node.id, { width: dims.width, height: dims.height });
     nodeIds.add(node.id);
   }

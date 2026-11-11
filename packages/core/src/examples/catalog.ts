@@ -12,11 +12,11 @@ import { SNAKE_CORE_SOURCE } from './snake-source.gen.js';
 const NES_INTRO = `// The NES, built from the same files that pass nestest, render frames pixel
 // for pixel in tests, and run on a ULX3S FPGA with sound.
 //
-// Press Run and set the clock to full speed. One frame is 89,342 PPU dots:
-// the first, empty frame takes about 9 seconds while the program waits for
-// vblank, then the next one draws SIMTEN, line by line.
+// Press Run and set the clock to full speed. One frame is 89,342 PPU dots,
+// about 9 seconds here. The first frame is blank while the program waits
+// for the PPU; the second draws the simten logo, line by line.
 //
-// Drill in: NesDemo -> Nes -> console (cpu, ppu, apu, dma, pads, ram) and
+// Drill in: Nes -> console (cpu, ppu, apu, dma, pads, ram) and
 // cart (the cartridge, through its connector). The demo cartridge's program
 // is in nes/src/demo.ts below, assembled by hand.
 `;
@@ -350,9 +350,9 @@ const Computer6502 = circuit('Computer6502', {
     id: 'nes',
     title: 'NES',
     description:
-      'The Nintendo Entertainment System as a circuit: the 6502, PPU, APU and a cartridge with a small program that writes SIMTEN on screen. Turn the clock to full speed and watch the PPU draw each frame, dot by dot.',
+      'The Nintendo Entertainment System as a circuit: the 6502, PPU, APU and a cartridge with a small program that draws the simten logo. Turn the clock to full speed and watch the PPU draw each frame, dot by dot.',
     category: 'cpu',
-    nodes: '2 nodes, drillable',
+    nodes: '4 nodes, drillable',
     // ~107 KB of source: fetched when opened, not shipped with the picker.
     load: () => import('./nes-source.gen.js').then((m) => NES_INTRO + m.NES_SOURCE),
   },
