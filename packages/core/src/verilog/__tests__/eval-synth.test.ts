@@ -137,6 +137,20 @@ describe('eval-synth translates', () => {
     expect(v).toContain('if (we) u_m[addr] <= data;');
   });
 
+  it("a memory's contents in a synthesis export too, without the zeroing loop", () => {
+    // A lookup table: wiped, it reads 0 everywhere on the FPGA.
+    const C = circuit('Table', {
+      inputs: { i: bus(2) },
+      outputs: { q: bus(8) },
+      state: { t: mem(4, 8, { 0: 5, 1: 6, 3: 9 }) },
+      eval: ({ i, t }) => ({ q: t[i] }),
+      onTick: ({ t }) => ({ t }),
+    });
+    const v = exportVerilog(C, { target: 'synthesis' }).verilog;
+    expect(v).toContain("Table_t[3] = 8'd9;");
+    expect(v).toMatch(/`ifndef SYNTHESIS[\s\S]*for \(k = 0/);
+  });
+
   it('an unconnected input as 0, not an undeclared register', () => {
     const C = circuit('Unconnected', {
       inputs: { a: bus(8), b: bus(8) },
