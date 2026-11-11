@@ -13,6 +13,7 @@ import { createEngine, elaborate } from '../index.js';
 function engineFor(id: string) {
   const example = EXAMPLES.find((e) => e.id === id);
   if (!example) throw new Error(`no example '${id}'`);
+  if (example.code === undefined) throw new Error(`example '${id}' loads lazily`);
   const compiled = executeCircuitCode(example.code);
   if (compiled.error) throw new Error(compiled.error);
   const top = internalsOf(compiled.circuits[compiled.circuits.length - 1]).ir;

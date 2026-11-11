@@ -30,7 +30,7 @@ import { useTheme } from '@/components/ThemeProvider';
 import { ErrorDisplay } from '@/features/code-editor';
 import { ShareDialog } from '@/features/share/ShareDialog';
 import { type MCPRunStart, useMCPConnection } from '@/hooks/useMCPConnection';
-import { CATEGORY_COLORS, CATEGORY_LABELS, EXAMPLES, type Example } from '../examples';
+import { CATEGORY_COLORS, CATEGORY_LABELS, EXAMPLES, type ExampleCircuit } from '../examples';
 import { VerilogImportSheet } from './VerilogImportSheet';
 
 /** Why the panels clip with an inline style: see the panel layout below. */
@@ -325,8 +325,14 @@ export function EditorWorkspace({
     sendRenderResult(reqId, { ok: false, error: failure });
   }, [compileError, openError, sendRenderResult]);
 
-  // Load an example into the editor
-  const loadExample = useCallback((example: Example) => changeSource(example.code), [changeSource]);
+  // Load an example into the editor: inline ones at once, big ones once fetched.
+  const loadExample = useCallback(
+    (example: ExampleCircuit) => {
+      if (example.code !== undefined) changeSource(example.code);
+      else void example.load().then(changeSource);
+    },
+    [changeSource],
+  );
 
   // First-run hint: pulse the Run button so a new user knows to press it to
   // start the clock. The clock bar only renders for sequential circuits, so a

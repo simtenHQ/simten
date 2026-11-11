@@ -8,7 +8,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { type Circuit, simulate } from '@simten/core';
-import { EXAMPLES } from '@simten/core/examples';
+import { EXAMPLES, exampleSource } from '@simten/core/examples';
 import { isCircuit, nodesOf } from '@simten/core/internal';
 import { afterAll, describe, expect, it } from 'vitest';
 import { materializeExample } from './get_started.js';
@@ -65,15 +65,23 @@ describe('get_grammar', () => {
   });
 });
 
+// Every example's source, inline or lazily loaded.
+const code = new Map(
+  await Promise.all(EXAMPLES.map(async (e) => [e.id, await exampleSource(e)] as const)),
+);
+
 describe('get_started examples', () => {
   // npm-importing examples (e.g. figlet) resolve via esm.sh in the browser only.
   const local = EXAMPLES.filter(
-    (ex) => !/^\s*import\s.+from\s+['"](?!@simten)[^'".][^'"]*['"]/m.test(ex.code),
+    (ex) => !/^\s*import\s.+from\s+['"](?!@simten)[^'".][^'"]*['"]/m.test(code.get(ex.id) ?? ''),
   );
 
   for (const ex of local) {
     it(`"${ex.id}" loads as a module and simulates`, async () => {
-      const module = await load(ex.id.replace(/\W/g, '_'), materializeExample(ex));
+      const module = await load(
+        ex.id.replace(/\W/g, '_'),
+        materializeExample(ex, code.get(ex.id) ?? ''),
+      );
       const circuits = Object.values(module).filter(isCircuit);
       expect(circuits.length).toBeGreaterThan(0);
       const top = circuits[circuits.length - 1] as Circuit;

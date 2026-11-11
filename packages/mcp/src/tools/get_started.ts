@@ -22,7 +22,7 @@
 import { existsSync, mkdirSync, writeFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import type { McpServer } from '@modelcontextprotocol/server';
-import { EXAMPLES, type Example } from '@simten/core/internal';
+import { EXAMPLES, type ExampleCircuit, exampleSource } from '@simten/core/internal';
 import * as std from '@simten/core/std';
 import { z } from 'zod';
 
@@ -50,8 +50,8 @@ function stripComments(code: string): string {
  * never under-import; a stray match in a string literal could at worst add an
  * unused import, which is harmless.
  */
-export function materializeExample(example: Example): string {
-  const scannable = stripComments(example.code);
+export function materializeExample(example: ExampleCircuit, code: string): string {
+  const scannable = stripComments(code);
   const used = (name: string) => new RegExp(`\\b${name}\\b`).test(scannable);
 
   const builders = BUILDER_NAMES.filter(used);
@@ -63,7 +63,7 @@ export function materializeExample(example: Example): string {
     ...(parts.length ? [`import {\n  ${parts.join(', ')},\n} from '@simten/core/std';`] : []),
   ].join('\n');
 
-  const body = example.code.replace(/^const (\w+) = circuit\(/gm, 'export const $1 = circuit(');
+  const body = code.replace(/^const (\w+) = circuit\(/gm, 'export const $1 = circuit(');
   return `${header}\n${body.startsWith('\n') ? body : `\n${body}`}`;
 }
 
@@ -161,7 +161,7 @@ export function registerGetStartedTool(server: McpServer): void {
       }
 
       mkdirSync(circuitsDir, { recursive: true });
-      writeFileSync(filePath, materializeExample(match), 'utf8');
+      writeFileSync(filePath, materializeExample(match, await exampleSource(match)), 'utf8');
 
       return {
         content: [

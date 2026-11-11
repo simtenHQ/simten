@@ -21,7 +21,11 @@ export { type CircuitInternals, internalsOf, isCircuit } from './circuit/interna
 export { isSequentialCircuit } from './circuit/is-sequential.js';
 // The catalog alone. `@simten/core/examples` also builds Snake when it loads,
 // which a caller that only lists the examples (the MCP) doesn't need.
-export { EXAMPLES, type Example } from './examples/catalog.js';
+export {
+  EXAMPLES,
+  type ExampleCircuit,
+  exampleSource,
+} from './examples/catalog.js';
 export * from './import/index.js';
 export * from './ir/circuit-ir.js';
 export * from './simulator/index.js';

@@ -134,8 +134,8 @@ for (const [name, dep] of internalsOf(BlogSnake).dependencies) {
 
 // Copy 2: /circuit editor example source string.
 const example = EXAMPLES.find((e) => e.id === 'snake');
-if (!example) {
-  console.error('❌ no example with id "snake" in visual-editor examples');
+if (!example || example.code === undefined) {
+  console.error('❌ no inline example with id "snake" in visual-editor examples');
   process.exit(1);
 }
 const result = executeCircuitCode(example.code);

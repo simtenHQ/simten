@@ -160,6 +160,7 @@ function withArguments(t: DiffTarget, id: string, args: Record<string, number>):
 function example(id: string): DiffTarget {
   const ex = EXAMPLES.find((e) => e.id === id);
   if (!ex) throw new Error(`no example '${id}'`);
+  if (ex.code === undefined) throw new Error(`example '${id}' loads lazily`);
   const compiled = executeCircuitCode(ex.code);
   if (compiled.error) throw new Error(`${id}: ${compiled.error}`);
   // An example's top is the last circuit it builds, the one the editor runs.

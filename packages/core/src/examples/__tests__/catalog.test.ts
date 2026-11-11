@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest';
 import { simulate } from '../../simulator/simulate.js';
 import type { SimulatorSnapshot } from '../../simulator/types.js';
 import { executeCircuitCode } from '../../source/execute.js';
-import { EXAMPLES } from '../catalog.js';
+import { EXAMPLE_INLINE_LIMIT, EXAMPLES, type ExampleCircuit, exampleSource } from '../catalog.js';
 
 // Examples that import a non-@simten package (e.g. figlet) resolve via esm.sh
 // in the editor/canvas. executeCircuitCode runs in-process and can't fetch those, so
@@ -29,26 +29,44 @@ describe('example catalog', () => {
     expect(new Set(ids).size).toBe(ids.length);
   });
 
-  it('has non-empty metadata', () => {
+  it('has non-empty metadata and source', async () => {
     for (const ex of EXAMPLES) {
       expect(ex.title.length, ex.id).toBeGreaterThan(0);
       expect(ex.description.length, ex.id).toBeGreaterThan(0);
-      expect(ex.code.trim().length, ex.id).toBeGreaterThan(0);
+      expect((await exampleSource(ex)).trim().length, ex.id).toBeGreaterThan(0);
     }
   });
 
+  // Inline source ships in every page that shows the picker; big ones load lazily.
+  it('keeps inline examples under the size limit', () => {
+    for (const ex of EXAMPLES) {
+      if (ex.code !== undefined) expect(ex.code.length, ex.id).toBeLessThan(EXAMPLE_INLINE_LIMIT);
+    }
+  });
+
+  it('reads source from code or from load', async () => {
+    const info = { id: 'x', title: 'X', description: 'x', category: 'basics' as const, nodes: '1' };
+    const inline: ExampleCircuit = { ...info, code: 'inline' };
+    const lazy: ExampleCircuit = { ...info, load: async () => 'loaded' };
+    expect(await exampleSource(inline)).toBe('inline');
+    expect(await exampleSource(lazy)).toBe('loaded');
+  });
+
   for (const ex of EXAMPLES) {
-    it(`"${ex.id}" compiles`, () => {
-      if (hasExternalImport(ex.code)) return; // npm-importing example; see note above
-      const result = executeCircuitCode(ex.code);
+    it(`"${ex.id}" compiles`, async () => {
+      const code = await exampleSource(ex);
+      if (hasExternalImport(code)) return; // npm-importing example; see note above
+      const result = executeCircuitCode(code);
       expect(result.error).toBeNull();
       expect(result.circuits.length).toBeGreaterThan(0);
     });
   }
 
-  it('"6502-computer" prints its message to the console', () => {
+  it('"6502-computer" prints its message to the console', async () => {
     const ex = EXAMPLES.find((e) => e.id === '6502-computer')!;
-    const top = executeCircuitCode(ex.code).circuits.find((c) => c.name === 'Computer6502')!;
+    const top = executeCircuitCode(await exampleSource(ex)).circuits.find(
+      (c) => c.name === 'Computer6502',
+    )!;
     const sim = simulate(top);
     sim.tick(400);
     const snapshot = sim.snapshot() as unknown as SimulatorSnapshot;
