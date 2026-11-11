@@ -125,15 +125,17 @@ module nes_top (
     );
 
     // ── Cartridge ───────────────────────────────────────────
-    // A real NROM cart has two unclocked ROMs: address in, data out within
-    // a cycle. Here they are block RAM, which only reads on a clock edge, so
-    // they read on the NES clock's falling edge: the address has settled half
-    // a dot after the rising edge, and the data is there before the next one.
-    // The NES sees what it would see from a real ROM.
+    // NesConsole's ports are the cartridge connector (nes/src/cart.ts), and
+    // this is the cartridge: an NROM flash cart. A real NROM cart has two
+    // unclocked ROMs: address in, data out within a cycle. Here they are
+    // block RAM, which only reads on a clock edge, so they read on the NES
+    // clock's falling edge: the address has settled half a dot after the
+    // rising edge, and the data is there before the next one. The console
+    // sees what it would see from a real ROM.
     //
     // PRG is always 32 KB; a 16 KB game is loaded twice, which is what NROM-128
-    // looks like at $8000-$FFFF anyway. The cart also decides the nametable
-    // mirroring (on real hardware, a solder pad wiring CIRAM A10).
+    // looks like at $8000-$FFFF anyway. Mirroring comes with the game, as the
+    // solder pad on a real cart wires CIRAM A10 to PPU A10 or A11.
     reg [7:0] prg_mem [0:32767];
     reg [7:0] chr_mem [0:8191];
 `ifdef NES_BAKED
@@ -146,12 +148,17 @@ module nes_top (
     reg mirror_v = 1'b0;
 `endif
 
-    wire [15:0] prg_addr, chr_addr;
+    wire [14:0] cart_cpu_addr;
+    wire        cart_romsel;
+    wire [13:0] cart_ppu_addr;
     reg  [7:0]  prg_q, chr_q;
     always @(negedge clk_nes) begin
-        prg_q <= prg_mem[prg_addr[14:0]];
-        chr_q <= chr_mem[chr_addr[12:0]];
+        prg_q <= prg_mem[cart_cpu_addr];
+        chr_q <= chr_mem[cart_ppu_addr[12:0]];
     end
+    wire [7:0] cart_cpu_rdata = cart_romsel ? prg_q : 8'd0;
+    wire       ciram_a10      = mirror_v ? cart_ppu_addr[10] : cart_ppu_addr[11];
+    wire       ciram_ce       = cart_ppu_addr[13];
 
     // ── Loader: a game over USB serial at 1 Mbaud ──────────
     // "SIMN", a flags byte (bit 0: vertical mirroring), 32768 bytes of PRG,
@@ -229,24 +236,34 @@ module nes_top (
     wire [7:0]  cpu_data;
     wire        cpu_rw, cpu_sync;
 
-    NesBoard nes (
-        .clk      (clk_nes),
-        .rst_n    (rst_n),
-        .mirror_v (mirror_v),
-        .prg_addr (prg_addr),
-        .prg_data (prg_q),
-        .chr_addr (chr_addr),
-        .chr_data (chr_q),
-        .pad1     (pad),
-        .pad2     (8'd0),
-        .addr     (cpu_addr),
-        .rw       (cpu_rw),
-        .sync     (cpu_sync),
-        .data     (cpu_data),
-        .video_x  (video_x),
-        .video_y  (video_y),
-        .video_we (video_we),
-        .color    (color)
+    NesConsole nes (
+        .clk       (clk_nes),
+        .rst_n     (rst_n),
+        .pad1      (pad),
+        .pad2      (8'd0),
+        // The cartridge connector.
+        .cpu_addr  (cart_cpu_addr),
+        .romsel    (cart_romsel),
+        .m2        (),
+        .cpu_rw    (),
+        .cpu_wdata (),
+        .ppu_addr  (cart_ppu_addr),
+        .ppu_we    (),
+        .ppu_wdata (),
+        .cpu_rdata (cart_cpu_rdata),
+        .irq       (1'b0),
+        .ppu_rdata (chr_q),
+        .ciram_a10 (ciram_a10),
+        .ciram_ce  (ciram_ce),
+        // Taps for the LEDs.
+        .addr      (cpu_addr),
+        .rw        (cpu_rw),
+        .sync      (cpu_sync),
+        .data      (cpu_data),
+        .video_x   (video_x),
+        .video_y   (video_y),
+        .video_we  (video_we),
+        .color     (color)
     );
 
     // ── Frame buffer: written at the NES clock, read at the pixel clock ──

@@ -127,7 +127,7 @@ function run(oam: number[], ctrl: number, mask: number) {
   const rom = program(oam, ctrl, mask);
   let hit: [number, number] | null = null;
   const flag = (sim: ReturnType<typeof frame>['sim']) =>
-    nodesOf(sim).ports().get('ppu.sprites.hit.q');
+    nodesOf(sim).ports().get('console.ppu.sprites.hit.q');
   let x = 0;
   let y = 0;
   const { pixels } = frame(rom, (sim) => {

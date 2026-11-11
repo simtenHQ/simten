@@ -32,7 +32,7 @@ function run(pad1: number, pad2: number) {
   }
   const ram = (
     sim.snapshot() as unknown as { sequentialState: { currentState: Map<string, unknown> } }
-  ).sequentialState.currentState.get('ram') as Map<number, number>;
+  ).sequentialState.currentState.get('console.ram') as Map<number, number>;
   const bytes = (at: number, n: number) =>
     Array.from({ length: n }, (_, i) => ram.get(at + i) ?? 0);
   return { pad1: bytes(0x300, 10), pad2: bytes(0x310, 10), strobed: bytes(0x320, 3) };
