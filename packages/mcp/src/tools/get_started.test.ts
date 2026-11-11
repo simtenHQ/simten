@@ -6,15 +6,20 @@
  * top-level circuits — and must still compile cleanly via checkCircuit.
  */
 
-import { EXAMPLES } from '@simten/core/examples';
+import { EXAMPLES, exampleSource } from '@simten/core/examples';
 import { describe, expect, it } from 'vitest';
 import { checkCircuit } from '../lib/check-circuit.js';
 import { buildOrientation, materializeExample } from './get_started.js';
 
+// Every example's source, inline or lazily loaded.
+const code = new Map(
+  await Promise.all(EXAMPLES.map(async (e) => [e.id, await exampleSource(e)] as const)),
+);
+
 describe('materializeExample', () => {
   for (const ex of EXAMPLES) {
     describe(`"${ex.id}"`, () => {
-      const source = materializeExample(ex);
+      const source = materializeExample(ex, code.get(ex.id) ?? '');
 
       it('imports the builder API and stdlib', () => {
         expect(source).toMatch(/^import \{ circuit.* \} from '@simten\/core';$/m);
@@ -30,7 +35,9 @@ describe('materializeExample', () => {
       it('passes checkCircuit', () => {
         // npm-importing examples (e.g. figlet) resolve via esm.sh in the
         // editor/canvas; checkCircuit runs in-process and can't fetch them.
-        if (/^\s*import\s.+from\s+['"](?!@simten)[^'".][^'"]*['"]/m.test(ex.code)) return;
+        if (/^\s*import\s.+from\s+['"](?!@simten)[^'".][^'"]*['"]/m.test(code.get(ex.id) ?? '')) {
+          return;
+        }
         const result = checkCircuit({ source, sourceName: ex.id });
         expect(result.diagnostics).toEqual([]);
         expect(result.valid).toBe(true);

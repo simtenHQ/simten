@@ -24,6 +24,7 @@ describe('Snake example source', () => {
 
   it('the catalog example builds the same SnakeCore IR as snake.ts', () => {
     const example = EXAMPLES.find((e) => e.id === 'snake')!;
+    if (example.code === undefined) throw new Error('the snake example loads lazily');
     const compiled = executeCircuitCode(example.code);
     expect(compiled.error).toBeNull();
 

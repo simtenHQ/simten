@@ -31,6 +31,8 @@ export interface Loaded {
 export function load(workload: Workload): Loaded {
   const example = EXAMPLES.find((e) => e.id === workload.id);
   if (!example) throw new Error(`no example '${workload.id}'`);
+  // Workloads run synchronously, so they use inline examples only.
+  if (example.code === undefined) throw new Error(`example '${workload.id}' loads lazily`);
   const compiled = executeCircuitCode(example.code);
   if (compiled.error) throw new Error(`${workload.id}: ${compiled.error}`);
   // An example's top is the last circuit it builds, the one the editor runs.

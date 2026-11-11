@@ -1,4 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { useEffect, useState } from 'react';
 import EditorShell from '@/components/EditorShell';
 import { EXAMPLES } from '@/features/visual-editor/examples';
 import { pageHead } from '@/lib/seo';
@@ -25,5 +26,26 @@ export const Route = createFileRoute('/circuit')({
 function CircuitPage() {
   const { example } = Route.useSearch();
   const match = example ? EXAMPLES.find((e) => e.id === example) : undefined;
-  return <EditorShell initialSource={match?.code} />;
+  // A big example's source is fetched on demand (see ExampleCircuit).
+  const [loaded, setLoaded] = useState<{ source?: string; error?: string }>({});
+  useEffect(() => {
+    if (!match?.load) return;
+    let live = true;
+    match.load().then(
+      (source) => live && setLoaded({ source }),
+      (err: Error) => live && setLoaded({ error: err.message }),
+    );
+    return () => {
+      live = false;
+    };
+  }, [match]);
+
+  if (match?.load && loaded.source === undefined) {
+    return (
+      <div className="flex h-screen items-center justify-center text-sm text-gray-500">
+        {loaded.error ? `Couldn't load ${match.title}: ${loaded.error}` : `Loading ${match.title}…`}
+      </div>
+    );
+  }
+  return <EditorShell initialSource={match?.code ?? loaded.source} />;
 }

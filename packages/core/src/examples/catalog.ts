@@ -8,16 +8,31 @@
 
 import { SNAKE_CORE_SOURCE } from './snake-source.gen.js';
 
-export interface Example {
+/**
+ * A bundled example circuit: what the picker shows, and its source. The
+ * source is either inline (`code`) or, for a big one, fetched on demand
+ * (`load`), so it isn't in every page's bundle. Exactly one of the two; read
+ * it with `exampleSource`.
+ */
+export type ExampleCircuit = {
+  /** Public URL surface (`/circuit?example=<id>`): keep stable. */
   id: string;
   title: string;
   description: string;
   category: 'game' | 'math' | 'cpu' | 'basics';
   nodes: string;
-  code: string;
+} & ({ code: string; load?: never } | { code?: never; load: () => Promise<string> });
+
+/** Inline examples bigger than this belong behind `load`. */
+export const EXAMPLE_INLINE_LIMIT = 32_000;
+
+/** An example's source, whether inline or loaded. */
+export async function exampleSource(example: ExampleCircuit): Promise<string> {
+  if (example.code !== undefined) return example.code;
+  return example.load();
 }
 
-export const EXAMPLES: Example[] = [
+export const EXAMPLES: ExampleCircuit[] = [
   {
     id: 'snake',
     title: 'Snake',
