@@ -10,7 +10,17 @@ import type { Circuit } from '../../circuit/builder-types.js';
 import { bit, bus, circuit } from '../../circuit/index.js';
 import { internalsOf } from '../../circuit/internals.js';
 import type { BitType, BusType, CircuitDefinitions, CircuitIR } from '../../ir/circuit-ir.js';
-import { And, DFlipFlop, LogicNot, Or, RAM, Register, ROM, Xor } from '../../std/index.js';
+import {
+  And,
+  DFlipFlop,
+  DualPortRAM,
+  LogicNot,
+  Or,
+  RAM,
+  Register,
+  ROM,
+  Xor,
+} from '../../std/index.js';
 import { getStdLibrary } from '../../std/library.js';
 import { checkSynthesizable, exportVerilog, exportVerilogFromIR } from '../exporter.js';
 
@@ -290,6 +300,32 @@ describe('exportVerilog', () => {
       expect(verilog).toMatch(/mem_.*\[0\] = 8'd170/);
       expect(verilog).toMatch(/mem_.*\[1\] = 8'd187/);
     });
+  });
+
+  it('gives each unread output its own declared net', () => {
+    // Two RAMs whose B ports nothing reads: each B port used to drive the
+    // same undeclared `__unused_outB`, an implicit 1-bit net with two drivers.
+    const TwoRams = circuit('TwoRams', {
+      inputs: { addr: bus(4), data: bus(8), we: bit },
+      outputs: { a: bus(8), b: bus(8) },
+      nodes: {
+        r1: DualPortRAM({ addressWidth: 4, dataWidth: 8 }),
+        r2: DualPortRAM({ addressWidth: 4, dataWidth: 8 }),
+      },
+      connect: ({ inputs, outputs, nodes: { r1, r2 } }) => [
+        inputs.addr.to(r1.addrA, r1.addrB, r2.addrA, r2.addrB),
+        inputs.data.to(r1.dataA, r2.dataA),
+        inputs.we.to(r1.weA, r2.weA),
+        r1.outA.to(outputs.a),
+        r2.outA.to(outputs.b),
+      ],
+    });
+    const { verilog } = exportVerilog(TwoRams);
+    for (const node of ['r1', 'r2']) {
+      expect(verilog).toContain(`wire [7:0] __unused_${node}_outB;`);
+      expect(verilog).toContain(`assign __unused_${node}_outB = mem_${node}[addr];`);
+    }
+    expect(verilog).not.toMatch(/__unused_outB/);
   });
 });
 
