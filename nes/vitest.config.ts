@@ -1,7 +1,7 @@
 import { defineConfig } from 'vitest/config';
 
-// The board runs ~5 s per frame and CI runners are slower again, so tests
-// that run frames take well over vitest's 5 s default.
+// The board, APU included, runs a frame in ~30 s here, and CI runners are a
+// few times slower, so tests that run frames take far over vitest's default.
 export default defineConfig({
-  test: { testTimeout: 120_000 },
+  test: { testTimeout: 300_000 },
 });
