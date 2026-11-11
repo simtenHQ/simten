@@ -22,6 +22,16 @@ export interface WireData extends Record<string, unknown> {
   keys: [string | undefined, string | undefined];
 }
 
+/**
+ * Whether a component draws as a box that opens: a composite, or an eval-only
+ * primitive with a gate-level reference build.
+ */
+export function opensIn(definitions: CircuitDefinitions): (componentRef: string) => boolean {
+  return (componentRef) =>
+    definitions.resolveCircuit(componentRef)?.implementation.kind === 'composite' ||
+    hasMadeOf(componentRef);
+}
+
 function getNodeTypeForComponent(
   componentRef: string,
   inputCount: number,

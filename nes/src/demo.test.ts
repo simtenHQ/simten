@@ -4,10 +4,10 @@ import { executeCircuitCode, internalsOf } from '@simten/core/internal';
 import { describe, expect, it } from 'vitest';
 import { NES_SOURCE_FILE, renderNesSource } from '../scripts/gen-example.js';
 import { createNes } from './board.js';
-import { demoChr, demoPrg, NesDemo } from './demo.js';
+import { demoChr, demoPrg, logoBitmap, NesDemo } from './demo.js';
 
 describe('demo cartridge', () => {
-  it('draws SIMTEN in the middle of the second frame', () => {
+  it('draws the logo in the middle of the second frame', () => {
     const sim = createNes({
       prg: new Uint8Array(demoPrg()),
       chr: new Uint8Array(demoChr()),
@@ -29,23 +29,23 @@ describe('demo cartridge', () => {
       sim.tick();
     }
     const at = (x: number, y: number) => pixels.get(y * 256 + x);
-    // Row 14, column 11: pixel (88, 112) is the top left of the S. Its first
-    // row is 00111100: backdrop, then white from the third pixel.
-    expect([at(88, 112), at(89, 112), at(90, 112), at(93, 112), at(94, 112)]).toEqual([
-      0x0f, 0x0f, 0x30, 0x30, 0x0f,
+    // The logo's 96×64 box starts at column 10, row 11: pixel (80, 88).
+    // Every pixel in it is white on the line and backdrop off it.
+    const logo = logoBitmap();
+    const drawn = logo.map((row, y) => row.map((_, x) => at(80 + x, 88 + y)));
+    expect(drawn).toEqual(logo.map((row) => row.map((bit) => (bit ? 0x30 : 0x0f))));
+    // Outside it, backdrop.
+    expect([at(10, 10), at(79, 120), at(176, 120), at(128, 87), at(128, 152)]).toEqual([
+      0x0f, 0x0f, 0x0f, 0x0f, 0x0f,
     ]);
-    // The N, five tiles on: its first row is 01100110.
-    expect([at(128, 112), at(129, 112), at(131, 112), at(133, 112)]).toEqual([
-      0x0f, 0x30, 0x0f, 0x30,
-    ]);
-    // Elsewhere, backdrop.
-    expect(at(10, 10)).toBe(0x0f);
   });
 
-  it('builds the demo board with its screen', () => {
+  it('builds the demo board, with no ports of its own', () => {
+    // No ports, so the canvas draws its insides: the NES wired to the screen.
+    expect(internalsOf(NesDemo).ir.inputs).toEqual([]);
+    expect(internalsOf(NesDemo).ir.outputs).toEqual([]);
     const sim = simulate(NesDemo);
     sim.tick(10);
-    expect(sim.get('audio')).toBeTypeOf('number');
   });
 });
 

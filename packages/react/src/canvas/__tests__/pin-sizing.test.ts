@@ -62,4 +62,14 @@ describe('pin sizing', () => {
     const gap = Math.abs(positions.upper.y - positions.lower.y);
     expect(gap).toBeGreaterThanOrEqual(pinColumnHeight(outputs.length));
   });
+
+  // A box that opens carries a "double-click to inspect" line, wider than a
+  // short name. Laid out without it, the NES example's screen sat 30px from
+  // the box its wires came out of.
+  it('leaves room for the caption of a box that opens', () => {
+    // Only `src` opens: the blocks after it move right by the room it takes.
+    const nextX = (opens: boolean) =>
+      computeDagreLayout(circuit, (ref) => opens && ref === 'Switch').upper.x;
+    expect(nextX(true)).toBeGreaterThan(nextX(false));
+  });
 });
