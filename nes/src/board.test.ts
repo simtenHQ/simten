@@ -1,6 +1,6 @@
 import { checkSynthesizable } from '@simten/core/verilog';
 import { describe, expect, it } from 'vitest';
-import { createNes, NesBoard } from './board.js';
+import { createNes, Nes, NesConsole } from './board.js';
 import type { INesRom } from './ines.js';
 
 /** An NROM cartridge with `program` at $8000 and the reset vector pointing at it. */
@@ -13,8 +13,8 @@ function cartridge(program: number[], prgSize = 0x4000): INesRom {
 }
 
 /** Runs until the CPU fetches the opcode at `pc`, then returns the registers. */
-function runTo(rom: INesRom, pc: number) {
-  const sim = createNes(rom, { debug: true });
+function runTo(rom: INesRom, pc: number, wram = 0) {
+  const sim = createNes(rom, { debug: true, wram });
   for (let i = 0; i < 1000; i++) {
     if (sim.get('sync') && sim.get('addr') === pc) {
       return { a: sim.get('a'), x: sim.get('x'), y: sim.get('y') };
@@ -24,7 +24,7 @@ function runTo(rom: INesRom, pc: number) {
   throw new Error(`never reached $${pc.toString(16)}`);
 }
 
-describe('NesBoard', () => {
+describe('Nes', () => {
   it('mirrors work RAM, the PPU registers and a 16 KB PRG ROM', () => {
     const program = [
       [0xa9, 0x42], // 8000 LDA #$42
@@ -47,6 +47,21 @@ describe('NesBoard', () => {
       [0x4c, 0x0d, 0x80], // 800D JMP $800D
     ];
     expect(runTo(cartridge(program.flat()), 0x800d)).toEqual({ a: 0, x: 0, y: 0 });
+  });
+
+  it('has 8 KB of PRG RAM at $6000 only when the cartridge does', () => {
+    const program = [
+      [0xa9, 0x3c], // 8000 LDA #$3C
+      [0x8d, 0x00, 0x60], // 8002 STA $6000
+      [0x8d, 0xff, 0x7f], // 8005 STA $7FFF
+      [0xa9, 0x00], // 8008 LDA #$00
+      [0xae, 0x00, 0x60], // 800A LDX $6000
+      [0xac, 0xff, 0x7f], // 800D LDY $7FFF
+      [0x4c, 0x10, 0x80], // 8010 JMP $8010
+    ];
+    const rom = cartridge(program.flat());
+    expect(runTo(rom, 0x8010, 1)).toEqual({ a: 0, x: 0x3c, y: 0x3c });
+    expect(runTo(rom, 0x8010, 0)).toEqual({ a: 0, x: 0, y: 0 });
   });
 
   it('maps a 32 KB PRG ROM without mirroring', () => {
@@ -86,10 +101,11 @@ describe('NesBoard', () => {
     expect(runTo({ ...rom, mirroring: 'vertical' }, end)).toEqual({ a: 0x5c, x: 0, y: 0xab });
   });
 
-  // The whole board, not just the PPU: the compiled (CXXRTL) build and FPGA
-  // export start from this Verilog.
+  // The whole board, not just the PPU: the compiled (CXXRTL) build exports
+  // the console with its cartridge, and the FPGA build the console alone.
   it('exports to Verilog', () => {
-    expect(checkSynthesizable(NesBoard({ prgSize: 0x4000, vertical: 1 })).errors).toEqual([]);
+    expect(checkSynthesizable(Nes({ prgSize: 0x4000, vertical: 1, wram: 1 })).errors).toEqual([]);
+    expect(checkSynthesizable(NesConsole()).errors).toEqual([]);
   });
 
   it('rejects mappers other than NROM', () => {

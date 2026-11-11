@@ -1,6 +1,6 @@
 # NES on the ULX3S
 
-The simten NES (`NesBoard` from `nes/`) exported to Verilog and run on the ULX3S 85F, with HDMI out and the board's buttons as the controller. Games load over USB in about half a second, no rebuild.
+The simten NES (`NesConsole` from `nes/`) exported to Verilog and run on the ULX3S 85F, with HDMI out and the board's buttons as the controller. Games load over USB in about half a second, no rebuild.
 
 ## Build and flash
 
@@ -35,8 +35,8 @@ Select has no button.
 
 ## How it fits together
 
-- `index.ts` exports the board and turns its two cartridge ROMs and the mirroring into ports. On a real NES they live on the cartridge, not the console.
-- `nes_top.v` is the cartridge and everything around the console. PRG and CHR sit in block RAM, read on the falling edge of the NES clock so the data is there within the same dot, as from a real ROM. It also has:
+- `index.ts` exports `NesConsole`, the console without a cartridge, whose ports are the cartridge connector (`nes/src/cart.ts`).
+- `nes_top.v` is the cartridge, an NROM flash cart, and everything around the console. PRG and CHR sit in block RAM, read on the falling edge of the NES clock so the data is there within the same dot, as from a real ROM. It also has:
   - the USB loader (1 Mbaud, holds the NES in reset while a game loads);
   - a 256×240 frame buffer;
   - 640×480 HDMI with each pixel doubled;

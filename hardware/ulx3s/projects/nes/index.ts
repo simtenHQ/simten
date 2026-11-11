@@ -1,15 +1,14 @@
 /**
  * NES/HDMI project descriptor.
  *
- * The NES is `NesBoard` from @simten/nes, exported to Verilog; nes_top.v
- * wraps it with a PLL, the cartridge, a frame buffer, HDMI out and the
- * board's buttons (ulx3s_nes.lpf, ULX3S 85K).
+ * The NES is `NesConsole` from @simten/nes, exported to Verilog: the console
+ * without a cartridge, its ports the cartridge connector. nes_top.v wraps it
+ * with a PLL, a frame buffer, HDMI out and the board's buttons (ulx3s_nes.lpf,
+ * ULX3S 85K), and is the cartridge: an NROM flash cart in block RAM.
  *
- * The cartridge lives in the wrapper, in block RAM: the board's two ROMs
- * become ports, and so does the mirroring, which a real cart sets. Games are
- * loaded over USB serial with load.ts, no rebuild. Set NES_ROM to an NROM
- * .nes file to also bake one in, so the board boots into it. The file is
- * read at build time and never stored in the repo.
+ * Games are loaded over USB serial with load.ts, no rebuild. Set NES_ROM to
+ * an NROM .nes file to also bake one in, so the board boots into it. The file
+ * is read at build time and never stored in the repo.
  */
 
 import { readFileSync } from 'node:fs';
@@ -17,7 +16,7 @@ import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PALETTE_2C02 } from '@simten/core/std';
 import { exportVerilog } from '@simten/core/verilog';
-import { NesBoard } from '@simten/nes/src/board.js';
+import { NesConsole } from '@simten/nes/src/board.js';
 import { parseINes } from '@simten/nes/src/ines.js';
 
 import type { Project } from '../../lib/types.js';
@@ -49,49 +48,6 @@ export function cartFromINes(bytes: Uint8Array): Cart {
 const hex = (bytes: Uint8Array) =>
   `${Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('\n')}\n`;
 
-/** Replaces the one match of `re` in `text`, or throws. */
-function rewrite(text: string, re: RegExp, to: string, what: string): string {
-  const hits = text.match(new RegExp(re.source, `${re.flags.replace('g', '')}g`));
-  if (hits?.length !== 1) {
-    throw new Error(`nes: expected one ${what} in the exported board, found ${hits?.length ?? 0}`);
-  }
-  return text.replace(re, to);
-}
-
-/**
- * Moves the cartridge out of the exported board: the PRG and CHR ROMs become
- * address outputs and data inputs, and the nametable mirroring an input.
- */
-export function cartPorts(board: string): string {
-  let v = board;
-  v = rewrite(
-    v,
-    /^( {2}input rst_n,\n)/m,
-    '$1  input mirror_v,\n  output [15:0] prg_addr,\n  input [7:0] prg_data,\n  output [15:0] chr_addr,\n  input [7:0] chr_data,\n',
-    'rst_n port',
-  );
-  for (const rom of ['prg', 'chr']) {
-    v = rewrite(
-      v,
-      new RegExp(`^ *reg \\[7:0\\] mem_${rom} \\[0:\\d+\\];\\n`, 'm'),
-      '',
-      `${rom} ROM`,
-    );
-    v = rewrite(
-      v,
-      new RegExp(`assign (w_${rom}_data_out) = mem_${rom}\\[(\\w+)\\];`),
-      `assign ${rom}_addr = $2;\n  assign $1 = ${rom}_data;`,
-      `${rom} ROM read`,
-    );
-  }
-  return rewrite(
-    v,
-    /assign vbus_page = \(\((\w+) >> 1[01]\) & 1\);/,
-    'assign vbus_page = mirror_v ? (($1 >> 10) & 1) : (($1 >> 11) & 1);',
-    'nametable page',
-  );
-}
-
 /** The 2C02 palette as a 64-entry lookup. */
 function palette(): string {
   const rows = PALETTE_2C02.map(
@@ -107,9 +63,9 @@ ${rows.join('\n')}
 endmodule`;
 }
 
-/** The full design: the board, Snake's TMDS blocks, the palette, the wrapper. */
+/** The full design: the console, Snake's TMDS blocks, the palette, the wrapper. */
 export function nesVerilog(baked?: Cart): { verilog: string; files: Record<string, string> } {
-  const { verilog: board } = exportVerilog(NesBoard({ prgSize: 0x8000 }), { target: 'synthesis' });
+  const { verilog: nes } = exportVerilog(NesConsole(), { target: 'synthesis' });
   const snake = readFileSync(resolve(__dirname, '../snake/snake_top.v'), 'utf8');
   const tmds = snake.slice(0, snake.indexOf('// ECP5 PLL'));
   const wrapper = readFileSync(resolve(__dirname, 'nes_top.v'), 'utf8');
@@ -117,7 +73,7 @@ export function nesVerilog(baked?: Cart): { verilog: string; files: Record<strin
     ? `\`define NES_BAKED\n\`define NES_BAKED_VERTICAL 1'b${baked.vertical ? 1 : 0}\n`
     : '';
   return {
-    verilog: [defines + cartPorts(board), tmds, palette(), wrapper].join('\n\n'),
+    verilog: [defines + nes, tmds, palette(), wrapper].join('\n\n'),
     files: baked ? { 'nes_prg.hex': hex(baked.prg), 'nes_chr.hex': hex(baked.chr) } : {},
   };
 }
