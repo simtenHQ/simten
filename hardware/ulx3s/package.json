@@ -15,7 +15,8 @@
     "run-on-fpga": "tsx run_on_fpga.ts"
   },
   "dependencies": {
-    "@simten/core": "workspace:*"
+    "@simten/core": "workspace:*",
+    "@simten/nes": "workspace:*"
   },
   "devDependencies": {
     "@types/node": "^20",
