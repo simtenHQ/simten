@@ -358,6 +358,7 @@ function emitFlatModule(
     const wires: PrimitiveWires = {
       inputs: new Map(),
       outputs: new Map(),
+      unused: new Map(),
     };
 
     // Map input ports to wire names (check per-consumer overrides first)
@@ -373,6 +374,11 @@ function emitFlatModule(
       const key = `${node.id}.${output.name}`;
       const wireName = wireMap.get(key);
       if (wireName) wires.outputs.set(output.name, wireName);
+      else
+        wires.unused?.set(
+          output.name,
+          `__unused_${sanitizeId(node.id)}_${sanitizeId(output.name)}`,
+        );
     }
 
     const ctx: PrimitiveContext = {
@@ -407,6 +413,16 @@ function emitFlatModule(
     }
     if (result.clocked) needsClock = true;
     allDeclarations.push(...result.declarations);
+    // Outputs nothing reads that the emitter still drove: declare their nets,
+    // one per node and port, so they don't become implicit 1-bit wires that
+    // several nodes drive at once.
+    for (const output of node.outputs) {
+      const net = wires.unused?.get(output.name);
+      if (net && result.lines.some((l) => new RegExp(`\\b${net}\\b`).test(l))) {
+        const w = widthOf(output.portType);
+        allDeclarations.push(w > 1 ? `wire [${w - 1}:0] ${net};` : `wire ${net};`);
+      }
+    }
     if (result.lines.length > 0) {
       allLogicLines.push(`  // ${node.primitiveType} "${sanitizeId(node.id)}"`);
       allLogicLines.push(...result.lines.map((l) => `  ${l}`));

@@ -12,6 +12,11 @@ export interface PrimitiveWires {
   inputs: Map<string, string>;
   /** Map of output port name → wire/port name in Verilog */
   outputs: Map<string, string>;
+  /**
+   * Nets for outputs nothing reads, by port name. An emitter that writes one
+   * anyway gets a net of its own, which the exporter declares.
+   */
+  unused?: Map<string, string>;
 }
 
 /**
@@ -210,8 +215,9 @@ function wire(wires: PrimitiveWires, port: string, type: 'input' | 'output'): st
   const map = type === 'input' ? wires.inputs : wires.outputs;
   const net = map.get(port);
   if (net !== undefined) return net;
-  // Unconnected input: tie to zero. Unconnected output: use dummy (caller should skip via isConnected).
-  return type === 'input' ? "1'b0" : `__unused_${sanitizeId(port)}`;
+  // Unconnected input: tie to zero. Unconnected output: a net nothing reads.
+  if (type === 'input') return "1'b0";
+  return wires.unused?.get(port) ?? `__unused_${sanitizeId(port)}`;
 }
 
 /** Net accessors for one node: `i(port)` reads an input's net, `o(port)` an output's. */
