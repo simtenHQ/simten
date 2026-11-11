@@ -1,4 +1,5 @@
 export type {
+  CxxrtlAudio,
   CxxrtlManifest,
   CxxrtlMemory,
   CxxrtlPort,
