@@ -43,6 +43,7 @@ import { useDetectTheme } from './hooks/useDetectTheme';
 import { useIsMobile } from './hooks/useIsMobile';
 import { cleanCircuitLabels } from './label-utils';
 import { EDGE_TYPES, NODE_TYPES } from './node-types';
+import type { SidePart } from './side-parts';
 import type { CircuitLayout, DrawnCircuit, Positions } from './types';
 import { type CanvasActions, CanvasContext, type ValueStore } from './values';
 
@@ -108,8 +109,8 @@ interface FlowCanvasProps {
   values: ValueStore;
   /** What clicks on the canvas do. Without them its switches and inputs are indicators. */
   actions?: CanvasActions;
-  /** Session paths of consoles nested out of sight, drawn at the side. */
-  consoles?: readonly string[];
+  /** Consoles, UARTs and displays nested out of sight, drawn at the side. */
+  sideParts?: readonly SidePart[];
   draggable?: boolean;
   /**
    * Re-run the layout engine on every structural change, instead of only when
@@ -155,7 +156,7 @@ export const CANVAS_WIDTH = { width: '100%', minWidth: 280 } as const;
 /** Below this zoom an 11px pin label is too small to read, so the canvas drops them. */
 const PIN_LABEL_MIN_ZOOM = 0.35;
 const NO_ACTIONS: CanvasActions = {};
-const NO_CONSOLES: readonly string[] = [];
+const NO_SIDE_PARTS: readonly SidePart[] = [];
 /** How far `focus` fades the nodes outside it. */
 const FOCUS_DIM = 0.15;
 
@@ -223,7 +224,7 @@ export const FlowCanvas = memo(function FlowCanvas({
   path = '',
   values,
   actions = NO_ACTIONS,
-  consoles = NO_CONSOLES,
+  sideParts = NO_SIDE_PARTS,
   layout,
   focus,
   autoLayout = false,
@@ -237,10 +238,10 @@ export const FlowCanvas = memo(function FlowCanvas({
     if (!circuit || !definitions) return NOTHING;
     const cleaned = cleanCircuitLabels(circuit);
     const positions = layout ? positionsFromLayout(cleaned, layout) : computeDagreLayout(cleaned);
-    const projected = projectCircuit(cleaned, positions, definitions, path, consoles);
+    const projected = projectCircuit(cleaned, positions, definitions, path, sideParts);
     const drawn = focusLabels ? dimOutOfFocus(projected, focusLabels) : projected;
     return { ...drawn, shape: shapeOf(cleaned.name, drawn.nodes) };
-  }, [circuit, definitions, path, consoles, layout, focusLabels]);
+  }, [circuit, definitions, path, sideParts, layout, focusLabels]);
 
   // A different circuit starts React Flow over: keyed at the provider, so its
   // store (handle registry, cached edge routes) goes too. Keying <ReactFlow>

@@ -6,7 +6,8 @@
   "scripts": {
     "test": "vitest run",
     "nestest:fetch": "tsx nestest/fetch.ts",
-    "nestest": "tsx nestest/run.ts"
+    "nestest": "tsx nestest/run.ts",
+    "gen:example": "tsx scripts/gen-example.ts"
   },
   "dependencies": {
     "@simten/core": "workspace:*"

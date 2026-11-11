@@ -35,6 +35,11 @@ function getDimensions(componentRef: string) {
   return NODE_DIMENSIONS[componentRef] ?? DEFAULT_DIMENSIONS;
 }
 
+/** A part's drawn width, as the layout reserves it. */
+export function nodeWidth(componentRef: string): number {
+  return getDimensions(componentRef).width;
+}
+
 /** Roughly one character of the node's name and component text. */
 const TITLE_CHAR_WIDTH = 7;
 

@@ -19,7 +19,10 @@
  */
 
 import { bit, bus, circuit } from '@simten/core';
-import { Constant, DualPortRAM, ROM } from '@simten/core/std';
+import { Constant, DualPortRAM, ROM, type romFromBytes } from '@simten/core/std';
+
+/** ROM contents, as `romFromBytes` makes them. */
+type Contents = ReturnType<typeof romFromBytes>;
 
 /** The connector's ports, from the cartridge's side. */
 export const CART_INPUTS = {
@@ -103,7 +106,9 @@ const NromDecode = circuit(
  * NROM: 16 or 32 KB of PRG ROM (`prgSize`; 16 KB mirrors at $C000), 8 KB of
  * CHR ROM, and fixed mirroring (`vertical` 1 for vertical). `wram` 1 adds
  * 8 KB of PRG RAM at $6000-$7FFF, which plain NROM boards lack but test
- * cartridges and some homebrew use. The ROMs are nodes `prg` and `chr`.
+ * cartridges and some homebrew use. The ROMs are nodes `prg` and `chr`:
+ * load them through `simulate`'s `memory`, or bake contents in with `prg`
+ * and `chr`.
  */
 export const NromCart = circuit(
   'NromCart',
@@ -111,18 +116,22 @@ export const NromCart = circuit(
     prgSize = 0x8000,
     vertical = 0,
     wram = 0,
+    prg,
+    chr,
   }: {
     prgSize?: number;
     vertical?: number;
     wram?: number;
+    prg?: Contents;
+    chr?: Contents;
   } = {}) => {
     // The RAM exists only with `wram`; it stays in the node type so the
     // connect below can name it.
     const ram = DualPortRAM({ addressWidth: 13, dataWidth: 8 });
     const nodes = {
       decode: NromDecode({ prgSize, vertical, wram }),
-      prg: ROM(),
-      chr: ROM(),
+      prg: ROM(prg ? { memory: prg } : {}),
+      chr: ROM(chr ? { memory: chr } : {}),
       low: Constant({ value: 0 }),
       ...(wram ? { ram } : {}),
     } as {

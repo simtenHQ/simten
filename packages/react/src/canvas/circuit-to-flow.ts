@@ -10,6 +10,8 @@ import type { CircuitDefinitions, PortPath } from '@simten/core/internal';
 import { hasMadeOf } from '@simten/core/std';
 import type { Edge, Node as ReactFlowNode } from '@xyflow/react';
 import type { NodeData, PixelSource } from '../nodes';
+import { nodeWidth } from './dagre-layout';
+import type { SidePart } from './side-parts';
 import type { DrawnCircuit, DrawnNode, Positions } from './types';
 
 /** Buses draw heavier than single bits, as on a schematic. Width isn't shown, only bit vs bus. */
@@ -249,33 +251,59 @@ function projectNode(
   };
 }
 
+/** Heights the side parts are stacked by: a console or UART, and a display. */
+const SIDE_HEIGHT = { text: 250, display: 600 };
+
 /**
- * Consoles and UARTs nested inside composites, drawn as nodes of their own at
- * the side, so their text shows on the top-level canvas. `paths` are their
- * session paths.
+ * Consoles, UARTs and displays nested inside composites, drawn as nodes of
+ * their own at the side, so their output shows on the top-level canvas.
  */
-function consoleNodes(paths: readonly string[]): ReactFlowNode<NodeData>[] {
-  return paths.map((path, index) => {
-    const parts = path.split('.');
-    const shortLabel = parts.length > 1 ? parts.slice(-2).join('.') : path;
-    const isUart = path.toLowerCase().includes('uart');
+function sideNodes(parts: readonly SidePart[], x: number): ReactFlowNode<NodeData>[] {
+  let y = 50;
+  return parts.map((part, index) => {
+    const segments = part.path.split('.');
+    const shortLabel = segments.length > 1 ? segments.slice(-2).join('.') : part.path;
+    const position = { x, y };
+    const base = {
+      id: `__virtual_side_${index}`,
+      position,
+      selected: false,
+      selectable: false,
+      deletable: false,
+    };
+    if (part.kind === 'PaletteDisplay') {
+      y += SIDE_HEIGHT.display;
+      return {
+        ...base,
+        type: 'paletteDisplayNode',
+        data: {
+          nodeId: part.path,
+          path: part.path,
+          componentRef: 'PaletteDisplay',
+          label: shortLabel,
+          arguments: part.arguments,
+          inputCount: 4,
+          outputCount: 0,
+          inputNames: ['x', 'y', 'color', 'we'],
+          outputNames: [],
+        },
+      };
+    }
+    y += SIDE_HEIGHT.text;
+    const isUart = part.kind === 'UART_TX';
     return {
-      id: `__virtual_console_${index}`,
+      ...base,
       type: isUart ? 'uartTxNode' : 'consoleNode',
-      position: { x: 600, y: 50 + index * 250 },
       data: {
-        nodeId: path,
-        path,
-        componentRef: isUart ? 'UART_TX' : 'Console',
+        nodeId: part.path,
+        path: part.path,
+        componentRef: part.kind,
         label: isUart ? `UART (${shortLabel})` : `Console (${shortLabel})`,
         inputCount: isUart ? 4 : 2,
         outputCount: 1,
         inputNames: isUart ? ['addr', 'write_data', 'mem_read', 'mem_write'] : ['data', 'we'],
         outputNames: isUart ? ['read_data'] : ['text'],
       },
-      selected: false,
-      selectable: false,
-      deletable: false,
     };
   });
 }
@@ -287,15 +315,15 @@ export interface Projection {
 
 /**
  * The nodes and wires for `circuit`, which sits at `path` in its session.
- * A node without a position isn't drawn. `consoles` are the session paths of
- * consoles to draw at the side.
+ * A node without a position isn't drawn. `sideParts` are the consoles, UARTs
+ * and displays nested out of sight, to draw at the side.
  */
 export function projectCircuit(
   circuit: DrawnCircuit,
   positions: Positions,
   definitions: CircuitDefinitions,
   path = '',
-  consoles: readonly string[] = [],
+  sideParts: readonly SidePart[] = [],
 ): Projection {
   const keys = new SessionKeys(circuit, definitions, path);
 
@@ -311,7 +339,12 @@ export function projectCircuit(
     const projected = projectNode(node, position, circuit, definitions, keys);
     if (projected) nodes.push(projected);
   }
-  nodes.push(...consoleNodes(consoles));
+  // The side column starts right of everything drawn.
+  const right = Math.max(
+    0,
+    ...circuit.nodes.map((n) => (positions[n.id]?.x ?? 0) + nodeWidth(n.componentRef)),
+  );
+  nodes.push(...sideNodes(sideParts, right + 60));
 
   const edges = circuit.connections.map(
     (connection): Edge<WireData> => ({
