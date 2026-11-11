@@ -30,8 +30,8 @@ const SCAN: Record<string, number> = { up: 72, right: 77, down: 80, left: 75 };
 const DIR: Record<string, number> = { up: 0, right: 1, down: 2, left: 3 };
 
 const example = EXAMPLES.find((e) => e.id === 'snake');
-if (!example) {
-  console.error('❌ no snake example');
+if (!example || example.code === undefined) {
+  console.error('❌ no inline snake example');
   process.exit(1);
 }
 const result = executeCircuitCode(example.code);
