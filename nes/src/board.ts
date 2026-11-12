@@ -1,13 +1,18 @@
 /**
- * The NES: the console (the 6502 core, 2 KB of work RAM, the PPU, OAM DMA and
- * the controller ports) and, through the cartridge connector, a cartridge
+ * The NES: the console and, through the cartridge connector, a cartridge
  * (cart.ts). `NesConsole` is the console alone, with the connector as ports;
  * `Nes` is the console with an NROM cart plugged in.
+ *
+ * The console is grouped as the board is built. On the CPU bus: the 2A03
+ * (`cpu`, rp2a03.ts: the 6502 core, the APU, OAM DMA and its registers at
+ * $4000-$401F), 2 KB of work RAM, the 74LS139 address decoder, and the
+ * controller ports, which the 2A03 drives through OUT0, /OE1 and /OE2. On
+ * the PPU bus: the PPU and 2 KB of nametable RAM.
  *
  * CPU memory map:
  *   $0000-$1FFF  2 KB work RAM, mirrored every $0800
  *   $2000-$3FFF  PPU registers, mirrored every 8 bytes (ppu/regs.ts).
- *   $4000-$401F  APU and I/O registers. The APU (apu/) has $4000-$4013,
+ *   $4000-$401F  The 2A03's own registers. The APU (apu/) has $4000-$4013,
  *                $4015 and $4017 writes. $4014 is OAM DMA (dma.ts), which
  *                halts the CPU and copies a page to $2004; $4016 and $4017
  *                reads are the controller ports (pads.ts). The rest read $00.
@@ -41,87 +46,57 @@
  */
 
 import { bit, bus, circuit, simulate } from '@simten/core';
-import { Constant, DualPortRAM, MOS6502_Core, romFromBytes } from '@simten/core/std';
-import { Apu } from './apu/apu.js';
+import { DualPortRAM, romFromBytes } from '@simten/core/std';
 import { CART_INPUTS, CART_OUTPUTS, NromCart } from './cart.js';
-import { OamDma } from './dma.js';
 import type { INesRom } from './ines.js';
 import { NesPads } from './pads.js';
 import { Ppu } from './ppu/ppu.js';
+import { Rp2a03 } from './rp2a03.js';
 
 type B = ReturnType<typeof bus>;
 
 /**
- * Address decode and the CPU's read data mux. $4020 and up is the
- * cartridge's: the console reads whatever the cart drives there.
+ * The 74LS139 address decoder. One half splits $0000-$7FFF by A13-A14:
+ * work RAM at $0000-$1FFF, the PPU at $2000-$3FFF ($4000-$5FFF is the
+ * 2A03's own, and the cartridge's above $4020). The other half makes
+ * /ROMSEL from A15. Selects for a cycle that writes or touches a register
+ * fire on M2; `romsel` is A15 itself, as the cartridge sees it.
  */
-const NesBus = circuit('NesBus', {
+const Ls139 = circuit('Ls139', {
+  inputs: { addr: bus(16), rw: bit, m2: bit },
+  outputs: { ram_we: bit, ppu_cs: bit, romsel: bit },
+  meta: { category: 'nes', icon: '139', description: '74LS139 address decoder' },
+  eval: ({ addr, rw, m2 }) => ({
+    ram_we: m2 && !rw && addr < 0x2000 ? 1 : 0,
+    ppu_cs: m2 && addr >= 0x2000 && addr < 0x4000 ? 1 : 0,
+    romsel: (addr >> 15) & 1,
+  }),
+});
+
+/**
+ * The CPU data bus: who drives D0-D7 on a read. Work RAM below $2000, the
+ * PPU to $3FFF, the controller ports while the 2A03 enables one, and the
+ * cartridge from $4020. Nothing else drives it, so it reads 0 there ($4015
+ * is read inside the 2A03). Also the address lines each device takes.
+ */
+const NesCpuBus = circuit('NesCpuBus', {
   inputs: {
     addr: bus(16),
-    rw: bit,
-    ce: bit,
-    cpu_out: bus(8),
+    oe1: bit,
+    oe2: bit,
     ram_data: bus(8),
     ppu_data: bus(8),
     pads_data: bus(8),
-    apu_data: bus(8),
     cart_data: bus(8),
-    apu_irq: bit,
-    cart_irq: bit,
   },
-  outputs: {
-    ram_addr: bus(11),
-    ram_we: bit,
-    ppu_cs: bit,
-    ppu_addr: bus(3),
-    pads_cs: bit,
-    pads_port: bit,
-    apu_cs: bit,
-    apu_addr: bus(5),
-    cart_addr: bus(15),
-    romsel: bit,
-    cpu_in: bus(8),
-    data: bus(8),
-    irq: bit,
-  },
-  eval: ({
-    addr,
-    rw,
-    ce,
-    cpu_out,
-    ram_data,
-    ppu_data,
-    pads_data,
-    apu_data,
-    cart_data,
-    apu_irq,
-    cart_irq,
-  }) => {
-    const ppu = addr >= 0x2000 && addr < 0x4000;
-    const pads = addr === 0x4016 || (addr === 0x4017 && rw);
-    // $4000-$4013, $4015 and $4017 writes. $4014 is OAM DMA.
-    const apu = (addr >= 0x4000 && addr < 0x4014) || addr === 0x4015 || (addr === 0x4017 && !rw);
-    let read = 0;
-    if (addr < 0x2000) read = ram_data;
-    else if (ppu) read = ppu_data;
-    else if (pads) read = pads_data;
-    else if (addr === 0x4015) read = apu_data;
-    else if (addr >= 0x4020) read = cart_data;
-    return {
-      ram_addr: addr & 0x7ff,
-      ram_we: ce && !rw && addr < 0x2000 ? 1 : 0,
-      ppu_cs: ce && ppu ? 1 : 0,
-      ppu_addr: addr & 7,
-      pads_cs: ce && pads ? 1 : 0,
-      pads_port: addr & 1,
-      apu_cs: ce && apu ? 1 : 0,
-      apu_addr: addr & 0x1f,
-      cart_addr: addr & 0x7fff,
-      romsel: (addr >> 15) & 1,
-      cpu_in: read,
-      data: rw ? read : cpu_out,
-      irq: apu_irq || cart_irq ? 1 : 0,
-    };
+  outputs: { ram_addr: bus(11), ppu_addr: bus(3), cart_addr: bus(15), data: bus(8) },
+  eval: ({ addr, oe1, oe2, ram_data, ppu_data, pads_data, cart_data }) => {
+    let data = 0;
+    if (addr < 0x2000) data = ram_data;
+    else if (addr < 0x4000) data = ppu_data;
+    else if (oe1 || oe2) data = pads_data;
+    else if (addr >= 0x4020) data = cart_data;
+    return { ram_addr: addr & 0x7ff, ppu_addr: addr & 7, cart_addr: addr & 0x7fff, data };
   },
 });
 
@@ -144,14 +119,6 @@ const NesVramBus = circuit('NesVramBus', {
     ciram_we: we && ciram_ce ? 1 : 0,
     data: ciram_ce ? ciram_data : cart_data,
   }),
-});
-
-/** The CPU's clock enable: high on every third tick, starting with the first. */
-const CpuClock = circuit('CpuClock', {
-  outputs: { ce: bit },
-  state: { phase: 0 },
-  eval: ({ phase }) => ({ ce: phase === 0 ? 1 : 0 }),
-  onTick: ({ phase }) => ({ phase: phase === 2 ? 0 : ((phase as number) + 1) & 3 }),
 });
 
 type BoardOuts = {
@@ -200,58 +167,46 @@ export const NesConsole = circuit('NesConsole', ({ debug = false }: { debug?: bo
   inputs: { pad1: bus(8), pad2: bus(8), ...CART_OUTPUTS },
   outputs: { ...consoleOutputs(debug), ...CART_INPUTS },
   nodes: {
-    clock: CpuClock,
-    cpu: MOS6502_Core({ debug, decimal: false, rdy: true, ce: true }),
-    dma: OamDma,
-    ppu: Ppu,
-    pads: NesPads,
-    apu: Apu,
-    bus: NesBus,
+    cpu: Rp2a03({ debug }),
+    decoder: Ls139,
+    bus: NesCpuBus,
     ram: DualPortRAM({ addressWidth: 11, dataWidth: 8 }),
+    pads: NesPads,
+    ppu: Ppu,
     vbus: NesVramBus,
     ciram: DualPortRAM({ addressWidth: 11, dataWidth: 8 }),
-    low: Constant({ value: 0 }),
   },
   connect: ({
     inputs: i,
     outputs: o,
-    nodes: { clock, cpu, dma, ppu, pads, apu, bus: b, ram, vbus, ciram, low },
+    nodes: { cpu, decoder, bus: b, ram, pads, ppu, vbus, ciram },
   }) => {
     const rows = [
-      clock.ce.to(cpu.ce, dma.ce, b.ce, apu.ce, o.m2),
-      low.out.to(cpu.reset),
-      i.irq.to(b.cart_irq),
-      apu.irq.to(b.apu_irq),
-      b.irq.to(cpu.irq),
-      b.apu_cs.to(apu.cs),
-      b.apu_addr.to(apu.addr),
-      apu.data_out.to(b.apu_data),
-      apu.audio.to(o.audio),
+      cpu.m2.to(decoder.m2, pads.m2, o.m2),
+      cpu.addr.to(decoder.addr, b.addr, o.addr),
+      cpu.rw.to(decoder.rw, ppu.rw, o.rw, o.cpu_rw),
+      cpu.data_out.to(ram.dataA, ppu.data_in, o.cpu_wdata),
+      b.data.to(cpu.data_in),
+      cpu.data.to(o.data),
+      cpu.sync.to(o.sync),
+      cpu.audio.to(o.audio),
+      i.irq.to(cpu.irq),
       ppu.nmi.to(cpu.nmi),
-      b.ppu_cs.to(ppu.cs),
+      decoder.ram_we.to(ram.weA),
+      decoder.ppu_cs.to(ppu.cs),
+      decoder.romsel.to(o.romsel),
+      b.ram_addr.to(ram.addrA, ram.addrB),
+      ram.outA.to(b.ram_data),
       b.ppu_addr.to(ppu.addr),
       ppu.data_out.to(b.ppu_data),
-      b.pads_cs.to(pads.cs),
-      b.pads_port.to(pads.port),
+      cpu.out0.to(pads.out0),
+      cpu.oe1.to(pads.oe1, b.oe1),
+      cpu.oe2.to(pads.oe2, b.oe2),
       pads.data_out.to(b.pads_data),
       i.pad1.to(pads.pad1),
       i.pad2.to(pads.pad2),
-      cpu.addr.to(dma.cpu_addr),
-      cpu.rw.to(dma.cpu_rw),
-      cpu.data_out.to(dma.cpu_out),
-      dma.rdy.to(cpu.rdy),
-      dma.addr.to(b.addr, o.addr),
-      dma.rw.to(b.rw, o.rw, ppu.rw, pads.rw, apu.rw, o.cpu_rw),
-      dma.out.to(ram.dataA, b.cpu_out, ppu.data_in, pads.data_in, apu.data, o.cpu_wdata),
-      cpu.sync.to(o.sync),
-      b.ram_addr.to(ram.addrA, ram.addrB),
-      b.ram_we.to(ram.weA),
-      ram.outA.to(b.ram_data),
       b.cart_addr.to(o.cpu_addr),
-      b.romsel.to(o.romsel),
       i.cpu_rdata.to(b.cart_data),
-      b.cpu_in.to(cpu.data_in, dma.read),
-      b.data.to(o.data),
       ppu.vram_addr.to(vbus.addr, o.ppu_addr),
       ppu.vram_we.to(vbus.we, o.ppu_we),
       ppu.vram_wdata.to(ciram.dataA, o.ppu_wdata),

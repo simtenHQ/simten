@@ -1170,105 +1170,6 @@ const NromCart = circuit(
   },
 );
 
-// ── nes/src/dma.ts ──
-
-/**
- * OAM DMA, the 2A03's sprite copy. Writing $XX to $4014 copies the 256 bytes
- * at $XX00-$XXFF to $2004 (OAMDATA), one byte every two cycles, while the CPU
- * is held off the bus through RDY.
- *
- * It sits between the CPU and the bus. While idle it passes the CPU's address,
- * rw and write data straight through. After the $4014 write:
- *
- *   1. Halt: RDY goes low. The CPU stops on its next read cycle (a write cycle
- *      always completes, so the unit waits for a read). That cycle is spent.
- *   2. Align: reads only happen on "get" cycles, every other CPU cycle. If the
- *      cycle after the halt is a "put" cycle, one cycle is spent waiting.
- *   3. 256 pairs: a get cycle reads $XX00+n onto the bus, the put cycle after
- *      writes that byte to $2004.
- *
- * So the CPU loses 513 cycles, or 514 when it needs the alignment cycle. RDY
- * goes high after the last put and the CPU repeats the read it stopped on.
- * During the halt and align cycles the CPU's own address stays on the bus, as
- * a read.
- *
- * It steps on CPU cycles only (\`ce\`). Get and put cycles alternate from
- * power-on: even CPU cycles are gets. The real chip takes the phase from its
- * APU clock divider, which this doesn't model.
- */
-
-// \`phase\`: 0 idle, 1 waiting for the CPU to halt, 2 copying. Numbers, not
-// named constants, so the Verilog export can translate onTick.
-
-interface DmaState {
-  phase: number;
-  /** High byte of the source page. */
-  page: number;
-  /** Bytes copied so far. */
-  n: number;
-  /** 1 between a get and its put: \`latch\` holds the byte. */
-  held: number;
-  latch: number;
-  /** 1 on put cycles. */
-  odd: number;
-}
-
-interface DmaIn extends DmaState {
-  ce: number;
-  cpu_addr: number;
-  cpu_rw: number;
-  cpu_out: number;
-  /** What the bus read this cycle. */
-  read: number;
-}
-
-const OamDma = circuit('OamDma', {
-  inputs: { ce: bit, cpu_addr: bus(16), cpu_rw: bit, cpu_out: bus(8), read: bus(8) },
-  outputs: { rdy: bit, addr: bus(16), rw: bit, out: bus(8) },
-  state: { phase: 0, page: 0, n: 0, held: 0, latch: 0, odd: 0 },
-  eval: ({ cpu_addr, cpu_rw, cpu_out, phase, page, n, held, latch, odd }: DmaIn) => {
-    const rdy = phase === 0 ? 1 : 0; // idle
-    if (phase === 2 && held) return { rdy, addr: 0x2004, rw: 0, out: latch };
-    if (phase === 2 && !odd) return { rdy, addr: (page << 8) | n, rw: 1, out: cpu_out };
-    return { rdy, addr: cpu_addr, rw: cpu_rw, out: cpu_out };
-  },
-  onTick: ({ ce, cpu_addr, cpu_rw, cpu_out, read, phase, page, n, held, latch, odd }: DmaIn) => {
-    // Off CPU cycles nothing changes; on them parity flips and the phase steps.
-    const flip = (ce ? odd ^ 1 : odd) & 1;
-    let nPhase = phase;
-    let nPage = page;
-    let nN = n;
-    let nHeld = held;
-    let nLatch = latch;
-    if (!ce) {
-      return { phase, page, n, held, latch, odd };
-    }
-    if (phase === 0) {
-      if (!cpu_rw && cpu_addr === 0x4014) {
-        nPhase = 1;
-        nPage = cpu_out;
-      }
-    } else if (phase === 1) {
-      // RDY was low: on a read cycle the CPU halted, on a write it carried on.
-      if (cpu_rw) {
-        nPhase = 2;
-        nN = 0;
-        nHeld = 0;
-      }
-    } else if (held) {
-      const done = n === 255;
-      nPhase = done ? 0 : 2;
-      nN = done ? 0 : (n + 1) & 0xff;
-      nHeld = 0;
-    } else if (!odd) {
-      nHeld = 1;
-      nLatch = read;
-    }
-    return { phase: nPhase, page: nPage, n: nN, held: nHeld, latch: nLatch, odd: flip };
-  },
-  meta: { category: 'io', icon: 'DMA', description: 'NES OAM DMA ($4014)' },
-});
-
 // ── nes/src/pads.ts ──
 
 /**
@@ -1279,17 +1180,17 @@ const OamDma = circuit('OamDma', {
  *
  *   0 A   1 B   2 Select   3 Start   4 Up   5 Down   6 Left   7 Right
  *
- * Bit 0 of a $4016 write is the 2A03's OUT0 pin, the strobe to both pads.
+ * The 2A03's OUT0 pin (bit 0 of a $4016 write) is the strobe to both pads.
  * While it is high the shift registers keep loading the buttons, so reads
  * return A. Once it goes low they hold, and each read of $4016 (pad 1) or
  * $4017 (pad 2) returns the next button in bit 0 and shifts. After 8 reads an
  * official pad returns 1. A button reads 1 when pressed.
  *
- * Bits 7-5 of the read are open bus, which is $40 here: the high byte of the
- * address, the last thing on the bus. Bits 4-1 read 0.
- *
- * \`cs\` is high for one tick per CPU access to $4016 or $4017, so each read
- * shifts once.
+ * The 2A03 signals those reads on /OE1 and /OE2 (\`oe1\`, \`oe2\`), high for the
+ * whole read cycle; the pad shifts at its end, on M2. \`data_out\` is what the
+ * ports put on the data bus while one of them is enabled: the bit in D0, and
+ * $40 in bits 7-5 (open bus: the high byte of the address, the last thing on
+ * the bus). Bits 4-1 read 0.
  */
 
 /** Bits of \`pad1\` and \`pad2\`, one per button. */
@@ -1306,38 +1207,33 @@ const BUTTON = {
 
 const NesPadsLogic = circuit('NesPadsLogic', {
   inputs: {
-    cs: bit,
-    rw: bit,
-    port: bit,
-    data_in: bus(8),
+    m2: bit,
+    out0: bit,
+    oe1: bit,
+    oe2: bit,
     pad1: bus(8),
     pad2: bus(8),
-    strobe: bit,
     shift1: bus(8),
     shift2: bus(8),
   },
-  outputs: { data_out: bus(8), next_strobe: bit, next_shift1: bus(8), next_shift2: bus(8) },
+  outputs: { data_out: bus(8), next_shift1: bus(8), next_shift2: bus(8) },
   meta: { category: 'nes', icon: 'J', description: 'NES controller ports: $4016, $4017' },
-  eval: ({ cs, rw, port, data_in, pad1, pad2, strobe, shift1, shift2 }) => {
+  eval: ({ m2, out0, oe1, oe2, pad1, pad2, shift1, shift2 }) => {
     const s1 = shift1 as number;
     const s2 = shift2 as number;
-    const read1 = cs === 1 && rw === 1 && port === 0;
-    const read2 = cs === 1 && rw === 1 && port === 1;
-    const bit1 = strobe === 1 ? (pad1 as number) & 1 : s1 & 1;
-    const bit2 = strobe === 1 ? (pad2 as number) & 1 : s2 & 1;
+    const bit1 = out0 === 1 ? (pad1 as number) & 1 : s1 & 1;
+    const bit2 = out0 === 1 ? (pad2 as number) & 1 : s2 & 1;
 
-    // Strobe high: load. Otherwise a read shifts, filling with 1s.
+    // Strobe high: load. Otherwise the end of a read shifts, filling with 1s.
     let next1 = s1;
-    if (strobe === 1) next1 = pad1 as number;
-    else if (read1) next1 = (s1 >> 1) | 0x80;
+    if (out0 === 1) next1 = pad1 as number;
+    else if (m2 === 1 && oe1 === 1) next1 = (s1 >> 1) | 0x80;
     let next2 = s2;
-    if (strobe === 1) next2 = pad2 as number;
-    else if (read2) next2 = (s2 >> 1) | 0x80;
+    if (out0 === 1) next2 = pad2 as number;
+    else if (m2 === 1 && oe2 === 1) next2 = (s2 >> 1) | 0x80;
 
-    const write = cs === 1 && rw === 0 && port === 0;
     return {
-      data_out: 0x40 | (port === 1 ? bit2 : bit1),
-      next_strobe: write ? (data_in as number) & 1 : (strobe as number),
+      data_out: 0x40 | (oe2 === 1 ? bit2 : bit1),
       next_shift1: next1,
       next_shift2: next2,
     };
@@ -1345,27 +1241,24 @@ const NesPadsLogic = circuit('NesPadsLogic', {
 });
 
 const NesPads = circuit('NesPads', {
-  inputs: { cs: bit, rw: bit, port: bit, data_in: bus(8), pad1: bus(8), pad2: bus(8) },
+  inputs: { m2: bit, out0: bit, oe1: bit, oe2: bit, pad1: bus(8), pad2: bus(8) },
   outputs: { data_out: bus(8) },
   nodes: {
-    strobe: Register({ width: 1 }),
     shift1: Register({ width: 8 }),
     shift2: Register({ width: 8 }),
     logic: NesPadsLogic,
     always: Constant({ value: 1 }),
   },
   connect: ({ inputs, outputs, nodes: n }) => [
-    n.always.out.to(n.strobe.we, n.shift1.we, n.shift2.we),
-    inputs.cs.to(n.logic.cs),
-    inputs.rw.to(n.logic.rw),
-    inputs.port.to(n.logic.port),
-    inputs.data_in.to(n.logic.data_in),
+    n.always.out.to(n.shift1.we, n.shift2.we),
+    inputs.m2.to(n.logic.m2),
+    inputs.out0.to(n.logic.out0),
+    inputs.oe1.to(n.logic.oe1),
+    inputs.oe2.to(n.logic.oe2),
     inputs.pad1.to(n.logic.pad1),
     inputs.pad2.to(n.logic.pad2),
-    n.strobe.q.to(n.logic.strobe),
     n.shift1.q.to(n.logic.shift1),
     n.shift2.q.to(n.logic.shift2),
-    n.logic.next_strobe.to(n.strobe.data),
     n.logic.next_shift1.to(n.shift1.data),
     n.logic.next_shift2.to(n.shift2.data),
     n.logic.data_out.to(outputs.data_out),
@@ -2924,18 +2817,295 @@ const Ppu = circuit('Ppu', {
   ],
 });
 
+// ── nes/src/dma.ts ──
+
+/**
+ * OAM DMA, the 2A03's sprite copy. Writing $XX to $4014 copies the 256 bytes
+ * at $XX00-$XXFF to $2004 (OAMDATA), one byte every two cycles, while the CPU
+ * is held off the bus through RDY.
+ *
+ * It sits between the CPU and the bus. While idle it passes the CPU's address,
+ * rw and write data straight through. After the $4014 write:
+ *
+ *   1. Halt: RDY goes low. The CPU stops on its next read cycle (a write cycle
+ *      always completes, so the unit waits for a read). That cycle is spent.
+ *   2. Align: reads only happen on "get" cycles, every other CPU cycle. If the
+ *      cycle after the halt is a "put" cycle, one cycle is spent waiting.
+ *   3. 256 pairs: a get cycle reads $XX00+n onto the bus, the put cycle after
+ *      writes that byte to $2004.
+ *
+ * So the CPU loses 513 cycles, or 514 when it needs the alignment cycle. RDY
+ * goes high after the last put and the CPU repeats the read it stopped on.
+ * During the halt and align cycles the CPU's own address stays on the bus, as
+ * a read.
+ *
+ * It steps on CPU cycles only (\`ce\`). Get and put cycles alternate from
+ * power-on: even CPU cycles are gets. The real chip takes the phase from its
+ * APU clock divider, which this doesn't model.
+ */
+
+// \`phase\`: 0 idle, 1 waiting for the CPU to halt, 2 copying. Numbers, not
+// named constants, so the Verilog export can translate onTick.
+
+interface DmaState {
+  phase: number;
+  /** High byte of the source page. */
+  page: number;
+  /** Bytes copied so far. */
+  n: number;
+  /** 1 between a get and its put: \`latch\` holds the byte. */
+  held: number;
+  latch: number;
+  /** 1 on put cycles. */
+  odd: number;
+}
+
+interface DmaIn extends DmaState {
+  ce: number;
+  cpu_addr: number;
+  cpu_rw: number;
+  cpu_out: number;
+  /** What the bus read this cycle. */
+  read: number;
+}
+
+const OamDma = circuit('OamDma', {
+  inputs: { ce: bit, cpu_addr: bus(16), cpu_rw: bit, cpu_out: bus(8), read: bus(8) },
+  outputs: { rdy: bit, addr: bus(16), rw: bit, out: bus(8) },
+  state: { phase: 0, page: 0, n: 0, held: 0, latch: 0, odd: 0 },
+  eval: ({ cpu_addr, cpu_rw, cpu_out, phase, page, n, held, latch, odd }: DmaIn) => {
+    const rdy = phase === 0 ? 1 : 0; // idle
+    if (phase === 2 && held) return { rdy, addr: 0x2004, rw: 0, out: latch };
+    if (phase === 2 && !odd) return { rdy, addr: (page << 8) | n, rw: 1, out: cpu_out };
+    return { rdy, addr: cpu_addr, rw: cpu_rw, out: cpu_out };
+  },
+  onTick: ({ ce, cpu_addr, cpu_rw, cpu_out, read, phase, page, n, held, latch, odd }: DmaIn) => {
+    // Off CPU cycles nothing changes; on them parity flips and the phase steps.
+    const flip = (ce ? odd ^ 1 : odd) & 1;
+    let nPhase = phase;
+    let nPage = page;
+    let nN = n;
+    let nHeld = held;
+    let nLatch = latch;
+    if (!ce) {
+      return { phase, page, n, held, latch, odd };
+    }
+    if (phase === 0) {
+      if (!cpu_rw && cpu_addr === 0x4014) {
+        nPhase = 1;
+        nPage = cpu_out;
+      }
+    } else if (phase === 1) {
+      // RDY was low: on a read cycle the CPU halted, on a write it carried on.
+      if (cpu_rw) {
+        nPhase = 2;
+        nN = 0;
+        nHeld = 0;
+      }
+    } else if (held) {
+      const done = n === 255;
+      nPhase = done ? 0 : 2;
+      nN = done ? 0 : (n + 1) & 0xff;
+      nHeld = 0;
+    } else if (!odd) {
+      nHeld = 1;
+      nLatch = read;
+    }
+    return { phase: nPhase, page: nPage, n: nN, held: nHeld, latch: nLatch, odd: flip };
+  },
+  meta: { category: 'io', icon: 'DMA', description: 'NES OAM DMA ($4014)' },
+});
+
+// ── nes/src/rp2a03.ts ──
+
+/**
+ * The RP2A03, the NES's CPU chip: a 6502 core without decimal mode, the APU,
+ * OAM DMA, the clock divider, and its own registers at $4000-$401F. On the
+ * board it is the chip marked CPU. Its pins:
+ *
+ *   addr      A0-A15, from the core or, during a DMA, the DMA unit
+ *   data_in   D0-D7 when reading: what the board drives onto the bus
+ *   data_out  D0-D7 when writing
+ *   rw        R/W, 1 = read
+ *   m2        M2, high on the ticks a CPU cycle completes (every third)
+ *   irq, nmi  /IRQ and /NMI, active high here
+ *   out0      OUT0: bit 0 of the last $4016 write, the controllers' strobe
+ *   oe1, oe2  /OE1 and /OE2, active high here: this cycle reads $4016 or
+ *             $4017, so the board puts the controller's bit on D0
+ *   audio     the APU's mixed output (the real chip has two analog pins)
+ *
+ * \`data\` is the byte on the core's own bus this cycle: the byte written, or
+ * the byte read, which for $4015 is the APU's status from inside the chip,
+ * not the pins.
+ *
+ * The 2A03's register file decodes $4000-$401F itself: $4000-$4013, $4015
+ * and $4017 writes go to the APU, $4014 to the DMA unit, $4016 writes set
+ * OUT0, $4016 and $4017 reads drive /OE1 and /OE2. The rest of the address
+ * space is the board's (74LS139 and friends).
+ *
+ * One tick is one PPU dot; the real chip divides the master clock by 12 and
+ * the PPU by 4, so a CPU cycle is three ticks. M2 is high on the first.
+ */
+
+type Port = ReturnType<typeof bus>;
+
+/** The CPU's clock enable: high on every third tick, starting with the first. */
+const CpuClock = circuit('CpuClock', {
+  outputs: { ce: bit },
+  state: { phase: 0 },
+  eval: ({ phase }) => ({ ce: phase === 0 ? 1 : 0 }),
+  onTick: ({ phase }) => ({ phase: phase === 2 ? 0 : ((phase as number) + 1) & 3 }),
+});
+
+/**
+ * The 2A03's registers at $4000-$401F: which unit a cycle addresses, the
+ * OUT0 latch's next value, the core's read data, and the IRQ line.
+ */
+const Rp2a03Regs = circuit('Rp2a03Regs', {
+  inputs: {
+    addr: bus(16),
+    rw: bit,
+    ce: bit,
+    out: bus(8),
+    pins: bus(8),
+    apu_data: bus(8),
+    apu_irq: bit,
+    irq: bit,
+    out0: bit,
+  },
+  outputs: {
+    apu_cs: bit,
+    apu_addr: bus(5),
+    oe1: bit,
+    oe2: bit,
+    next_out0: bit,
+    read: bus(8),
+    data: bus(8),
+    cpu_irq: bit,
+  },
+  meta: { category: 'nes', icon: 'R', description: '2A03 registers: $4000-$401F' },
+  eval: ({ addr, rw, ce, out, pins, apu_data, apu_irq, irq, out0 }) => {
+    // $4000-$4013, $4015 and $4017 writes. $4014 is OAM DMA.
+    const apu = (addr >= 0x4000 && addr < 0x4014) || addr === 0x4015 || (addr === 0x4017 && !rw);
+    const read = addr === 0x4015 ? apu_data : pins;
+    return {
+      apu_cs: ce && apu ? 1 : 0,
+      apu_addr: addr & 0x1f,
+      oe1: addr === 0x4016 && rw ? 1 : 0,
+      oe2: addr === 0x4017 && rw ? 1 : 0,
+      next_out0: ce && addr === 0x4016 && !rw ? out & 1 : out0,
+      read,
+      data: rw ? read : out,
+      cpu_irq: apu_irq || irq ? 1 : 0,
+    };
+  },
+});
+
+type CpuOuts = {
+  addr: Port;
+  data_out: Port;
+  rw: typeof bit;
+  m2: typeof bit;
+  sync: typeof bit;
+  out0: typeof bit;
+  oe1: typeof bit;
+  oe2: typeof bit;
+  audio: Port;
+  data: Port;
+  pc: Port;
+  a: Port;
+  x: Port;
+  y: Port;
+  s: Port;
+  p: Port;
+};
+
+/** \`debug\` adds the core's registers as outputs (\`pc\`, \`a\`, \`x\`, \`y\`, \`s\`, \`p\`). */
+const Rp2a03 = circuit('Rp2a03', ({ debug = false }: { debug?: boolean } = {}) => ({
+  inputs: { data_in: bus(8), irq: bit, nmi: bit },
+  outputs: {
+    addr: bus(16),
+    data_out: bus(8),
+    rw: bit,
+    m2: bit,
+    sync: bit,
+    out0: bit,
+    oe1: bit,
+    oe2: bit,
+    audio: bus(16),
+    data: bus(8),
+    ...(debug ? { pc: bus(16), a: bus(8), x: bus(8), y: bus(8), s: bus(8), p: bus(8) } : {}),
+  } as unknown as CpuOuts,
+  nodes: {
+    clock: CpuClock,
+    core: MOS6502_Core({ debug, decimal: false, rdy: true, ce: true }),
+    dma: OamDma,
+    apu: Apu,
+    regs: Rp2a03Regs,
+    out0: Register({ width: 1 }),
+    low: Constant({ value: 0 }),
+    high: Constant({ value: 1 }),
+  },
+  connect: ({ inputs: i, outputs: o, nodes: { clock, core, dma, apu, regs, out0, low, high } }) => {
+    const rows = [
+      clock.ce.to(core.ce, dma.ce, apu.ce, regs.ce, o.m2),
+      low.out.to(core.reset),
+      high.out.to(out0.we),
+      i.nmi.to(core.nmi),
+      i.irq.to(regs.irq),
+      apu.irq.to(regs.apu_irq),
+      regs.cpu_irq.to(core.irq),
+      core.addr.to(dma.cpu_addr),
+      core.rw.to(dma.cpu_rw),
+      core.data_out.to(dma.cpu_out),
+      dma.rdy.to(core.rdy),
+      dma.addr.to(regs.addr, o.addr),
+      dma.rw.to(regs.rw, apu.rw, o.rw),
+      dma.out.to(regs.out, apu.data, o.data_out),
+      i.data_in.to(regs.pins),
+      regs.read.to(core.data_in, dma.read),
+      regs.data.to(o.data),
+      regs.apu_cs.to(apu.cs),
+      regs.apu_addr.to(apu.addr),
+      apu.data_out.to(regs.apu_data),
+      apu.audio.to(o.audio),
+      out0.q.to(regs.out0, o.out0),
+      regs.next_out0.to(out0.data),
+      regs.oe1.to(o.oe1),
+      regs.oe2.to(o.oe2),
+      core.sync.to(o.sync),
+    ];
+    if (debug) {
+      rows.push(
+        core.pc.to(o.pc),
+        core.a.to(o.a),
+        core.x.to(o.x),
+        core.y.to(o.y),
+        core.s.to(o.s),
+        core.p.to(o.p),
+      );
+    }
+    return rows;
+  },
+}));
+
 // ── nes/src/board.ts ──
 
 /**
- * The NES: the console (the 6502 core, 2 KB of work RAM, the PPU, OAM DMA and
- * the controller ports) and, through the cartridge connector, a cartridge
+ * The NES: the console and, through the cartridge connector, a cartridge
  * (cart.ts). \`NesConsole\` is the console alone, with the connector as ports;
  * \`Nes\` is the console with an NROM cart plugged in.
+ *
+ * The console is grouped as the board is built. On the CPU bus: the 2A03
+ * (\`cpu\`, rp2a03.ts: the 6502 core, the APU, OAM DMA and its registers at
+ * $4000-$401F), 2 KB of work RAM, the 74LS139 address decoder, and the
+ * controller ports, which the 2A03 drives through OUT0, /OE1 and /OE2. On
+ * the PPU bus: the PPU and 2 KB of nametable RAM.
  *
  * CPU memory map:
  *   $0000-$1FFF  2 KB work RAM, mirrored every $0800
  *   $2000-$3FFF  PPU registers, mirrored every 8 bytes (ppu/regs.ts).
- *   $4000-$401F  APU and I/O registers. The APU (apu/) has $4000-$4013,
+ *   $4000-$401F  The 2A03's own registers. The APU (apu/) has $4000-$4013,
  *                $4015 and $4017 writes. $4014 is OAM DMA (dma.ts), which
  *                halts the CPU and copies a page to $2004; $4016 and $4017
  *                reads are the controller ports (pads.ts). The rest read $00.
@@ -2971,76 +3141,47 @@ const Ppu = circuit('Ppu', {
 type B = ReturnType<typeof bus>;
 
 /**
- * Address decode and the CPU's read data mux. $4020 and up is the
- * cartridge's: the console reads whatever the cart drives there.
+ * The 74LS139 address decoder. One half splits $0000-$7FFF by A13-A14:
+ * work RAM at $0000-$1FFF, the PPU at $2000-$3FFF ($4000-$5FFF is the
+ * 2A03's own, and the cartridge's above $4020). The other half makes
+ * /ROMSEL from A15. Selects for a cycle that writes or touches a register
+ * fire on M2; \`romsel\` is A15 itself, as the cartridge sees it.
  */
-const NesBus = circuit('NesBus', {
+const Ls139 = circuit('Ls139', {
+  inputs: { addr: bus(16), rw: bit, m2: bit },
+  outputs: { ram_we: bit, ppu_cs: bit, romsel: bit },
+  meta: { category: 'nes', icon: '139', description: '74LS139 address decoder' },
+  eval: ({ addr, rw, m2 }) => ({
+    ram_we: m2 && !rw && addr < 0x2000 ? 1 : 0,
+    ppu_cs: m2 && addr >= 0x2000 && addr < 0x4000 ? 1 : 0,
+    romsel: (addr >> 15) & 1,
+  }),
+});
+
+/**
+ * The CPU data bus: who drives D0-D7 on a read. Work RAM below $2000, the
+ * PPU to $3FFF, the controller ports while the 2A03 enables one, and the
+ * cartridge from $4020. Nothing else drives it, so it reads 0 there ($4015
+ * is read inside the 2A03). Also the address lines each device takes.
+ */
+const NesCpuBus = circuit('NesCpuBus', {
   inputs: {
     addr: bus(16),
-    rw: bit,
-    ce: bit,
-    cpu_out: bus(8),
+    oe1: bit,
+    oe2: bit,
     ram_data: bus(8),
     ppu_data: bus(8),
     pads_data: bus(8),
-    apu_data: bus(8),
     cart_data: bus(8),
-    apu_irq: bit,
-    cart_irq: bit,
   },
-  outputs: {
-    ram_addr: bus(11),
-    ram_we: bit,
-    ppu_cs: bit,
-    ppu_addr: bus(3),
-    pads_cs: bit,
-    pads_port: bit,
-    apu_cs: bit,
-    apu_addr: bus(5),
-    cart_addr: bus(15),
-    romsel: bit,
-    cpu_in: bus(8),
-    data: bus(8),
-    irq: bit,
-  },
-  eval: ({
-    addr,
-    rw,
-    ce,
-    cpu_out,
-    ram_data,
-    ppu_data,
-    pads_data,
-    apu_data,
-    cart_data,
-    apu_irq,
-    cart_irq,
-  }) => {
-    const ppu = addr >= 0x2000 && addr < 0x4000;
-    const pads = addr === 0x4016 || (addr === 0x4017 && rw);
-    // $4000-$4013, $4015 and $4017 writes. $4014 is OAM DMA.
-    const apu = (addr >= 0x4000 && addr < 0x4014) || addr === 0x4015 || (addr === 0x4017 && !rw);
-    let read = 0;
-    if (addr < 0x2000) read = ram_data;
-    else if (ppu) read = ppu_data;
-    else if (pads) read = pads_data;
-    else if (addr === 0x4015) read = apu_data;
-    else if (addr >= 0x4020) read = cart_data;
-    return {
-      ram_addr: addr & 0x7ff,
-      ram_we: ce && !rw && addr < 0x2000 ? 1 : 0,
-      ppu_cs: ce && ppu ? 1 : 0,
-      ppu_addr: addr & 7,
-      pads_cs: ce && pads ? 1 : 0,
-      pads_port: addr & 1,
-      apu_cs: ce && apu ? 1 : 0,
-      apu_addr: addr & 0x1f,
-      cart_addr: addr & 0x7fff,
-      romsel: (addr >> 15) & 1,
-      cpu_in: read,
-      data: rw ? read : cpu_out,
-      irq: apu_irq || cart_irq ? 1 : 0,
-    };
+  outputs: { ram_addr: bus(11), ppu_addr: bus(3), cart_addr: bus(15), data: bus(8) },
+  eval: ({ addr, oe1, oe2, ram_data, ppu_data, pads_data, cart_data }) => {
+    let data = 0;
+    if (addr < 0x2000) data = ram_data;
+    else if (addr < 0x4000) data = ppu_data;
+    else if (oe1 || oe2) data = pads_data;
+    else if (addr >= 0x4020) data = cart_data;
+    return { ram_addr: addr & 0x7ff, ppu_addr: addr & 7, cart_addr: addr & 0x7fff, data };
   },
 });
 
@@ -3063,14 +3204,6 @@ const NesVramBus = circuit('NesVramBus', {
     ciram_we: we && ciram_ce ? 1 : 0,
     data: ciram_ce ? ciram_data : cart_data,
   }),
-});
-
-/** The CPU's clock enable: high on every third tick, starting with the first. */
-const CpuClock = circuit('CpuClock', {
-  outputs: { ce: bit },
-  state: { phase: 0 },
-  eval: ({ phase }) => ({ ce: phase === 0 ? 1 : 0 }),
-  onTick: ({ phase }) => ({ phase: phase === 2 ? 0 : ((phase as number) + 1) & 3 }),
 });
 
 type BoardOuts = {
@@ -3119,58 +3252,46 @@ const NesConsole = circuit('NesConsole', ({ debug = false }: { debug?: boolean }
   inputs: { pad1: bus(8), pad2: bus(8), ...CART_OUTPUTS },
   outputs: { ...consoleOutputs(debug), ...CART_INPUTS },
   nodes: {
-    clock: CpuClock,
-    cpu: MOS6502_Core({ debug, decimal: false, rdy: true, ce: true }),
-    dma: OamDma,
-    ppu: Ppu,
-    pads: NesPads,
-    apu: Apu,
-    bus: NesBus,
+    cpu: Rp2a03({ debug }),
+    decoder: Ls139,
+    bus: NesCpuBus,
     ram: DualPortRAM({ addressWidth: 11, dataWidth: 8 }),
+    pads: NesPads,
+    ppu: Ppu,
     vbus: NesVramBus,
     ciram: DualPortRAM({ addressWidth: 11, dataWidth: 8 }),
-    low: Constant({ value: 0 }),
   },
   connect: ({
     inputs: i,
     outputs: o,
-    nodes: { clock, cpu, dma, ppu, pads, apu, bus: b, ram, vbus, ciram, low },
+    nodes: { cpu, decoder, bus: b, ram, pads, ppu, vbus, ciram },
   }) => {
     const rows = [
-      clock.ce.to(cpu.ce, dma.ce, b.ce, apu.ce, o.m2),
-      low.out.to(cpu.reset),
-      i.irq.to(b.cart_irq),
-      apu.irq.to(b.apu_irq),
-      b.irq.to(cpu.irq),
-      b.apu_cs.to(apu.cs),
-      b.apu_addr.to(apu.addr),
-      apu.data_out.to(b.apu_data),
-      apu.audio.to(o.audio),
+      cpu.m2.to(decoder.m2, pads.m2, o.m2),
+      cpu.addr.to(decoder.addr, b.addr, o.addr),
+      cpu.rw.to(decoder.rw, ppu.rw, o.rw, o.cpu_rw),
+      cpu.data_out.to(ram.dataA, ppu.data_in, o.cpu_wdata),
+      b.data.to(cpu.data_in),
+      cpu.data.to(o.data),
+      cpu.sync.to(o.sync),
+      cpu.audio.to(o.audio),
+      i.irq.to(cpu.irq),
       ppu.nmi.to(cpu.nmi),
-      b.ppu_cs.to(ppu.cs),
+      decoder.ram_we.to(ram.weA),
+      decoder.ppu_cs.to(ppu.cs),
+      decoder.romsel.to(o.romsel),
+      b.ram_addr.to(ram.addrA, ram.addrB),
+      ram.outA.to(b.ram_data),
       b.ppu_addr.to(ppu.addr),
       ppu.data_out.to(b.ppu_data),
-      b.pads_cs.to(pads.cs),
-      b.pads_port.to(pads.port),
+      cpu.out0.to(pads.out0),
+      cpu.oe1.to(pads.oe1, b.oe1),
+      cpu.oe2.to(pads.oe2, b.oe2),
       pads.data_out.to(b.pads_data),
       i.pad1.to(pads.pad1),
       i.pad2.to(pads.pad2),
-      cpu.addr.to(dma.cpu_addr),
-      cpu.rw.to(dma.cpu_rw),
-      cpu.data_out.to(dma.cpu_out),
-      dma.rdy.to(cpu.rdy),
-      dma.addr.to(b.addr, o.addr),
-      dma.rw.to(b.rw, o.rw, ppu.rw, pads.rw, apu.rw, o.cpu_rw),
-      dma.out.to(ram.dataA, b.cpu_out, ppu.data_in, pads.data_in, apu.data, o.cpu_wdata),
-      cpu.sync.to(o.sync),
-      b.ram_addr.to(ram.addrA, ram.addrB),
-      b.ram_we.to(ram.weA),
-      ram.outA.to(b.ram_data),
       b.cart_addr.to(o.cpu_addr),
-      b.romsel.to(o.romsel),
       i.cpu_rdata.to(b.cart_data),
-      b.cpu_in.to(cpu.data_in, dma.read),
-      b.data.to(o.data),
       ppu.vram_addr.to(vbus.addr, o.ppu_addr),
       ppu.vram_we.to(vbus.we, o.ppu_we),
       ppu.vram_wdata.to(ciram.dataA, o.ppu_wdata),

@@ -16,9 +16,10 @@ const NES_INTRO = `// The NES, built from the same files that pass nestest, rend
 // about 9 seconds here. The first frame is blank while the program waits
 // for the PPU; the second draws the simten logo, line by line.
 //
-// Drill in: Nes -> console (cpu, ppu, apu, dma, pads, ram) and
-// cart (the cartridge, through its connector). The demo cartridge's program
-// is in nes/src/demo.ts below, assembled by hand.
+// Drill in: Nes -> console, grouped like the real board: cpu (the 2A03:
+// 6502 core, APU, sprite DMA), ppu, ram, the 74LS139 decoder and the
+// controller ports; and cart (the cartridge, through its connector). The
+// demo cartridge's program is in nes/src/demo.ts below, assembled by hand.
 `;
 
 /**
