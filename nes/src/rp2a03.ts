@@ -46,7 +46,7 @@ const CpuClock = circuit('CpuClock', {
  * The 2A03's registers at $4000-$401F: which unit a cycle addresses, the
  * OUT0 latch's next value, the core's read data, and the IRQ line.
  */
-const Rp2a03Regs = circuit('Rp2a03Regs', {
+export const Rp2a03Regs = circuit('Rp2a03Regs', {
   inputs: {
     addr: bus(16),
     rw: bit,

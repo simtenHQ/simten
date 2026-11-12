@@ -62,7 +62,7 @@ type B = ReturnType<typeof bus>;
  * /ROMSEL from A15. Selects for a cycle that writes or touches a register
  * fire on M2; `romsel` is A15 itself, as the cartridge sees it.
  */
-const Ls139 = circuit('Ls139', {
+export const Ls139 = circuit('Ls139', {
   inputs: { addr: bus(16), rw: bit, m2: bit },
   outputs: { ram_we: bit, ppu_cs: bit, romsel: bit },
   meta: { category: 'nes', icon: '139', description: '74LS139 address decoder' },
@@ -79,7 +79,7 @@ const Ls139 = circuit('Ls139', {
  * cartridge from $4020. Nothing else drives it, so it reads 0 there ($4015
  * is read inside the 2A03). Also the address lines each device takes.
  */
-const NesCpuBus = circuit('NesCpuBus', {
+export const NesCpuBus = circuit('NesCpuBus', {
   inputs: {
     addr: bus(16),
     oe1: bit,
@@ -104,7 +104,7 @@ const NesCpuBus = circuit('NesCpuBus', {
  * PPU memory: the console's nametable RAM where the cartridge enables it,
  * at the address the cartridge's CIRAM A10 picks; otherwise the cart.
  */
-const NesVramBus = circuit('NesVramBus', {
+export const NesVramBus = circuit('NesVramBus', {
   inputs: {
     addr: bus(14),
     we: bit,
