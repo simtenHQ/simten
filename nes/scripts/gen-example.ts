@@ -64,14 +64,35 @@ function editorText(text: string): string {
     .trim();
 }
 
+/**
+ * The modules become one script, so two of them can't declare the same
+ * top-level name, not even a type: the editor strips types, but the MCP
+ * server's checker doesn't.
+ */
+function assertUniqueNames(parts: { path: string; text: string }[]): void {
+  const seen = new Map<string, string>();
+  for (const { path, text } of parts) {
+    for (const m of text.matchAll(/^(?:const|let|function|type|interface|class) (\w+)/gm)) {
+      const other = seen.get(m[1]);
+      if (other) throw new Error(`gen-example: '${m[1]}' is declared in both ${other} and ${path}`);
+      seen.set(m[1], path);
+    }
+  }
+}
+
 /** The contents of nes-source.gen.ts for the current nes/src. */
 export function renderNesSource(): string {
   const paths = modules(NES_SRC);
   const texts = new Map(paths.map((p) => [p, readFileSync(p, 'utf8')]));
   const demo = join(NES_SRC, 'demo.ts');
   const order = [...inImportOrder(paths, texts).filter((p) => p !== demo), demo];
-  const code = order
-    .map((p) => `// ── nes/src/${relative(NES_SRC, p)} ──\n\n${editorText(texts.get(p) ?? '')}`)
+  const parts = order.map((p) => ({
+    path: `nes/src/${relative(NES_SRC, p)}`,
+    text: editorText(texts.get(p) ?? ''),
+  }));
+  assertUniqueNames(parts);
+  const code = parts
+    .map(({ path, text }) => `// ── ${path} ──\n\n${text}`)
     .join('\n\n')
     .replaceAll('\\', '\\\\')
     .replaceAll('`', '\\`')
