@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NES on simten</title>
+    <style>
+      body { margin: 0; background: #111; color: #ddd; font: 14px system-ui, sans-serif; display: flex; flex-direction: column; align-items: center; gap: 12px; padding: 16px; }
+      canvas { width: 768px; max-width: 100%; image-rendering: pixelated; background: #000; }
+      #stats { font-variant-numeric: tabular-nums; min-height: 1.4em; }
+      kbd { background: #333; border-radius: 3px; padding: 0 4px; }
+    </style>
+  </head>
+  <body>
+    <input id="rom" type="file" accept=".nes" />
+    <canvas id="screen" width="256" height="240"></canvas>
+    <div id="stats">Pick an NROM .nes file (it stays in this browser).</div>
+    <div>
+      <kbd>←↑→↓</kbd> move · <kbd>X</kbd> or <kbd>Space</kbd> A (jump) · <kbd>Z</kbd> B (run) · <kbd>Enter</kbd> Start · <kbd>Shift</kbd> Select
+    </div>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>
