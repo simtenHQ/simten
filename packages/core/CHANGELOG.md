@@ -1,5 +1,25 @@
 # @simten/core
 
+## 0.26.0
+
+### Minor Changes
+
+- a0d58a1: CXXRTL harness: an audio sink that averages an output port into 16-bit samples at any rate, taken with `audio()`.
+- 4f876e6: Add `cxxrtlManifest`, `cxxrtlHarness` and `loadCxxrtl` to `@simten/core/verilog`: a C++ harness for Yosys CXXRTL output and a loader for the WebAssembly it builds to, for running exported circuits ~100x faster than the TS simulator.
+- e1a0c03: Examples: the `Example` type is renamed `ExampleCircuit`, and an example's source can be fetched on demand with `load` instead of inlined as `code`. Read it with `exampleSource()`. Inline examples stay under `EXAMPLE_INLINE_LIMIT`.
+- 54fceee: MOS6502_Core takes `ce: true`, a clock enable: while `ce` is low the core holds, writes included, so it can run every Nth tick of a faster clock.
+- f00b18a: MOS6502_Core takes `decimal: false` (binary ADC/SBC, as on the 2A03) and `rdy: true` (adds an RDY pin that halts the core on read cycles).
+- 6b50161: A new bundled example, `nes`: the NES console with a demo cartridge, drawing to a `PaletteDisplay`. Its ~107 KB of source loads on demand.
+- adbbd37: Add PaletteDisplay, a colour pixel display written one pixel per clock through a 64-colour palette (PALETTE_2C02 by default).
+
+### Patch Changes
+
+- 2eace91: Verilog export: a memory's initial contents in an `eval`/`onTick` circuit now go out for `target: 'synthesis'` too. They were only written for simulation, so a lookup table read 0 on an FPGA.
+- e7084ef: Exported Verilog skips the memory-zeroing loop under Yosys, so `write_cxxrtl` no longer takes minutes on 64K memories.
+- ca093a5: The NES example's console is grouped like the real board: the 2A03 (6502 core, APU, OAM DMA and its registers), the 74LS139 address decoder, and controller ports driven by the 2A03's OUT0, /OE1 and /OE2 pins.
+- ce8c6c4: The NES example draws the simten logo, centred, and has no ports of its own, so the editor shows the NES wired to its screen.
+- 5aa7a6a: Verilog export: an output nothing reads gets its own declared net. Before, every such output shared one undeclared `__unused_<port>` net, so two RAMs with an unused B port drove the same implicit 1-bit wire.
+
 ## 0.25.1
 
 ### Patch Changes
