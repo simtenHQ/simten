@@ -19,6 +19,12 @@
  * hangs again is dropped and replay starts over on a fresh worker. Then each
  * reopened session gets a pushed `updated` frame and the page gets one
  * `restarted` message naming the reopened and dropped sessions.
+ *
+ * Export. The long-lived worker runs every compile in the tab, a shared
+ * link's included, and what one compile changes there can outlast it. Verilog
+ * leaves the tab, so each export runs in a worker of its own: the relay sends
+ * it the compile's original request, then the export, forwards the answer and
+ * terminates it.
  */
 
 import type {
@@ -54,7 +60,10 @@ const RESTARTED_ERROR = 'Worker restarted';
 const RESTARTED_MESSAGE =
   'The simulation stopped responding for 5 seconds and was restarted from cycle 0.';
 
+const EXPORT_TIMED_OUT_ERROR = 'Export timed out.';
+
 type SessionCompile = Extract<WorkerRequest, { type: 'compile' | 'compile-ir' }>;
+type ExportRequest = Extract<WorkerRequest, { type: 'export' }>;
 type SessionOpen = Extract<WorkerRequest, { type: 'open' }>;
 
 /** The session a message's state belongs to, if it carries one. */
@@ -111,6 +120,10 @@ export function createRelay(options: RelayOptions): Relay {
   // ── Page ↔ worker ─────────────────────────────────────────────────────────
 
   function send(request: WorkerRequest) {
+    if (request.type === 'export') {
+      exportInFreshWorker(request);
+      return;
+    }
     if (held) {
       held.push(request);
       return;
@@ -244,6 +257,63 @@ export function createRelay(options: RelayOptions): Relay {
       });
       worker.post({ ...request, id });
     });
+  }
+
+  // ── Export ────────────────────────────────────────────────────────────────
+
+  let exportCounter = 0;
+
+  /** Compile and export in a new worker, answer the page, then terminate it. */
+  function exportInFreshWorker(request: ExportRequest) {
+    const compile = compiles.get(request.compile);
+    if (!compile) {
+      const error = `No compile '${request.compile}' in this sandbox.`;
+      options.respond({ id: request.id, type: 'failed', code: 'failed', error });
+      return;
+    }
+    const n = ++exportCounter;
+    const compileId = `export-${n}-compile`;
+    const exportId = `export-${n}`;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let finished = false;
+
+    const finish = (message: WorkerResponse) => {
+      if (finished) return;
+      finished = true;
+      clearTimeout(timer);
+      fresh.terminate();
+      options.respond({ ...message, id: request.id } as SandboxMessage);
+    };
+    const arm = () => {
+      clearTimeout(timer);
+      timer = setTimeout(
+        () =>
+          finish({
+            id: exportId,
+            type: 'failed',
+            code: 'timed-out',
+            error: EXPORT_TIMED_OUT_ERROR,
+          }),
+        timeoutMs,
+      );
+    };
+
+    const fresh = options.startWorker((message) => {
+      if (!('id' in message)) return;
+      if (message.type === 'progressed') {
+        if (message.id === compileId || message.id === exportId) arm();
+        return;
+      }
+      if (message.id === compileId) {
+        if (message.type !== 'compiled') return finish(message);
+        arm();
+        fresh.post({ ...request, id: exportId });
+      } else if (message.id === exportId) {
+        finish(message);
+      }
+    });
+    arm();
+    fresh.post({ ...compile, id: compileId });
   }
 
   return { receive: send };
