@@ -1,5 +1,30 @@
 # @simten/ui
 
+## 0.18.0
+
+### Minor Changes
+
+- adbbd37: Draw PaletteDisplay on the canvas as one canvas element, repainted when its frame changes.
+
+### Patch Changes
+
+- ce8c6c4: The layout leaves room for the "double-click to inspect" caption of a box that opens, so wires out of it aren't squeezed against the next part.
+- 6b50161: A `PaletteDisplay` nested inside a composite is drawn at the side as a display, not taken for a console. Side parts are now identified by the part they are, and placed right of the layout.
+- Updated dependencies [a0d58a1]
+- Updated dependencies [4f876e6]
+- Updated dependencies [2eace91]
+- Updated dependencies [e1a0c03]
+- Updated dependencies [e7084ef]
+- Updated dependencies [54fceee]
+- Updated dependencies [f00b18a]
+- Updated dependencies [ca093a5]
+- Updated dependencies [6b50161]
+- Updated dependencies [ce8c6c4]
+- Updated dependencies [adbbd37]
+- Updated dependencies [5aa7a6a]
+  - @simten/core@0.26.0
+  - @simten/sandbox@0.2.2
+
 ## 0.17.1
 
 ### Patch Changes
