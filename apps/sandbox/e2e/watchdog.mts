@@ -112,8 +112,21 @@ const Stuck = circuit('Stuck', {
 })
 `;
 
+// Leaves a value behind in the worker's globals, as any code can.
+const LEAVES_A_MARK = `
+globalThis['leftover'] = 1;
+const Marks = circuit('Marks', { inputs: { a: bit }, outputs: { y: bit }, eval: ({ a }) => ({ y: a }) });
+`;
+
+// Wide if it can see the mark, narrow if not.
+const READS_THE_MARK = `
+const W = globalThis['leftover'] ? 16 : 8;
+const Probe = circuit('Probe', { inputs: { a: bus(W) }, outputs: { y: bus(W) }, eval: ({ a }) => ({ y: a }) });
+`;
+
 type Response = {
   type: string;
+  circuits?: { name: string; inputs: { portType: { width?: number } }[] }[];
   error?: string;
   code?: string;
   session?: string;
@@ -369,6 +382,30 @@ try {
     exported.type === 'exported' && /module Fibonacci/.test(exported.result?.verilog ?? ''),
     exported.error ?? exported.type,
   );
+  // What one compile leaves in the tab's worker must not reach an export.
+  await send({ type: 'compile', compile: 'marks', source: LEAVES_A_MARK });
+  const probe = await send({ type: 'compile', compile: 'probe', source: READS_THE_MARK });
+  const probeWidth = probe.circuits?.find((c) => c.name === 'Probe')?.inputs[0]?.portType.width;
+  check(
+    'a later compile in the same worker sees the mark',
+    probeWidth === 16,
+    `width ${probeWidth}`,
+  );
+  const probeExport = await send({ type: 'export', compile: 'probe', circuit: 'Probe' });
+  const exportedVerilog = probeExport.result?.verilog ?? '';
+  check(
+    'the export runs in a clean worker and does not',
+    probeExport.type === 'exported' &&
+      /\[7:0\]/.test(exportedVerilog) &&
+      !/\[15:0\]/.test(exportedVerilog),
+    probeExport.error ??
+      exportedVerilog
+        .split('\n')
+        .filter((l) => /input|output/.test(l))
+        .join(' | '),
+  );
+  await send({ type: 'release', compile: 'marks' });
+  await send({ type: 'release', compile: 'probe' });
   // #502: std's 6502 parts export by translating their eval's source, so the
   // production worker must keep that source readable (apps/sandbox/vite.config.ts).
   const example6502 = EXAMPLES.find((e) => e.id === '6502-computer')?.code ?? '';

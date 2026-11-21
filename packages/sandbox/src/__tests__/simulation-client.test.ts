@@ -23,6 +23,8 @@ interface SandboxOptions {
   hangsOn?: (request: WorkerRequest) => boolean;
   /** Sees every request the page sends. */
   onSend?: (request: SessionRequest) => void;
+  /** Sees every request a worker gets, with the worker's number (1 is the first). */
+  onWorkerRequest?: (worker: number, request: WorkerRequest) => void;
 }
 
 const open: SandboxClient[] = [];
@@ -35,6 +37,7 @@ afterEach(() => {
 function startSandbox(options: SandboxOptions = {}) {
   const { port1: page, port2: iframe } = new MessageChannel();
   let workers = 0;
+  let terminated = 0;
   /** Set when the page disposes: removing the iframe takes its worker with it. */
   let closed = false;
   /** Times the host has given the event loop back mid-request: one per slice boundary. */
@@ -48,7 +51,7 @@ function startSandbox(options: SandboxOptions = {}) {
     timeoutMs: options.timeoutMs ?? 5000,
     respond: (message) => iframe.postMessage(message),
     startWorker: (receive) => {
-      workers++;
+      const index = ++workers;
       let dead = false;
       let stuck = false;
       const alive = () => !dead && !stuck && !closed;
@@ -76,6 +79,7 @@ function startSandbox(options: SandboxOptions = {}) {
       return {
         post: (request) => {
           if (!alive()) return;
+          options.onWorkerRequest?.(index, request);
           if (options.hangsOn?.(request)) {
             stuck = true;
             return;
@@ -86,6 +90,7 @@ function startSandbox(options: SandboxOptions = {}) {
         },
         terminate: () => {
           dead = true;
+          terminated++;
         },
       };
     },
@@ -111,6 +116,7 @@ function startSandbox(options: SandboxOptions = {}) {
   return {
     client,
     workers: () => workers,
+    terminated: () => terminated,
     stick: () => stickCurrent(),
     yields: () => yields,
     /** Slices the worker ran for other requests between taking request `id` and answering it. */
@@ -469,5 +475,79 @@ describe('a watchdog restart', () => {
     await until(sim, (s) => s.status === 'restarted');
     expect(workers()).toBe(2);
     expect(sim.getState()).toMatchObject({ status: 'restarted', isRunning: false, cycle: 0 });
+  });
+});
+
+describe('export', () => {
+  it('runs in a worker of its own, which compiles the source again and is terminated', async () => {
+    const seen: { worker: number; type: string; source?: string }[] = [];
+    const { client, workers, terminated } = startSandbox({
+      onWorkerRequest: (worker, r) =>
+        seen.push({ worker, type: r.type, source: 'source' in r ? r.source : undefined }),
+    });
+    const sim = await openCounter(client);
+    const adder = await client.compile(ADDER);
+
+    for (let i = 0; i < 2; i++) {
+      const result = await client.export(adder, 'Add');
+      expect(result.verilog).toMatch(/module Add/);
+    }
+
+    expect(workers()).toBe(3);
+    expect(terminated()).toBe(2);
+    expect(seen.filter((s) => s.worker === 1).map((s) => s.type)).not.toContain('export');
+    for (const worker of [2, 3]) {
+      const got = seen.filter((s) => s.worker === worker);
+      expect(got.map((s) => s.type)).toEqual(['compile', 'export']);
+      expect(got[0]?.source).toBe(ADDER);
+    }
+
+    // The tab's worker carries on as before.
+    await sim.tick(3);
+    expect(sim.get('count')).toBe(3);
+    expect(sim.getState()).toMatchObject({ status: 'open', notice: null });
+  });
+
+  it('exports a circuit built on the page', async () => {
+    const { client, workers } = startSandbox();
+    const Double = circuit('Double', {
+      inputs: { a: bus(8) },
+      outputs: { y: bus(8) },
+      eval: ({ a }) => ({ y: (a * 2) & 0xff }),
+    });
+    const compiled = await client.compileCircuit(Double);
+    const result = await client.export(compiled, 'Double');
+    expect(result.verilog).toMatch(/module Double/);
+    expect(workers()).toBe(2);
+  });
+
+  it('times out on its own, leaving the tab’s worker and sessions alone', async () => {
+    const { client, workers, terminated } = startSandbox({
+      timeoutMs: 200,
+      hangsOn: (r) => r.type === 'export',
+    });
+    const sim = await openCounter(client);
+    const adder = await client.compile(ADDER);
+
+    const error = await client.export(adder, 'Add').catch((e: unknown) => e);
+    expect(error).toBeInstanceOf(SandboxError);
+    expect((error as SandboxError).code).toBe('timed-out');
+    expect(workers()).toBe(2);
+    expect(terminated()).toBe(1);
+
+    await sim.tick(2);
+    expect(sim.get('count')).toBe(2);
+    expect(sim.getState()).toMatchObject({ status: 'open', notice: null });
+  });
+
+  it('fails for a released compile without starting a worker', async () => {
+    const { client, workers } = startSandbox();
+    const adder = await client.compile(ADDER);
+    client.release(adder);
+    // A round trip after the release, so the relay has forgotten the compile.
+    await client.compile(COUNTER);
+    const error = await client.export(adder, 'Add').catch((e: unknown) => e);
+    expect((error as SandboxError).message).toMatch(/No compile/);
+    expect(workers()).toBe(1);
   });
 });

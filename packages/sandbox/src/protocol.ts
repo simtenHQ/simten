@@ -208,8 +208,9 @@ export type HostMessage = SessionResponse | ProgressedMessage;
 // ============================================================================
 
 /**
- * The iframe's main thread only relays: the worker handles every page request
- * and its responses go back to the page unchanged, except `progressed`.
+ * The iframe's main thread only relays: a worker handles every page request
+ * and its responses go back to the page unchanged, except `progressed`. Most
+ * go to the tab's long-lived worker; `export` gets a new one (see relay.ts).
  */
 export type WorkerRequest = SessionRequest;
 export type WorkerResponse = HostMessage;
